@@ -1,3 +1,5 @@
+//载入需要的JS文件
+//jQuery.sap.require("lenovo.MyRouter");
 sap.ui.define([
 	"sap/ui/core/UIComponent",
 	"sap/ui/model/json/JSONModel",
@@ -8,9 +10,14 @@ sap.ui.define([
  
 	return UIComponent.extend("demo.Component", {
  
+		//通过manifest.json描述文件，决定初始化屏幕
 		metadata : {
 			manifest: "json"
 		},
+		//SAPUI5版本过低，无法使用manifest.json描述文件时
+//		metadata: {
+//			rootView: "demo.view.App"
+//		}
 		onShowHello: function(){
 			alert("123");
 		},
@@ -35,6 +42,13 @@ sap.ui.define([
 			this.setModel(oInvoiceModel, "invoice");
 			
 			this.helloDialog = new HelloDialog();
+		},
+		//文件载入完成执行该函数
+		createContent: function(){
+//			return sap.ui.view({
+//				viewName: "demo.view.App",
+//				type: sap.ui.core.mvc.ViewType.JS
+//			});
 		}
 	});
  
