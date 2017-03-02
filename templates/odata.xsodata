@@ -1,0 +1,20 @@
+service
+{ 
+	
+	"cdp.szebgvmi.models::AT_UI_CONTROL_CYCLE" as "UI_CONTROL_CYCLE"
+		key ("ITEM","LOGICAL_PLANT","PHYSICAL_PLANT")
+		create using "cdp.szebgvmi.procedures.pkg_ui.ui_control_cycle::createUiCycleControl"
+			events (before "cdp.szebgvmi.procedures.pkg_ui.ui_control_cycle::beforeCreateUiCycleControl")
+		update forbidden
+		delete using "cdp.szebgvmi.procedures.pkg_ui.ui_control_cycle::deleteUiCycleControl"; 
+		
+	"cdp.szebgvmi.models::CV_DISPATCH_ARCHIVED" as "UI_DISPATCH_ARCHIVED"
+      keys generate local "ROW_ID";
+	  
+	"cdp.szebgvmi.models.common::CV_CONF_WAHREHOUSE_INFO_PARA" as "CONF_WAHREHOUSE_INFO_PARA"
+		keys generate local "PKID" 
+		parameters via entity "INPUT_CONF_WAHREHOUSE_INFO"
+		create forbidden
+		update forbidden
+		delete forbidden;
+}

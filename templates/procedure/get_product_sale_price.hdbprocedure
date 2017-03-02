@@ -1,0 +1,25 @@
+PROCEDURE "_SYS_BIC"."CAOZH4TEST01.Project01::get_product_sale_price" (
+	IN im_productid NVARCHAR(10), 
+	out ex_product_sale_price table (
+		"PRODUCTID" NVARCHAR(10),
+		"CATEGORY" 	NVARCHAR(10),
+		"PRICE"		DECIMAL(15,2),
+		"SALEPRICE"	decimal(15, 2)
+	)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	READS SQL DATA AS
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+ 	ex_product_sale_price = select 
+ 							'1' as "PRODUCTID",
+ 							'2' as "CATEGORY",
+ 							'2' as "PRICE",
+ 							'2' as "SALEPRICE"
+ 							 from dummy;
+END;

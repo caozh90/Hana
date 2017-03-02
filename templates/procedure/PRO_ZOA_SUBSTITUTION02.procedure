@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UDE:Procedure xmlns:UDE="http://www.sap.com/ndb/SQLCoreModelUDE.ecore" xmlns:DataTypes="http://www.sap.com/ndb/SQLCoreModelDataTypes.ecore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="PRO_ZOA_SUBSTITUTION02" schemaVersion="2" procedureType="procedure" runWithInvokerPrivileges="false" language="SQLSCRIPT" accessMode="ReadWrite">
+<descriptions defaultDescription=""/>
+<metadata changedAt ="2017-02-22 17:12:24.919" createdAt="2014-08-27 14:53:39.026"/>
+<origin/>
+<schema id="_SYS_BIC"/>
+<definition>     
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+ 	ERROR_CHAIN =  SELECT &quot;CHAIN_ID&quot;,
+ 							&quot;ACTUAL_STATE&quot;,
+ 							&quot;BATCHTIME&quot;,
+ 							&quot;BATCHDATE&quot;,
+ 							&quot;LOGSYS&quot;,
+ 							&quot;LOG_ID&quot;,
+ 							&quot;VARIANTE&quot;
+							FROM &quot;_SYS_BIC&quot;.&quot;pm.model/ErrorChain&quot;;
+END;</definition>
+<defaultSchema schemaName="ABAP"/>
+<parameters id="ERROR_CHAIN" paramType="OUT">
+	<type xsi:type="DataTypes:TableDataType" id="ERROR_CHAIN">
+	  <columns id="&quot;CHAIN_ID&quot;">
+		  <datatypeSQL xsi:type="DataTypes:CharacterStringSQLDataType" id="NVARCHAR" length="25"/>
+	  </columns>
+	  <columns id="&quot;ACTUAL_STATE&quot;">
+		  <datatypeSQL xsi:type="DataTypes:CharacterStringSQLDataType" id="NVARCHAR" length="1"/>
+	  </columns>
+	  <columns id="&quot;BATCHTIME&quot;">
+		  <datatypeSQL xsi:type="DataTypes:CharacterStringSQLDataType" id="NVARCHAR" length="6"/>
+	  </columns>
+	  <columns id="&quot;BATCHDATE&quot;">
+		  <datatypeSQL xsi:type="DataTypes:CharacterStringSQLDataType" id="NVARCHAR" length="8"/>
+	  </columns>
+	  <columns id="&quot;LOGSYS&quot;">
+		  <datatypeSQL xsi:type="DataTypes:CharacterStringSQLDataType" id="NVARCHAR" length="10"/>
+	  </columns>
+	  <columns id="&quot;LOG_ID&quot;">
+		  <datatypeSQL xsi:type="DataTypes:CharacterStringSQLDataType" id="NVARCHAR" length="25"/>
+	  </columns>
+	  <columns id="&quot;VARIANTE&quot;">
+		  <datatypeSQL xsi:type="DataTypes:CharacterStringSQLDataType" id="NVARCHAR" length="30"/>
+	  </columns>
+		<schema id="_SYS_BIC"/>
+	</type>
+</parameters>
+<localTableType>CREATE TYPE ERROR_CHAIN AS TABLE (&quot;CHAIN_ID&quot; NVARCHAR(25), &quot;ACTUAL_STATE&quot; NVARCHAR(1), &quot;BATCHTIME&quot; NVARCHAR(6), &quot;BATCHDATE&quot; NVARCHAR(8), &quot;LOGSYS&quot; NVARCHAR(10), &quot;LOG_ID&quot; NVARCHAR(25), &quot;VARIANTE&quot; NVARCHAR(30));
+
+</localTableType>
+<header>CREATE PROCEDURE _SYS_BIC.PRO_ZOA_SUBSTITUTION02 (OUT ERROR_CHAIN ERROR_CHAIN ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA ABAP
+	AS</header>
+</UDE:Procedure>
