@@ -5,9 +5,9 @@ sap.ui.define(
 		function(Controller, MessageToast){
 			"use strict";
 			return Controller.extend("demo.controller.App",{
-				onOpenDialog: function(){
-					this.getOwnerComponent().helloDialog.open(this.getView());
-				}
+//				onOpenDialog: function(){
+//					this.getOwnerComponent().helloDialog.open(this.getView());
+//				}
 			})
 		}
 );
