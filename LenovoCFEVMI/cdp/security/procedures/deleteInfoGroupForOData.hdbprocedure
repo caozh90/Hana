@@ -1,0 +1,42 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteInfoGroupForOData" (
+IN newInfo "SECURITY"."cdp.security.data::userManagement.InfoGroupT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	groupExists Integer := 0;
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aGROUP_ID BIGINT; 
+    aMODULE_ID NVARCHAR(10);       
+    aGROUP_NAME NVARCHAR(200);
+    aCOMMENT NVARCHAR(200); 
+     	
+    aMODULE_NAME NVARCHAR(200);
+BEGIN
+
+/***************************** 
+	delete info user group
+	
+
+	example:
+	
+
+)
+ *****************************/
+  
+
+ select NAME 
+    -- ,MODULE_NAME
+  into 
+ 	aGROUP_NAME
+   -- ,aMODULE_NAME
+  from :newInfo;
+  
+call "SECURITY"."cdp.security.procedures::deleteInfoGroup" (
+	aGROUP_NAME,   errorInfo           );
+END;

@@ -1,0 +1,111 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn" 
+(
+	IN newInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_MFI_PPN_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA  "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_s"
+/************************************************************************
+*name        :      ui_mfi_ppn
+*function    :      upload data ui_mfi_ppn          
+*input       ：              business_name etc
+*output      :                
+*author      :      leon Bian
+*CreateDate  :      2015.8.13
+*UpdateDate  :        
+*************************************************************************/ 
+
+	AS
+	path varchar(100):='cdp.egbdf.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_mfi_ppn';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	ns int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'UI_MFI_PPN';
+	validate int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+    END; 
+       
+	--procedure begin
+	
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_UTCTIMESTAMP INTO create_time FROM DUMMY;
+
+	--validate key
+	--select count(1) into n from "EBGDF"."UI_MFI_PPN" 
+	--where ABCD_T = :ABCD_T 
+	--AND SBB = :SBB 
+	--AND PPN = :PPN ;
+	SELECT count(1) into n
+	 	FROM :newInfo as a
+	 	WHERE NOT EXISTS ( SELECT 1 
+	 						FROM "EBGDF"."UI_MFI_PPN" 
+	 							WHERE ABCD_T = a.ABCD_T
+	 							AND SBB = a.SBB
+	 							AND PPN = a.PPN);
+	 								
+	if n>0 then
+		INSERT INTO "EBGDF"."UI_MFI_PPN"( ABCD_T,SBB,PPN,CREATE_TS,CREATE_USERID )
+	 	SELECT ABCD_T,SBB,PPN,:create_time,:currentUser
+	 	FROM :newInfo as a
+	 	WHERE NOT EXISTS ( SELECT 1 
+	 						FROM "EBGDF"."UI_MFI_PPN" 
+	 							WHERE ABCD_T = a.ABCD_T
+	 							AND SBB = a.SBB
+	 							AND PPN = a.PPN);
+	 	
+	 	--insert操作需要写入日志
+		insert into "EBGDF"."UI_MFI_PPN_LOG"(
+							"ABCD_T",
+							"SBB",
+							"PPN",
+							"CREATE_TS",
+							"CREATE_USERID",
+							"AT_MODIFIED_BY",
+							"AT_ACTION",
+							"AT_MODIFIED_ON",
+							"AT_MILLIS")
+		SELECT ABCD_T,
+			   SBB,
+			   PPN,
+			   :create_time,
+		 	   :currentUser,
+	 		   :currentUser,
+			   'create',
+			   :create_time,
+	 		   TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3'))
+	    FROM :newInfo as a
+	    WHERE NOT EXISTS ( SELECT 1 
+	 						FROM "EBGDF"."UI_MFI_PPN" 
+	 							WHERE ABCD_T = a.ABCD_T
+	 							AND SBB = a.SBB
+	 							AND PPN = a.PPN);
+			 	
+	END IF;
+		-- passing successful total numbers
+		call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:n,0,:table_name);
+
+END;
+

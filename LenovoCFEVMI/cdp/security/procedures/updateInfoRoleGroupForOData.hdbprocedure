@@ -1,0 +1,58 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::updateInfoRoleGroupForOData" (
+	IN newInfo "SECURITY"."cdp.security.data::userManagement.InfoRoleGroupT"
+	,IN oldInfo  "SECURITY"."cdp.security.data::userManagement.InfoRoleGroupT"
+	,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+	
+	aROLEGROUP_ID BIGINT; 
+    aMODULE_ID NVARCHAR(10);       
+    aROLEGROUP_NAME NVARCHAR(200);
+    aROLEGROUP_NAME_OLD NVARCHAR(200);
+    aCOMMENT NVARCHAR(200); 
+	aMODULE_NAME NVARCHAR(200);
+	
+BEGIN
+
+/***************************** 
+	update info role group
+	
+
+	example:
+	
+
+)
+ *****************************/
+      
+
+	
+ select NAME
+    ,COMMENT 
+  into 
+ 	aROLEGROUP_NAME
+    ,aCOMMENT 
+  from :newInfo;
+
+ select ID 
+    ,MODULE_NAME
+    ,aMODULE_ID
+    ,NAME
+  into 
+ 	aROLEGROUP_ID  
+    ,aMODULE_NAME
+    ,aMODULE_ID
+    ,aROLEGROUP_NAME_OLD
+  from :oldInfo;
+  
+  CALL "SECURITY"."cdp.security.procedures::updateInfoRoleGroup" (
+		aROLEGROUP_NAME
+		,aCOMMENT 
+		,aROLEGROUP_ID
+		--,aMODULE_ID
+		--,aMODULE_NAME
+		,aROLEGROUP_NAME_OLD
+		, errorInfo);
+	
+END;

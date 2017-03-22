@@ -1,0 +1,337 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_manual_pull::PRC_MANUAL_PULL" (
+	IN iv_id VARCHAR(10), OUT exitcode DECIMAL
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA
+/************************************************************************
+*name      : PRC_MANUAL_PULL              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/01                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/ 
+	AS
+	  v_logic_proc_name   VARCHAR2 (30) := 'PRC_MANUAL_PULL';
+      v_inv_type          VARCHAR2 (5);
+      v_sa_num            VARCHAR2 (45);
+      v_sa_line_id        VARCHAR2 (5);
+      n_box_size          NUMBER;
+      v_whs_no            VARCHAR2 (5);
+      n_count             NUMBER;
+      v_matnr_desc        VARCHAR2(255);
+/*      v_pull_header_id_arry NVARCHAR(10) ARRAY;
+      v_pull_line_id_arry NVARCHAR(10) ARRAY;
+      v_inventory_type_arry NVARCHAR(40) ARRAY;
+      v_line_supplierid_arry NVARCHAR(40) ARRAY;
+      v_src_werks_arry NVARCHAR(4) ARRAY;
+      v_matnr_arry NVARCHAR(18) ARRAY;
+      v_src_storage_type_arry NVARCHAR(40) ARRAY;
+      v_src_storage_bin_arry NVARCHAR(40) ARRAY;*/
+      i INTEGER;
+      v_flag_continue INTEGER := 0;
+      gv_logic_name   VARCHAR2 (30) := 'PKG_MANUAL_PULL';
+      v_full_name VARCHAR(2000) := gv_logic_name||'.'||v_logic_proc_name;
+      v_logidi            INTEGER := 0;
+      gv_dept             VARCHAR(40) := 'SZEBG';  -- modify devtp from MEX to SZEBG 2016/1/13
+      
+      
+BEGIN
+	DECLARE CURSOR cu FOR SELECT   PULL_HEADER_ID,
+                   PULL_LINE_ID,
+                   INVENTORY_TYPE,
+                   LINE_SUPPLIERID,
+                   SRC_WERKS,
+                   MATNR,
+                   SRC_STORAGE_TYPE,
+                   SRC_STORAGE_BIN
+            FROM   UI_MANUAL_PULL
+           WHERE   STATUS = 'SEND_IN_PROCESS'
+                   AND pull_type IN
+                            ('MANUAL', 'SHIPPING_GROUP', 'MANUAL_PACKAGING')
+                   ORDER BY PULL_HEADER_ID,PULL_LINE_ID DESC;
+   
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+         --COMMIT;                        --comment by Eric Zhou
+        
+	END;
+	  exitcode := -1;
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Start');                                                   
+	  
+
+      UPDATE   UI_MANUAL_PULL
+         SET   status = 'SEND_IN_PROCESS',SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+         SYS_LAST_MODIFIED_DATE =CURRENT_TIMESTAMP
+       WHERE   status = 'NEW'
+               AND pull_type IN
+                        ('MANUAL', 'SHIPPING_GROUP', 'MANUAL_PACKAGING');
+/*
+	tmp = SELECT   PULL_HEADER_ID,
+                   PULL_LINE_ID,
+                   INVENTORY_TYPE,
+                   LINE_SUPPLIERID,
+                   SRC_WERKS,
+                   MATNR,
+                   SRC_STORAGE_TYPE,
+                   SRC_STORAGE_BIN
+            FROM   UI_MANUAL_PULL
+           WHERE   STATUS = 'SEND_IN_PROCESS'
+                   AND pull_type IN
+                            ('MANUAL', 'SHIPPING_GROUP', 'MANUAL_PACKAGING')
+                   ORDER BY PULL_HEADER_ID,PULL_LINE_ID DESC;
+--    v_pull_header_id_arry := ARRAY_AGG(:tmp.PULL_HEADER_ID);
+--    v_pull_line_id_arry := ARRAY_AGG(:tmp.PULL_LINE_ID);
+--    v_inventory_type_arry := ARRAY_AGG(:tmp.INVENTORY_TYPE);
+--    v_line_supplierid_arry := ARRAY_AGG(:tmp.LINE_SUPPLIERID);
+--    v_src_werks_arry := ARRAY_AGG(:tmp.SRC_WERKS);
+--    v_matnr_arry := ARRAY_AGG(:tmp.MATNR);
+--    v_src_storage_type_arry := ARRAY_AGG(:tmp.SRC_STORAGE_TYPE);
+--   v_src_storage_bin_arry := ARRAY_AGG(:tmp.SRC_STORAGE_BIN);
+	--	FOR i IN 1..CARDINALITY(:v_pull_header_id_arry)
+	--	DO
+*/
+      FOR cur_item as cu 
+      DO
+
+         BEGIN
+            DECLARE GOTO CONDITION FOR SQL_ERROR_CODE 10001;
+            DECLARE EXIT HANDLER FOR GOTO
+            BEGIN
+            END;
+            v_inv_type := :cur_item.inventory_type;
+            v_sa_num := '';
+            v_sa_line_id := '';
+            n_box_size := -1;
+            v_matnr_desc := '';
+
+            BEGIN
+               SELECT   COUNT ( * )
+                 INTO   n_count
+                 FROM   ITEMSITEMASTER ITM
+                WHERE       ITM.ITEM = :cur_item.matnr
+                        AND ITM.SITEID = :cur_item.src_werks
+                        AND ITM.MMSTA IN ('99', '98', '97', '04');
+               IF n_count > 0
+               THEN
+                  UPDATE   UI_MANUAL_PULL A
+                     SET   REASON = 'ITEM IS INACTIVE',
+                           STATUS = 'DRAFT',
+                           SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+                           SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+                   WHERE   A.PULL_HEADER_ID = :cur_item.pull_header_id
+                           AND A.PULL_LINE_ID = :cur_item.pull_line_id;
+
+                  --GOTO UI_DATA_VALIDATION_FAILED;
+                  --continue;
+                  SIGNAL GOTO;
+               END IF;
+            END;
+
+            IF (v_inv_type = 'SOI')
+            THEN
+               BEGIN
+               	   DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+                   BEGIN                  
+                     v_sa_num := '';
+                     v_sa_line_id := '';
+                   END;
+                  SELECT  SA_NUMBER, SA_LINE_ID INTO   v_sa_num, v_sa_line_id
+                   FROM(
+                   SELECT  SA_NUMBER, SA_LINE_ID
+                    FROM   SA
+                   WHERE       MATNR = :cur_item.matnr
+                           AND LIFNR = :cur_item.line_supplierid
+                           AND Werks = :cur_item.src_werks
+                           AND STATUS = 'ACTIVE'
+                           AND start_date <= CURRENT_DATE
+                           AND end_date >= CURRENT_DATE
+                           ORDER BY OPEN_QTY DESC,CREATE_DATE ASC
+                  ) A limit 1;
+
+               END;
+
+               BEGIN
+                   DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+                   BEGIN                  
+                     n_box_size := -1;
+                   END;
+                  SELECT   box_size
+                    INTO   n_box_size
+                    FROM   UI_ITEM_FULL_BOX
+                   WHERE       ITEM = :cur_item.matnr
+                           AND vendorid = :cur_item.line_supplierid
+                        limit 1;
+
+               END;
+            END IF;
+
+            BEGIN
+               DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --如果有异常，当次循环结束，进入下一次循环
+               BEGIN                  
+                     UPDATE   UI_MANUAL_PULL A
+                     SET   REASON =
+                              'NO Warehouse found for this logical Plant.UI_SOURCING_PRIORITY.',
+                           STATUS = 'DRAFT',
+                           SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+                           SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+                   WHERE   A.PULL_HEADER_ID = :cur_item.pull_header_id
+                           AND A.PULL_LINE_ID = :cur_item.pull_line_id;
+                   --commit                                                 --comment by Eric Zhou
+                   SIGNAL GOTO;
+               END;
+               SELECT   warehouse_number
+                 INTO   v_whs_no
+                 FROM   UI_SOURCING_PRIORITY
+                WHERE       storage_type = 'DUMMY'
+                        AND storage_location = 'DUMMY'
+                        AND logical_plant = :cur_item.src_werks
+                        limit 1;         
+                  
+            END;
+
+            BEGIN
+               DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+               BEGIN                  
+                     v_matnr_desc := '';
+               END;
+               SELECT itemdesc 
+                INTO  v_matnr_desc
+                FROM ITEMSITEMASTER   --MST_APPRSUPITEM
+                WHERE ITEM = :cur_item.matnr
+                 AND  SITEID = :cur_item.src_werks limit 1;
+                 --AND SYS_ENT_STATE = 'ACTIVE'
+                 --AND rownum = 1;
+            END;
+            
+            IF v_matnr_desc <> '' THEN
+                UPDATE UI_MANUAL_PULL PULL
+                  SET matnr_descr = v_matnr_desc
+                  WHERE   PULL.PULL_HEADER_ID = :cur_item.pull_header_id
+                           AND PULL.PULL_LINE_ID = :cur_item.pull_line_id
+                           AND PULL.MATNR = :cur_item.matnr
+                           AND PULL.matnr_descr IS NULL; 
+            END IF;
+            
+            INSERT INTO pull_line (pull_header_id,
+                                   pull_line_id,
+                                   matnr,
+                                   matnr_descr,
+                                   werks,
+                                   src_storage_loc,
+                                   src_storage_type,
+                                   src_storage_bin,
+                                   pull_type,
+                                   dest_storage_loc,
+                                   dest_storage_type,
+                                   dest_storage_bin,
+                                   inventory_type,
+                                   line_supplierid,
+                                   pull_qty,
+                                   full_box_qty,
+                                   UNRESERVED_QTY,
+                                   header_supplierid,
+                                   remark,
+                                   status,
+                                   delivery_date,
+                                   production_line,
+                                   physical_plant,
+                                   sa_number,
+                                   sa_line_id,
+                                   mo_type,
+                                   whs_no,
+                                   dept,
+                                   sys_created_date,
+                                   sys_created_by,
+                                   sys_auth_id,
+                                   sys_source)
+               SELECT   DISTINCT
+                        a.pull_header_id,
+                        a.pull_line_id,
+                        a.matnr,
+                        CASE 
+                          WHEN v_matnr_desc = ''
+                          THEN
+                              a.matnr_descr
+                          ELSE
+                              :v_matnr_desc
+                        END,
+                        a.src_werks,
+                        a.src_storage_loc,
+                        a.src_storage_type,
+                        a.src_storage_bin,
+                        a.pull_type,
+                        a.dest_storage_loc,
+                        a.dest_storage_type,
+                        a.dest_storage_bin,
+                        a.inventory_type,
+                        a.line_supplierid,
+                        a.pull_qty,
+                        CASE
+                           WHEN n_box_size <> -1
+                                AND MOD (pull_qty, n_box_size) <> 0
+                           THEN
+                                a.pull_qty
+                              + n_box_size
+                              - MOD (pull_qty, n_box_size)
+                           ELSE
+                              a.pull_qty
+                        END,
+                        null,--'',
+                        a.head_supplierid,
+                        a.remark,
+                        'MANUAL_IN_PROCESS',
+                        a.delivery_date,
+                        a.production_line,
+                        a.physical_plant,
+                        :v_sa_num,
+                        :v_sa_line_id,
+                        '' AS mo_type,
+                        :v_whs_no AS whs_no,
+                        :gv_dept,   -- modify from 'MEX' to 'SZEBG' by xwu 2016/1/16
+                        CURRENT_TIMESTAMP,
+                        a.sys_created_by,
+                        a.src_werks,
+                        a.sys_source
+                 FROM   UI_MANUAL_PULL a
+                WHERE       a.status = 'SEND_IN_PROCESS'
+                        AND a.pull_header_id = :cur_item.pull_header_id
+                        AND a.pull_line_id = :cur_item.pull_line_id
+                        AND NOT EXISTS
+                              (SELECT   1
+                                 FROM   PULL_LINE B
+                                WHERE   A.PULL_HEADER_ID = B.PULL_HEADER_ID
+                                        AND A.PULL_LINE_ID = B.PULL_LINE_ID);
+
+         END;
+      END FOR;
+
+
+      UPDATE   UI_MANUAL_PULL
+         SET   status = 'COMPLETED',SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+         SYS_LAST_MODIFIED_DATE =CURRENT_TIMESTAMP
+       WHERE   status = 'SEND_IN_PROCESS'
+               AND pull_type IN
+                        ('MANUAL', 'SHIPPING_GROUP', 'MANUAL_PACKAGING');
+
+      --COMMIT;                                     --comment by Eric Zhou
+
+      exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');                                                         
+END;

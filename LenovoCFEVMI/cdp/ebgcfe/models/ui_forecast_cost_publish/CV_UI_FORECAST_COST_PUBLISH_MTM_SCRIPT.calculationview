@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_CORECAST_COST_PUBLISH_MTM_SCRIPT" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="SCRIPT_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_UI_CORECAST_COST_PUBLISH_MTM_SCRIPT"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="MTM_NO" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SALES_ORG" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="CYCLE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="CURRENCY_NAME" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="PRICE_UNIT" length="20"/>
+        <viewAttribute datatype="DECIMAL" id="M1" length="15" scale="2"/>
+        <viewAttribute datatype="TIMESTAMP" id="FROM_DATE"/>
+        <viewAttribute datatype="TIMESTAMP" id="TO_DATE"/>
+        <viewAttribute datatype="TIMESTAMP" id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_BY" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCT_GROUP" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="ACTION" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="STATUS" length="100"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = SELECT &quot;MTM_NO&quot;, &quot;SALES_ORG&quot;, &quot;CYCLE&quot;, &quot;CURRENCY_NAME&quot;, &quot;PRICE_UNIT&quot;, &quot;M1&quot;, TO_NVARCHAR(TO_DATE(FROM_DATE), 'YYYY-MM-DD hh:mm:ss') as &quot;FROM_DATE&quot;, TO_NVARCHAR(TO_DATE(TO_DATE), 'YYYY-MM-DD hh:mm:ss') as &quot;TO_DATE&quot;, TO_NVARCHAR(TO_DATE(SYS_LAST_MODIFIED_DATE), 'YYYY-MM-DD hh:mm:ss') as &quot;SYS_LAST_MODIFIED_DATE&quot;, &quot;SYS_LAST_MODIFIED_BY&quot;,&quot;PRODUCT_GROUP&quot;,&quot;ACTION&quot;,&quot;STATUS&quot; FROM &quot;EBGCFE&quot;.&quot;BIZ_MTM_COMMISSIONCOST_VIEW&quot;; 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="MTM_NO" order="1">
+        <keyMapping columnObjectName="Script_View" columnName="MTM_NO"/>
+      </attribute>
+      <attribute id="SALES_ORG" order="2">
+        <keyMapping columnObjectName="Script_View" columnName="SALES_ORG"/>
+      </attribute>
+      <attribute id="CYCLE" order="3">
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="CURRENCY_NAME" order="4">
+        <keyMapping columnObjectName="Script_View" columnName="CURRENCY_NAME"/>
+      </attribute>
+      <attribute id="PRICE_UNIT" order="5">
+        <keyMapping columnObjectName="Script_View" columnName="PRICE_UNIT"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="10">
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="11">
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="ACTION" order="12">
+        <keyMapping columnObjectName="Script_View" columnName="ACTION"/>
+      </attribute>
+      <attribute id="STATUS" order="13">
+        <keyMapping columnObjectName="Script_View" columnName="STATUS"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="M1" order="6" aggregationType="sum" measureType="simple">
+        <measureMapping columnObjectName="Script_View" columnName="M1"/>
+      </measure>
+      <measure id="FROM_DATE" order="7" aggregationType="min" measureType="simple">
+        <measureMapping columnObjectName="Script_View" columnName="FROM_DATE"/>
+      </measure>
+      <measure id="TO_DATE" order="8" aggregationType="min" measureType="simple">
+        <measureMapping columnObjectName="Script_View" columnName="TO_DATE"/>
+      </measure>
+      <measure id="SYS_LAST_MODIFIED_DATE" order="9" aggregationType="min" measureType="simple">
+        <measureMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

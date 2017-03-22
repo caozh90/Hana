@@ -1,0 +1,156 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xattc::createUiXattc" (
+	     IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XATTC_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA
+/************************************************************************
+*name      :                     createUiXattc
+*function    :               
+*input     ：               newInfo
+*output     :    errorInfo            
+*author     :                     Eric Zhou
+*CreateDate    :                  2014.12.18
+*UpdateDate  :        
+*************************************************************************/ 
+	AS 
+	   aI_DETAIL NVARCHAR(300) :='';
+	   alogide INTEGER :=0;
+	   v_product_group NVARCHAR(10);
+	   v_prod_family NVARCHAR(100); 
+	   v_subgeo NVARCHAR(20);
+	   v_tba_type NVARCHAR(10);
+	   v_brand NVARCHAR(40);
+	   v_plant NVARCHAR(50);
+	   v_resourceExists BIGINT;
+	   v_m1 DECIMAL(15,4);
+	   v_m2 DECIMAL(15,4);
+	   v_m3 DECIMAL(15,4);
+	   v_m4 DECIMAL(15,4);
+	   v_m5 DECIMAL(15,4);
+	   v_m6 DECIMAL(15,4);
+	   v_m7 DECIMAL(15,4);
+	   v_m8 DECIMAL(15,4);
+	   v_m9 DECIMAL(15,4);
+	   v_m10 DECIMAL(15,4);
+	   v_m11 DECIMAL(15,4);
+	   v_m12 DECIMAL(15,4);
+	   v_m13 DECIMAL(15,4);
+	   v_m14 DECIMAL(15,4);
+	   v_m15 DECIMAL(15,4);
+	   v_m16 DECIMAL(15,4);
+	   v_m17 DECIMAL(15,4);
+	   v_m18 DECIMAL(15,4);
+	   
+	   privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xattc::createUiXattc error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::createUiXattc'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_xattc::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+        
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::createUiXattc'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+select 'EBG',FAMILY,SUBGEO,TBA_TYPE,BRAND,PLANT,
+			M1,M2,M3,M4,M5,M6
+		,M7,M8,M8,M10,M11,M12,M13,M14,M15,M16,M17,M18 into v_product_group,v_prod_family,v_subgeo,v_tba_type
+		,v_brand,v_plant,v_m1,v_m2,v_m3,v_m4,v_m5,v_m6,v_m7,v_m8,v_m9,v_m10,v_m11,v_m12,v_m13,v_m14,v_m15,v_m16,v_m17,v_m18 from :newInfo;  
+		
+select count(1) into v_resourceExists from "EBGCFE"."UI_XATTC" where PRODUCT_GROUP = :v_product_group and 
+		FAMILY = :v_prod_family and SUBGEO = :v_subgeo and BRAND = :v_brand and PLANT = :v_plant and
+		TBA_TYPE = :v_tba_type;
+
+--if item exits in database
+if  :v_resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	     SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+	    
+end if;	
+
+--insert into UI_GROUP_COST table
+insert into "EBGCFE"."UI_XATTC"(CYCLE,
+									FAMILY,
+									PRODUCT_GROUP,
+									SUBGEO,
+									TBA_TYPE,
+									BRAND,
+									PLANT,
+									M1,M2,M3,M4,M5,M6
+									,M7,M8,M9,M10,M11,M12,
+									M13,M14,M15,M16,M17,M18,
+									SYS_CREATED_BY,
+									SYS_CREATED_DATE,
+									SYS_LAST_MODIFIED_BY,
+									SYS_LAST_MODIFIED_DATE
+									) 
+	values ('CURRENT',:v_prod_family,'EBG',:v_subgeo,:v_tba_type,:v_brand,
+				:v_plant,:v_m1,:v_m2,:v_m3,:v_m4,:v_m5,:v_m6,:v_m7,:v_m8,:v_m9,:v_m10,:v_m11,:v_m12,
+				:v_m13,:v_m14,:v_m15,:v_m16,:v_m17,:v_m18,SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP);
+	
+--INSERT INTO UI_GROUP_COST_LOG TABLE
+insert into "EBGCFE"."UI_XATTC_LOG"(
+									FAMILY,
+									PRODUCT_GROUP,
+									SUBGEO,
+									TBA_TYPE,
+									BRAND,
+									PLANT,
+									M1,M2,M3,M4,M5,M6
+									,M7,M8,M9,M10,M11,M12,
+									M13,M14,M15,M16,M17,M18,
+									SYS_CREATED_BY,
+									SYS_CREATED_DATE,
+									ACTION,
+									AT_MODIFIED_ON,
+    								AT_MILLIS 
+									)
+	values (:v_prod_family,:v_product_group,:v_subgeo,:v_tba_type,:v_brand,
+				:v_plant,:v_m1,:v_m2,:v_m3,:v_m4,:v_m5,:v_m6,:v_m7,:v_m8,:v_m9,:v_m10,:v_m11,:v_m12,
+				:v_m13,:v_m14,:v_m15,:v_m16,:v_m17,:v_m18,SESSION_USER,CURRENT_TIMESTAMP,'create',current_timestamp,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));									
+		
+	  	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::createUiXattc successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::createUiXattc'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   	
+END;

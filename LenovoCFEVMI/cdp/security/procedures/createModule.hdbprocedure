@@ -1,0 +1,290 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createModule" (
+             IN aMODULE_NAME NVARCHAR(256) 
+             ,IN aMODULE_PATH NVARCHAR(256)
+             ,IN aCOMMENT NVARCHAR(256)
+             ,IN aUSER_NAME NVARCHAR(256)
+	         ,IN passwd NVARCHAR(256)
+             --,IN LOGINNAME NVARCHAR(50)
+             ,IN EMAILADDRESS NVARCHAR(200)
+             ,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError") 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+	aMODULE_ID NVARCHAR(10) ;
+	aROLE_ID BIGINT;
+	aROLEGROUP_ID BIGINT;
+	alogidk INTEGER :=0;
+	aModuleExists INTEGER :=0;
+	
+	aUSER_ID BIGINT;
+	
+	aI_DETAIL NVARCHAR(300) :='';
+BEGIN
+/***************************** 
+	Write your procedure logic
+	需要首先判断是否存在同名的module ，如果存在，则返回，并且message;
+	
+	1、首先判断module name 是否重名，
+	2、添加 info_module表
+	3、增加缺省public group 的用户组
+	
+	CALL EXAMPLE:
+	CALL "SECURITY"."cdp.security.procedures::createModule"(
+		'CFE','cdp.cfe','CFE :Cost Forecast Estimation '
+		,?)
+	
+ *****************************/
+ 
+     --exception     
+   --DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;  
+   DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299;  
+   DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到aROLE_ID ,则返回，同时告知不存在这个权限明细
+			
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+     	 I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERROR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createModule"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>'cdp.security.procedures::createModule can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     	
+     	
+     	
+     END;
+     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL := 'cdp.security.procedures::createModule error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+    	,I_STATUS=>'ERROR'
+    	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createModule"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+ 
+
+
+--START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createModule"'
+	,I_MODULE=>:aMODULE_NAME); 
+ 
+SELECT top 1 count(1) into aModuleExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" 
+WHERE "MODULE_NAME" = :aMODULE_NAME ;--GROUP BY "MODULE_NAME"; 
+	if :aModuleExists > 0 then
+		--如果存在同名的模型，则返回
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'WARN'
+    	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createModule"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000001'
+     	,I_DETAIL=>'cdp.security.procedures::createModule error : module name ->' ||:aMODULE_NAME||' already exists .');
+		return ; 
+	end if;
+
+
+ SELECT "cdp.security.data::infoModuleSeqId".NEXTVAL INTO aMODULE_ID from dummy;
+ 
+  --添加 新 的module 
+ insert into "SECURITY"."cdp.security.data::userManagement.INFO_MODULE"
+ 			  ("MODULE_ID","MODULE_NAME","MODULE_PATH","COMMENT")
+ 		VALUES(:aMODULE_ID ,:aMODULE_NAME ,:aMODULE_PATH ,:aCOMMENT);
+ 
+  --添加公共public group的缺省组合到 info group 中
+ insert into "SECURITY"."cdp.security.data::userManagement.INFO_GROUP"
+ 			("GROUP_ID","MODULE_ID","GROUP_NAME","COMMENT")
+ 			VALUES("cdp.security.data::infoGroupSeqId".NEXTVAL 
+ 			,:aMODULE_ID ,'Public Group','Public Group in '||:aMODULE_NAME);
+ 
+  --添加Other roles 的缺省组合到 info group 中
+ insert into "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP"
+ 			("ROLEGROUP_ID","MODULE_ID","ROLEGROUP_NAME","COMMENT")
+ 			VALUES("cdp.security.data::infoRoleGroupSeqId".NEXTVAL 
+ 			,:aMODULE_ID ,'Other Roles','Other Roles in '||:aMODULE_NAME);
+
+
+/************
+初始化 权限 
+**********/
+
+ CALL "SECURITY"."cdp.security.procedures::createInfoRole" (
+ 	'User Managerment'
+ 	,'User Managerment'
+	,'cdp.security.roles::Base'
+	,'securityBase'
+ 	,'base role '
+	,:aMODULE_NAME    ,errorInfo  ) ;
+
+CALL "SECURITY"."cdp.security.procedures::createInfoRole" (
+	'User Managerment'
+ 	,'User Managerment'
+	,'cdp.security.roles::Access'
+	,'securityAccess'
+ 	,'open user management view. '
+	,:aMODULE_NAME    ,errorInfo  ) ;
+CALL "SECURITY"."cdp.security.procedures::createInfoRole" (
+	'User Managerment'
+ 	,'User Managerment'
+	,'cdp.security.roles::userAdmin'
+	,'securityUserAdmin'
+ 	,' user and user group management . '
+	,:aMODULE_NAME    ,errorInfo  ) ;
+CALL "SECURITY"."cdp.security.procedures::createInfoRole" (
+	'User Managerment'
+ 	,'User Managerment'
+	,'cdp.security.roles::roleSetup'
+	,'securityRoleSetup'
+ 	,' role and role group management . '
+	,:aMODULE_NAME    ,errorInfo  ) ;
+CALL "SECURITY"."cdp.security.procedures::createInfoRole" (
+	'User Managerment'
+ 	,'User Managerment'
+	,'cdp.security.roles::roleAdmin'
+	,'securityRoleAdmin'
+ 	,' grant activated role  . '
+	,:aMODULE_NAME    ,errorInfo  ) ;			
+
+--3-------log role -------------
+CALL "SECURITY"."cdp.security.procedures::createInfoRole" (
+	'LOG'
+ 	,'Log Managerment'
+	,'cdp.log.roles::logAccess'
+	,'logAccess'
+ 	,'to view the log information of related module.'
+	,:aMODULE_NAME    ,errorInfo             )           ;
+
+CALL "SECURITY"."cdp.security.procedures::createInfoRole" (
+	'LOG'
+ 	,'Log Managerment'
+	,'cdp.log.roles::logAdmin'
+	,'logAdmin'
+ 	,'can delete log information of related module.'
+	,:aMODULE_NAME    ,errorInfo             )           ;
+	 			
+ 
+ 
+ /***************
+ 创建管理员
+ **************/
+ 
+ call  "SECURITY"."cdp.security.procedures::createInfoUserInitial"(
+			 :aUSER_NAME, :passwd
+			,:aUSER_NAME,' ', ' '
+            ,:EMAILADDRESS, 'active' , 'LOCALE' ,' '
+            ,:aMODULE_NAME
+            ,:aMODULE_ID
+            ,errorInfo
+            ,:aUSER_ID);
+ 
+ insert into "SECURITY"."cdp.security.data::userManagement.DATA_SESSION_CONTEXT"
+			("ID","XSSESSION_ID", "SESSION_TYPE","SESSION_VALUE" ,"USER_ID","COMMENT"  )
+			values("SECURITY"."cdp.security.data::dataSessionContextSeqId".NEXTVAL 
+			,'', 'MODULE_ID',:aMODULE_ID ,:aUSER_ID,''  );
+			
+ 
+ /*************
+ 分配管理员权限
+ CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		aMODULE_NAME NVARCHAR(256),  
+    	aROLEGROUP_NAME NVARCHAR(256),	--//rolegroup id	
+    	aROLE_NAME NVARCHAR(256),  	--//role id  
+    	aUSERGROUP_NAME NVARCHAR(256),  
+    	aUSER_NAME NVARCHAR(256),
+	?);
+	
+	
+ *************/
+ 
+  CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,  
+    	'',
+    	'cdp.security.roles::Base',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+ CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,  
+    	'',
+    	'cdp.security.roles::Access',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+ CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,  
+    	'',
+    	'cdp.security.roles::userAdmin',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,
+    	'',
+    	'cdp.security.roles::roleSetup',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,
+    	'',
+    	'cdp.security.roles::roleAdmin',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+ 
+CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,
+    	'',
+    	'cdp.log.roles::logAccess',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,
+    	'',
+    	'cdp.log.roles::logAdmin',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+    	
+ 
+ /***************
+ 初始化 界面 权限关联
+ 
+ *************/
+ /*	CALL "SECURITY"."cdp.security.procedures::createMapViewRole" (
+       <module_name> ,<view_name>  ,<role_name>, IN aMAP_TYPE  NVARCHAR(50),?);
+*/
+
+CALL "SECURITY"."cdp.security.procedures::createMapViewRole" (
+       :aMODULE_NAME ,'user'  ,'cdp.security.roles::Access', 'view',errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapViewRole" (
+       :aMODULE_NAME ,'user'  ,'cdp.security.roles::userAdmin', 'controllor',errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapViewRole" (
+       :aMODULE_NAME ,'user'  ,'cdp.security.roles::roleSetup', 'controllor',errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapViewRole" (
+       :aMODULE_NAME ,'user'  ,'cdp.security.roles::roleAdmin', 'controllor',errorInfo);			
+    
+--log view   
+CALL "SECURITY"."cdp.security.procedures::createMapViewRole" (
+       :aMODULE_NAME ,'log'  ,'cdp.log.roles::logAccess', 'view',errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapViewRole" (
+       :aMODULE_NAME ,'log'  ,'cdp.log.roles::logAdmin', 'controllor',errorInfo); 
+ 
+ 
+       
+ --如果成功添加,则log添加成功！
+ CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'END'
+ 		,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createModule"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000001'
+     	,I_DETAIL=>'cdp.security.procedures::createModule ('||:aMODULE_NAME||') successfully executed . ');
+     	
+
+END;

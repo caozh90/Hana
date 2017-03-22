@@ -1,0 +1,320 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cfe_to_pcdw::PRC_EXP_MTM_COST"(
+	OUT p_out_exitcode   integer,
+    OUT p_out_exitmess   VARCHAR(500)
+)     
+    LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+		--READS SQL DATA 
+/************************************************************************
+*name       : PRC_EXP_MTM_COST            
+*function   : 
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id 
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : kangl
+*CreateDate : 2015-08-25
+*UpdateDateV_1 : 2015-10-17      Frankie --函数更改信息（包括作者、时间、更改内容等
+*UpdateDateV_2 : 2015-10-28		 Jetbrains 通过cycle_productgroup删除sales_office_all的历史数据，通过cycle
+								来merge pre的数据到all
+*************************************************************************/	
+	AS
+
+
+  
+     v_prc_name 	     VARCHAR(30)  := 'PRC_EXP_MTM_COST';
+     v_g_pkg_name 	     VARCHAR(30)  := 'pkg_cfe_to_pcdw';
+     v_full_name      	 VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+     v_time               BIGINT;
+     v_taking_time        BIGINT;
+     v_debug              CHAR;
+     v_step_counter       INT;
+     v_init_date          TIMESTAMP;
+     v_cycle_name         VARCHAR(60);
+     logidi               int :=0;
+     v_all_havedata       int :=0;
+     v_havecycle          int :=0;
+     v_is_ondemand        INTEGER;
+
+    
+BEGIN
+/*******************************************************************************************/
+  -- exception
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := SUBSTR(::SQL_ERROR_MESSAGE, 1, 500 );  
+ 	 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+ 	 	                                            I_LOGSID      => :logidi,
+ 	 	                                            I_EVENT_NAME  => :v_full_name,
+ 	 	                                            I_MODULE      => 'EBGCFE',
+		                                            I_MESSAGE     => 'ERROR',
+		                                            I_DETAIL      => TO_CHAR(::SQL_ERROR_CODE) || ':' ||
+                                                                     SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );                                   
+    END;
+	
+	
+    
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE'); 
+    
+
+
+
+	--clear export  data  on PCDW
+	
+	DELETE FROM pcdw.exp_cfe_mtm_commissioncost;
+	
+	SELECT COUNT(*)  INTO v_havecycle FROM ui_control_point
+    WHERE control_point        = 'BAKE' 
+	  AND control_point_status = 'COMPLETED'
+	  AND cycle_type           <> 'OEMOUT'
+	  AND product_group        ='EBG';
+	
+	IF v_havecycle <> 0 THEN	 
+		SELECT TOP 1 cycle_name INTO v_cycle_name FROM ui_control_point 
+		WHERE  CONTROL_POINT          = 'BAKE' 
+		  AND  CONTROL_POINT_STATUS   = 'COMPLETED'
+		  AND  CYCLE_TYPE             <> 'OEMOUT'
+		  AND  PRODUCT_GROUP          = 'EBG';
+		  
+		  
+	SELECT COUNT(*) INTO v_is_ondemand FROM ui_ondemand_cal_list WHERE item_type='MTM';
+	  
+	
+	--Modified by Zhoubinbin 20160909, change_id: 201609091706 start
+    --AS-is: cannt delete old adders, Remove cost_type condition so that can do it  
+ 	---MERGE DATA TO EXP_CFE_MTM_SALES_OFFICE_ALL
+	--THE SOURCE AND TARGET TABLE ALL EXISTS
+	/*IF v_is_ondemand > 0 THEN
+		DELETE FROM pcdw.exp_cfe_mtm_sales_office_all a
+		WHERE a.cycle_productgroup=v_cycle_name||'EBG'
+		  AND EXISTS (SELECT 1 FROM biz_mtm_salesoffice_pre b
+		  			   WHERE a.mtm_no         = b.mtm_no
+		  			     AND a.sales_org      = b.sales_org
+		  			     AND a.sales_office   = b.sales_office
+		  			     AND a.cost_type      = b.cost_type
+		  			     AND a.product_group  = b.product_group );
+	ELSE 
+		DELETE FROM pcdw.exp_cfe_mtm_sales_office_all WHERE cycle_productgroup=v_cycle_name||'EBG';
+	END IF;*/
+	
+	IF v_is_ondemand = 0 THEN
+		DELETE FROM pcdw.exp_cfe_mtm_sales_office_all WHERE cycle_productgroup=v_cycle_name||'EBG';
+	END IF;
+	
+	DELETE FROM pcdw.exp_cfe_mtm_sales_office_all a
+	WHERE EXISTS (SELECT 1 FROM biz_mtm_salesoffice_pre b
+	  			   WHERE a.mtm_no         = b.mtm_no
+	  			     AND a.sales_org      = b.sales_org
+	  			     AND a.sales_office   = b.sales_office
+	  			     AND a.product_group  = b.product_group );
+	
+	/*UPDATE pcdw.exp_cfe_mtm_sales_office_all a 
+		SET (a.cycle,a.m1,a.m2,a.m3,a.m4,a.m5,a.m6,
+			 a.m7,a.m8,a.m9,a.m10,a.m11,a.m12,a.cycle_productgroup) =
+			(substr(:v_cycle_name,1,6),ROUND(b.m1,2),ROUND(b.m2,2),ROUND(b.m3,2),ROUND(b.m4,2),
+			 ROUND(b.m5,2),ROUND(b.m6,2),ROUND(b.m7,2),ROUND(b.m8,2),ROUND(b.m9,2),ROUND(b.m10,2),
+			 ROUND(b.m11,2),ROUND(b.m12,2),:v_cycle_name||b.product_group) 
+	FROM biz_mtm_salesoffice_pre b
+	WHERE a.mtm_no         = b.mtm_no 
+	  AND a.sales_org      = b.sales_org 
+	  AND a.sales_office   = b.sales_office 
+	  AND a.cost_type      = b.cost_type
+	  AND a.product_group  = b.product_group;*/
+	  
+    --END change_id: 201609091706
+
+	--THE SOURCE AND TARGET TABLE DATA DIFFERENT
+	INSERT INTO  PCDW.EXP_CFE_MTM_SALES_OFFICE_ALL (
+			mtm_no, sales_org, sales_office,
+			cost_type, cycle, currency_name, price_unit,
+			m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12,
+			product_group, sys_created_date,cycle_productgroup)
+	SELECT  mtm_no, sales_org, sales_office,
+			cost_type, SUBSTR(:v_cycle_name,1,6) AS cycle, currency_name, price_unit,
+			ROUND(b.m1,2),ROUND(b.m2,2),ROUND(b.m3,2),ROUND(b.m4,2),ROUND(b.m5,2),ROUND(b.m6,2),
+			ROUND(b.m7,2),ROUND(b.m8,2),ROUND(b.m9,2),ROUND(b.m10,2),ROUND(b.m11,2),ROUND(b.m12,2),
+			product_group, sys_created_date, :v_cycle_name||product_group AS cycle_productgroup
+		FROM biz_mtm_salesoffice_pre b 
+		WHERE NOT EXISTS (SELECT 1 FROM pcdw.exp_cfe_mtm_sales_office_all a 
+				WHERE a.mtm_no        = b.mtm_no 
+				  AND a.sales_org     = b.sales_org 
+				  AND a.sales_office  = b.sales_office 
+				  AND a.cost_type     = b.cost_type
+				  AND a.product_group = b.product_group);
+	
+	
+
+	
+	SELECT COUNT (*) INTO v_all_havedata FROM biz_mtm_commissioncost_all ;
+	IF v_all_havedata = 0
+	THEN 
+		INSERT INTO pcdw.exp_cfe_mtm_commissioncost(
+			mtm_no,
+			sales_org,
+			currency_name,
+			price_unit,
+			m1,
+			from_date,
+			to_date,
+			action,
+			status,
+			sys_created_date,
+			sys_created_by,
+			sys_last_modified_date,
+			sys_last_modified_by,
+			product_group
+		) 
+		SELECT 
+			mtm_no,
+			sales_org,
+			currency_name,
+			price_unit,
+			ROUND(m1,2),
+			from_date,
+			to_date,
+			action,
+			status,
+			sys_created_date,
+			sys_created_by,
+			sys_last_modified_date,
+			sys_last_modified_by,
+			product_group
+		FROM biz_mtm_commissioncost_pre;
+		
+	ELSE	
+	---COMPARE BIZ_MTM_COMMISSIONCOST_PRE AND BIZ_MTM_COMMISSIONCOST_ALL DIFFERENTS
+	--PUT DIFFERENTS INTO EXP_CFE_MTM_COMMISSIONCOST
+	INSERT INTO pcdw.exp_cfe_mtm_commissioncost(
+		mtm_no,
+		sales_org,
+		currency_name,
+		price_unit,
+		m1,
+		from_date,
+		to_date,
+		action,
+		status,
+		sys_created_date,
+		sys_created_by,
+		sys_last_modified_date,
+		sys_last_modified_by,
+		product_group
+	) 
+	SELECT 
+		mtm_no,
+		sales_org,
+		currency_name,
+		price_unit,
+		m1,
+		from_date,
+		to_date,
+		action,
+		status,
+		sys_created_date,
+		sys_created_by,
+		sys_last_modified_date,
+		sys_last_modified_by,
+		product_group 
+	FROM (
+			--GET BIZ_MTM_COMMISSIONCOST_PRE EXISTS AND BIZ_MTM_COMMISSIONCOST_ALL NOT EXISTS DATA	
+			SELECT 
+				mtm_no,
+				sales_org,
+				currency_name,
+				price_unit,
+				ROUND(m1,2) AS m1,
+				from_date,
+				to_date,
+				action,
+				status,
+				sys_created_date,
+				sys_created_by,
+				sys_last_modified_date,
+				sys_last_modified_by,
+				product_group
+		    FROM biz_mtm_commissioncost_pre a  WHERE NOT EXISTS (  
+				SELECT 1 FROM biz_mtm_commissioncost_all b 
+				WHERE A.MTM_NO        = B.MTM_NO 
+				  AND A.SALES_ORG     = B.SALES_ORG   
+				  AND A.PRODUCT_GROUP = B.PRODUCT_GROUP)
+	 
+		  )
+		   UNION ALL
+		  ( 
+		  		--THE PRIMARY KEY SAME COMPARE M1 VALUE
+				SELECT  
+					c.mtm_no,
+					c.sales_org,
+					c.currency_name,
+					c.price_unit,    
+					ROUND(c.m1,2) AS m1,
+					c.from_date,
+					c.to_date,
+					c.action,
+					c.status,
+					c.sys_created_date,
+					c.sys_created_by,
+					c.sys_last_modified_date,
+					c.sys_last_modified_by,
+					c.product_group 
+				FROM biz_mtm_commissioncost_pre c ,
+					(SELECT * ,MAX(sys_last_modified_date) OVER(PARTITION BY mtm_no,sales_org,product_group) AS MAX_MODIFIED_DATE 
+						FROM biz_mtm_commissioncost_all) d 
+				WHERE C.MTM_NO                 = D.MTM_NO 	
+				  AND C.SALES_ORG              = D.SALES_ORG   
+				  AND C.PRODUCT_GROUP          = D.PRODUCT_GROUP
+				  AND C.M1                     <> D.M1 
+				  AND D.SYS_LAST_MODIFIED_DATE = MAX_MODIFIED_DATE
+	 	  );
+	 	  
+	END IF;
+    
+
+    --to_bw:merge sales_org_pre data to pcdw
+    IF v_is_ondemand = 0 THEN 
+		DELETE FROM pcdw.exp_mtm_salesorg_pre;
+		DELETE FROM pcdw.exp_mtm_salesoffice_pre;
+	ELSE
+	    DELETE FROM pcdw.exp_mtm_salesorg_pre a
+	    WHERE EXISTS (SELECT 1 FROM  biz_mtm_salesorg_pre b
+	                   WHERE a.mtm_no     = b.mtm_no
+	                     AND a.sales_org  = b.sales_org
+	                     --AND a.cost_type  = b.cost_type
+	                     );
+	    DELETE FROM pcdw.exp_mtm_salesoffice_pre a
+	    WHERE EXISTS (SELECT 1 FROM  biz_mtm_salesoffice_pre b
+	                   WHERE a.mtm_no       = b.mtm_no
+	                     AND a.sales_org    = b.sales_org
+	                     AND a.sales_office = b.sales_office
+	                     --AND a.cost_type    = b.cost_type
+	                     );	                   
+	    
+    END IF;
+    
+	INSERT INTO pcdw.exp_mtm_salesorg_pre 
+    	(mtm_no,sales_org,sales_office,cycle,cost_type,currency_name,price_unit,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,product_group,sys_created_date)	
+	SELECT mtm_no,sales_org,sales_office,SUBSTR(:v_cycle_name,1,6) AS cycle,cost_type,currency_name,price_unit,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,product_group,CURRENT_TIMESTAMP
+	  FROM biz_mtm_salesorg_pre ; 
+    --to_lbp:merge sales_office_pre data to pcdw
+    INSERT INTO pcdw.exp_mtm_salesoffice_pre
+    	(mtm_no,sales_org,sales_office,cycle,cost_type,currency_name,price_unit,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,product_group,sys_created_date)	
+	SELECT mtm_no,sales_org,sales_office,SUBSTR(:v_cycle_name,1,6) AS cycle,cost_type,currency_name,price_unit,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,product_group,CURRENT_TIMESTAMP
+	  FROM biz_mtm_salesoffice_pre ;    	  
+	  
+END IF;	
+   
+      
+     p_out_exitcode := 0;
+     p_out_exitmess := 'SUCCESSFUL';
+
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  
+
+END;

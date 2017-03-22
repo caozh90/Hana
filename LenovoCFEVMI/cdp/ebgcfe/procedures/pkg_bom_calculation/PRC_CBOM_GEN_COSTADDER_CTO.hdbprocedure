@@ -1,0 +1,354 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_GEN_COSTADDER_CTO"(
+	IN p_change_id       VARCHAR(100),
+	IN p_product_group   VARCHAR(20),
+	IN p_user_id         VARCHAR(64),
+	OUT p_out_exitcode   DECIMAL,
+    OUT p_out_exitmess   VARCHAR(500)
+)     
+    LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_CBOM_GEN_COSTADDER_CTO             
+*function   : Get Cost Adder MTM
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id 
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : Gavin Gai 
+*CreateDate : 2014-11-12
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS	
+BEGIN
+
+    -- data
+ 	DECLARE v_change_id    	     VARCHAR(100) := p_change_id;
+    DECLARE v_product_group   	 VARCHAR(20)  := p_product_group;
+    DECLARE v_user_id       	 VARCHAR(64)  := p_user_id;
+    DECLARE v_prc_name 	         VARCHAR(30)  := 'PRC_CBOM_GEN_COSTADDER_CTO';
+    DECLARE v_g_pkg_name 	     VARCHAR(30)  := 'pkg_bom_calculation';
+    DECLARE v_full_name      	 VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+    DECLARE n	                 INT;
+    DECLARE v_time               BIGINT;
+    DECLARE v_taking_time        BIGINT;
+    DECLARE v_debug              CHAR;
+    DECLARE v_step_counter       INT;
+    DECLARE v_init_date          TIMESTAMP;
+    declare logid1               int :=0;
+    declare logid2               int :=0;
+    declare logid3               int :=0;
+    declare logid4               int :=0;  
+    declare v_runlvl             VARCHAR(20);
+    declare v_tbatype_usdollar   VARCHAR(20);
+    
+    DECLARE c_f_costname_level0  VARCHAR(20);
+    DECLARE c_f_costname_level4  VARCHAR(20);
+    DECLARE c_f_costname_level6  VARCHAR(20);
+    DECLARE v_default_cost       INTEGER;    
+    DECLARE i                    INTEGER; 
+        
+	-- exception
+    DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found   
+    BEGIN   
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );      
+   		 CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+   		                                             I_LOGSID     => :logid1,
+   		                                             I_EVENT_NAME => :v_full_name,
+   		                                             I_MODULE     => 'EBGCFE',
+		                                             I_MESSAGE    => 'ERROR',
+		                                             I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                     substr(::SQL_ERROR_MESSAGE, 1, 500) ); 
+    END;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );  
+ 	 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+ 	 	                                            I_LOGSID      => :logid1,
+ 	 	                                            I_EVENT_NAME  => :v_full_name,
+ 	 	                                            I_MODULE      => 'EBGCFE',
+		                                            I_MESSAGE     => 'ERROR',
+		                                            I_DETAIL      => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                     substr(::SQL_ERROR_MESSAGE, 1, 500) );                                   
+    END;
+
+    p_out_exitcode := -1;
+    p_out_exitmess := 'FAILED';
+    
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_TBATYPE_USDOLLAR  
+      INTO v_tbatype_usdollar 
+      FROM dummy;     
+    
+    select session_context('v_step_counter_bom_calculation') into v_step_counter from dummy;
+
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid1,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');    
+   
+    insert into CAL_RUNTIME(PKG_NAME,PROC_NAME,START_T,PRD_GROUP)
+	values(v_g_pkg_name,v_prc_name,CURRENT_DATE,v_product_group);    
+  	
+  	SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy; 
+  	IF v_debug='T' then
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));     
+    END IF;
+    
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costname_level0  INTO c_f_costname_level0  FROM DUMMY;
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costname_level4  INTO c_f_costname_level4  FROM DUMMY;
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costname_level6  INTO c_f_costname_level6  FROM DUMMY;
+    
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().DEFAULT_COST INTO v_default_cost FROM DUMMY;
+    
+    SELECT run_level INTO v_runlvl FROM biz_toplayer_ch
+     WHERE change_id = :v_change_id
+    LIMIT 1;
+    
+    IF v_runlvl = 'FULL'  
+    THEN
+        DELETE FROM BIZ_costadder_cto
+         WHERE product_group = :v_product_group;
+    ELSE    
+        DELETE FROM BIZ_costadder_cto t1
+         WHERE t1.product_group = :v_product_group
+           AND EXISTS(SELECT 1 FROM MID_biz_toplayer_ch t2
+                       WHERE t2.product_group = t1.product_group
+                         AND t2.item          = t1.model
+                         AND t2.plant         = t1.plant
+                         AND t2.country       = t1.country
+                         AND t2.change_id     = :p_change_id);
+    END IF;
+    
+    UPDATE MID_cbom_leveln t1
+       SET (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, 
+            m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+            lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+            weighted_average, lattest_procur)
+          =
+          (:v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost,
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost)
+    WHERE t1.product_group = :v_product_group
+      AND t1.model_type IN('CTO')
+      AND EXISTS(SELECT 1 FROM BIZ_cbom_ctosbb t2
+                  WHERE t2.product_group = t1.product_group
+                    AND t2.model         = t1.model
+                    AND t2.children      = t1.father
+                    AND t2.plant         = t1.plant
+                    AND IFNULL(TO_CHAR(t2.m1), 'NULL') = IFNULL(TO_CHAR(:v_default_cost), 'NULL'));
+                    
+    UPDATE MID_cbom_leveln t1
+       SET (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, 
+            m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+            lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+            weighted_average, lattest_procur)
+          =
+          (:v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost,
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost)
+    WHERE t1.product_group = :v_product_group
+      AND t1.model_type IN('CTO')
+      AND EXISTS(SELECT 1 FROM BIZ_cbom_swrcost t2
+                  WHERE t2.product_group = t1.product_group
+                    AND t2.model         = t1.model
+                    AND t2.children      = t1.father
+                    AND t2.plant         = t1.plant
+                    AND t2.subgeo        = t1.subgeo
+                    AND t2.country       = t1.country
+                    AND IFNULL(TO_CHAR(t2.m1), 'NULL') = IFNULL(TO_CHAR(:v_default_cost), 'NULL'));                    
+                    
+    UPDATE MID_adder_final t1
+       SET (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, 
+            m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+            lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+            weighted_average, lattest_procur)
+          =
+          (:v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost,
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost)
+    WHERE t1.product_group = :v_product_group
+      AND LOCATE(t1.children, '%') > 0
+      AND t1.value_type    = :v_tbatype_usdollar
+      AND t1.model_type IN('CTO')
+      AND EXISTS(SELECT 1 FROM MID_cbom_leveln t2
+                  WHERE t2.product_group = t1.product_group
+                    AND t2.model         = t1.model
+                    AND t2.father        = t1.father
+                    AND t2.plant         = t1.plant
+                    AND t2.subgeo        = t1.subgeo
+                    AND t2.country       = t1.country
+                    AND t2.cost_name     = :c_f_costname_level0
+                    AND IFNULL(TO_CHAR(t2.m1), 'NULL') = IFNULL(TO_CHAR(:v_default_cost), 'NULL')); 
+                    
+    --Set model BMC AND TMC cost to default cost when missing BMC adders                
+    UPDATE MID_cbom_leveln t1
+       SET (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, 
+            m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+            lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+            weighted_average, lattest_procur)
+          =
+          (:v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost,
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost)
+    WHERE t1.product_group = :v_product_group
+      AND t1.model_type IN ('CTO')
+      AND t1.cost_lvl   IN (4, 6)
+      AND IFNULL(TO_CHAR(t1.m1), 'NULL') <> IFNULL(TO_CHAR(:v_default_cost), 'NULL')
+      AND EXISTS(SELECT 1 FROM MID_ui_cost_calcu_formu t2
+                  WHERE t2.product_group = t1.product_group
+                    AND t2.model         = t1.model
+                    AND t2.plant         = t1.plant
+                    AND t2.country       = t1.country
+                    AND t2.cost_lvl     <= 4
+                    AND MAP(t2.category, 'BASE', 1, 0) = t1.is_basesbb
+                    AND NOT EXISTS(SELECT 1 FROM MID_adder2 t3
+                                    WHERE t3.product_group = t2.product_group
+                                      AND t3.model         = t2.model
+                                      AND t3.plant         = t2.plant
+                                      AND t3.country       = t2.country
+                                      AND t3.cost_name     = t2.cost_name
+                                      AND t3.category      = t2.category));
+    
+    --Set model TMC cost to default cost when missing TMC adders                                  
+    UPDATE MID_cbom_leveln t1
+       SET (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, 
+            m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+            lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+            weighted_average, lattest_procur)
+          =
+          (:v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost,
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost)
+    WHERE t1.product_group = :v_product_group
+      AND t1.model_type IN ('CTO')
+      AND t1.cost_lvl   = 6
+      AND IFNULL(TO_CHAR(t1.m1), 'NULL') <> IFNULL(TO_CHAR(:v_default_cost), 'NULL')
+      AND EXISTS(SELECT 1 FROM MID_ui_cost_calcu_formu t2
+                  WHERE t2.product_group = t1.product_group
+                    AND t2.model         = t1.model
+                    AND t2.plant         = t1.plant
+                    AND t2.country       = t1.country
+                    AND t2.cost_lvl     IN(5, 6)
+                    AND MAP(t2.category, 'BASE', 1, 0) = t1.is_basesbb
+                    AND NOT EXISTS(SELECT 1 FROM MID_adder2 t3
+                                    WHERE t3.product_group = t2.product_group
+                                      AND t3.model         = t2.model
+                                      AND t3.plant         = t2.plant
+                                      AND t3.country       = t2.country
+                                      AND t3.cost_name     = t2.cost_name
+                                      AND t3.category      = t2.category));                          
+                     
+    INSERT INTO BIZ_costadder_cto
+	    (cycle, product_group, model, father, children, item_desc, model_type,
+		 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+		 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+		 altpercent, path, lvl, is_basesbb, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
+		 m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, 
+		 lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average, 
+		 lattest_procur, value_type, action, status, sys_created_date, sys_created_by, 
+		 sys_last_modified_date, sys_last_modified_by)
+     SELECT 'CURRENT' AS cycle, product_group, model, father, children, item_desc, 
+             model_type, plant, model_brand, model_family, subgeo, country, cost_lvl, 
+             cost_geo_lvl, cost_geo_value, cost_plant, cost_type, cost_name, qtyper, 
+             altgrup, altpri, altpercent, path, lvl, is_basesbb, m1, m2, m3, m4, m5, 
+             m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, 
+             lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, 
+             lm16, lm17, lm18, weighted_average, lattest_procur, value_type,
+		     'INSERT' AS action, 'ACTIVE' AS status, 
+		      current_timestamp AS sys_created_date,
+		      :v_full_name AS sys_created_by, 
+		      current_timestamp AS sys_last_modified_date,
+		      :v_full_name AS sys_last_modified_by
+		 FROM MID_cbom_leveln
+	    WHERE product_group = :v_product_group
+		  AND model_type    = 'CTO';
+	 
+	 FOR i IN 0..6
+	 DO
+	     INSERT INTO BIZ_costadder_cto 
+	         (cycle, product_group, model, father, children, item_desc, model_type,
+	          plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+	          cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+	          altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+	          m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+	          lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+	          lattest_procur, value_type, action, status, sys_created_date, sys_created_by, 
+	          sys_last_modified_date, sys_last_modified_by)
+	     SELECT 'CURRENT', product_group, model, father, children, item_desc, model_type,
+	            plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+	            cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+	            altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+	            m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+	            lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+	            lattest_procur, value_type, 'INSERT' AS action, 'ACTIVE' AS status, 
+			    current_timestamp AS sys_created_date,
+			    :v_full_name AS sys_created_by, 
+			    current_timestamp AS sys_last_modified_date,
+			    :v_full_name AS sys_last_modified_by
+	       FROM MID_adder_final 
+	      WHERE product_group = :v_product_group
+	        AND model_type    = 'CTO'
+	        AND cost_lvl      = :i;
+    END FOR;
+        
+    EXEC 'COMMIT';         
+    
+     IF v_debug='T'
+     THEN
+         v_step_counter := :v_step_counter + 1;
+         v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - v_time;
+            
+         IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+            
+         CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO',I_LOGSID=>:logid4,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+            I_MESSAGE=>'step '||to_char(:v_step_counter)||': ' || to_char(:v_taking_time) || ' sec'); 
+            
+         v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+     END IF;
+    
+	 update CAL_RUNTIME x set end_t=CURRENT_TIMESTAMP
+	 where x.pkg_name=:v_g_pkg_name and x.proc_name=:v_prc_name and end_t is null and
+      prd_group=:v_product_group;
+        
+     p_out_exitcode := 0;
+     p_out_exitmess := 'SUCCESSFUL';
+     
+     exec 'SET ''v_step_counter_bom_calculation'' = '''||ifnull(:v_step_counter,0)||'''';  
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid1,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');       
+  	
+END;

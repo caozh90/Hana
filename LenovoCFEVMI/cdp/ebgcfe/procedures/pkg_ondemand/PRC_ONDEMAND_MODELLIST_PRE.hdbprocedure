@@ -1,0 +1,102 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_MODELLIST_PRE" ( 
+  IN  P_CHANGE_ID     VARCHAR(100),
+  IN  P_PRODUCT_GROUP VARCHAR(20),
+  IN  P_USER_ID       VARCHAR(64),
+  IN  p_MODEL         VARCHAR(1000),
+  IN  p_FAMILY        VARCHAR(1000),
+  OUT P_EXIT_CODE       INTEGER,
+  OUT P_EXIT_MESSAGE    VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_ONDEMAND_MODELLIST_PRE         
+*function   : On-demand Model List Pre-Process
+*input      ：p_change_id : change id / p_product_group : product group
+              p_user_id : user id
+*output     : p_exit_code : error code / p_exit_message : error message
+*author     : Leonard Ling
+*CreateDate : 2015-01-15
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+  -- data
+  DECLARE v_pkg_name          VARCHAR(30) := 'PKG_ONDEMAND';
+  DECLARE v_prc_name          VARCHAR(30) := 'PRC_ONDEMAND_MODELLIST_PRE';
+  DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  
+  DECLARE v_tmp_pra varchar(1000);
+  DECLARE v_tmp_pra_value varchar(1000);
+
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN
+        p_exit_code := ::SQL_ERROR_CODE;
+        p_exit_message := ::SQL_ERROR_MESSAGE; 
+                     
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+  -- process logic
+  P_EXIT_CODE := -1;
+  P_EXIT_MESSAGE := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  
+		                                      
+  --insert data into ui table
+  IF LENGTH(p_MODEL)>0 THEN
+    v_tmp_pra := :p_MODEL;
+    
+	  while LOCATE(:v_tmp_pra,',') != 0
+	  do 
+	    v_tmp_pra_value := SUBSTR_BEFORE(:v_tmp_pra,',');
+	    v_tmp_pra := SUBSTR_AFTER(:v_tmp_pra,',');
+	    
+	    INSERT INTO "UI_ONDEMAND_REFRESH"(PRODUCT_GROUP, ONDEMAND_TYPE, ITEM, PROD_FAMILY, EVENT_NAME, MESSAGE, SYS_CREATED_BY, SYS_CREATED_DATE)
+	    VALUES ('EBG','MODEL_LIST',:v_tmp_pra_value,'',:P_CHANGE_ID,'SUCCESS',:P_USER_ID,CURRENT_TIMESTAMP);
+	    
+	  end while;
+	  if LOCATE(:v_tmp_pra,',') = 0 and LENGTH(:v_tmp_pra) != 0
+	  then
+	    INSERT INTO "UI_ONDEMAND_REFRESH"(PRODUCT_GROUP, ONDEMAND_TYPE, ITEM, PROD_FAMILY, EVENT_NAME, MESSAGE, SYS_CREATED_BY, SYS_CREATED_DATE)
+        VALUES ('EBG','MODEL_LIST',:v_tmp_pra,'',:P_CHANGE_ID,'SUCCESS',:P_USER_ID,CURRENT_TIMESTAMP);
+	  end if;
+   
+  ELSEIF LENGTH(p_FAMILY)>0 THEN
+        INSERT INTO "UI_ONDEMAND_REFRESH"(PRODUCT_GROUP, ONDEMAND_TYPE, ITEM, PROD_FAMILY, EVENT_NAME, MESSAGE, SYS_CREATED_BY, SYS_CREATED_DATE)
+        select distinct 'EBG','MODEL_LIST',item ,ASP_PRD_FAMILY,:P_CHANGE_ID,'SUCCESS',:P_USER_ID,CURRENT_TIMESTAMP
+        from EBGCFE.UI_ITEM where ASP_PRD_FAMILY=:P_FAMILY; 
+   
+  END IF;
+		                                      
+  -- data preparation
+  DELETE FROM mid_item_ol WHERE product_group = :p_product_group;
+ 
+  INSERT INTO mid_item_ol 
+             (product_group, item, prod_family, brand, item_type, subgeo, country, plant, 
+              action, eol_status, prod_h, custommodelflag, sys_created_date, sys_created_by)
+    SELECT product_group, item, asp_prd_family, brand, item_type, NULL, NULL, NULL,
+           action, eol_status, prod_h, custommodelflag, current_timestamp, :v_full_name
+      FROM ui_item a
+     WHERE EXISTS (
+              SELECT 1
+                FROM ui_ondemand_refresh b
+               WHERE b.item = a.item
+                 AND b.event_name = :p_change_id
+                 AND b.product_group = a.product_group
+                 --AND b.status = 'CURRENT'
+                 )
+       --AND eol_status IN ('OL', 'TEMP')
+       AND product_group = :p_product_group;
+             
+  p_exit_code := 0;
+  p_exit_message := 'SUCCESSFUL';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+	                                          I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  		                                      
+END;

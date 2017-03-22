@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_XOUTFR_RATE_SEARCH_PLANT_DDL" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_XOUTFR_RATE_SEARCH_DDL"/>
+  <localVariables/>
+  <variableMappings/>
+  <informationModelLayout relativeWidthScenario="47"/>
+  <dataSources>
+    <DataSource id="UI_XOUTFR_RATE" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_XOUTFR_RATE"/>
+    </DataSource>
+    <DataSource id="UI_XOUTFR_RATE_HIS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_XOUTFR_RATE_HIS"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_2">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="BRAND"/>
+        <viewAttribute id="FAMILY"/>
+        <viewAttribute id="GEO"/>
+        <viewAttribute id="MACHINETYPE"/>
+        <viewAttribute id="PLANT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#UI_XOUTFR_RATE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FAMILY" source="FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GEO" source="GEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MACHINETYPE" source="MACHINETYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#UI_XOUTFR_RATE_HIS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FAMILY" source="FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GEO" source="GEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MACHINETYPE" source="MACHINETYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="PLANT">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="20" expressionLanguage="COLUMN_ENGINE">
+          <formula>'PLANT'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Union_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="PLANT"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="PLANT">
+    <descriptions/>
+    <attributes>
+      <attribute id="ITEM_VALUE" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_VALUE"/>
+        <keyMapping columnObjectName="PLANT" columnName="ITEM_VALUE"/>
+      </attribute>
+      <attribute id="ITEM_TYPE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_TYPE"/>
+        <keyMapping columnObjectName="PLANT" columnName="ITEM_TYPE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="330" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="406" y="286"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="PLANT" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="340" y="180"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

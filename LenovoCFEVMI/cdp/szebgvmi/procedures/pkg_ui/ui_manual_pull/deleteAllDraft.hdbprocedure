@@ -1,0 +1,82 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_manual_pull::deleteAllDraft" (
+IN PULL_TYPE NVARCHAR(40)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	AS
+/************************************************************************
+*name      : deleteAllDraft              --函数名
+*function  : 删除UI_MANUAL_PULL表中，STATUS值为'DRAFT'的记录              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-23       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		privilegeExists  NVARCHAR(300)  ;
+		
+	 	path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.ui_manual_pull';
+		proc_name varchar(100) :='deleteAllDraft';
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+BEGIN
+/*	
+    IF :PULL_TYPE = 'MANUAL' THEN
+        call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    	'manualpull::editable'		,privilegeExists           );
+    ELSEIF :PULL_TYPE = 'SHIPPING_GROUP' THEN
+         call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    	'pullfromsupplier::editable'		,privilegeExists           );
+    ELSEIF :PULL_TYPE = 'MANUAL_PACKAGING' THEN
+         call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    	'manualpackaging::editable'		,privilegeExists           );
+    END IF;
+
+    IF  :privilegeExists != 'OK' THEN
+   	 	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		:privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+*/
+ 	--开始，日志
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+	
+	-- delete log
+		insert into "SZEBGVMI"."UI_MANUAL_PULL_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+			 	PULL_HEADER_ID,PULL_LINE_ID,
+				DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK,
+			 	PULL_TYPE,
+		 		STATUS,
+		 		SYS_SOURCE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+		SELECT
+		SESSION_USER ,'delete all',current_timestamp,
+			 	PULL_HEADER_ID,PULL_LINE_ID,
+				DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK,
+			 	PULL_TYPE,
+		 		STATUS,
+		 		SYS_SOURCE,
+			 	 SESSION_USER,
+			 	 current_timestamp,
+			 	 SESSION_USER,
+			 	 current_timestamp
+		from "SZEBGVMI"."UI_MANUAL_PULL"
+			WHERE STATUS = 'DRAFT' AND PULL_TYPE = :PULL_TYPE; 	 			 	
+	
+		
+	DELETE FROM "SZEBGVMI"."UI_MANUAL_PULL"
+	WHERE STATUS = 'DRAFT' AND PULL_TYPE = :PULL_TYPE; 
+	
+	--结束，日志
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+	
+END;

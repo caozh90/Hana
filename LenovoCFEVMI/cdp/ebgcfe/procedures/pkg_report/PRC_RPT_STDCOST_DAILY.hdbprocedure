@@ -1,0 +1,482 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_STDCOST_DAILY" (
+	IN p_item VARCHAR(2000),
+	OUT p_out_exitcode  INTEGER,
+    OUT p_out_exitmess  VARCHAR(500) 
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE 
+	--DEFAULT SCHEMA <default_schema_name> 
+	--READS SQL DATA  
+	AS
+		v_g_pkg_name        VARCHAR(30)  := 'PKG_REPORT'; 
+		v_prc_name          VARCHAR(30)  := 'PRC_RPT_STDCOST_DAILY';
+     	v_full_name         VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+       	logidi              INTEGER      := 0;
+       	v_sql				VARCHAR(2000);
+       	--v_tab_item 			TABLE(item VARCHAR(40)); 
+       	v_subgeo_prior      INTEGER      ;       	
+    
+BEGIN
+/***************************** 
+-- Author:      Zhangxj
+-- Create date: 2015-09-20
+-- Description: rpt_stdcost_daily 
+-- Modify [1]:  Frankie Wei
+-- Modiied date [1]:2015-10-20
+ *****************************/
+ 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := SUBSTR(::SQL_ERROR_MESSAGE, 1, 500 );  
+ 	 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+ 	 	                                            I_LOGSID      => :logidi,
+ 	 	                                            I_EVENT_NAME  => :v_full_name,
+ 	 	                                            I_MODULE      => 'EBGCFE',
+		                                            I_MESSAGE     => 'ERROR',
+		                                            I_DETAIL      => TO_CHAR(::SQL_ERROR_CODE) || ':' ||
+                                                                     SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );                                   
+    END;
+    
+    /*
+    delete  target table 
+    */
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                 I_LOGSID     => :logidi,
+		                                         I_EVENT_NAME => :v_full_name,
+		                                         I_MODULE     => 'EBGCFE'); 
+    DELETE FROM   rpt_stdcost_daily ;
+    DELETE FROM   ui_stdcost_daily ;
+    DELETE FROM   mid_stdcost_daily ;
+    --DELETE FROM   mid_pre_stdcost_daily;
+    
+    EXEC 'commit';
+    
+	/*
+	split string and set elements of an array
+	then, set value of a table variable
+	*/
+	
+
+    BEGIN
+    	DECLARE v_str VARCHAR(2000) := p_item;
+     	DECLARE v_temp_str VARCHAR(2000);
+ 	 	DECLARE v_location INTEGER;
+ 	 	DECLARE v_totallength INTEGER;
+	 	DECLARE v_name  VARCHAR(2000) ARRAY ;
+	 	--DECLARE v_tab_item TABLE(item VARCHAR(40)); 
+	 	
+	 	WHILE LENGTH(v_str) > 0 DO
+	 	 v_totallength:=length(v_str);
+	 	 v_location:=LOCATE(v_str,',');
+	 	IF v_location=0
+	 		THEN
+	 		v_temp_str:=v_str;
+	 		v_str:='';
+	 		ELSE
+	 		v_temp_str:=LEFT(v_str,v_location-1);
+	 		v_str:=right(v_str,v_totallength-v_location);
+	 		END IF; 
+	 	v_name := CONCAT(:v_name,ARRAY(v_temp_str));
+	 	END WHILE;
+     	ret_str = UNNEST(:v_name) AS ("NAME");
+     	v_tab_item_list = SELECT name AS item FROM :ret_str;
+     END;
+
+	 /*
+	 get subgeo,cfe_plant,ecc_plant and Calculation formula from conf_parameters and ui_cfe_ecc_plantmapping tables.
+	 */
+	 conf_map = SELECT pm.*, cp.pdesc
+                  FROM (SELECT p.cfe_plant, ecc_plant, p.item_type
+                          FROM ui_cfe_ecc_plantmapping p) pm,
+                       conf_parameters cp
+                 WHERE pm.ecc_plant = (CASE WHEN cp.pname = 'PLANT' THEN  cp.pvalue  END)
+                   AND cp.pdomain = 'STDCOST';
+	 
+    IF IFNULL(p_item,'') = '' THEN
+    	v_tab_item_list = SELECT DISTINCT item FROM ui_item WHERE item_type IN ('COMPONENT','OPTION');
+    END IF;
+    
+    --Added by Zhoubinbin 20160727, Get 99 item list
+    v_tab_item = SELECT t2.item, t1.siteid
+                   FROM pcdw.pcdw.pcdw_itemsitemaster t1,
+                        :v_tab_item_list              t2
+                  WHERE CASE WHEN LENGTH(t1.item) = 18 THEN RIGHT(t1.item, 10) ELSE t1.item END = t2.item
+                    AND t1.mmsta = '99'
+                    AND EXISTS(SELECT 1 FROM ui_cfe_ecc_plantmapping t3
+                                WHERE t3.ecc_plant = t1.siteid);
+    
+	INSERT INTO rpt_stdcost_daily
+	(cycle, product_group, item, cfe_plant,plant, item_desc, item_type, bome, stdcost,action,status,change_id,change_action,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+    SELECT ct.cycle,
+           ct.product_group,
+           ct.part_number,
+           p.cfe_plant,
+           p.ecc_plant,
+           i.item_desc,
+           i.item_type,
+           ct.tote - ct.bntx AS bome,
+           ct.tote - ct.bntx AS stdcost,
+           'INSERT' AS action,
+           'ACTIVE' AS stauts,
+           NULL AS change_id,
+           'COST_TAPE' AS change_action,
+           CURRENT_TIMESTAMP AS sys_created_date,
+           v_full_name AS sys_created_by,
+           CURRENT_TIMESTAMP AS sys_last_modified_date,
+           v_full_name AS sys_last_modified_by
+      FROM ((SELECT cycle,
+                    product_group,
+                    part_number,
+                    plant,
+                    SUM(MAP(cost_elem, 'TOTE', m1)) AS tote,
+                    ifnull(SUM(MAP(cost_elem, 'BNTX', m1)), 0) bntx
+               FROM ui_cost_tape
+              GROUP BY cycle, product_group, part_number, plant)) ct,
+           ui_item i,
+           ui_cfe_ecc_plantmapping p
+     WHERE ct.part_number = i.item
+       AND ct.tote IS NOT NULL
+       AND i.item_type = 'COMPONENT'
+       AND p.item_type = i.item_type
+       AND p.cfe_plant = ct.plant
+       AND i.product_group = ct.product_group
+       AND i.product_group = p.product_group
+       AND ct.part_number IN (SELECT item FROM :v_tab_item)
+       AND EXISTS (SELECT 1
+              FROM z_pcdw_item z
+             WHERE z.item = i.item
+               AND z.siteid = ct.plant
+               --AND z.mmsta = '99'
+               AND z.beskz = 'F');
+	/*
+	cal mva,ifrt,sw value and insert middle table 
+	*/
+    --get LEVEL0 item
+    bome_item = SELECT DISTINCT model FROM biz_costadder_mtm 
+                   WHERE model_type IN ('COMPONENT','OPTION')
+                     AND children = 'LEVEL0_ALL_COST';
+                     
+    item_filter = SELECT b.item FROM :bome_item a,:v_tab_item b WHERE a.model = b.item ;
+         
+	INSERT INTO mid_stdcost_daily
+	(cycle, product_group, item, cfe_plant,plant, item_desc,country,subgeo, item_type, bome,mva,ifrt,sw)
+		SELECT MAX(cm.cycle),
+               MAX(cm.product_group),
+               cm.model,
+               cm.plant,
+               t.ecc_plant,
+               i.item_desc,
+               cm.country,
+               cm.subgeo,
+               cm.model_type,
+               --t.item_type,
+               SUM(CASE WHEN cm.children = 'LEVEL0_ALL_COST' THEN cm.m1 END) AS bome,
+               IFNULL(SUM(CASE WHEN cm.children IN ('XMVA%', 'XMVA$') AND cm.value_type = 'US_DOLLAR' THEN cm.m1 END),0) AS mva,
+               IFNULL(SUM(CASE WHEN cm.children IN ('XIFRT%', 'XIFRT$') AND cm.value_type = 'US_DOLLAR' THEN cm.m1 END),0) AS ifrt,
+               IFNULL(SUM(CASE WHEN cm.children = 'XSWR$' AND cm.value_type = 'US_DOLLAR' THEN cm.m1 END),0) AS sw
+          FROM (SELECT * FROM biz_costadder_mtm
+                 WHERE (model, plant, country) IN (SELECT model, plant, country
+                                              FROM (SELECT model,
+                                                           plant,
+                                                           country,
+                                                           row_number() over(PARTITION BY model,plant ORDER BY m1, country) AS rn
+                                                      FROM biz_costadder_mtm
+                                                     WHERE cost_name = 'BOME 1'
+                                                       AND m1 IS NOT NULL)
+                                             WHERE rn = 1)) cm,
+               ui_item i,
+               :conf_map t
+         WHERE cm.model_type  = t.item_type
+           AND i.item_type    = t.item_type
+           AND cm.model_type  = 'OPTION'
+           AND i.item         = cm.model
+           AND cm.model       IN (SELECT * FROM :item_filter)
+           AND cm.children    IN ('XMVA%', 'XMVA$', 'XIFRT%', 'XIFRT$', 'XSWR$', 'LEVEL0_ALL_COST')
+           AND cm.plant       = t.cfe_plant
+           AND cm.m1         IS NOT NULL
+           /*AND EXISTS(SELECT 1 from z_pcdw_item z 
+	                   WHERE z.item  = i.item
+	                     AND z.siteid = cm.plant
+	                     AND z.mmsta  = '99')*/
+         GROUP BY cm.model,cm.plant,t.ecc_plant,i.item_desc,cm.model_type,cm.country,cm.subgeo;
+
+			--set bome = tote - bntx
+	    bome = 
+			--mtm-option-sbb
+        SELECT model, plant,SUM(bntx) AS bntx
+		FROM (SELECT model,
+				     plant,
+				     --SUM(MAP(cost_elem, 'TOTE', m1)) AS tote,
+				     IFNULL(SUM(MAP(cost_elem, 'BNTX', m1)), 0) AS bntx
+		     	FROM (SELECT model, plant, cost_elem, SUM(m1) AS m1
+					    FROM ((SELECT t1.model,
+									  t1.plant,
+									  t2.cost_elem,
+							    	  SUM(t2.m1 * t1.qtyper) AS m1
+							     FROM biz_cbom_mtmsbb t1,
+									 (SELECT b.model,
+											SUM(c.m1 * b.qtyper) AS m1,
+											b.plant,
+											c.cost_elem
+									    FROM biz_cbom_sbb b, ui_cost_tape c --sbb-component
+									   WHERE b.children = c.part_number
+									  	 AND b.plant = c.plant
+									   GROUP BY b.model, b.plant, c.cost_elem) t2
+							     WHERE t1.children = t2.model
+								   AND t1.plant = t2.plant
+								   AND t1.item_type_c = 'SBB'
+							   GROUP BY t1.model, t1.plant, t2.cost_elem) 
+							UNION ALL
+							(SELECT a.model,
+									a.plant,
+									b.cost_elem,
+									SUM(b.m1 * a.qtyper * (a.altpercent / 100)) AS m1
+							FROM biz_cbom_mtmsbb a, ui_cost_tape b
+							WHERE a.children = b.part_number
+								AND a.plant = b.plant
+								--AND a.model       = a.children
+								AND a.item_type_c <> 'SBB'
+							GROUP BY a.model, a.plant, b.cost_elem))       
+					GROUP BY model, plant, cost_elem)
+			GROUP BY model, plant) t
+		WHERE EXISTS(SELECT 1 FROM :v_tab_item v
+		              WHERE v.item = t.model)
+		      /*EXISTS (SELECT 1 FROM z_pcdw_item z
+				       WHERE z.item = model
+				        AND z.siteid = plant
+				        AND z.mmsta  = '99')*/
+		GROUP BY model, plant;
+			
+		UPDATE mid_stdcost_daily a
+		SET bome =
+			(SELECT a.bome - b.bntx
+				FROM :bome b
+				WHERE a.item      = b.model
+				AND a.cfe_plant   = b.plant
+				AND a.item_type   = 'OPTION')
+		WHERE EXISTS (SELECT 1 FROM :bome b
+				WHERE a.item      = b.model
+				AND a.cfe_plant   = b.plant
+				AND a.item_type   = 'OPTION')
+		AND a.item_type = 'OPTION';
+        
+		/*
+		calculate stdcost 
+		*/
+	--SELECT pvalue INTO v_conf_value FROM conf_parameters 
+	--WHERE pdomain='STDCOST' AND pname='L070';
+	
+
+    BEGIN
+		DECLARE CURSOR c_cur_conf FOR --SELECT  pname,pvalue FROM conf_parameters WHERE pdomain='STDCOST';
+		SELECT DISTINCT cfe_plant,ecc_plant,pdesc FROM :conf_map;
+ 
+		FOR cur_conf AS c_cur_conf DO
+		
+			v_sql := 'INSERT INTO rpt_stdcost_daily
+   			(cycle, product_group, item, cfe_plant,plant, item_desc, item_type, bome,mva,ifrt,sw, stdcost,action,status,change_id,change_action,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+  			SELECT mid.cycle,
+     		 mid.product_group,
+     		 mid.item,
+     		 mid.cfe_plant,
+     		 mid.plant,
+    		 mid.item_desc,
+    		 mid.item_type,
+     		 mid.bome,
+    		 mid.mva,
+   		 	 mid.ifrt,
+     		 mid.sw,
+     		 '||cur_conf.pdesc||' AS stdcost,
+     		 ''INSERT'' AS action,
+    	 	 ''ACTIVE'' AS stauts,
+     		 NULL AS change_id,
+     		 ''COSTADDER'' AS change_action,
+     		 CURRENT_TIMESTAMP AS sys_created_date,
+     		 '''||v_full_name||''' AS sys_created_by,
+     		 CURRENT_TIMESTAMP AS sys_last_modified_date,
+     		 '''||v_full_name||''' AS sys_last_modified_by
+   			FROM mid_stdcost_daily mid
+   			WHERE mid.cfe_plant = '''||cur_conf.cfe_plant||'''
+   			  AND mid.plant     = '''||cur_conf.ecc_plant||'''
+   			  AND mid.bome      > 0';
+     	  EXECUTE IMMEDIATE v_sql;
+     	  EXEC 'commit';
+     	END FOR;
+     	
+     END;
+       		   
+     --get option from ui_cost_tape ,if not exists costadder_mtm
+   /*
+	INSERT INTO rpt_stdcost_daily
+	(cycle, product_group, item, cfe_plant,plant, item_desc, item_type, bome, stdcost,action,status,change_id,change_action,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+    SELECT ct.cycle,
+           ct.product_group,
+           ct.part_number,
+           p.cfe_plant,
+           p.ecc_plant,
+           i.item_desc,
+           i.item_type,
+           ct.tote - ct.bntx AS bome,
+           ct.tote - ct.bntx AS stdcost,
+           'INSERT' AS action,
+           'ACTIVE' AS stauts,
+           NULL AS change_id,
+           'COST_TAPE_OPTION' AS change_action,
+           CURRENT_TIMESTAMP AS sys_created_date,
+           v_full_name AS sys_created_by,
+           CURRENT_TIMESTAMP AS sys_last_modified_date,
+           v_full_name AS sys_last_modified_by
+      FROM ((SELECT cycle,
+                    product_group,
+                    part_number,
+                    plant,
+                    SUM(MAP(cost_elem, 'TOTE', m1)) AS tote,
+                    ifnull(SUM(MAP(cost_elem, 'BNTX', m1)), 0) bntx
+               FROM ui_cost_tape
+              GROUP BY cycle, product_group, part_number, plant)) ct,
+           ui_item i,
+           ui_cfe_ecc_plantmapping p
+     WHERE ct.part_number = i.item
+       AND ct.tote IS NOT NULL
+       AND i.item_type = 'OPTION'
+       AND p.item_type = i.item_type
+       AND p.cfe_plant = ct.plant
+       AND i.product_group = ct.product_group
+       AND i.product_group = p.product_group
+       AND ct.part_number IN (SELECT item FROM :v_tab_item)
+       AND EXISTS (SELECT 1 FROM z_pcdw_item z
+                    WHERE z.item = i.item
+                      AND z.siteid = ct.plant
+                      AND z.mmsta = '99')
+       AND NOT EXISTS(SELECT 1 FROM rpt_stdcost_daily t
+                       WHERE t.item      = ct.part_number
+                         AND t.cfe_plant = ct.plant
+                         AND t.item_type = 'OPTION');
+    */
+     --when X_SPECMODDESG in ('TREX','D5') then set bome=0.01
+     
+     UPDATE rpt_stdcost_daily a
+        SET stdcost = 0.01
+       FROM ui_item b,z_pcdw_item z 
+      WHERE a.item           = b.item
+        AND b.item           = z.item 
+        AND a.stdcost        = 0
+        AND z.x_specmoddesg IN ('TREX','D5')
+        AND z.mtart          = 'ZXSW';
+
+        
+     --when basic_name in ('RECRDMEDIA','DPK','TAPE','SOFTWARE','SOFTW_GRP','FLYER','MS_PUBS',
+     -- 'PUBS','LABEL','COA_LABELS','PACKAGING','SERVICE','WARRANTY') and bome=0 then set bome=0.01
+     UPDATE rpt_stdcost_daily a
+        SET stdcost = 0.01
+       FROM ui_item b
+      WHERE a.item           = b.item 
+        AND a.stdcost        = 0
+        --Modified by Zhoubinbin 20160628
+        AND a.item_type     <> 'OPTION'
+        AND b.zeinr          IN (SELECT pvalue FROM conf_parameters 
+                                  WHERE pdomain = 'STDCOST' 
+                                    AND pname   = 'BASIC_NAME');
+                                   
+     INSERT INTO rpt_stdcost_daily
+	 	(cycle,product_group,item,cfe_plant,plant,item_desc,item_type,bome,mva,ifrt,sw,stdcost,action,status,
+	 	 change_id,change_action,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+	 SELECT i.cycle,i.product_group,i.item,t.cfe_plant,t.ecc_plant,i.item_desc,i.item_type,0.01 AS bome,NULL AS mva,NULL AS ifrt,
+	        NULL AS sw,0.01 AS stdcost,'INSERT','ACTIVE',NULL,'NO_COST',CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_full_name
+	   FROM ui_item i,z_pcdw_item z,:conf_map t
+	  WHERE i.item       = z.item
+	    AND i.item_type  = t.item_type
+	    AND z.siteid     = t.cfe_plant
+	    --AND i.item_type  IN ('COMPONENT','OPTION')
+	    AND i.eol_status IN ('OL','TEMP')
+	    --AND z.mmsta      = '99'
+	    AND z.beskz      IN('E','F')
+	    --Modified by Zhoubinbin 20160628
+	    AND ((i.x_specmoddesg IN ('TREX','D5') 
+	          AND z.mtart          = 'ZXSW'
+	          AND i.item_type  IN ('COMPONENT','OPTION'))
+	          OR (i.zeinr      IN (SELECT pvalue FROM conf_parameters 
+                                    WHERE pdomain = 'STDCOST' 
+                                      AND pname   = 'BASIC_NAME')
+                  AND i.item_type <> 'OPTION')
+            )
+	    AND NOT EXISTS (SELECT NULL FROM rpt_stdcost_daily m
+	                     WHERE i.item           = m.item
+	                       AND i.item_type      = m.item_type
+	                       AND t.cfe_plant      = m.plant
+	                       AND i.cycle          = m.cycle
+	                       AND i.product_group  = m.product_group)
+	    AND EXISTS(SELECT 1 FROM :v_tab_item v
+	                WHERE v.item = i.item);
+	
+	--added by cuixh4 for X86 Bulk material WO0000000264082 
+	conf_map = SELECT pm.*, cp.pdesc
+                  FROM (SELECT cfe_plant, ecc_plant, item_type
+                          FROM ui_cfe_ecc_plantmapping ) pm,
+                       conf_parameters cp
+                 WHERE pm.ecc_plant =  cp.pvalue  
+                   AND cp.pdomain = 'STDCOST'
+                   AND cp.pname ='PLANT_BULK'
+                   AND cp.ptype = pm.item_type;
+	   INSERT INTO rpt_stdcost_daily
+	 	(cycle,product_group,item,cfe_plant,plant,item_desc,item_type,bome,mva,ifrt,sw,stdcost,action,status,
+	 	 change_id,change_action,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+	  select i.cycle,i.product_group,i.item,t.cfe_plant,t.ecc_plant,i.item_desc,i.item_type,0.01 AS bome,NULL AS mva,NULL AS ifrt,
+	        NULL AS sw,0.01 AS stdcost,'INSERT','ACTIVE',NULL,'NO_COST',CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_full_name
+	   FROM ui_item i,z_pcdw_item z,:conf_map t
+	  WHERE i.item IN (SELECT item FROM :v_tab_item)
+	    AND i.item       = z.item
+	    AND z.siteid     = t.cfe_plant
+	    AND i.item_type  = t.item_type
+	    AND i.eol_status IN ('OL','TEMP')
+	    AND z.schgt      = 'X'
+	    --AND z.mmsta      = '99'
+	    AND NOT EXISTS (SELECT NULL FROM rpt_stdcost_daily m
+	                     WHERE i.item           = m.item
+	                       AND i.item_type      = m.item_type
+	                       AND t.cfe_plant      = m.cfe_plant
+	                       AND t.ecc_plant      = m.plant
+	                       AND i.cycle          = m.cycle
+	                       AND i.product_group  = m.product_group) ;
+	                                
+	                       
+     UPDATE rpt_stdcost_daily a
+        SET stdcost = 0.01
+      WHERE stdcost < 0.01
+        AND stdcost > 0;	                       
+	                       
+	INSERT INTO ui_stdcost_daily
+    SELECT cycle,
+           product_group,
+           item,
+           plant,
+           stdcost,
+           action,
+           status,
+           change_id,
+           change_action,
+           sys_created_date,
+           sys_created_by,
+           sys_last_modified_date,
+           sys_last_modified_by
+      FROM rpt_stdcost_daily t1
+     WHERE stdcost > 0
+       --Added by Zhoubinbin, Just publish items which status is 99 in the specific plant
+       AND EXISTS(SELECT 1 FROM :v_tab_item t2
+                   WHERE t2.item   = t1.item
+                     AND t2.siteid = t1.plant);
+     
+    EXEC 'commit';
+    
+    p_out_exitcode := 0;
+    p_out_exitmess := 'SUCCESSFUL';
+     
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  
+ 
+END;

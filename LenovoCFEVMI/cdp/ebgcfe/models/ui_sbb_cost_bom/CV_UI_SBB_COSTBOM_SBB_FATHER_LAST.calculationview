@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_SBB_COSTBOM_SBB_FATHER_LAST" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="false">
+  <descriptions defaultDescription="CV_UI_CTO_COSTBOM_FATHER_SUM"/>
+  <defaultSchema schemaName="EBGCFE"/>
+  <localVariables>
+    <variable id="V_MODEL" parameter="true">
+      <descriptions defaultDescription="V_MODEL"/>
+      <variableProperties datatype="VARCHAR" length="120" mandatory="true" scale="0">
+        <valueDomain type="AttributeValue">
+          <externalLikeStructureName>&quot;EBGCFE&quot;.BIZ_CBOM_SWRCOST</externalLikeStructureName>
+          <externalLikeElementName>MODEL</externalLikeElementName>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="V_PLANT" parameter="true">
+      <descriptions defaultDescription="V_PLANT"/>
+      <variableProperties datatype="VARCHAR" length="20" mandatory="true" scale="0">
+        <valueDomain type="AttributeValue">
+          <externalLikeStructureName>&quot;EBGCFE&quot;.BIZ_CBOM_SWRCOST</externalLikeStructureName>
+          <externalLikeElementName>PLANT</externalLikeElementName>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="V_COUNTRY" parameter="true">
+      <descriptions defaultDescription="V_COUNTRY"/>
+      <variableProperties datatype="VARCHAR" length="20" mandatory="true" scale="0">
+        <valueDomain type="AttributeValue">
+          <externalLikeStructureName>&quot;EBGCFE&quot;.BIZ_CBOM_SWRCOST</externalLikeStructureName>
+          <externalLikeElementName>COUNTRY</externalLikeElementName>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="CYCLE" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="CHILDREN" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="ITEM_DESC" length="200"/>
+        <viewAttribute datatype="VARCHAR" id="LV" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="QTYPER" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="ALTGRUP" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="ALTPRI" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="ALTPERCENT" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="COST_PLANT" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="COST_NAME" length="100"/>
+        <viewAttribute datatype="DECIMAL" id="WEIGHTED_AVERAGE" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LATTEST_PROCUR" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M1" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M2" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M3" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M4" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M5" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M6" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M7" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M8" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M9" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M10" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M11" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M12" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M13" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M14" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M15" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M16" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M17" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M18" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM1" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM2" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM3" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM4" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM5" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM6" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM7" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM8" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM9" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM10" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM11" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM12" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM13" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM14" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM15" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM16" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM17" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="LM18" length="15" scale="4"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#V_MODEL</localVariable>
+      <localVariable>#V_PLANT</localVariable>
+      <localVariable>#V_COUNTRY</localVariable>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 
+ 	 ---------1.Get current  SBB-Comp
+ 	 sbb=
+ 	  select cycle &quot;CYCLE&quot;,father &quot;CHILDREN&quot;,Item_desc &quot;ITEM_DESC&quot;,'1' &quot;LV&quot;,'1' &quot;QTYPER&quot;,'' &quot;ALTGRUP&quot;,
+ 	 '' &quot;ALTPRI&quot;,'100' &quot;ALTPERCENT&quot;,COST_PLANT &quot;COST_PLANT&quot;,'SBB-COST' &quot;COST_NAME&quot;,
+ 	 sum(weighted_average) &quot;WEIGHTED_AVERAGE&quot;,sum(LATTEST_PROCUR) &quot;LATTEST_PROCUR&quot;,
+sum(m1) &quot;M1&quot;,sum(m2) &quot;M2&quot;,sum(m3) &quot;M3&quot;,sum(m4) &quot;M4&quot;,sum(m5) &quot;M5&quot;,sum(m6) &quot;M6&quot;,sum(m7) &quot;M7&quot;,
+sum(m8) &quot;M8&quot;,sum(m9) &quot;M9&quot;,sum(m10) &quot;M10&quot;,sum(m11) &quot;M11&quot;,sum(m12) &quot;M12&quot;,sum(m13) &quot;M13&quot;,sum(m14) &quot;M14&quot;,
+sum(m15) &quot;M15&quot;,sum(m16) &quot;M16&quot;,sum(m17) &quot;M17&quot;,sum(m18) &quot;M18&quot;,
+sum(lm1) &quot;LM1&quot;,sum(lm2) &quot;LM2&quot;,sum(lm3) &quot;LM3&quot;,sum(lm4) &quot;LM4&quot;,sum(lm5) &quot;LM5&quot;,
+sum(lm6) &quot;LM6&quot;,sum(lm7) &quot;LM7&quot;,sum(lm8) &quot;LM8&quot;,sum(lm9) &quot;LM9&quot;,sum(lm10) &quot;LM10&quot;,
+sum(lm11) &quot;LM11&quot;,sum(lm12) &quot;LM12&quot;,sum(lm13) &quot;LM13&quot;,sum(lm14) &quot;LM14&quot;,sum(lm15) &quot;LM15&quot;,
+sum(lm16) &quot;LM16&quot;,sum(lm17) &quot;LM17&quot;,sum(lm18) &quot;LM18&quot;
+from 
+(
+select  T.cycle,T.father,G.item_desc,T.COST_PLANT,
+T.weighted_average,T.LATTEST_PROCUR,
+T.m1,T.m2,T.m3,T.m4,T.m5,T.m6,T.m7,T.m8,T.m9,T.m10,T.m11,T.m12,T.m13,T.m14,T.m15,T.m16,T.m17,T.m18,T.lm1,T.lm2,T.lm3,T.lm4,T.lm5,T.lm6,T.lm7,T.lm8,T.lm9,T.lm10,T.lm11,T.lm12,T.lm13,T.lm14,T.lm15,T.lm16,T.lm17,T.lm18 from &quot;EBGCFE&quot;.biz_cbom_sbb T,&quot;EBGCFE&quot;.UI_ITEM G where T.cycle=G.cycle and T.father=G.item and  T.model= :V_MODEL and T.plant= :V_PLANT
+union all
+select  T.cycle,T.father,G.item_desc, T.COST_PLANT,
+T.weighted_average,T.LATTEST_PROCUR,
+T.m1,T.m2,T.m3,T.m4,T.m5,T.m6,T.m7,T.m8,T.m9,T.m10,T.m11,T.m12,T.m13,T.m14,T.m15,T.m16,T.m17,T.m18,T.lm1,T.lm2,T.lm3,T.lm4,T.lm5,T.lm6,T.lm7,T.lm8,T.lm9,T.lm10,T.lm11,T.lm12,T.lm13,T.lm14,T.lm15,T.lm16,T.lm17,T.lm18 from &quot;EBGCFE&quot;.biz_cbom_swrcost T,&quot;EBGCFE&quot;.UI_ITEM G where T.cycle=G.cycle and T.father=G.item and  T.model= :V_MODEL and T.plant= :V_PLANT and T.country= :V_COUNTRY
+ ) 
+ group by cycle,father,Item_desc,COST_PLANT;
+ 
+ 
+ ---------2.Get history  SBB-Comp
+       sbb_his=
+ 	  	  select cycle &quot;CYCLE&quot;,father &quot;CHILDREN&quot;,Item_desc &quot;ITEM_DESC&quot;,'1' &quot;LV&quot;,'1' &quot;QTYPER&quot;,'' &quot;ALTGRUP&quot;,
+ 	 '' &quot;ALTPRI&quot;,'100' &quot;ALTPERCENT&quot;,COST_PLANT &quot;COST_PLANT&quot;,'SBB-COST' &quot;COST_NAME&quot;,
+ 	 sum(weighted_average) &quot;WEIGHTED_AVERAGE&quot;,sum(LATTEST_PROCUR) &quot;LATTEST_PROCUR&quot;,
+sum(m1) &quot;M1&quot;,sum(m2) &quot;M2&quot;,sum(m3) &quot;M3&quot;,sum(m4) &quot;M4&quot;,sum(m5) &quot;M5&quot;,sum(m6) &quot;M6&quot;,sum(m7) &quot;M7&quot;,
+sum(m8) &quot;M8&quot;,sum(m9) &quot;M9&quot;,sum(m10) &quot;M10&quot;,sum(m11) &quot;M11&quot;,sum(m12) &quot;M12&quot;,sum(m13) &quot;M13&quot;,sum(m14) &quot;M14&quot;,
+sum(m15) &quot;M15&quot;,sum(m16) &quot;M16&quot;,sum(m17) &quot;M17&quot;,sum(m18) &quot;M18&quot;,
+sum(lm1) &quot;LM1&quot;,sum(lm2) &quot;LM2&quot;,sum(lm3) &quot;LM3&quot;,sum(lm4) &quot;LM4&quot;,sum(lm5) &quot;LM5&quot;,
+sum(lm6) &quot;LM6&quot;,sum(lm7) &quot;LM7&quot;,sum(lm8) &quot;LM8&quot;,sum(lm9) &quot;LM9&quot;,sum(lm10) &quot;LM10&quot;,
+sum(lm11) &quot;LM11&quot;,sum(lm12) &quot;LM12&quot;,sum(lm13) &quot;LM13&quot;,sum(lm14) &quot;LM14&quot;,sum(lm15) &quot;LM15&quot;,
+sum(lm16) &quot;LM16&quot;,sum(lm17) &quot;LM17&quot;,sum(lm18) &quot;LM18&quot;
+from 
+(
+select  T.cycle,T.father,G.item_desc,T.COST_PLANT,
+T.weighted_average,T.LATTEST_PROCUR,
+T.m1,T.m2,T.m3,T.m4,T.m5,T.m6,T.m7,T.m8,T.m9,T.m10,T.m11,T.m12,T.m13,T.m14,T.m15,T.m16,T.m17,T.m18,T.lm1,T.lm2,T.lm3,T.lm4,T.lm5,T.lm6,T.lm7,T.lm8,T.lm9,T.lm10,T.lm11,T.lm12,T.lm13,T.lm14,T.lm15,T.lm16,T.lm17,T.lm18 from &quot;EBGCFE&quot;.biz_cbom_sbb_his T,&quot;EBGCFE&quot;.UI_ITEM_HIS G where T.cycle=G.cycle and T.father=G.item and  T.model= :V_MODEL and T.plant= :V_PLANT
+union all
+select T.cycle,T.father,G.item_desc,T.COST_PLANT,
+T.weighted_average,T.LATTEST_PROCUR,
+T.m1,T.m2,T.m3,T.m4,T.m5,T.m6,T.m7,T.m8,T.m9,T.m10,T.m11,T.m12,T.m13,T.m14,T.m15,T.m16,T.m17,T.m18,T.lm1,T.lm2,T.lm3,T.lm4,T.lm5,T.lm6,T.lm7,T.lm8,T.lm9,T.lm10,T.lm11,T.lm12,T.lm13,T.lm14,T.lm15,T.lm16,T.lm17,T.lm18 from &quot;EBGCFE&quot;.biz_cbom_swrcost_his T,&quot;EBGCFE&quot;.UI_ITEM_HIS G where T.cycle=G.cycle and T.father=G.item and  T.model= :V_MODEL and T.plant= :V_PLANT and T.country= :V_COUNTRY
+ ) 
+ group by cycle,father,Item_desc,COST_PLANT;
+ 
+ 
+  ---------3.Get history&amp;current   CTO model-SBB union
+ var_out = select * from :sbb 
+               union
+           select * from :sbb_his;
+ 
+ 
+ 
+  
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="CYCLE" order="1">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="CHILDREN" order="2">
+        <descriptions defaultDescription="CHILDREN"/>
+        <keyMapping columnObjectName="Script_View" columnName="CHILDREN"/>
+      </attribute>
+      <attribute id="ITEM_DESC" order="3">
+        <descriptions defaultDescription="ITEM_DESC"/>
+        <keyMapping columnObjectName="Script_View" columnName="ITEM_DESC"/>
+      </attribute>
+      <attribute id="LV" order="4">
+        <descriptions defaultDescription="LVL"/>
+        <keyMapping columnObjectName="Script_View" columnName="LV"/>
+      </attribute>
+      <attribute id="QTYPER" order="5">
+        <descriptions defaultDescription="QTYPER"/>
+        <keyMapping columnObjectName="Script_View" columnName="QTYPER"/>
+      </attribute>
+      <attribute id="ALTGRUP" order="6">
+        <descriptions defaultDescription="ALTGRUP"/>
+        <keyMapping columnObjectName="Script_View" columnName="ALTGRUP"/>
+      </attribute>
+      <attribute id="ALTPRI" order="7">
+        <descriptions defaultDescription="ALTPRI"/>
+        <keyMapping columnObjectName="Script_View" columnName="ALTPRI"/>
+      </attribute>
+      <attribute id="ALTPERCENT" order="8">
+        <descriptions defaultDescription="ALTPERCENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="ALTPERCENT"/>
+      </attribute>
+      <attribute id="COST_PLANT" order="9">
+        <descriptions defaultDescription="COST_PLANT"/>
+        <keyMapping columnObjectName="Script_View" columnName="COST_PLANT"/>
+      </attribute>
+      <attribute id="COST_NAME" order="10">
+        <descriptions defaultDescription="COST_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="COST_NAME"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="WEIGHTED_AVERAGE" order="11" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="WEIGHTED_AVERAGE"/>
+        <measureMapping columnObjectName="Script_View" columnName="WEIGHTED_AVERAGE"/>
+      </measure>
+      <measure id="LATTEST_PROCUR" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LATTEST_PROCUR"/>
+        <measureMapping columnObjectName="Script_View" columnName="LATTEST_PROCUR"/>
+      </measure>
+      <measure id="M1" order="13" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M1"/>
+        <measureMapping columnObjectName="Script_View" columnName="M1"/>
+      </measure>
+      <measure id="M2" order="14" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M2"/>
+        <measureMapping columnObjectName="Script_View" columnName="M2"/>
+      </measure>
+      <measure id="M3" order="15" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M3"/>
+        <measureMapping columnObjectName="Script_View" columnName="M3"/>
+      </measure>
+      <measure id="M4" order="16" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M4"/>
+        <measureMapping columnObjectName="Script_View" columnName="M4"/>
+      </measure>
+      <measure id="M5" order="17" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M5"/>
+        <measureMapping columnObjectName="Script_View" columnName="M5"/>
+      </measure>
+      <measure id="M6" order="18" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M6"/>
+        <measureMapping columnObjectName="Script_View" columnName="M6"/>
+      </measure>
+      <measure id="M7" order="19" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M7"/>
+        <measureMapping columnObjectName="Script_View" columnName="M7"/>
+      </measure>
+      <measure id="M8" order="20" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M8"/>
+        <measureMapping columnObjectName="Script_View" columnName="M8"/>
+      </measure>
+      <measure id="M9" order="21" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M9"/>
+        <measureMapping columnObjectName="Script_View" columnName="M9"/>
+      </measure>
+      <measure id="M10" order="22" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M10"/>
+        <measureMapping columnObjectName="Script_View" columnName="M10"/>
+      </measure>
+      <measure id="M11" order="23" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M11"/>
+        <measureMapping columnObjectName="Script_View" columnName="M11"/>
+      </measure>
+      <measure id="M12" order="24" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M12"/>
+        <measureMapping columnObjectName="Script_View" columnName="M12"/>
+      </measure>
+      <measure id="M13" order="25" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M13"/>
+        <measureMapping columnObjectName="Script_View" columnName="M13"/>
+      </measure>
+      <measure id="M14" order="26" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M14"/>
+        <measureMapping columnObjectName="Script_View" columnName="M14"/>
+      </measure>
+      <measure id="M15" order="27" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M15"/>
+        <measureMapping columnObjectName="Script_View" columnName="M15"/>
+      </measure>
+      <measure id="M16" order="28" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M16"/>
+        <measureMapping columnObjectName="Script_View" columnName="M16"/>
+      </measure>
+      <measure id="M17" order="29" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M17"/>
+        <measureMapping columnObjectName="Script_View" columnName="M17"/>
+      </measure>
+      <measure id="M18" order="30" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M18"/>
+        <measureMapping columnObjectName="Script_View" columnName="M18"/>
+      </measure>
+      <measure id="LM1" order="31" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM1"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM1"/>
+      </measure>
+      <measure id="LM2" order="32" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM2"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM2"/>
+      </measure>
+      <measure id="LM3" order="33" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM3"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM3"/>
+      </measure>
+      <measure id="LM4" order="34" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM4"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM4"/>
+      </measure>
+      <measure id="LM5" order="35" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM5"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM5"/>
+      </measure>
+      <measure id="LM6" order="36" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM6"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM6"/>
+      </measure>
+      <measure id="LM7" order="37" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM7"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM7"/>
+      </measure>
+      <measure id="LM8" order="38" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM8"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM8"/>
+      </measure>
+      <measure id="LM9" order="39" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM9"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM9"/>
+      </measure>
+      <measure id="LM10" order="40" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM10"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM10"/>
+      </measure>
+      <measure id="LM11" order="41" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM11"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM11"/>
+      </measure>
+      <measure id="LM12" order="42" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM12"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM12"/>
+      </measure>
+      <measure id="LM13" order="43" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM13"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM13"/>
+      </measure>
+      <measure id="LM14" order="44" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM14"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM14"/>
+      </measure>
+      <measure id="LM15" order="45" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM15"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM15"/>
+      </measure>
+      <measure id="LM16" order="46" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM16"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM16"/>
+      </measure>
+      <measure id="LM17" order="47" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM17"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM17"/>
+      </measure>
+      <measure id="LM18" order="48" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM18"/>
+        <measureMapping columnObjectName="Script_View" columnName="LM18"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

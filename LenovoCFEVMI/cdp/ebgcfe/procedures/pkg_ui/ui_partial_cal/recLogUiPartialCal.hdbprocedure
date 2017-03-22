@@ -1,0 +1,123 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_partial_cal::recLogUiPartialCal" ( 
+    IN delInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_DEL_BATCH",
+    OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+    
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      recLogUiPartialCal
+*function    :               
+*input       ：              delInfo
+*output      :      errorInfo            
+*author      :      zhaodan1
+*CreateDate  :      2016.06.27
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_partial_cal::recLogUiPartialCal error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_partial_cal::recLogUiPartialCal'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+   call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_partial_cal::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_partial_cal::recLogUiPartialCal'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+ 
+
+oldInf = 
+		select  a.*
+		 from  UI_ONDEMAND_CAL_LIST a, :delInfo b
+		 where a.item = b.val and b.key = 'ITEM'
+		       ; 
+	 
+
+--insert log table
+insert into "EBGCFE"."UI_ONDEMAND_CAL_LIST_LOG"(	
+			PRODUCT_GROUP,	
+			CYCLE,
+			BRAND ,					
+			FAMILY 	,			
+			ITEM 	,				
+			ITEM_DESC 	,		
+			ITEM_TYPE 	,		
+		
+			ACTION,
+			STATUS,
+			SYS_CREATED_DATE,
+			SYS_CREATED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			SYS_LAST_MODIFIED_BY,
+			AT_MODIFIED_BY,
+			AT_ACTION,
+			AT_MODIFIED_ON,
+			AT_MILLIS
+	 )SELECT 
+	 		PRODUCT_GROUP,	
+			CYCLE,	    
+		    BRAND ,					
+			FAMILY 	,			
+			ITEM 	,				
+			ITEM_DESC 	,		
+			ITEM_TYPE 	,
+			ACTION,
+		    STATUS,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+	 		SESSION_USER,
+	 		'delete',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :oldInf a; 
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_partial_cal::recLogUiPartialCal successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_partial_cal::recLogUiPartialCal'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+     	
+     errorInfo = select 200 as http_status_code, 
+     		'SUCCESS' ERROR_MESSAGE, 
+     		'' DETAIL from dummy;	
+     	
+END;

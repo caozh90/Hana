@@ -1,0 +1,202 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cto_cv_vk_cost::deleteUiCtoCvVkCost" ( 
+    IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTO_CV_VK_COST" ,
+    OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiCtoCvVkCost
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo            
+*author      :      leon Bian
+*CreateDate  :      2015.8.31
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	V_CYCLE NVARCHAR(40);
+	V_PRODUCT_GROUP NVARCHAR(10);
+	V_CHARACTERISTIC NVARCHAR(30);
+	V_VARIANT NVARCHAR(30);
+	V_SALES_ORG NVARCHAR(30);
+	V_PH_1 NVARCHAR(30);
+	V_PH_2 NVARCHAR(30);
+	V_PH_3 NVARCHAR(30);
+	V_PH_4 NVARCHAR(30);
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_cto_cv_vk_cost::deleteUiCtoCvVkCost error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cto_cv_vk_cost::deleteUiCtoCvVkCost'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_cto_cv_vk_cost::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cto_cv_vk_cost::deleteUiCtoCvVkCost'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+ 
+select  CYCLE,
+		PRODUCT_GROUP,
+		CHARACTERISTIC,
+		VARIANT,
+		SALES_ORG,
+		PH_1,
+		PH_2,
+		PH_3,
+		PH_4
+ into   V_CYCLE,
+		V_PRODUCT_GROUP,
+		V_CHARACTERISTIC,
+		V_VARIANT,
+		V_SALES_ORG,
+		V_PH_1,
+		V_PH_2,
+		V_PH_3,
+		V_PH_4
+ from :oldInfo; 
+	 
+-- delete record from table	  	
+delete from "EBGCFE"."UI_CTO_CV_VK_COST" 
+  where CYCLE = :V_CYCLE 
+  and PRODUCT_GROUP = :V_PRODUCT_GROUP 
+  AND CHARACTERISTIC = :V_CHARACTERISTIC 
+  AND VARIANT = :V_VARIANT
+  and SALES_ORG = :V_SALES_ORG
+  and PH_1 = :V_PH_1
+  and PH_2 = :V_PH_2
+  and PH_3 = :V_PH_3
+  and PH_4 = :V_PH_4; 
+  
+if ::rowcount < 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;*/
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';
+	 
+end if;		
+	
+--insert log table
+insert into "EBGCFE"."UI_CTO_CV_VK_COST_LOG"(
+	CYCLE,
+	PRODUCT_GROUP,
+	CTO_NUMBER,
+	CHARACTERISTIC,
+	VARIANT,
+	SALES_ORG,
+	PH_1,
+	PH_2,
+	PH_3,
+	PH_4,
+	M1,
+	M2,
+	M3,
+	M4,
+	M5,
+	M6,
+	M7,
+	M8,
+	M9,
+	M10,
+	M11,
+	M12,
+	M13,
+	M14,
+	M15,
+	M16,
+	M17,
+	M18,
+	STATUS,
+	CHANGE_ID,
+	CHANGE_ACTION,
+	SYS_CREATED_DATE,
+	SYS_CREATED_BY,
+	SYS_LAST_MODIFIED_DATE,
+	SYS_LAST_MODIFIED_BY,
+	AT_MODIFIED_BY,
+	AT_ACTION,
+	AT_MODIFIED_ON,
+	AT_MILLIS
+	 )SELECT 
+	 		'CURRENT',
+		    'EBG',
+		    '',
+		    a.CHARACTERISTIC,
+		    a.VARIANT,
+		    a.SALES_ORG,
+		    a.PH_1,
+		    a.PH_2,
+		    a.PH_3,
+		    a.PH_4,
+		    a.M1,--M1
+		    a.M1,--M2
+		    a.M1,--M3
+		    a.M1,--M4
+		    a.M1,--M5
+		    a.M1,--M6
+		    a.M1,--M7
+		    a.M1,--M8
+		    a.M1,--M9
+		    a.M1,--M10
+		    a.M1,--M11
+		    a.M1,--M12
+		    a.M1,--M13
+		    a.M1,--M14
+		    a.M1,--M15
+		    a.M1,--M16
+		    a.M1,--M17
+		    a.M1,--M18
+		    '',--STATUS
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+	 		SESSION_USER,
+	 		'delete',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a; 
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_cto_cv_vk_cost::deleteUiCtoCvVkCost successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cto_cv_vk_cost::deleteUiCtoCvVkCost'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);    	
+END;

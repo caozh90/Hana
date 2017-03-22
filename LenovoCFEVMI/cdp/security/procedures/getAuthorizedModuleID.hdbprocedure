@@ -1,0 +1,29 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::getAuthorizedModuleID" (
+	out module "SECURITY"."cdp.security.data::userManagement.DisplayModuleIDT" ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	READS SQL DATA AS
+
+BEGIN
+/***************************** 
+	Write your procedure logic  
+ *****************************/
+ 
+ 
+    
+ 	module = SELECT T1.MODULE_ID FROM 
+ 	
+ 	"SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" T0 
+ 	
+ 	inner join  "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" T1
+ 	
+ 	on T0.MODULE_ID = T1.MODULE_ID
+ 	
+ 	inner join  "SECURITY"."cdp.security.data::userManagement.INFO_USER" T2
+ 	
+ 	ON T0.USER_ID = T2.USER_ID
+ 	
+ 	where T2.USER_NAME = SESSION_USER;
+ 		
+END;

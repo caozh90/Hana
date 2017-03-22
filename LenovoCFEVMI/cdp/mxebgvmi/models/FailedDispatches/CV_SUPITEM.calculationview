@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_SUPITEM" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_SUPITEM"/>
+  <localVariables>
+    <variable id="IN_ITEM" parameter="true">
+      <descriptions defaultDescription="IN_ITEM"/>
+      <variableProperties datatype="VARCHAR" length="100" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="IN_SITEID" parameter="true">
+      <descriptions defaultDescription="IN_SITEID"/>
+      <variableProperties datatype="VARCHAR" length="40" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="SUPITEM" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="SUPITEM"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="SUPPLIERID"/>
+        <viewAttribute id="SUPPLIERDESC"/>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="SITEID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#SUPITEM">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUPPLIERID" source="SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUPPLIERDESC" source="SUPPLIERDESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SITEID" source="SITEID"/>
+      </input>
+      <filter>(&quot;ITEM&quot; ='$$IN_ITEM$$' )and (&quot;SITEID&quot; ='$$IN_SITEID$$' )</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="SUPPLIERID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUPPLIERID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SUPPLIERID"/>
+      </attribute>
+      <attribute id="SUPPLIERDESC" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUPPLIERDESC"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SUPPLIERDESC"/>
+      </attribute>
+      <attribute id="ITEM" hidden="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ITEM"/>
+      </attribute>
+      <attribute id="SITEID" hidden="true" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SITEID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SITEID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures>
+      <measure id="MS" hidden="false" order="5" semanticType="empty" aggregationType="count" measureType="simple" datatype="VARCHAR" length="1">
+        <descriptions defaultDescription="MS"/>
+        <formula>1</formula>
+      </measure>
+    </calculatedMeasures>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="210"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

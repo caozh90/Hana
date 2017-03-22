@@ -1,0 +1,2152 @@
+/* view name   
+--0.1 ondemandRefresh
+--0.2 costBake
+--0.3 newCycle 
+--0.5 partial cal
+
+--1.1 itemMaster
+--1.2 productFamily
+--1.3 sbbCategory
+--1.4 manualBomf
+--1.5 mtProdFamily
+--1.7 forceItemType
+--1.8 dummyPart
+--1.8 Material Master - CTO-FC EOL UI 
+--1.9 Material Master - MT EOL UI
+
+--2.1 costModelList
+--2.2 plantMaintenance
+--2.3 sourceOfSupply
+--2.4 formula
+--2.5 fcsbbMapping
+--2.6 region
+--2.7 exchangeRate
+--2.8 countrySalesorgMapping
+
+--3.1 costElem
+--3.2 compCostUpload
+--3.3 compCostTape
+--3.4 groupCost
+--3.5 realDummyMapping
+--3.6 Cost Tape - CTO-CV VK Cost
+
+--4.1 xmva
+--4.2 xifrt
+--4.3 xoutfr
+--4.4 wwvar
+--4.5 xatt
+--4.6 xattc
+--4.7 adderConfiguration
+--4.8 flexibleAdder
+--4.9 costFlag
+
+--5.1 seoCostBom
+--5.2 ctoCostBom
+
+--6.1 whereUseReport
+--6.2 outlookReport
+--6.3 missingTotalReport
+--6.4 materialMarginReport
+--6.5 ctcReport
+--6.6 assemblyCostTypeComparisonReport
+--6.13.X86 Cost Flag Report
+--6.3.X86 Daily Stdcost Report
+
+--7.1 Ratio Code
+--7.2 BaseWarrPcaUplift
+--7.3 Additional Cost
+--7.4 CRYAD by PH
+--7.5 FRT by PH
+
+--8.2.X86 Daily Stdcost Publish
+--8.3.X86 Monthly Stdcost Publish
+
+--9.1 time_fence
+--9.2 pm_bs_part
+--9.3 pm_bom
+--10.1 Service Cost
+
+--4.9 XOUTFR Weight
+--4.10 XOUTFR Rate
+
+-- 2.10 Sellable Country
+-- 6.15 mtm reports
+
+--9.8 buy & sell part no
+*/
+service
+{
+	/*common use*/	
+	//EDIT_EOL_STATUS_DROPDOWNLIST
+	"cdp.ebgcfe.models.common::CV_EDIT_EOL_STATUS_DROPDOWNLIST" as "EDIT_EOL_STATUS_DROPDOWNLIST" key ("ITEM_TYPE");
+		
+    // BRAND 
+    "cdp.ebgcfe.models.common::CV_COMMON_BRAND_CREATE_DDL" as "CREATE_BRAND_DDL" 
+            key("ITEM_TYPE","ITEM_VALUE");  
+
+	//Family 级联 in create section
+	"cdp.ebgcfe.models.common::CV_COMMON_CREATE_FAMILY_DDL" as "CREATE_FAMILY_DDL" 
+			keys generate local "ITEM_TYPE"
+			//key("ITEM_TYPE")
+			parameters via entity "INPUT_BRAND5"
+			create forbidden
+			update forbidden
+			delete forbidden;
+	//Adder name 级联  TBA Type
+	"cdp.ebgcfe.models.common::CV_COMMON_CREATE_TBA_DDL" as "CREATE_TBA_DDL"  //zhaodan1
+			keys generate local "ITEM_TYPE"
+			//key("ITEM_TYPE")
+			parameters via entity "INPUT_TBA"					
+			create forbidden
+			update forbidden
+			delete forbidden;		
+			
+	//to display M1-M12
+    //"cdp.ebgcfe.models.COMMON::AN_COLUMNNAME" as "M_COLUMNNAME"  //no result?
+    "cdp.ebgcfe.models.common::CV_COLUMNNAME" as "M_COLUMNNAME"
+		    keys generate local "PKID"  aggregates always
+		    parameters via entity "V_CYCLE" 		    
+		    create forbidden
+		    update forbidden
+		    delete forbidden; 	
+	
+	 //ITEM from UI_TIEM 模糊查询
+	 "cdp.ebgcfe.models.common::CV_ITEM_UI_ITEM" as "ITEM_UI_ITEM" key("ITEM");
+	 
+	 /*2015-03-17 with input cycle*/
+	 "cdp.ebgcfe.models.common::CV_ITEM_UI_ITEM_INPUT" as "ITEM_UI_ITEM_CYCLE" 
+	        keys generate local "ITEM"
+			parameters via entity "INPUT_CYCLE1";
+	 
+	 //PROD_H from UI_TIEM 模糊查询
+	 "cdp.ebgcfe.models.common::CV_UI_ITEM_PROD_H" as "UI_ITEM_PROD_H" key("PROD_H");
+					    
+	/*0.1 UI_ONDEMAND_REFRESH*/	
+	"cdp.ebgcfe.models.ui_ondemand_refresh::CV_UI_ONDEMAND_REFRESH" as "CFE_UI_ONDEMAND_REFRESH" key ("PROD_FAMILY", "ITEM", "ONDEMAND_TYPE", "EVENT_NAME")
+			create forbidden
+			update forbidden
+			delete forbidden;
+	
+	"cdp.ebgcfe.models.ui_ondemand_refresh::CV_UI_ONDEMAND_DDL" as "CFE_UI_ONDEMAND_DDL" key ("ITEM_TYPE")
+			create forbidden
+			update forbidden
+			delete forbidden;
+	
+	
+	"cdp.ebgcfe.models.ui_ondemand_refresh::CV_ITEM" as "UI_ONDEMAND_ITEM" key("ITEM")
+			create forbidden
+			update forbidden
+			delete forbidden;		
+				
+	"cdp.ebgcfe.models.ui_ondemand_refresh::CV_UI_ONDEMAND_STATUS" as "UI_ONDEMAND_STATUS" 
+	key("ITEM_VALUE","ITEM_TYPE")
+			create forbidden
+			update forbidden
+			delete forbidden;					
+	/*0.2 UI_COST_BAKE*/	
+	"cdp.ebgcfe.models.ui_cost_bake::CV_UI_COST_BAKE" as "CFE_UI_COST_BAKE" key ("PRODUCT_GROUP", "CONTROL_POINT")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_bake::cost_bake"
+			update forbidden
+			delete forbidden;
+	
+	"cdp.ebgcfe.models.ui_cost_bake::CV_UI_COST_BAKE_DDL" as "CFE_COST_BAKE_DDL" key ("ITEM_TYPE");
+	
+	/*0.3 UI_CYCLE*/	
+	"cdp.ebgcfe.models.ui_cycle::CV_UI_CYCLE" as "CFE_UI_CYCLE" key ("PRODUCT_GROUP", "CYCLE")
+			create forbidden /*using "cdp.ebgcfe.procedures.pkg_ui.ui_cycle::createUiCycle"*/
+			update forbidden
+			delete forbidden;
+	
+	"cdp.ebgcfe.models.ui_cycle::CV_UI_CYCLE_DDL" as "CFE_UI_CYCLE_DDL" key ("ITEM_TYPE");
+	/*0.4 Forecast Cost Publish ADDED BY CHENWH3 20150831 START*/
+	"cdp.ebgcfe.models.ui_forecast_cost_publish::CV_EXECUTE_PUBLISH_CYCLE" as "CV_EXECUTE_PUBLISH_CYCLE" 
+		key ("CYCLE")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.ui_forecast_cost_publish::CV_EXECUTE_PUBLISH_STATUS" as "CV_EXECUTE_PUBLISH_STATUS" 
+		key ("STATUS")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.ui_forecast_cost_publish::CV_UI_FORECAST_COST_PUBLISH_SEARCH_CTO_DDL" as "FORECAST_COST_PUBLISH_SEARCH_CTO_DDL" 
+		key ("ITEM_VALUE","ITEM_TYPE")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.ui_forecast_cost_publish::CV_UI_FORECAST_COST_PUBLISH_SEARCH_MTM_DDL" as "FORECAST_COST_PUBLISH_SEARCH_MTM_DDL" 
+		key ("ITEM_VALUE","ITEM_TYPE")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.ui_forecast_cost_publish::CV_UI_FORECAST_COST_PUBLISH_CTO_SCRIPT" as "FORECAST_COST_PUBLISH_CTO" 
+	
+		keys generate local "ID"
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.ui_forecast_cost_publish::CV_UI_FORECAST_COST_PUBLISH_MTM_SCRIPT" as "FORECAST_COST_PUBLISH_MTM" 
+
+		keys generate local "ID"
+		create forbidden
+		update forbidden
+		delete forbidden;
+	/*MTM模糊查询*/
+	"cdp.ebgcfe.models.ui_forecast_cost_publish::CV_MTM_DDL" as "CV_MTM" 
+		key ("MTM_NO")
+		create forbidden
+		update forbidden
+		delete forbidden;
+		
+	/*Variant模糊查询*/
+	"cdp.ebgcfe.models.ui_forecast_cost_publish::CV_VARIANT_DDL" as "CV_VARIANT" 
+		key ("VARIANT")
+		create forbidden
+		update forbidden
+		delete forbidden;
+		
+	/*ADDED BY CHENWH3 20150831 END*/
+	/*create DDL*/
+	"cdp.ebgcfe.models.ui_cycle::CV_UI_CYCLE_CREATE_DDL" as "CFE_UI_CYCLE_CREATE_DDL" key ("ITEM_TYPE");
+	
+	/*0.5 UI_PARTIAL_CAL*/
+	"cdp.ebgcfe.models.ui_partial_cal::CV_UI_PARTIAL_CAL" as "UI_PARTIAL_CAL" 
+		keys generate local "ID"
+		create forbidden
+		update forbidden
+		delete forbidden;
+	
+	"cdp.ebgcfe.models.ui_partial_cal::CV_UI_PARTIAL_CAL_DDL" as "UI_PARTIAL_CAL_DDL" key ("ITEM_VALUE","TYPE");
+	
+    /*1.1 UI_ITEM*/		   
+	"cdp.ebgcfe.models.ui_item::CV_UI_ITEM" as "CFE_UI_ITEMS" key ("PRODUCT_GROUP", "ITEM", "CYCLE")
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_item::updateUiItem"
+			delete forbidden;
+	
+	"cdp.ebgcfe.models.ui_item::CV_UI_ITEM_DROPDOWNLIST" as "CFE_UI_ITEM_DROPDOWNLIST" key ("ITEM_TYPE");	
+		
+	//Family 级联		
+	"cdp.ebgcfe.models.ui_item::CV_UI_ITEM_FAMILY" as "CFE_UI_CFE_UI_ITEM_FAMILY"	
+	        keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_BRAND"
+			create forbidden
+			update forbidden
+			delete forbidden;
+		
+	/*1.2 UI_PRODFAMILY*/	
+	"cdp.ebgcfe.models.ui_prodfamily::CV_UI_PRODFAMILY" as "CFE_UI_PRODFAMILY" key ("PRODUCT_GROUP", "PROD_FAMILY", "BRAND", "CYCLE")
+            create using "cdp.ebgcfe.procedures.pkg_ui.ui_prodfamily::createUiProdFamily"
+                 events (before "cdp.ebgcfe.procedures.pkg_ui.ui_prodfamily::beforeCreateUiProdFamily")
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_prodfamily::updateUiProdFamily"
+                 events (before "cdp.ebgcfe.procedures.pkg_ui.ui_prodfamily::beforeUpdateUiProdFamily")
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_prodfamily::deleteUiProdFamily";
+	
+	"cdp.ebgcfe.models.ui_prodfamily::CV_UI_PRODFAMILY_DROPDOWNLIST" as "CV_UI_PRODFAMILY_DROPDOWNLIST" key ("ITEM_TYPE");		
+	
+	//Brand and EOL_STATUS create dropdownlist 
+	"cdp.ebgcfe.models.ui_prodfamily::CV_UI_PRODFAMILY_CREATE_DROPDOWNLIST" as "CV_UI_PRODFAMILY_CREATE_DROPDOWNLIST" key ("ITEM_TYPE");
+		
+		//Family 级联		
+	"cdp.ebgcfe.models.ui_prodfamily::CV_UI_PRODFAMILY_FAMILY" as "UI_PRODFAMILY_FAMILY"	
+	        keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_BRAND2"
+			create forbidden
+			update forbidden
+			delete forbidden;
+				
+	 /*1.3 UI_SBBCategory*/	
+	 "cdp.ebgcfe.models.ui_sbbcategory::CV_UI_SBBCategory" as "CFE_UI_SBBCategory" key ("BBID", "PRODUCT_GROUP", "CYCLE","CHARACTER_V")
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_sbbcategory::updateUiSBBCategory"
+			delete forbidden;
+	
+	"cdp.ebgcfe.models.ui_sbbcategory::CV_UI_SBBCategory_DROPDOWNLIST" as "CFE_UI_SBBCategory_DROPDOWNLIST" key ("ITEM_TYPE");	
+	
+	//SBB 模糊查询
+	"cdp.ebgcfe.models.ui_sbbcategory::CV_UI_SBBCategory_SBB" as "CFE_UI_SBBCategory_SBB" key ("BBID");
+	
+	//Character 模糊查询
+	"cdp.ebgcfe.models.ui_sbbcategory::CV_UI_SBBCategory_Character" as "CFE_UI_SBBCategory_Character" key ("CHARACTER_V");
+	
+	//Edit COST_CATEGORY
+    "cdp.ebgcfe.models.ui_sbbcategory::CV_UI_SBBCategory_EDIT_CCategory" as "CFE_UI_SBBCategory_EDIT_COST_CATEGORY" key ("PVALUE");
+	
+			
+	/*1.4 UI_MANUAL_BOM*/
+    "cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM" as "CFE_UI_MANUAL_BOM" key ("PRODUCT_GROUP", "CYCLE", "BOM_LEVEL", "FATHER", "CHILDREN", "PLANT")
+    	    create using "cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::createUiManualBom"
+    	       events (before "cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::beforeCreateUiManualBom")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::updateUiManualBom"
+			   events (before "cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::beforeUpdateUiManualBom")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::deleteUiManualBom"; 
+    
+	/*search dropdownlist*/
+	"cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM_SEARCH_DDL" as "CFE_UI_MANUAL_BOM_SEARCH_DDL" key ("ITEM_TYPE");
+	
+	/*search Father dropdownlist*/
+	"cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM_SEARCH_FATHER" as "CFE_UI_MANUAL_BOM_SEARCH_FATHER"
+			keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_BOM_LEVEL";
+			
+	/*search Children dropdownlist*/
+	"cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM_SEARCH_CHILDREN" as "CFE_UI_MANUAL_BOM_SEARCH_CHILDREN"
+			keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_BOM_LEVEL2";
+	
+	/*search Plant dropdownlist for father and children*/
+	"cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM_SEARCH_PLANT" as "CFE_UI_MANUAL_BOM_SEARCH_PLANT"
+			keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_FATHER_CHILDREN";		
+					
+	/*search Plant dropdownlist for father*/
+	"cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM_SEARCH_PLANT_FA" as "CFE_UI_MANUAL_BOM_SEARCH_PLANT_FATHER"
+			keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_FATHER";
+			
+	/*search Plant dropdownlist for children*/
+	"cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM_SEARCH_PLANT_CH" as "CFE_UI_MANUAL_BOM_SEARCH_PLANT_CHILDREN"
+			keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_CHILDREN";
+								
+	/*create dropdownlist*/
+	"cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM_CREATE_DDL" as "CFE_UI_MANUAL_BOM_CREATE_DDL" key ("ITEM_TYPE");
+	
+	/*create Father dropdownlist*/
+	"cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM_CREATE_FATHER" as "CFE_UI_MANUAL_BOM_CREATE_FATHER"
+	        keys generate local "ITEM_father"
+			parameters via entity "INPUT_BOM_LEVEL3";
+	
+	/*create Children dropdownlist*/
+	"cdp.ebgcfe.models.ui_manual_bom::CV_UI_MANUAL_BOM_CREATE_CHILDREN" as "CFE_UI_MANUAL_BOM_CREATE_CHILDREN"
+			keys generate local "ITEM_children"
+			parameters via entity "INPUT_BOM_LEVEL4";
+	
+	/*1.5 UI_MACHINETYPE*/
+	"cdp.ebgcfe.models.ui_machine_type::CV_UI_MACHINE_TYPE" as "CFE_UI_MACHINE_TYPE" key ("PRODUCT_GROUP", "MACHINETYPE", "CYCLE")
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_machine_type::updateUiMachineType"
+			     events (before "cdp.ebgcfe.procedures.pkg_ui.ui_machine_type::beforeUpdateUiMachineType")
+			delete forbidden;
+	
+	/*search dropdownlist*/
+	"cdp.ebgcfe.models.ui_machine_type::CV_UI_MACHINE_TYPE_SEARCH_DDL" as "CFE_UI_MACHINE_TYPE_SEARCH_DDL" key ("ITEM_TYPE");
+		
+	/*create dropdownlist*/
+	"cdp.ebgcfe.models.ui_machine_type::CV_UI_MACHINE_TYEP_CREATE_DDL" as "CFE_UI_MACHINE_TYPE_CREATE_DDL" key ("ITEM_TYPE");
+	
+	//Family 级联 in search section
+	"cdp.ebgcfe.models.ui_machine_type::CV_UI_MACHINE_TYPE_FAMILY_DDL" as "UI_MACHINE_TYPE_FAMILY_DDL" 
+			keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_BRAND6"
+			create forbidden
+			update forbidden
+			delete forbidden;
+	
+	/*1.7 UI_FROCEITEMTYPE
+	"cdp.ebgcfe.models.ui_froce_item_type::CV_UI_FROCE_ITEM_TYPE" as "CFE_UI_FROCE_ITEM_TYPE" key ("PRODUCT_GROUP", "CYCLE", "PART")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::createUiForceItemType"
+			     events (before "cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::beforeCreateUiForceItemType")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::updateUiForceItemType"
+			     events (before "cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::beforeUpdateUiForceItemType")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::deleteUiForceItemType"; 
+	
+	/*search dropdownlist
+	"cdp.ebgcfe.models.ui_froce_item_type::CV_UI_FROCE_ITEM_TYPE_SEARCH_DDL" as "CFE_UI_FROCE_ITEM_TYPE_SEARCH_DDL" key ("ITEM_TYPE");
+	
+	/*search item_type dropdownlist
+	"cdp.ebgcfe.models.ui_froce_item_type::CV_UI_FROCE_SEARCH_ITEM_TYPE" as "CFE_UI_FROCE_SEARCH_ITEM_TYPE"
+			keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_ITEMTYPE";
+			
+	/*create dropdownlist
+	"cdp.ebgcfe.models.ui_froce_item_type::CV_UI_FROCE_ITEM_TYPE_CREATE_DDL" as "CFE_UI_FROCE_ITEM_TYPE_CREATE_DDL" key ("ITEM_TYPE");
+	
+	/*create item_type  模糊查询
+	"cdp.ebgcfe.models.ui_froce_item_type::CV_UI_FROCE_ITEM_TYPE_ITEM_TYPE" as "CFE_UI_FROCE_ITEM_TYPE_ITEM_TYPE" key ("ITEM_TYPE");
+	*/
+	
+	/*1.7 UI_ITEM*/
+	"cdp.ebgcfe.models.ui_item_type::CV_UI_ITEM_NEW" as "CFE_UI_ITEM_TYPE" key ("PRODUCT_GROUP", "CYCLE", "ITEM")
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_item_type::updateUiItemType"
+			delete forbidden; 
+	
+	/*edit dropdownlist*/
+	"cdp.ebgcfe.models.ui_item_type::CV_UI_ITEM_EDIT_DDL" as "CFE_UI_ITEM_TYPE_EDIT_DDL" key ("ITEM_TYPE");	
+	
+	/*search dropdownlist*/
+	"cdp.ebgcfe.models.ui_item_type::CV_UI_ITEM_SEARCH_DDL" as "CFE_UI_ITEM_TYPE_SEARCH_DDL" key ("ITEM_TYPE");	
+	/*USER FAMILY SEARCH模糊查询*/	
+	"cdp.ebgcfe.models.ui_item_type::CV_UI_ITEM_SEARCH_USER_FAMILY_DDL" as "UI_ITEM_SEARCH_USER_FAMILY_DDL" key ("USER_ASP_PRD_FAMILY");
+	/*ITEM 模糊查询*/	
+	"cdp.ebgcfe.models.ui_item_type::CV_UI_ITEM_ITEM" as "CFE_UI_ITEM_ITEM" key ("ITEM");
+	/*USER FANMILY 模糊查询*/
+	"cdp.ebgcfe.models.ui_item_type::CV_UI_ITEM_EDIT_USER_FAMILY" as "UI_ITEM_EDIT_USER_FAMILY" key ("PROD_FAMILY");	
+	/*1.8 UI_DUMMYPART*/
+	"cdp.ebgcfe.models.ui_dummy_part::CV_UI_DUMMY_PART" as "CFE_UI_DUMMY_PART" key ("PRODUCT_GROUP", "CYCLE", "DUMMY_PART")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::createUiDummyPart"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::updateUiDummyPart"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::deleteUiDummyPart"; 
+	/*1.8 Material Master - CTO-FC EOL UI */
+	"cdp.ebgcfe.models.ui_ctofc_flag::CV_UI_CTOFC_FLAG" as "UI_CTOFC_FLAG" key ("PRODUCT_GROUP", "CTO", "FC", "CYCLE")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_flag::createUiCtoFcFlag"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_flag::updateUiCtoFcFlag"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_flag::deleteUiCtoFcFlag"; 
+	
+	"cdp.ebgcfe.models.ui_ctofc_flag::CV_UI_CTOFC_FLAG_CREATE_DDL" as "UI_CTOFC_FLAG_CREATE_DDL" key("ITEM_TYPE","ITEM_VALUE");
+	
+	"cdp.ebgcfe.models.ui_ctofc_flag::CV_UI_CTOFC_FLAG_SEARCH_DDL" as "UI_CTOFC_FLAG_SEARCH_DDL" key("ITEM_TYPE","ITEM_VALUE");
+	
+	/*1.9 Material Master - MT EOL UI */
+	"cdp.ebgcfe.models.ui_mt_eol::CV_UI_MT_EOL" as "UI_MT_EOL" key ( "CYCLE","PRODUCT_GROUP", "MT")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::createUiMtEol"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::updateUiMtEol"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::deleteUiMtEol";
+	"cdp.ebgcfe.models.ui_mt_eol::CV_UI_MT_EOL_CREATE_DDL" as "UI_MT_EOL_CREATE_DDL" key("ITEM_TYPE","ITEM_VALUE");
+	"cdp.ebgcfe.models.ui_mt_eol::CV_UI_MT_EOL_SEARCH_DDL" as "UI_MT_EOL_SEARCH_DDL" key("ITEM_TYPE","ITEM_VALUE"); 		
+	/*search dropdownlist*/
+	"cdp.ebgcfe.models.ui_dummy_part::CV_UI_DUMMY_PART_DDL" as "CFE_UI_DUMMY_PART_DDL" key ("ITEM_TYPE");
+	
+	/*dummy part 模糊查询*/
+	"cdp.ebgcfe.models.ui_dummy_part::CV_UI_DUMMY_PART_DUMMYPART" as "CFE_UI_DUMMY_PART_DUMMYPART" key ("DUMMY_PART");
+							
+	//2.1 BIZ_COST_MODEL_LIST	
+	"cdp.ebgcfe.models.biz_cost_model_list::CV_BIZ_COST_MODEL_LIST" as "CFE_BIZ_COST_MODEL_LIST" 
+			key ("ITEM", "PLANT", "CYCLE", "BRAND", "PRODUCT_GROUP", "SUBGEO", "COUNTRY")
+			parameters via key and entity "IN_CFE_BIZ_COST_MODEL_LIST"
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.biz_cost_model_list::updateBizCostModelList"
+			delete forbidden;
+	
+	"cdp.ebgcfe.models.biz_cost_model_list::CV_BIZ_COST_MODEL_LIST_DROPDOWNLIST" as "BIZ_COST_MODEL_LIST_DROPDOWNLIST" key ("ITEM_TYPE");
+/*************************added by eric***************************/	
+	"cdp.ebgcfe.models.biz_cost_model_list::CV_BIZ_COST_MODEL_LIST_DDL" as "BIZ_COST_MODEL_LIST_DDL" 
+			keys generate local "ITEM_TYPE"
+			parameters via entity "IN_CYCLE";
+		
+	"cdp.ebgcfe.models.biz_cost_model_list::CV_BIZ_COST_MODEL_LIST_CYCLE" as "BIZ_COST_MODEL_LIST_CYCLE" key ("CYCLE");
+/*****************************************************************/	
+	"cdp.ebgcfe.models.biz_cost_model_list::CV_BIZ_COST_MODEL_LIST_EDIT_DROPDOWNLIST" as "BIZ_COST_MODEL_LIST_EDIT_DROPDOWNLIST" key ("ITEM_TYPE");
+	
+	//Family 级联		
+	"cdp.ebgcfe.models.biz_cost_model_list::CV_BIZ_COST_MODEL_LIST_FAMILY" as "BIZ_COST_MODEL_LIST_FAMILY"	
+	        keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_BRAND3"
+			create forbidden
+			update forbidden
+			delete forbidden;	
+	
+	/*2015-03-23 item模糊查询*/	
+	"cdp.ebgcfe.models.biz_cost_model_list::CV_BIZ_COST_MODEL_LIST_SEARCH_ITEM" as "BIZ_COST_MODEL_LIST_SEARCH_ITEM" 
+	        keys generate local "ITEM"
+			parameters via entity "INPUT_CYCLE7";
+			
+	/*2.2 UI_PLANT*/	
+	"cdp.ebgcfe.models.ui_plant::CV_UI_PLANT" as "CFE_UI_PLANT" key ("PRODUCT_GROUP", "PLANT")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_plant::createUiPlant"
+			    events (before "cdp.ebgcfe.procedures.pkg_ui.ui_plant::beforeCreateUiPlant") 
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_plant::updateUiPlant"
+			    events (before "cdp.ebgcfe.procedures.pkg_ui.ui_plant::beforeUpdateUiPlant")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_plant::deleteUiPlant";
+			
+	"cdp.ebgcfe.models.ui_plant::CV_UI_PLANT_DROPDOWNLIST" as "UI_PLANT_DROPDOWNLIST" key ("ITEM_TYPE");
+	
+	"cdp.ebgcfe.models.ui_plant::CV_UI_PLANT_CREATE_DROPDOWNLIST" as "UI_PLANT_CREATE_DROPDOWNLIST" key ("ITEM_TYPE");
+	
+	//Plant_type 级联		
+	"cdp.ebgcfe.models.ui_plant::CV_UI_PLANT_PLANT_TYPE" as "UI_PLANT_TYPE"	
+	        keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_PLANT"
+			create forbidden
+			update forbidden
+			delete forbidden;		
+		
+	/*2.3 UI_SOS*/
+	"cdp.ebgcfe.models.ui_sos::CV_UI_SOS" as "CFE_UI_SOS" key ("PRODUCT_GROUP", "PROD_FAMILY", "PLANT", "SUBGEO", "BRAND", "CYCLE")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_sos::createUiSOS"
+			     events (before "cdp.ebgcfe.procedures.pkg_ui.ui_sos::beforeCreateUiSOS")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_sos::updateUiSOS"
+			     events (before "cdp.ebgcfe.procedures.pkg_ui.ui_sos::beforeUpdateUiSOS")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_sos::deleteUiSOS";
+	
+	"cdp.ebgcfe.models.ui_sos::CV_UI_SOS_CREATE_DDL" as "UI_UI_SOS_CREATE_DDL" key ("ITEM_TYPE");
+	
+	"cdp.ebgcfe.models.ui_sos::CV_UI_SOS_SEARCH_DDL" as "UI_UI_SOS_SEARCH_DDL" key ("ITEM_TYPE");
+	
+	//2015-01-21 Family 级联 in search section
+	"cdp.ebgcfe.models.ui_sos::CV_UI_SOS_FAMILIY" as "UI_UI_SOS_FAMILY" 
+			keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_BRAND7"
+			create forbidden
+			update forbidden
+			delete forbidden;
+			
+	/*2.4 UI_COST_CALCU_FORMU_SEARCH_DDL          Eric Zhou*/
+	"cdp.ebgcfe.models.ui_cost_calcu_formu::CV_UI_COST_CALCU_FORMU_SEARCH_DDL" as "UI_COST_CALCU_FORMU_SEARCH_DDL" 
+			key("ITEM_TYPE","ITEM_VALUE");
+	/*2.4 UI_COST_CALCU_FORMU_CREATE_DDL          Eric Zhou*/
+	"cdp.ebgcfe.models.ui_cost_calcu_formu::CV_UI_COST_CALCU_FORMU_CREATE_DDL" as "UI_COST_CALCU_FORMU_CREATE_DDL" 
+			key("ITEM_TYPE","ITEM_VALUE");							 														                                                 
+	/*2.4 UI_COST_CALCU_FORMU_FAMILY       Eric Zhou*/
+	"cdp.ebgcfe.models.ui_cost_calcu_formu::CV_UI_COST_CALCU_FORMU_FAMILY" as "UI_COST_CALCU_FORMU_FAMILY" 
+			key("ITEM_TYPE","ITEM_VALUE")
+			parameters via key and entity "INPUT_BRAND4";
+	/*2.4 UI_COST_CALCU_FORMU              Eric Zhou*/
+	"cdp.ebgcfe.models.ui_cost_calcu_formu::CV_UI_COST_CALCU_FORMU" as "UI_COST_CALCU_FORMU" 
+			key("PRODUCT_GROUP","BRAND","PRODFAMILY","CATEGORY","PLANT","SUBGEO","CYCLE")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::createUiCostCalcuFormu"
+			     events (before "cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::beforeCreateUiCostCalcuFormu")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::updateUiCostCalcuFormu"
+			     events (before "cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::beforeUpdateUiCostCalcuFormu")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::deleteUiCostCalcuFormu";
+			
+	/*2015-01-21 create brand and prodFamily*/
+	"cdp.ebgcfe.models.ui_cost_calcu_formu::CV_UI_COST_CALCU_FORMU_BRAND" as "UI_COST_CALCU_FORMU_BRAND" 
+			key("ITEM_TYPE");
+			
+	"cdp.ebgcfe.models.ui_cost_calcu_formu::CV_UI_COST_CALCU_FORMU_PROD_FAMILY" as "UI_COST_CALCU_FORMU_PROD_FAMILY" 
+			key("ITEM_TYPE")
+			parameters via key and entity "INPUT_BRAND9";			
+	
+	/*2.5 BIZ_FCSBBMAP*/	
+	"cdp.ebgcfe.models.biz_fcsbbmap::CV_BIZ_FCSBBMAP" as "CFE_BIZ_FCSBBMAP" key ("MATNR", "ATNAM", "ATWRT", "IDNRK", "CYCLE");
+
+	"cdp.ebgcfe.models.biz_fcsbbmap::CV_BIZ_FCSBBMAP_DROPDOWNLIST" as "UI_BIZ_FCSBBMAP_DROPDOWNLIST" key ("ITEM_VALUE","ITEM_TYPE");
+	
+	//ATNAM 模糊查询
+	"cdp.ebgcfe.models.biz_fcsbbmap::CV_BIZ_FCSBBMAP_ATNAM" as "UI_BIZ_FCSBBMAP_ATNAM" key ("ATNAM");
+	
+	//ATWRT 模糊查询
+	"cdp.ebgcfe.models.biz_fcsbbmap::CV_BIZ_FCSBBMAP_ATWRT" as "UI_BIZ_FCSBBMAP_ATWRT" key ("ATWRT");
+	
+	//IDNRK 模糊查询
+	"cdp.ebgcfe.models.biz_fcsbbmap::CV_BIZ_FCSBBMAP_IDNRK" as "UI_BIZ_FCSBBMAP_IDNRK" key ("IDNRK");
+	
+	//MATNR 模糊查询
+	"cdp.ebgcfe.models.biz_fcsbbmap::CV_BIZ_FCSBBMAP_MATNR" as "UI_BIZ_FCSBBMAP_MATNR" key ("MATNR");
+	
+	//VARCOND 模糊查询
+	"cdp.ebgcfe.models.biz_fcsbbmap::CV_BIZ_FCSBBMAP_VARCOND" as "UI_BIZ_FCSBBMAP_VARCOND" key ("VARCOND");
+		
+	/*2.6 UI_REGION*/	
+	"cdp.ebgcfe.models.ui_region::CV_UI_REGION" as "CFE_UI_REGION" key ("GEO", "PRODUCT_GROUP", "SUBGEO", "COUNTRY")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_region::createUiRegion"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_region::updateUiRegion"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_region::deleteUiRegion";
+	
+	"cdp.ebgcfe.models.ui_region::CV_UI_REGION_DROPDOWNLIST" as "UI_REGION_DROPDOWNLIST" key ("ITEM_TYPE");
+	
+	//Sub_GEO 级联
+	"cdp.ebgcfe.models.ui_region::CV_UI_REGION_SUBGEO" as "UI_REGION_SUBGEO"	
+	        keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_GEO"
+			create forbidden
+			update forbidden
+			delete forbidden; 
+						
+	//Country 级联
+	"cdp.ebgcfe.models.ui_region::CV_UI_REGION_COUNTRY" as "UI_REGION_COUNTRY"	
+	        keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_SUBGEO"
+			create forbidden
+			update forbidden
+			delete forbidden;
+			
+	//Country_name 级联
+	"cdp.ebgcfe.models.ui_region::CV_UI_REGION_COUNTRY_NAME" as "UI_REGION_COUNTRY_NAME"	
+	        keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_COUNTRY"
+			create forbidden
+			update forbidden
+			delete forbidden;		 
+	
+	//Create GEO dropdownlist		
+	"cdp.ebgcfe.models.ui_region::CV_UI_REGION_CREATE_GEO" as "UI_REGION_CREATE_GEO" key ("ITEM_TYPE");
+			
+	/*2.7 UI_EXCHANGE_RATE*/
+	"cdp.ebgcfe.models.ui_exchange_rate::CV_UI_EXCHANGE_RATE" as "CFE_UI_EXCHANGE_RATE" 
+	key ("PRODUCT_GROUP", "CURRENCY_NAME", "CYCLE")
+			parameters via key and entity "INPUT_RATE"
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_exchange_rate::updateUiExchangeRate"
+			     events (before "cdp.ebgcfe.procedures.pkg_ui.ui_exchange_rate::beforeUpdateUiExchangeRate")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_exchange_rate::deleteExchangeRate";
+	
+	"cdp.ebgcfe.models.ui_exchange_rate::CV_UI_EXCHANGE_RATE_DDL" as "UI_EXCHANGE_RATE_DDL"	 key ("ITEM_TYPE");
+	
+	
+	
+	
+	/*2.8 UI_COUNTRY_SALESORG_MAPPING*/
+	"cdp.ebgcfe.models.ui_country_salesorg_mapping::CV_UI_COUNTRY_SALESORG_MAPPING" as "CFE_UI_COUNTRY_SALESORG_MAPPING" key ("CYCLE", "COUNTRY", "SALES_ORG", "SALES_OFFICE")
+			create forbidden
+			update forbidden
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_country_salesorg_mapping::deleteUiCountrySalesorgMapping";
+	
+	"cdp.ebgcfe.models.ui_country_salesorg_mapping::CV_COUNTRY_SALESORG_MAPPING_DDL" as "CFE_UI_COUNTRY_SALESORG_MAPPING_DDL" key ("ITEM_TYPE");
+	
+	"cdp.ebgcfe.models.ui_country_salesorg_mapping::CV_UI_COUNTRY_SALESORG_CHECK" as "UI_COUNTRY_SALESORG_CHECK" 
+		keys generate local "genid";
+	
+	
+	/*3.1 UI_COST_ELEM*/	
+	"cdp.ebgcfe.models.ui_cost_elem::CV_UI_COST_ELEM" as "CFE_UI_COST_ELEM" key ("ELEMENT_NAME", "CYCLE")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_elem::createUiCostElem"
+			     events (before "cdp.ebgcfe.procedures.pkg_ui.ui_cost_elem::beforeCreateUiCostElem")
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_elem::updateUiCostElem"
+                 events (before "cdp.ebgcfe.procedures.pkg_ui.ui_cost_elem::beforeUpdateUiCostElem")
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_elem::deleteUiCostElem";
+                       
+	"cdp.ebgcfe.models.ui_cost_elem::CV_UI_COST_ELEM_DROPDOWNLIST" as "CFE_UI_UI_COST_ELEM_DROPDOWNLIST" key ("ITEM_TYPE");
+	
+	"cdp.ebgcfe.models.ui_cost_elem::CV_UI_COST_ELEM_CREATE_DROPDOWNLIST" as "CFE_UI_UI_COST_ELEM_CREATE_DROPDOWNLIST" key ("ITEM_TYPE");
+		
+	/*3.2 UI_COST_TAPE_ORI*/	
+	"cdp.ebgcfe.models.ui_cost_tape_ori::CV_UI_COST_TAPE_ORI" as "CFE_UI_COST_TAPE_ORI" key ("PART_NUMBER", "MFG_PLANT", "COST_ELEM", "PRODUCT_GROUP", "CYCLE")
+			create forbidden
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape_ori::updateUiCostTapeOri"
+                   events (before "cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape_ori::beforeUpdateUiCostTapeOri")
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape_ori::deleteUiCostTapeOri";
+            
+    
+    "cdp.ebgcfe.models.ui_cost_tape_ori::CV_UI_COST_TAPE_ORI" as "CFE_UI_COST_TAPE_ORI_N" 
+		    key ("PART_NUMBER", "MFG_PLANT", "COST_ELEM", "PRODUCT_GROUP", "CYCLE")
+		    parameters via key and entity "IN_CFE_UI_COST_TAPE_ORI"
+			create forbidden
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape_ori::updateUiCostTapeOri"
+                   events (before "cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape_ori::beforeUpdateUiCostTapeOri")
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape_ori::deleteUiCostTapeOri";
+                               
+	"cdp.ebgcfe.models.ui_cost_tape_ori::CV_UI_COST_TAPE_ORI_DROPDOWNLIST" as "CFE_UI_COST_TAPE_ORI_DROPDOWNLIST" key ("ITEM_TYPE");
+	
+	//this service is used for activate button
+	"cdp.ebgcfe.models.ui_cost_tape_ori::CV_UI_COST_TAPE_ORI_ACTIVATE" as "CV_UI_COST_TAPE_ORI_ACTIVATE" key("PART_NUMBER", "MFG_PLANT", "COST_ELEM", "PRODUCT_GROUP", "CYCLE")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape_ori::activateUiCostTapeOri"
+			update forbidden
+			delete forbidden; 
+	
+	//PartNumber 模糊查询
+	"cdp.ebgcfe.models.ui_cost_tape_ori::CV_UI_COST_TAPE_ORI_PARTNUMBER" as "UI_COST_TAPE_ORI_PARTNUMBER"  key("PART_NUMBER");
+				
+	/*3.3 UI_COST_TAPE*/	
+	"cdp.ebgcfe.models.ui_cost_tape::CV_UI_COST_TAPE" as "UI_COST_TAPE"  
+            key ("CYCLE", "PRODUCT_GROUP", "PART_NUMBER","PLANT","COST_ELEM")
+            create forbidden
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape::updateUiCostTape"
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape::deleteUiCostTape";
+		
+	//Comp Cost Import dropdownlist
+	 "cdp.ebgcfe.models.ui_cost_tape::CV_UI_COST_TAPE_DROPDOWNLIST" as "UI_COST_TAPE_DROPDOWNLIST"  key("ITEM_TYPE","ITEM_VALUE");
+	
+	//PartNumber 模糊查询
+	"cdp.ebgcfe.models.ui_cost_tape::CV_UI_COST_TAPE_PARTNUMBER" as "UI_COST_TAPE_PARTNUMBER"  key("PART_NUMBER");
+		
+	/*3.4 UI_GROUP_COST      Eric Zhou*/
+	"cdp.ebgcfe.models.ui_group_cost::CV_GROUP_COST_FAMILY" as "UI_GROUP_COST_FAMILY"
+			key ("CYCLE","PRODUCT_GROUP","PROD_FAMILY","MT","ITEM","TYPE","BRAND","PLANT")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::createUiGroupCost"
+			       events (before "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::beforeCreateUiGroupCost")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::updateUiGroupCost"
+			       /*events (before "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::beforeUpdateUiGroupCost")*/
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::deleteUiGroupCost";
+    
+    "cdp.ebgcfe.models.ui_group_cost::CV_GROUP_COST_C_FAMILY_DDL" as "UI_GROUP_COST_C_FAMILY_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			parameters via key and entity "IN_UI_GROUP_COST_C_FAMILY_DDL"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_group_cost::CV_GROUP_COST_C_BRAND_DDL" as "UI_GROUP_COST_C_BRAND_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+			
+	"cdp.ebgcfe.models.ui_group_cost::CV_GROUP_COST_MT" as "UI_GROUP_COST_MT"
+			key ("CYCLE","PRODUCT_GROUP","PROD_FAMILY","MT","ITEM","TYPE","BRAND","PLANT")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::createUiGroupCost"
+			       events (before "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::beforeCreateUiGroupCost")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::updateUiGroupCost"
+			       /*events (before "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::beforeUpdateUiGroupCost")*/
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::deleteUiGroupCost";
+						
+	"cdp.ebgcfe.models.ui_group_cost::CV_GROUP_COST_ITEM" as "UI_GROUP_COST_ITEM"
+			key ("CYCLE","PRODUCT_GROUP","PROD_FAMILY","MT","ITEM","TYPE","BRAND","PLANT")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::createUiGroupCost"
+			       events (before "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::beforeCreateUiGroupCost")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::updateUiGroupCost"
+			       /*events (before "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::beforeUpdateUiGroupCost")*/
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::deleteUiGroupCost";
+									
+	"cdp.ebgcfe.models.ui_group_cost::CV_UI_GROUP_COST_S_MT_DDL" as "UI_GROUP_COST_S_MT_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+			
+	"cdp.ebgcfe.models.ui_group_cost::CV_UI_GROUP_COST_C_ITEM_DDL" as "UI_GROUP_COST_C_ITEM_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+					
+	"cdp.ebgcfe.models.ui_group_cost::CV_UI_GROUP_COST_S_FAMILY_DDL" as "UI_GROUP_COST_S_FAMILY_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			parameters via key and entity "IN_UI_GROUP_COST_S_FAMILY_DDL"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	"cdp.ebgcfe.models.ui_group_cost::CV_UI_GROUP_COST_S_DDL" as "UI_GROUP_COST_S_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	"cdp.ebgcfe.models.ui_group_cost::CV_UI_GROUP_COST_C_MT_DDL" as "UI_GROUP_COST_C_MT_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;			
+	/*3.4 UI_GROUP_COST_SEARCH_DROPDOWNLIST      Eric Zhou*/
+	"cdp.ebgcfe.models.ui_group_cost::CV_GROUP_COST_SEARCH_DDL" as "UI_GROUP_COST_SEARCH_DDL" 
+			key("ITEM_TYPE","ITEM_VALUE");
+	/*3.4 UI_GROUP_COST_CREATE_DROPDOWNLIST      Eric Zhou*/
+	"cdp.ebgcfe.models.ui_group_cost::CV_GROUP_COST_CREATE_DDL" as "UI_GROUP_COST_CREATE_DDL" 
+			key("ITEM_TYPE","ITEM_VALUE");
+    
+    /*3.5 UI_REAL_DUMMY_MAPPING*/
+	 "cdp.ebgcfe.models.ui_real_dummy_mapping::CV_REAL_DUMMY_MAPPING" as "UI_REAL_DUMMY_MAPPING" key("CYCLE","PRODUCT_GROUP","REAL_PART","DUMMY_PART")
+	 		create using "cdp.ebgcfe.procedures.pkg_ui.ui_real_dummy_mapping::createRealDummyMapping"
+			       events (before "cdp.ebgcfe.procedures.pkg_ui.ui_real_dummy_mapping::beforeCreateRealDummyMapping")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_real_dummy_mapping::deleteRealDummyMapping";
+	 
+	 "cdp.ebgcfe.models.ui_real_dummy_mapping::CV_REAL_DUMMY_MAPPING_CYCLE" as "UI_REAL_DUMMY_MAPPING_CYCLE" key("CYCLE");
+	 
+	 /*COMMODITY*/ 
+	 "cdp.ebgcfe.models.ui_real_dummy_mapping::CV_REAL_DUMMY_MAPPING_COMMODITY" as "UI_REAL_DUMMY_MAPPING_COMMODITY" 
+	 			keys generate local "COMMODITY"
+			    parameters via entity "INPUT_CYCLE3";
+	
+	 /*OWNER*/		    
+	 "cdp.ebgcfe.models.ui_real_dummy_mapping::CV_REAL_DUMMY_MAPPING_Owner" as "UI_REAL_DUMMY_MAPPING_Owner" 
+	 			keys generate local "OWNER"
+			    parameters via entity "INPUT_CYCLE4";
+	 
+	 /*DUMMY_PART*/  
+	 "cdp.ebgcfe.models.ui_real_dummy_mapping::CV_REAL_DUMMY_MAPPING_DummyPart" as "UI_REAL_DUMMY_MAPPING_DummyPart" 
+	 			keys generate local "DUMMY_PART"
+			    parameters via entity "INPUT_CYCLE5";
+	
+	/*REAL_PART*/
+	"cdp.ebgcfe.models.ui_real_dummy_mapping::CV_REAL_DUMMY_MAPPING_RealPart" as "UI_REAL_DUMMY_MAPPING_RealPart" 
+	 			keys generate local "REAL_PART"
+			    parameters via entity "INPUT_CYCLE6";
+			    
+    /*create COMMODITY*/		    
+	"cdp.ebgcfe.models.ui_real_dummy_mapping::CV_REAL_DUMMY_MAPPING_CREATE_COMMODITY" as "UI_REAL_DUMMY_MAPPING_CREATE_COMMODITY" key("PVALUE");
+	
+	/*create DUMMY_PART*/  
+	"cdp.ebgcfe.models.ui_real_dummy_mapping::CV_REAL_DUMMY_MAPPING_CREATE_DUMMYPART" as "UI_REAL_DUMMY_MAPPING_CREATE_DUMMYPART" key("DUMMY_PART");
+	 			
+	/* create REAL_PART*/
+	"cdp.ebgcfe.models.ui_real_dummy_mapping::CV_REAL_DUMMY_MAPPING_CREATE_REALPART" as "UI_REAL_DUMMY_MAPPING_CREATE_REALPART" key("ITEM");
+	/*3.6 UI_CTO_CV_VK_COST ADD By Leon Bian 20150831*/ 
+	"cdp.ebgcfe.models.ui_cto_cv_vk_cost::CV_UI_CTO_CV_VK_COST" as "UI_CTO_CV_VK_COST"
+            key ("CYCLE","PRODUCT_GROUP","CHARACTERISTIC","VARIANT","SALES_ORG","PH_1","PH_2","PH_3","PH_4")
+            create using "cdp.ebgcfe.procedures.pkg_ui.ui_cto_cv_vk_cost::createUiCtoCvVkCost"
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_cto_cv_vk_cost::updateUiCtoCvVkCost"
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_cto_cv_vk_cost::deleteUiCtoCvVkCost";
+    
+    "cdp.ebgcfe.models.ui_cto_cv_vk_cost::CV_UI_CTO_CV_VK_COST_CREATE_DDL" as "UI_CTO_CV_VK_COST_CREATE_DDL"
+    key("ITEM_TYPE","ITEM_VALUE");
+    
+    "cdp.ebgcfe.models.ui_cto_cv_vk_cost::CV_UI_CTO_CV_VK_COST_SEARCH_DDL" as "UI_CTO_CV_VK_COST_SEARCH_DDL"
+    key("ITEM_TYPE","ITEM_VALUE");
+	 						    	 
+    /*4 UI_ECONOMIC_ADDER_CREATE_DDL FangYuan */
+    "cdp.ebgcfe.models.ui_economic_adder::CV_UI_ECONOMIC_ADDER_CREATE_DDL" as "UI_ECONOMIC_ADDER_CREATE_DDL"
+            key("ITEM_TYPE","ITEM_VALUE");    
+				
+	/*4.1 UI_XMVA             Eric Zhou*/
+    "cdp.ebgcfe.models.ui_xmva::CV_UI_XMVA" as "UI_XMVA"
+            key ("CYCLE","PRODUCT_GROUP","FAMILY","TBA_TYPE","BRAND","PLANT","SUBGEO")
+            create using "cdp.ebgcfe.procedures.pkg_ui.ui_xmva::createUiXmva"
+                   events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xmva::beforeCreateUiXmva")
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_xmva::updateUiXmva"
+                   events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xmva::beforeUpdateUiXmva")
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_xmva::deleteUiXmva";
+	/*4.1 UI_XMVA_SEARCH_DDL                 Eric Zhou*/
+	"cdp.ebgcfe.models.ui_xmva::CV_UI_XMVA_SEARCH_DDL" as "UI_XMVA_SEARCH_DDL"
+			key("ITEM_TYPE","ITEM_VALUE");
+	/*4.1 UI_XMVA_CREATE_DDL                 Eric Zhou*/
+	"cdp.ebgcfe.models.ui_xmva::CV_UI_XMVA_CREATE_DDL" as "UI_XMVA_CREATE_DDL"
+			key("ITEM_TYPE","ITEM_VALUE");
+	/*4.1 UI_XMVA_SEARCH_FAMILY       Eric Zhou*/
+	"cdp.ebgcfe.models.ui_xmva::CV_UI_XMVA_SEARCH_FAMILY" as "UI_XMVA_SEARCH_FAMILY" 
+			key("ITEM_TYPE","ITEM_VALUE")
+			parameters via key and entity "INPUT_XMVA";
+										
+    /*4.2 UI_XIFRT	FangYuan*/
+    "cdp.ebgcfe.models.ui_xifrt::CV_UI_XIFRT" as "UI_XIFRT"
+            key("CYCLE","BRAND","FAMILY","PLANT","SUBGEO","TBA_TYPE")
+            create using "cdp.ebgcfe.procedures.pkg_ui.ui_xifrt::createUiXifrt"
+                events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xifrt::beforeCreateUiXifrt")
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_xifrt::updateUiXifrt"
+                events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xifrt::beforeUpdateUiXifrt")
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_xifrt::deleteUiXifrt";    
+                    
+    /*4.2 UI_XIFRT_SEARCH_DDL  FangYuan */	
+    "cdp.ebgcfe.models.ui_xifrt::CV_UI_XIFRT_SEARCH_DDL" as "UI_XIFRT_SEARCH_DDL"
+            key("ITEM_TYPE","ITEM_VALUE");
+        
+    /*4.2 Family SEARCH 级联  FangYuan */ 
+    "cdp.ebgcfe.models.ui_xifrt::CV_UI_XIFRT_FAMILY" as "UI_XIFRT_FAMILY"
+            key("ITEM_TYPE","ITEM_VALUE")
+            parameters via key and entity "INPUT_XIFRT";
+     
+    /*4.3 UI_XOUTFR  FangYuan*/
+    "cdp.ebgcfe.models.ui_xoutfr::CV_UI_XOUTFR" as "UI_XOUTFR"
+            key("CYCLE","BRAND","FAMILY","PLANT","SUBGEO","TBA_TYPE")
+            create using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr::createUiXoutfr"
+                events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr::beforeCreateUiXoutfr")
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr::updateUiXoutfr"
+                events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr::beforeUpdateUiXoutfr")
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr::deleteUiXoutfr";   
+                    
+    /*4.3 UI_XOUTFR_SEARCH_DDL  FangYuan */  
+    "cdp.ebgcfe.models.ui_xoutfr::CV_UI_XOUTFR_SEARCH_DDL" as "UI_XOUTFR_SEARCH_DDL"
+            key("ITEM_TYPE","ITEM_VALUE");    
+    
+    /*4.3 Family SEARCH 级联  FangYuan */ 
+    "cdp.ebgcfe.models.ui_xoutfr::CV_UI_XOUTFR_FAMILY" as "UI_XOUTFR_FAMILY"
+            key("ITEM_TYPE","ITEM_VALUE")            												                                                  
+            parameters via key and entity "INPUT_XOUTFR";
+     /*4.4 UI_WWVAR             Eric Zhou*/
+	"cdp.ebgcfe.models.ui_wwvar::CV_UI_WWVAR" as "UI_WWVAR"
+			key ("CYCLE","PRODUCT_GROUP","FAMILY","TBA_TYPE","BRAND","PLANT","SUBGEO","ASSEMBLY")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_wwvar::createUiWwvar"
+			    events (before "cdp.ebgcfe.procedures.pkg_ui.ui_wwvar::beforeCreateUiWwvar")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_wwvar::updateUiWwvar"
+			    events (before "cdp.ebgcfe.procedures.pkg_ui.ui_wwvar::beforeUpdateUiWwvar")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_wwvar::deleteUiWwvar";
+	/*4.4 UI_WWVAR_SEARCH_DDL                 Eric Zhou*/
+	"cdp.ebgcfe.models.ui_wwvar::CV_UI_WWVAR_SEARCH_DDL" as "UI_WWVAR_SEARCH_DDL"
+			key("ITEM_TYPE","ITEM_VALUE");	
+	/*4.4 UI_WWVAR_SEARCH_FAMILY       Eric Zhou*/
+	"cdp.ebgcfe.models.ui_wwvar::CV_UI_WWVAR_SEARCH_FAMILY" as "UI_WWVAR_SEARCH_FAMILY" 
+			key("ITEM_TYPE","ITEM_VALUE")
+			parameters via key and entity "INPUT_WWVAR";
+    
+    /*ASSEMBLY*/
+    "cdp.ebgcfe.models.ui_wwvar::CV_UI_WWVAR_SEARCH_ASSEMBLY" as "WWVAR_SEARCH_ASSEMBLY"
+			key("ASSEMBLY");
+    
+    /*4.5 UI_XATT  FangYuan*/
+    "cdp.ebgcfe.models.ui_xatt::CV_UI_XATT" as "UI_XATT"
+            key("CYCLE","BRAND","FAMILY","PLANT","SUBGEO","TBA_TYPE")
+            create using "cdp.ebgcfe.procedures.pkg_ui.ui_xatt::createUiXatt"
+            	events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xatt::beforeCreateUiXatt")
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_xatt::updateUiXatt"
+            	events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xatt::beforeUpdateUiXatt")
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_xatt::deleteUiXatt";   
+                    
+    /*4.5 UI_XATT_SEARCH_DDL  FangYuan */  
+    "cdp.ebgcfe.models.ui_xatt::CV_UI_XATT_SEARCH_DDL" as "UI_XATT_SEARCH_DDL"
+            key("ITEM_TYPE","ITEM_VALUE");
+        
+    /*4.5 Family SEARCH 级联  FangYuan */ 
+    "cdp.ebgcfe.models.ui_xatt::CV_UI_XATT_FAMILY" as "UI_XATT_FAMILY"
+            key("ITEM_TYPE","ITEM_VALUE")                                                                                                             
+            parameters via key and entity "INPUT_XATT";			
+			
+	/*4.6 UI_XATTC            Eric Zhou*/
+	"cdp.ebgcfe.models.ui_xattc::CV_UI_XATTC" as "UI_XATTC"
+			key ("CYCLE","PRODUCT_GROUP","FAMILY","TBA_TYPE","BRAND","PLANT","SUBGEO")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_xattc::createUiXattc"
+				events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xattc::beforeCreateUiXattc")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_xattc::updateUiXattc"
+				events (before "cdp.ebgcfe.procedures.pkg_ui.ui_xattc::beforeUpdateUiXattc")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_xattc::deleteUiXattc";
+			
+	/*4.6 UI_XATTC_SEARCH_DDL                 Eric Zhou*/
+	"cdp.ebgcfe.models.ui_xattc::CV_UI_XATTC_SEARCH_DDL" as "UI_XATTC_SEARCH_DDL"
+			key("ITEM_TYPE","ITEM_VALUE");
+	/*4.6 UI_XATTC_SEARCH_FAMILY       Eric Zhou*/
+	"cdp.ebgcfe.models.ui_xattc::CV_UI_XATTC_SEARCH_FAMILY" as "UI_XATTC_SEARCH_FAMILY" 
+			key("ITEM_TYPE","ITEM_VALUE")
+			parameters via key and entity "INPUT_XATTC";
+
+    /*4.7 UI_ADDER_CONF            FangYuan*/
+    "cdp.ebgcfe.models.ui_adder_conf::CV_UI_ADDER_CONF" as "UI_ADDER_CONF"
+            key ("ADDER_NAME")
+            create using "cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::createUiAdderConf"
+            	events (before "cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::BeforeCreateUiAdderConf")
+            update using "cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::updateUiAdderConf"
+            	events (before "cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::BeforeUpdateUiAdderConf")
+            delete using "cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::deleteUiAdderConf";
+            
+    /*4.7 UI_ADDER_CONF_SEARCH_DDL   FangYuan*/
+    "cdp.ebgcfe.models.ui_adder_conf::CV_UI_ADDER_CONF_SEARCH_DDL" as "UI_ADDER_CONF_SEARCH_DDL"
+            key("ITEM_TYPE","ITEM_VALUE");
+    /*4.7 UI_ADDER_CONF_FLEXIBLE  级联     FangYuan*/
+    "cdp.ebgcfe.models.ui_adder_conf::CV_UI_ADDER_CONF_FLEXIBLE" as "UI_ADDER_CONF_FLEXIBLE" 
+            key("ITEM_TYPE");
+    /*4.7 UI_ADDER_CONF_TBA  级联     FangYuan*/
+    "cdp.ebgcfe.models.ui_adder_conf::CV_UI_ADDER_CONF_TBA" as "UI_ADDER_CONF_TBA" 
+            key("ITEM_TYPE","ITEM_VALUE")
+            parameters via key and entity "INPUT_ADDER_CONF_TBA"; 
+    /*4.7 UI_ADDER_CONF_CREATE_DDL   FangYuan*/
+    "cdp.ebgcfe.models.ui_adder_conf::CV_UI_ADDER_CONF_CREATE_DDL" as "UI_ADDER_CONF_CREATE_DDL"
+            key("ITEM_TYPE","ITEM_VALUE"); 
+            			
+	/*4.8 UI_FLEXIBLE_ADDER*/
+	"cdp.ebgcfe.models.ui_flexible_adder::CV_UI_FLEXIBLE_ADDER_SEARCH_DDL" as "UI_FLEXIBLE_ADDER_SEARCH_DDL" key("ITEM_TYPE");
+					
+	"cdp.ebgcfe.models.ui_flexible_adder::CV_UI_FLEXIBLE_ADDER_SEARCH_FAMILY_DDL" as "UI_FLEXIBLE_ADDER_SEARCH_FAMILY" 
+			key("ITEM_TYPE")
+			parameters via key and entity "INPUT_BRAND8";	
+			
+	"cdp.ebgcfe.models.ui_flexible_adder::CA_UI_FLEXIBLE_ADDER" as "UI_FLEXIBLE_ADDER"
+			key ("CYCLE","PRODUCT_GROUP","FAMILY","TBA_TYPE","BRAND","PLANT","SUBGEO","ASSEMBLY","ADDER_NAME")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::createUiFlexibleAdder"
+				events (before "cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::beforeCreateUiflexibleAdder")
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::updateUiFlexibleAdder"
+				events (before "cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::beforeUpdateUiFlexibleAdder")
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::deleteUiFlexibleAdder";
+			
+	
+	
+	/*it is used for create and search*/		
+	"cdp.ebgcfe.models.ui_flexible_adder::CV_UI_ADDER_CONF_TBA" as "UI_FLEXIBLE_CONF_TBA" 
+            key("ITEM_TYPE","ITEM_VALUE")
+            parameters via key and entity "INPUT_ADDER_CONF_TBA2"; 
+	
+	/*CREATE_ADDER_NAME*/
+	"cdp.ebgcfe.models.ui_flexible_adder::CV_UI_FLEXIBLE_ADDER_CREATE_ADDER_NAME" as "UI_FLEXIBLE_ADDER_CREATE_ADDER_NAME" key("ITEM_TYPE");
+		
+		
+	
+	
+	//5.1 BIZ_CBOM_SEOSBB 
+	"cdp.ebgcfe.models.ui_seocostbom::CV_SEOCOSTBOM_FATHER" as "CV_SEOCOSTBOM_FATHER" 
+	//key ("CYCLE","PRODUCT_GROUP","MODEL" ,"PLANT","CHILDREN","SUBGEO","COUNTRY" )
+	//navigates ("SEOCOSTBOM_TREETABLE" as "SEOCOSTBOM_TREETABLE_SHOW")
+	keys generate local "IDX"
+	parameters via  entity "INPUT_CV_SEOCOSTBOM_FATHER" 
+	create forbidden
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgcfe.models.ui_seocostbom::CV_SEOCOSTBOM_CHILDREN" as "CV_SEOCOSTBOM_CHILDREN2" 
+	key ("CYCLE","PRODUCT_GROUP","MODEL","PLANT" ,"FATHER" ,"CHILDREN","SUBGEO","COUNTRY")
+	parameters via key and entity "INPUT_CV_SEOCOSTBOM_CHILDREN2"
+		create forbidden
+		update forbidden
+		delete forbidden;
+		
+	"cdp.ebgcfe.models.ui_seocostbom::CV_SEOCOSTBOM_CHILDREN_LAST" as "CV_SEOCOSTBOM_CHILDREN_LAST" 
+	key ("CYCLE","MODEL","CHILDREN")
+	parameters via key and entity "INPUT_CV_SEOCOSTBOM_CHILDREN_LAST"
+		create forbidden
+		update forbidden
+		delete forbidden;
+		 
+	//association "SEOCOSTBOM_TREETABLE" 
+	//principal "CV_SEOCOSTBOM_FATHER"("CYCLE","PRODUCT_GROUP","MODEL" ,"PLANT","CHILDREN","SUBGEO","COUNTRY") multiplicity "1" 
+	//dependent "CV_SEOCOSTBOM_CHILDREN2"("CYCLE","PRODUCT_GROUP","MODEL" ,"PLANT","FATHER","SUBGEO","COUNTRY") multiplicity "*";	
+	
+	"cdp.ebgcfe.models.ui_seocostbom::CV_SEOCOSTBOM_LIST_LAST" as "CV_SEOCOSTBOM_LIST" 
+	key ("CYCLE","PRODUCT_GROUP","MODEL" ,"PLANT","FATHER","CHILDREN","SUBGEO","COUNTRY","COST_NAME")	
+	create forbidden
+		update forbidden
+		delete forbidden;		
+		
+	//for cycle dropdownlist  JUSTIN 20151027
+	"cdp.ebgcfe.models.ui_seocostbom::CV_UI_SEOCOSTBOM_CYCLE_DDL" as "CV_UI_SEOCOSTBOM_CYCLE_DDL" 
+		keys generate local "IDX"
+		create forbidden
+		update forbidden
+		delete forbidden;
+		
+	//for MODEL dropdownlist  Chris 20151027	
+	"cdp.ebgcfe.models.ui_seocostbom::CV_SEOCOSTBOM_MODEL" as "CV_UI_SEOCOSTBOM_MODEL_DDL" 
+		keys generate local "IDX"
+		parameters via entity "INPUT_CV_UI_SEOCOSTBOM_MODEL_DDL"
+		create forbidden
+		update forbidden
+		delete forbidden;
+		
+	//for OTHERS dropdownlist  JUSTIN 20151027	Plant,Subgeo,Brand	
+	"cdp.ebgcfe.models.ui_seocostbom::CV_UI_SEOCOSTBOM_SEARCH_DDL" as "CV_UI_SEOCOSTBOM_SEARCH_DDL" 
+		keys generate local "IDX"
+		parameters via entity "INPUT_CV_UI_SEOCOSTBOM_SEARCH_DDL"
+		create forbidden
+		update forbidden
+		delete forbidden;
+	
+	//for FAMILY dropdownlist  Chris 20151027	
+	"cdp.ebgcfe.models.ui_seocostbom::CV_UI_SEOCOSTBOM_FAMILY_DDL" as "CV_UI_SEOCOSTBOM_FAMILY_DDL" 
+		keys generate local "IDX"
+		parameters via entity "INPUT_CV_UI_SEOCOSTBOM_FAMILY_DDL"
+		create forbidden
+		update forbidden
+		delete forbidden;
+	
+	//for COUNTRY dropdownlist  Chris 20151027	
+	"cdp.ebgcfe.models.ui_seocostbom::CV_UI_SEOCOSTBOM_COUNTRY_DDL" as "CV_UI_SEOCOSTBOM_COUNTRY_DDL" 
+		keys generate local "IDX"
+		parameters via entity "INPUT_CV_UI_SEOCOSTBOM_COUNTRY_DDL"
+		create forbidden
+		update forbidden
+		delete forbidden;
+			
+	//for cycle dropdownlist	
+	"cdp.ebgcfe.models.ui_seocostbom::CV_SEOCOSTBOM_FATHER" as "CV_SEOCOSTBOM_CYCLE_DDL" 
+		keys generate local "IDX"
+		parameters via entity "INPUT_CV_SEOCOSTBOM_CYCLE_DDL"
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.ui_seocostbom::CV_UI_SEO_COSTBOM_SBB_DDL" as "CV_SEOCOSTBOM_SBB_DDL" 
+		keys generate local "IDX"
+		parameters via entity "INPUT_CV_SEOCOSTBOM_SBB_DDL"
+		create forbidden
+		update forbidden
+		delete forbidden;
+	
+		
+	//for brand and family dropdownlist		
+	"cdp.ebgcfe.models.ui_seocostbom::CV_SEOCOSTBOM_BRAND_FAMILY" as "CV_SEOCOSTBOM_DDL"	
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "IN_SEOBOM_DDL";
+			
+	//for others' dropdownlist, ????FATHER
+	"cdp.ebgcfe.models.ui_seocostbom::CV_SEOCOSTBOM_FATHER" as "CV_SEOCOSTBOM_DDL2" 
+		keys generate local "IDX"
+		parameters via  entity "INPUT_CV_SEOCOSTBOM_DDL2"
+		create forbidden
+		update forbidden
+		delete forbidden; 
+	
+	"cdp.ebgcfe.models.ui_seocostbom::CV_UI_SEOCOSTBOM_DOWNLOAD_RECORDS" as "UI_SEOCOSTBOM_DOWNLOAD_RECORDS" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_CV_SEOCOSTBOM_DOWNLOAD_RECORDS";		
+							
+	//5.2 BIZ_CBOM_CTOSBB
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_FATHER" as "CV_CTO_COSTBOM_FATHER" 
+	//key ("CYCLE","PRODUCT_GROUP","MODEL" ,"PLANT","CHILDREN","SUBGEO","COUNTRY" )
+	keys generate local "IDX"
+	//navigates ("CTOCOSTBOM_TREETABLE" as "CTOCOSTBOM_TREETABLE_SHOW")
+	parameters via entity "INPUT_CV_CTO_COSTBOM_FATHER"
+	create forbidden
+		update forbidden
+		delete forbidden;
+				 
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_CHILDREN" as "CV_CTO_COSTBOM_CHILDREN" 
+	//key ("CYCLE","PRODUCT_GROUP","MODEL","PLANT" ,"FATHER" ,"CHILDREN","SUBGEO","COUNTRY")
+	keys generate local "IDX"
+	parameters via  entity "INPUT_CV_CTO_COSTBOM_CHILDREN"
+		create forbidden
+		update forbidden
+		delete forbidden;	
+	
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_CHILDREN_LAST" as "CV_CTO_COSTBOM_CHILDREN_LAST" 
+	//key ("CYCLE","PRODUCT_GROUP","MODEL","PLANT" ,"FATHER" ,"CHILDREN","SUBGEO","COUNTRY")
+	keys generate local "IDX"
+	parameters via  entity "INPUT_CV_CTO_COSTBOM_CHILDREN_LAST"
+		create forbidden
+		update forbidden
+		delete forbidden;	
+			 
+	
+	
+	//"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_LIST" as "CV_UI_CTO_COSTBOM_LIST" 
+	//key ("CYCLE","PRODUCT_GROUP","MODEL" ,"PLANT","FATHER","CHILDREN","SUBGEO","COUNTRY","COST_NAME")
+	//parameters via key and entity "INPUT_CV_UI_CTO_COSTBOM_LIST"
+	//;	
+	
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_LIST_LAST" as "CV_UI_CTO_COSTBOM_LIST_LAST" 
+	key ("CYCLE","PRODUCT_GROUP","MODEL" ,"PLANT","FATHER","CHILDREN","SUBGEO","COUNTRY","COST_NAME")
+	//parameters via key and entity "INPUT_CV_UI_CTO_COSTBOM_LIST"
+	;	
+	
+	
+				
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_FATHER" as "CV_UI_CTO_COSTBOM_DDL"	
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_CV_UI_CTO_COSTBOM_DDL";
+	
+	"cdp.ebgcfe.models.ui_cto_costbom::AT_UI_COST_TAPE" as "CFE_UI_COST_TAPE" 
+	key ("CYCLE","PRODUCT_GROUP","PART_NUMBER","PLANT","COST_ELEM");
+	
+	//for Assembly dropdownlist
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_ASSEMBLY" as "CV_UI_CTO_COSTBOM_ASSEMBLY_DDL"	
+		keys generate local "IDX"
+		parameters via entity "INPUT_CYCLE_CTO";
+	
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_S_DDL" as "UI_CTO_COSTBOM_S_DDL" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_CV_UI_CTO_COSTBOM_MODEL";
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_SBB_DDL" as "UI_CTO_COSTBOM_SBB_DDL" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_CV_UI_CTO_COSTBOM_SBB";
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_FC_DDL" as "UI_CTO_COSTBOM_FC_DDL" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_CV_UI_CTO_COSTBOM_FC";
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_COSTBOM_DOWNLOAD" as "UI_CTO_COSTBOM_DOWNLOAD" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_CV_CTO_COSTBOM_DOWNLOAD";
+		
+	//OTHER SEARCH
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_CYCLE_DDL" as "UI_CTO_COSTBOM_CYCLE_DDL"
+	key generate local "IDX" create forbidden
+							        update forbidden
+							        delete forbidden;
+	
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_SEARCH_DDL" as "UI_CTO_COSTBOM_SEARCH_DDL" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_IN_CYCLE_MODEL";
+	
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_S_COUNTRY_DDL" as "UI_CTO_COSTBOM_S_COUNTRY_DDL" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_IN_COUNTRY";
+		
+	"cdp.ebgcfe.models.ui_cto_costbom::CV_UI_CTO_COSTBOM_S_FAMILY_DDL" as "UI_CTO_COSTBOM_S_FAMILY_DDL" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_IN_FAMILY";
+
+ 		
+	/*6.1 ~ 6.6 EXECUTE DDL*/
+	"cdp.ebgcfe.models.common::CV_RPT_EXECUTE_DDL" as "UI_PRT_EXECUTE_DDL" 
+	key("ITEM_TYPE","ITEM_VALUE");
+	
+	/*6.1 rpt_where_used*/
+	"cdp.ebgcfe.models.rpt_where_used::CV_PRT_WHERE_USED" as "UI_PRT_WHERE_USED" key("PART_NUMBER", "TOP_LEVEL", "PROD_FAMILY", "PRODUCT_GROUP", "CYCLE");
+	
+	
+	/* 6.1.X86 Where Used        Justin 20150817   start*/
+	"cdp.ebgcfe.models.rpt_where_used::CV_RPT_WHERE_USED2" as "UI_RPT_WHERE_USED2" 
+	keys generate local "GENID"
+	parameters via entity "INPUT_CYCLE_ITEM";
+	
+	"cdp.ebgcfe.models.rpt_where_used::CV_RPT_WHEREUSED_SEARCH_DDL" as "UI_RPT_WHEREUSED_DDL" 
+	keys generate local "GENID";
+	
+	/* 6.1.X86 Where Used        Justin 20150817   end*/
+
+	/*PART_NUMBER 模糊查询*/
+	"cdp.ebgcfe.models.rpt_where_used::CV_PRT_WHERE_USED_SEARCH" as "UI_PRT_WHERE_USED_PART_NUMBER" key ("PART_NUMBER");
+	
+	/*6.2 rpt_outlook*/
+	"cdp.ebgcfe.models.rpt_outlook::CV_RPT_OUTLOOK" as "UI_RPT_OUTLOOK" key("PRODUCT_GROUP", "CYCLE", "BRAND", "FAMILY", "ASSEMBLY", "PLANT", "GEO","SUBGEO", "COUNTRY","CTO","FC","COST_TYPE");
+	
+	/*"cdp.ebgcfe.models.rpt_outlook::sql_test" as "UI_sql_test" key("PRODUCT_GROUP", "ITEM")
+		parameters via key and entity "INPUT_test";*/
+	
+	/*DDL*/
+	"cdp.ebgcfe.models.rpt_outlook::CV_RPT_OUTLOOK_S_DDL" as "UI_RPT_OUTLOOK_DDL" key ("ITEM_VALUE","ITEM_TYPE");	
+	
+	/*DDL2, 用于新添加的dropdownlist*/
+	"cdp.ebgcfe.models.rpt_outlook::CV_RPT_OUTLOOK_S_DDL2" as "UI_RPT_OUTLOOK_DDL2" 
+		key generate local "GENID" ;		
+	
+	/*get the title of Q1-Q6*/
+	"cdp.ebgcfe.models.rpt_outlook::CV_RPT_OUTLOOK_Q1Q6" as "RPT_OUTLOOK_Q1Q6"	
+	        keys generate local "ITEM_TYPE"
+			parameters via entity "INPUT_CYCLE";	
+	
+	/*ASSEMBLY 模糊查询*/
+	"cdp.ebgcfe.models.rpt_outlook::CV_RPT_OUTLOOK_ASSEMBLY" as "UI_RPT_OUTLOOK_ASSEMBLY" key ("ASSEMBLY");		
+	
+	/*6.3 rpt_bom_missing_total*/
+	"cdp.ebgcfe.models.rpt_bom_missing_total::CV_RPT_BOM_MISSING_TOTAL" as "UI_RPT_BOMMISSINGTOTAL" key("CYCLE", "BRAND", "FAMILY", "MODEL", "SBB", "COMPONENT", "PLANT", "SUBGEO", "COUNTRY");
+	
+	/*DDL*/
+	"cdp.ebgcfe.models.rpt_bom_missing_total::CV_RPT_BOMMISSINGTOTAL_DDL" as "UI_RPT_BOMMISSINGTOTAL_DDL" key ("ITEM_TYPE");
+	
+    /*Model 模糊查询*/
+	"cdp.ebgcfe.models.rpt_bom_missing_total::CV_RPT_BOMMISSINGTOTAL_MODEL" as "UI_RPT_BOMMISSINGTOTAL_MODEL" key ("MODEL");	
+	
+    /*6.4 Material Margin Report*/  
+    "cdp.ebgcfe.models.rpt_material_margin::AT_RPT_MATERIAL_MARGIN" as "UI_RPT_MATERIAL_MARGIN"
+    key("PRODUCT_GROUP",
+	 "CTO",
+	 "ASSEMBLY",
+	 "COMPONENT",
+	 "PLANT",
+	 "SUBGEO",
+	 "COUNTRY");
+    
+    /*SEARCH DDL cycle*/
+//    "cdp.ebgcfe.models.rpt_material_margin::CV_RPT_MaterialMargin_SEARCH_DDL" as "UI_RPT_MATERIAL_MARGIN_SEARCH_DDL"
+//    key("ITEM_TYPE","ITEM_VALUE");
+
+     /*SEARCH DDL delta cycle*/
+//    "cdp.ebgcfe.models.rpt_material_margin::CV_RPT_MaterialMargin_SEARCH_DDL_DELTACYCLE" as "UI_RPT_MATERIAL_MARGIN_SEARCH_DDL_DELTACYCLE" key ("ITEM_TYPE");
+       
+     /*SEARCH DDL */
+    "cdp.ebgcfe.models.rpt_material_margin::CV_RPT_MATERIALMARGIN_SEARCH_DDL2" as "UI_RPT_MATERIAL_MARGIN_SEARCH_DDL"
+	key generate local "GENID" create forbidden
+							        update forbidden
+							        delete forbidden;	
+     /*ASSEMBLY DDL */
+    "cdp.ebgcfe.models.rpt_material_margin::CV_RPT_MATERIALMARGIN_DDL_ASSEMBLY" as "UI_RPT_MATERIAL_MARGIN_DDL_ASSEMBLY"
+	key generate local "GENID" create forbidden
+							        update forbidden
+							        delete forbidden;	    
+	/*Material Margin Execute DDL */
+	"cdp.ebgcfe.models.rpt_material_margin::CV_RPT_MATERIAL_MARGIN_E_DDL" as "UI_RPT_MATERIAL_MARGIN_E_DDL"
+	key generate local "GENID" create forbidden
+							        update forbidden
+							        delete forbidden;	
+	"cdp.ebgcfe.models.rpt_material_margin::CV_RPT_MATERIAL_MARGIN_BATCH_ITEM" as "RPT_MATERIAL_MARGIN_BATCH_ITEM" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_RPT_MATERIAL_MARGIN_BATCH_ITEM";	 	
+    /*6.5 CTC Report*/   
+    /* Disabled for a strang error
+    "cdp.ebgcfe.models.rpt_ctc::AT_RPT_CTC" as "UI_RPT_CTC"
+    key("CYCLE","DELTACYCLE","BRAND","FAMILY","MODEL","PLANT","SUBGEO","COUNTRY");
+    */
+    "cdp.ebgcfe.models.rpt_ctc::AT_RPT_CTC2" as "UI_RPT_CTC2"
+    key generate local "GENID";
+    
+    /*SEARCH DDL cycle*/
+//    "cdp.ebgcfe.models.rpt_ctc::CV_RPT_CTC_SEARCH_DDL" as "UI_RPT_CTC_SEARCH_DDL_CYCLE" 
+ //   key("ITEM_TYPE","ITEM_VALUE");
+    
+    /*SEARCH DDL delta cycle*/
+    "cdp.ebgcfe.models.rpt_ctc::CV_RPT_CTC_SEARCH_DDL_DELTACYCLE" as "UI_RPT_CTC_SEARCH_DDL_DELTACYCLE" 
+    key ("DELTACYCLE")
+    parameters via key and entity "IN_DELTACYCLE"     
+    ;
+    
+     /*SEARCH DDL Model*/
+    "cdp.ebgcfe.models.rpt_ctc::CV_RPT_CTC_SEARCH_DDL_MODEL" as "UI_RPT_CTC_SEARCH_DDL_MODEL" key("MODEL");
+    
+     /*SEARCH DDL CTO*/
+    "cdp.ebgcfe.models.rpt_ctc::CV_RPT_CTC_SEARCH_DDL_CTO" as "UI_RPT_CTC_SEARCH_DDL_CTO" key("CTO");
+    
+     /*SEARCH DDL Family*/
+    "cdp.ebgcfe.models.rpt_ctc::CV_RPT_CTC_SEARCH_DDL_FAMILY" as "UI_RPT_CTC_SEARCH_DDL_MODEL_FAMILY" 
+    key("FAMILY")
+    parameters via key and entity "IN_FAMILY";
+    
+     /*SEARCH DDL COUNTRY*/
+    "cdp.ebgcfe.models.rpt_ctc::CV_RPT_CTC_SEARCH_DDL_COUNTRY" as "UI_RPT_CTC_SEARCH_DDL_MODEL_COUNTRY" 
+    key("COUNTRY")
+    parameters via key and entity "IN_COUNTRY";
+    
+     /*Distinct SEARCH DDL*/
+    "cdp.ebgcfe.models.rpt_ctc::CV_RPT_CTC_SEARCH_DDL_MS" as "UI_RPT_CTC_SEARCH_DDL_MS" 
+   	key generate local "GENID";
+     
+     /*change reason SEARCH DDL*/
+    "cdp.ebgcfe.models.rpt_ctc::CV_RPT_CTC_SEARCH_DDL_CHANGE" as "UI_RPT_CTC_SEARCH_DDL_CHANGE" 
+   	key generate local "GENID";
+   	
+    /*6.6 CostType Comparison Report*/  
+    "cdp.ebgcfe.models.rpt_cost_type_comparison::AT_RPT_CostTypeComparison" as "UI_RPT_COSTTYPECOMPARISON"
+    key generate local "GENID";
+ //   key("CYCLE","DELTACYCLE","BRAND","FAMILY","MODEL","DESCRIPTION","PLANT","SUBGEO","COUNTRY");
+    
+    /*6.13.X86 Cost Flag Report  20150817 justin Start*/
+    "cdp.ebgcfe.models.rpt_cost_flag::CV_RPT_COST_FLAG" as "RPT_COST_FLAG" 
+				keys generate local "GENID";
+	"cdp.ebgcfe.models.rpt_cost_flag::CV_RPT_COST_FLAG_SEARCH_DDL" as "RPT_COST_FLAG_SEARCH_DDL" 
+				key("ITEM_TYPE","ITEM_VALUE");
+     /*6.13.X86 Cost Flag Report  20150817 justin End*/
+    
+    
+    /*SEARCH DDL cycle */
+    "cdp.ebgcfe.models.rpt_cost_type_comparison::CV_RPT_CostTypeComparison_SEARCH_DDL" as "UI_RPT_COSTTYPECOMPARISON_SEARCH_DDL"
+    key("ITEM_TYPE","ITEM_VALUE");
+
+    /*SEARCH DDL delta cycle*/
+    "cdp.ebgcfe.models.rpt_cost_type_comparison::CV_RPT_CostTypeComparison_SEARCH_DDL_DELTACYCLE" as "UI_RPT_COSTTYPECOMPARISON_SEARCH_DDL_DELTACYCLE"  key ("ITEM_TYPE");
+    
+     /*SEARCH DDL model*/
+    "cdp.ebgcfe.models.rpt_cost_type_comparison::CV_RPT_CostTypeComparison_SEARCH_DDL_MODEL" as "UI_RPT_COSTTYPECOMPARISON_SEARCH_DDL_MODEL"
+    key("MODEL");  
+    
+    /* ADD BY JUSTIN 20150805*/
+    /*SEARCH */
+    "cdp.ebgcfe.models.ui_cost_flag::CV_UI_SBB_TYPE_DDL"       as "SBB_TYPE"       key("SBB_TYPE")
+    		create forbidden
+			update forbidden
+			delete forbidden; 
+    "cdp.ebgcfe.models.ui_cost_flag::CV_UI_VK_DDL"             as "VK"             key("VK")
+    		create forbidden
+			update forbidden
+			delete forbidden;  
+    "cdp.ebgcfe.models.ui_cost_flag::CV_COST_FLAG" 		as "COST_FLAG"      key("COST_FLAG")
+    		create forbidden
+			update forbidden
+			delete forbidden;  
+    "cdp.ebgcfe.models.ui_cost_flag::CV_COST_FLAG_LIST" as "COST_FLAG_LIST" key("COST_FLAG")
+    		create forbidden
+			update forbidden
+			delete forbidden;  
+    /*SEARCH COST FLAG*/
+    "cdp.ebgcfe.models.ui_cost_flag::AV_UI_COSTFLAG" as "UI_COSTFLAG" 
+    	key ("SBB_TYPE","VK")  //"PRODUCT_GROUP",
+    	//key generate local "GenID"
+    	create using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::createUiCostFlag"
+    		events(before "cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::beforeCreateUiCostFlag")
+    	update using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::updateUiCostFlag"
+    		events(before "cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::beforeUpdateUiCostFlag")
+    	delete using "cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::deleteUiCostFlag";	
+   /*7.1  Ratio Code*//*added by chenwh3 20150806 start*/
+   /*SEARCH*/
+   /*
+   	   "cdp.ebgcfe.models.ui_ratio_code::CV_UI_S_CYCLE"       as "S_CYCLE"   
+   	   key generate local "GenID"
+    		create forbidden
+			update forbidden
+			delete forbidden; 
+       "cdp.ebgcfe.models.ui_ratio_code::CV_UI_S_BRAND"       as "S_BRAND"   
+       key generate local "GenID"
+    		create forbidden
+			update forbidden
+			delete forbidden; 	
+		"cdp.ebgcfe.models.ui_ratio_code::CV_UI_S_FAMILY"     as "S_FAMILY"   
+		key generate local "FAMILY"
+		parameters via entity "INPUT_BRAND_S"
+    		create forbidden
+			update forbidden
+			delete forbidden; 			
+		"cdp.ebgcfe.models.ui_ratio_code::CV_UI_S_MACHINETYPE" as "S_MACHINETYPE"   
+		key generate local "GenID"
+    		create forbidden
+			update forbidden
+			delete forbidden; 		
+		"cdp.ebgcfe.models.ui_ratio_code::CV_UI_S_ITEM"         as "S_ITEM"   
+		key generate local "GenID"
+    		create forbidden
+			update forbidden
+			delete forbidden; 	
+		"cdp.ebgcfe.models.ui_ratio_code::CV_UI_S_RATIOCODE"         as "S_RATIOCODE"   
+		key generate local "GenID"
+    		create forbidden
+			update forbidden
+			delete forbidden; 		
+			 /*CREATE
+		 "cdp.ebgcfe.models.ui_ratio_code::CV_UI_C_BRAND"       as "C_BRAND"   
+		 key generate local "GenID"
+    		create forbidden
+			update forbidden
+			delete forbidden; 	
+		"cdp.ebgcfe.models.ui_ratio_code::CV_UI_C_FAMILY"     as "C_FAMILY"   
+		key generate local "FAMILY"
+		parameters via entity "INPUT_BRAND_C"
+    		create forbidden
+			update forbidden
+			delete forbidden; 			
+		"cdp.ebgcfe.models.ui_ratio_code::CV_UI_C_MACHINETYPE" as "C_MACHINETYPE"  
+		 key generate local "GenID"
+    		create forbidden
+			update forbidden
+			delete forbidden; 		
+		"cdp.ebgcfe.models.ui_ratio_code::CV_UI_C_ITEM"         as "C_ITEM"  
+		 key generate local "GenID"
+    		create forbidden
+			update forbidden
+			delete forbidden; 	
+			*/
+	 /*SEARCH*/
+	 "cdp.ebgcfe.models.ui_ratio_code::CV_UI_RATIO_CODE_SEARCH_DDL" as "UI_RATIO_CODE_SEARCH_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+	  /*CREATE*/
+	 "cdp.ebgcfe.models.ui_ratio_code::CV_UI_RATIO_CODE_CREATE_DDL" as "UI_RATIO_CODE_CREATE_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+	 
+	/*SEARCH RATIO CODE*/
+    "cdp.ebgcfe.models.ui_ratio_code::CV_UI_RATIO_CODE" as "UI_RATIO_CODE"
+    	key ("CYCLE","PRODUCT_GROUP","BRAND","FAMILY","MACHINETYPE","ITEM","GEO")
+    	//key generate local "GenID"
+    	create using "cdp.ebgcfe.procedures.pkg_ui.ui_ratio_code::createUiRatioCode"
+    		
+    	update using "cdp.ebgcfe.procedures.pkg_ui.ui_ratio_code::editUiRatioCode"
+    		
+    	delete using "cdp.ebgcfe.procedures.pkg_ui.ui_ratio_code::deleteUiRatioCode"
+    	;	
+		/*added by chenwh3 20150806 end*/	
+		/*modify by justin 20150806 end*/	
+		
+		
+	/*7.2 ui_warr_pca_uplift            Justin 20150810   start*/
+		"cdp.ebgcfe.models.ui_warr_pca_uplift::CV_UI_WARR_PCA_UPLIFT" as "UI_WARR_PCA_UPLIFT"
+				key ("CYCLE","PRODUCT_GROUP","RATIO_CODE","SUBGEO","COUNTRY","TBA_TYPE")
+				create using "cdp.ebgcfe.procedures.pkg_ui.ui_warr_pca_uplift::createUiWarrPcaUplift"
+				update using "cdp.ebgcfe.procedures.pkg_ui.ui_warr_pca_uplift::updateUiWarrPcaUplift"
+				delete using "cdp.ebgcfe.procedures.pkg_ui.ui_warr_pca_uplift::deleteUiWarrPcaUplift";
+		/*7.2  UI_WARR_PCA_UPLIFT_SEARCH_DDL                */
+		"cdp.ebgcfe.models.ui_warr_pca_uplift::CV_UI_WARR_PCA_UPLIFT_SEARCH_DDL" as "UI_WARR_PCA_UPLIFT_SEARCH_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+		/*7.2 UI_WARR_PCA_UPLIFT_COUNTRY_SEARCH_DDL     */
+		"cdp.ebgcfe.models.ui_warr_pca_uplift::CV_UI_WARR_PCA_UPLIFT_COUNTRY_SEARCH_DDL" as "UI_WARR_PCA_UPLIFT_COUNTRY_SEARCH_DDL" 
+				key("ITEM_TYPE","ITEM_VALUE")
+				parameters via key and entity "INPUT_SUBGEO_S";
+				
+		/*7.2 UI_WARR_PCA_UPLIFT_SUBGEO_CREATE_DDL     */
+		"cdp.ebgcfe.models.ui_warr_pca_uplift::CV_UI_WARR_PCA_UPLIFT_SUBGEO_CREATE_DDL" as "UI_WARR_PCA_UPLIFT_SUBGEO_CREATE_DDL" 
+				key("ITEM_TYPE","ITEM_VALUE")
+				parameters via key and entity "INPUT_RATIOCODE_C";
+	    
+	   /*7.2  UI_WARR_PCA_UPLIFT_CREATE_DDL                */
+		"cdp.ebgcfe.models.ui_warr_pca_uplift::CV_UI_WARR_PCA_UPLIFT_CREATE_DDL" as "UI_WARR_PCA_UPLIFT_CREATE_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+		/*7.2 UI_WARR_PCA_UPLIFT_COUNTRY_CREATE_DDL     */
+		"cdp.ebgcfe.models.ui_warr_pca_uplift::CV_UI_WARR_PCA_UPLIFT_COUNTRY_CREATE_DDL" as "UI_WARR_PCA_UPLIFT_COUNTRY_CREATE_DDL" 
+				key("ITEM_TYPE","ITEM_VALUE")
+				parameters via key and entity "INPUT_SUBGEO_C";
+	/*7.2 ui_warr_pca_uplift            Justin 20150810   end*/		
+	
+	
+	/* 7.3      Additional Cost*/
+	// ADDED BY CHENWH3 20150810 START
+	"cdp.ebgcfe.models.ui_additional_cost::CV_UI_ADDITIONAL_COST_SEARCH" as "UI_ADDITIONAL_COST_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden
+		update forbidden
+		delete forbidden;
+		
+	"cdp.ebgcfe.models.ui_additional_cost::CV_UI_COUNTRY_SEARCH" as "UI_COUNTRY_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		parameters via key and entity "IN_SUBGEO"
+		create forbidden
+		update forbidden
+		delete forbidden
+	;
+	"cdp.ebgcfe.models.ui_additional_cost::CV_UI_ADDITIONAL_COST_CREATE" as "UI_ADDITIONAL_COST_CREATE"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden
+		update forbidden
+		delete forbidden;
+		
+	"cdp.ebgcfe.models.ui_additional_cost::CV_UI_COUNTRY_CREATE" as "UI_COUNTRY_CREATE"
+		key("ITEM_TYPE","ITEM_VALUE")
+		parameters via key and entity "IN_SUBGEO_C"
+		create forbidden
+		update forbidden
+		delete forbidden
+	;
+	
+	"cdp.ebgcfe.models.ui_additional_cost::CV_UI_ADDITIONAL_COST_SUBGEO_CREATE_DDL" as "UI_ADDITIONAL_COST_SUBGEO_CREATE_DDL"
+		key("ITEM_TYPE","ITEM_VALUE")
+		parameters via key and entity "IN_RATIOCODE_C"
+		create forbidden
+		update forbidden
+		delete forbidden
+	;
+	
+	"cdp.ebgcfe.models.ui_additional_cost::CV_UI_ADDITIONAL_COST" as "UI_ADDITIONAL_COST"
+		key("CYCLE","PRODUCT_GROUP","RATIO_CODE","SUBGEO","COUNTRY","TBA_TYPE")		
+	create using "cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::createUiAdditionalCost" 
+	
+	update using "cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::updateUiAdditionalCost"
+    		
+    delete using "cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::deleteUiAdditionalCost";
+	//added by chenwh3 20150810 end	
+	
+	/*7.4	CRYAD by PH start  zhaodan1 2017/2/6*/	
+		"cdp.ebgcfe.models.ui_cryad_ph::CV_UI_CRYAD_PH" as "UI_CRYAD_PH"
+			key ("CYCLE", "PRODUCT_GROUP", "PH", "ITEM", "PLANT", "COUNTRY","TBA_TYPE")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_cryad_ph::createUiCryadPh"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_cryad_ph::updateUiCryadPh"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_cryad_ph::deleteUiCryadPh"
+			
+			;
+		"cdp.ebgcfe.models.ui_cryad_ph::CV_UI_CRYAD_PH_SEARCH_DDL" as "UI_CRYAD_PH_SEARCH_DDL"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_cryad_ph::CV_UI_CRYAD_PH_CREATE_DDL" as "UI_CRYAD_PH_CREATE_DDL"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	/*7.4	CRYAD by PH end */ 
+	
+	/*7.5	FRT by PH start  bianzh1 2017/2/8 */	
+		"cdp.ebgcfe.models.ui_frt_ph::CA_UI_FRT_PH" as "UI_FRT_PH"
+			key ("CYCLE", "PRODUCT_GROUP", "PH", "ITEM", "PLANT", "COUNTRY","TBA_TYPE")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_frt_ph::createUiFrtPh"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_frt_ph::updateUiFrtPh"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_frt_ph::deleteUiFrtPh"
+			
+			;
+		"cdp.ebgcfe.models.ui_frt_ph::CV_UI_FRT_PH_SEARCH_DDL" as "UI_FRT_PH_SEARCH_DDL"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_frt_ph::CV_UI_FRT_PH_CREATE_DDL" as "UI_FRT_PH_CREATE_DDL"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	/*7.4	FRT by PH end */ 
+	
+	/* 5.2.X86 SBB Cost BOM        Justin 20150813   start*/
+	"cdp.ebgcfe.models.ui_sbb_cost_bom::CV_UI_SBB_COSTBOM_SBB_FATHER_LAST" as "UI_SBB_COSTBOM_SBB_FATHER" 
+				keys generate local "GENID"
+				parameters via  entity "INPUT_UI_SBB_COSTBOM_SBB_FATHER"; 
+				
+	"cdp.ebgcfe.models.ui_sbb_cost_bom::CV_UI_SBB_COSTBOM_SBB_CHILDREN" as "UI_SBB_COSTBOM_SBB_CHILDREN" 
+				keys generate local "GENID"
+				parameters via  entity "INPUT_UI_SBB_COSTBOM_SBB_CHILDREN";
+				
+	"cdp.ebgcfe.models.ui_sbb_cost_bom::CV_UI_SBB_COSTBOM_SBB_SEARCH_DDL" as "UI_SBB_COSTBOM_SBB_SEARCH_DDL" 
+				key("ITEM_TYPE","ITEM_VALUE");
+	
+	"cdp.ebgcfe.models.ui_sbb_cost_bom::CV_UI_SBB_COSTBOM_SBB_MODEL_SEARCH" as "UI_SBB_COSTBOM_SBB_MODEL_SEARCH_DDL" 
+				keys generate local "GENID"
+		parameters via  entity "MODEL_CASCADE";
+					
+	"cdp.ebgcfe.models.ui_sbb_cost_bom::CV_UI_SBB_COSTBOM_SBB_BRAND_SEARCH_DDL" as "UI_SBB_COSTBOM_SBB_BRAND_SEARCH_DDL" 
+				keys generate local "GENID"
+		parameters via  entity "BRAND_CASCADE";
+		
+	"cdp.ebgcfe.models.ui_sbb_cost_bom::CV_UI_SBB_COSTBOM_SBB_FAMILY_SEARCH_DDL" as "UI_SBB_COSTBOM_SBB_FAMILY_SEARCH_DDL" 
+				keys generate local "GENID"
+		parameters via  entity "FAMILY_CASCADE";
+		
+	"cdp.ebgcfe.models.ui_sbb_cost_bom::CV_UI_SBB_COSTBOM_SBB_PLANT_SEARCH_DDL" as "UI_SBB_COSTBOM_SBB_PLANT_SEARCH_DDL" 
+				keys generate local "GENID"
+		parameters via  entity "PLANT_CASCADE";
+	
+	"cdp.ebgcfe.models.ui_sbb_cost_bom::CV_UI_SBB_COSTBOM_SBB_COUNTRY_SEARCH" as "UI_SBB_COSTBOM_SBB_COUNTRY_SEARCH_DDL" 
+				keys generate local "GENID"
+		parameters via  entity "COUNTRY_CASCADE";
+	
+	"cdp.ebgcfe.models.ui_sbb_cost_bom::CV_UI_SBB_COSTBOM_DOWNLOAD_RECORDS" as "UI_SBB_COSTBOM_DOWNLOAD_RECORDS" 
+				keys generate local "GENID"
+		parameters via  entity "INPUT_CV_SBB_COSTBOM_DOWNLOAD";
+				
+	/* 5.2.X86 SBB Cost BOM        Justin 20150813   end*/
+	
+	
+	/*8.2.X86 Daily Stdcost Publish       Justin 20150818   start*/
+		"cdp.ebgcfe.models.ui_stdcost_daily::CV_UI_STDCOST_DAILY" as "UI_STDCOST_DAILY"
+				keys ("CYCLE","PRODUCT_GROUP","ITEM","PLANT")
+				create using "cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_daily::createUiStdCostDaily"
+				events (before "cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_daily::beforeCreateUiStdCostDaily")
+				update using "cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_daily::updateUiStdCostDaily"
+				events (before "cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_daily::beforeUpdateUiStdCostDaily")
+				delete using "cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_daily::deleteUiStdCostDaily"
+				;
+		/*8.2  UI_STDCOST_DAILY_SEARCH_DDL                */
+		"cdp.ebgcfe.models.ui_stdcost_daily::CV_UI_STDCOST_DAILY_SEARCH_DDL" as "UI_STDCOST_DAILY_SEARCH_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+		
+	    
+	   /*8.2  UI_STDCOST_DAILY_CREATE_DDL                */
+		"cdp.ebgcfe.models.ui_stdcost_daily::CV_UI_STDCOST_DAILY_CREATE_DDL" as "UI_STDCOST_DAILY_CREATE_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+		
+	/*8.2.X86 Daily Stdcost Publish            Justin 20150818   end*/		
+	
+	
+	
+	/*8.3.X86 Monthly Stdcost Publish       Justin 20150831   start*/
+	"cdp.ebgcfe.models.ui_stdcost_monthly::CV_UI_STDCOST_MONTHLY" as "UI_STDCOST_MONTHLY"
+			keys ("CYCLE","PRODUCT_GROUP","ITEM","PLANT")
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_monthly::updateUiStdCostMonthly"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_monthly::deleteUiStdCostMonthly"
+			;
+	/*8.3  UI_STDCOST_MONTHLY_SEARCH_DDL                */
+	"cdp.ebgcfe.models.ui_stdcost_monthly::CV_UI_STDCOST_MONTHLY_SEARCH_DDL" as "UI_STDCOST_MONTHLY_SEARCH_DDL"
+			key("ITEM_TYPE","ITEM_VALUE");	
+	/*8.3.X86 Monthly Stdcost Publish            Justin 20150831   end*/		
+	
+	/*6.12 CTC New Material Report       leon 20160203   start*/
+		"cdp.ebgcfe.models.rpt_ctc_new_material::CV_RPT_CTC_NEW_MATERIAL" as "RPT_CTC_NEW_MATERIAL"
+				keys ("CYCLE","PRODUCT_GROUP","DELTA_CYCLE","MODEL")
+				create forbidden
+				update forbidden
+				delete forbidden
+				;
+
+		"cdp.ebgcfe.models.rpt_ctc_new_material::CV_RPT_CTC_NEW_MATERIAL_SEARCH_DDL" as "RPT_CTC_NEW_MATERIAL_SEARCH_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+	/*6.12 CTC New Material Report       leon 20160203   end*/
+	
+	/*6.13 Key SBB Error Report       leon 20160203   start*/
+		"cdp.ebgcfe.models.rpt_key_sbb_error::CV_RPT_KEYSBB_ERROR" as "RPT_KEYSBB_ERROR"
+				keys generate local "GENID"
+				create forbidden
+				update forbidden
+				delete forbidden
+				;
+
+		"cdp.ebgcfe.models.rpt_key_sbb_error::CV_RPT_KEYSBB_ERROR_SEARCH_DDL" as "RPT_KEYSBB_ERROR_SEARCH_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+	/*6.13 Key SBB Error Report       leon 20160203   end*/
+		
+	
+	/*6.3.X86 Daily Stdcost Report       Justin 20150824   start*/
+		"cdp.ebgcfe.models.rpt_stdcost_daily::CV_RPT_STDCOST_DAILY" as "RPT_STDCOST_DAILY"
+				keys ("CYCLE","PRODUCT_GROUP","ITEM","PLANT")
+				create forbidden
+				update forbidden
+				delete forbidden
+				;
+		/*6.3  RPT_STDCOST_DAILY_SEARCH_DDL                */
+		"cdp.ebgcfe.models.rpt_stdcost_daily::CV_RPT_STDCOST_DAILY_SEARCH_DDL" as "RPT_STDCOST_DAILY_SEARCH_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+				
+		/*6.3  RPT_STDCOST_DAILY_ITEM_DDL                */
+		"cdp.ebgcfe.models.rpt_stdcost_daily::CV_RPT_STDCOST_DAILY_ITEM_DDL" as "RPT_STDCOST_DAILY_ITEM_DDL"
+				key("ITEM");	
+	
+		
+	/*6.3.X86 Daily Stdcost Report            Justin 20150824   end*/	
+	
+	/*6.4.X86 Monthly Stdcost Report       Leon 20150828   start*/
+		"cdp.ebgcfe.models.rpt_stdcost_monthly::CV_RPT_STDCOST_MONTHLY" as "RPT_STDCOST_MONTHLY"
+				keys ("CYCLE","ITEM","PLANT","ITEM_TYPE")
+				create forbidden
+				update forbidden
+				delete forbidden
+				;
+
+		"cdp.ebgcfe.models.rpt_stdcost_monthly::CV_RPT_STDCOST_MONTHLY_SEARCH_DDL" as "RPT_STDCOST_MONTHLY_SEARCH_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+				
+            
+		"cdp.ebgcfe.models.rpt_stdcost_monthly::CV_RPT_STDCOST_MONTHLY_ITEM_DDL" as "RPT_STDCOST_MONTHLY_ITEM_DDL"
+				key("ITEM");	
+	
+		
+	/*6.4.X86 Monthly Stdcost Report            Leon 20150828   end*/	
+	
+	/*6.2.X86 Newly Parts Reports        Justin 20150828   start*/
+		"cdp.ebgcfe.models.rpt_newly_parts::CV_RPT_NEWLY_PARTS" as "RPT_NEWLY_PARTS"
+				keys generate local "GENID"
+				create forbidden
+				update forbidden
+				delete forbidden
+				;
+		/*6.2  RPT_NEWLY_PARTS_SEARCH_DDL                */
+		"cdp.ebgcfe.models.rpt_newly_parts::CV_RPT_NEWLY_PARTS_SEARCH_DDL" as "RPT_NEWLY_PARTS_SEARCH_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+	
+		
+	/*6.2.X86 Newly Parts Reports       Justin 20150828  end*/	
+	/*8.1.X86 CFE&ECC Plant Mapping       fanfx1 20150830   start*/
+		"cdp.ebgcfe.models.ui_cfe_ecc_plantmapping::CV_UI_CFE_ECC_PLANTMAPPING" as "UI_CFE_ECC_PLANTMAPPING"
+				keys ("CFE_PLANT","ECC_PLANT","ITEM_TYPE","SUBGEO","CURRENCY")
+				create forbidden
+				update forbidden
+				delete using "cdp.ebgcfe.procedures.pkg_ui.ui_cfe_ecc_plantmapping::deleteUiCfeEccPlantmapping"
+				;
+		"cdp.ebgcfe.models.ui_cfe_ecc_plantmapping::CV_UI_CFE_ECC_PLANTMAPPING_SEARCH_DDL" as "UI_CFE_ECC_PLANTMAPPING_SEARCH_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+		
+	    
+		"cdp.ebgcfe.models.ui_cfe_ecc_plantmapping::CV_UI_CFE_ECC_PLANTMAPPING_CREATE_DDL" as "UI_CFE_ECC_PLANTMAPPING_CREATE_DDL"
+				key("ITEM_TYPE","ITEM_VALUE");	
+		
+	/*8.1.X86 CFE&ECC Plant Mapping       fanfx1 20150830   end*/					
+	/*9.1 time_fence add by chenwh3 20160307 start*/
+		"cdp.ebgcfe.models.ui_time_fence::CV_UI_TIME_FENCE_SEARCH_DDL" as "UI_TIME_FENCE_SEARCH_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_time_fence::CV_UI_TIME_FENCE_CREATE_DDL" as "UI_TIME_FENCE_CREATE_DDL"
+			key("PNAME","PVALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+		 "cdp.ebgcfe.models.ui_time_fence::CV_UI_TIME_FENCE_INFO" as "UI_TIME_FENCE_INFO"
+			key("OEM_NAME","PROFIT_CENTER","TIME_FENCE")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_time_fence::createUiTimeFence"
+			update forbidden
+	
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_time_fence::deleteUiTimeFence"
+			;	
+	/*9.1 time_fence add by chenwh3 20160307 end*/
+	/*9.2  pm_bs_part       justin 20151010   start*/
+		"cdp.ebgcfe.models.ui_pm_bs_part::CV_UI_PM_BS_PART" as "UI_PM_BS_PART"
+			key("PRODUCT_GROUP","OEM_NAME","BS_PART")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::createUiPmBsPart"
+			update forbidden
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::deleteUiPmBsPart"
+			;
+			
+		"cdp.ebgcfe.models.ui_pm_bs_part::CV_UI_PM_BS_PART_SEARCH_DDL" as "UI_PM_BS_PART_SEARCH_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		 
+		"cdp.ebgcfe.models.ui_pm_bs_part::CV_UI_PM_BS_PART_CREATE_DDL" as "UI_PM_BS_PART_CREATE_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	/*9.2    pm_bs_part       justin 20151010  end*/
+	
+	/*9.2  pm_sales_report 20160307   start*/
+		"cdp.ebgcfe.models.ui_pm_sales_report::CV_UI_PM_SALES_REPORT" as "UI_PM_SALES_REPORT"
+			key("DUMMY_PK")
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_pm_sales_report::updateUiPmSalesReport"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_pm_sales_report::deleteUiPmSalesReport"
+			;
+			
+		"cdp.ebgcfe.models.ui_pm_sales_report::CV_UI_PM_SALES_REPORT_DDL" as "UI_PM_SALES_REPORT_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_pm_sales_report::CV_UI_PM_SALES_REPORT_E_DDL" as "UI_PM_SALES_REPORT_E_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	/*9.2    pm_sales_report 20160307  end*/
+	
+	/*9.3  pm_gr_mtm 20160309 zhaodan1   start*/
+		"cdp.ebgcfe.models.ui_pm_gr_mtm::CV_PM_UI_GR_MTM" as "UI_PM_GR_MTM"
+			key("DUMMY_PK")
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::updateUiPmGrMtm"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::deleteUiPmGrMtm"
+			;
+			
+		"cdp.ebgcfe.models.ui_pm_gr_mtm::CV_PM_UI_GR_MTM_SEARCH_DDL" as "UI_GR_MTM_DDL"
+			keys generate local "GENID"
+			parameters via entity "INPUT_GR_MTM_DDL"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_pm_gr_mtm::CV_PAR_OEM_FUNC_PRO" as "UI_PM_GR_MTM_E_DDL"
+			keys generate local "GENID"
+			parameters via entity "INPUT_GR_MTM_E_DDL"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	/*9.3  pm_gr_mtm 20160309 zhaodan1  end*/
+	
+	/*9.3.pm bom       bianzh1 20151010   start*/
+		"cdp.ebgcfe.models.ui_pm_bom::CV_UI_PM_BOM" as "UI_PM_BOM"
+			//key("PRODUCT_GROUP","ITEM","BS_PART")
+			keys generate local "ID"
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::createUiPmBom"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::updateUiPmBom"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::deleteUiPmBom"
+			;
+			
+		"cdp.ebgcfe.models.ui_pm_bom::CV_UI_PM_BOM_SEARCH_DDL" as "UI_PM_BOM_SEARCH"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		 
+		"cdp.ebgcfe.models.ui_pm_bom::CV_UI_PM_BOM_CREATE_DDL" as "UI_PM_BOM_CREATE"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+			
+//		"cdp.ebgcfe.models.ui_pm_bom::CV_UI_PM_BOM_ITEM_DDL" as "UI_PM_BOM_ITEM"
+//			key("ITEM_TYPE","ITEM_VALUE")
+//			create forbidden
+//			update forbidden
+//			delete forbidden
+//			;
+	/*9.3.pm bom       bianzh1 20151010   end*/
+	
+	/*10.1 Service Cost		billy qiao 20150906		start*/
+		"cdp.ebgcfe.models.ui_service_cost::CV_UI_SERVICE_COST" as "UI_SERVICE_COST"
+			key("CYCLE","PRODUCT_GROUP","MODEL","COUNTRY")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_service_cost::createUiServiceCost"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_service_cost::updateUiServiceCost"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_service_cost::deleteUiServiceCost"
+			;
+			
+		"cdp.ebgcfe.models.ui_service_cost::CV_UI_SERVICE_COST_SEARCH_DDL" as "UI_SERVICE_COST_SEARCH"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		 
+		"cdp.ebgcfe.models.ui_service_cost::CV_UI_SERVICE_COST_CREATE_DDL" as "UI_SERVICE_COST_CREATE"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	/*10.1 Service Cost		billy qiao 20150906		end*/
+			
+/*6.14 Sales office report ADDED BY Liss 20151021 START*/
+	
+	"cdp.ebgcfe.models.rpt_sales_office::CV_RPT_SALES_OFFICE_SEARCH_CTO_DEFAULT_FCST_DDL" as "SALES_OFFICE_SEARCH_CTO_DEFAULT_FCST_DDL" 
+		key ("ITEM_VALUE","ITEM_TYPE")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.rpt_sales_office::CV_RPT_SALES_OFFICE_SEARCH_CTO_DDL" as "SALES_OFFICE_SEARCH_CTO_DDL" 
+		key ("ITEM_VALUE","ITEM_TYPE")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.rpt_sales_office::CV_RPT_SALES_OFFICE_SEARCH_MTM_DDL" as "SALES_OFFICE_SEARCH_MTM_DDL" 
+		key ("ITEM_VALUE","ITEM_TYPE")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.rpt_sales_office::CV_RPT_SALES_OFFICE_CTO_DEFAULT_FCST" as "SALES_OFFICE_CTO_DEFAULT_FCST" 
+	
+		keys generate local "ID"
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.rpt_sales_office::CV_RPT_SALES_OFFICE_CTO" as "SALES_OFFICE_CTO" 
+
+		keys generate local "ID"
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgcfe.models.rpt_sales_office::CV_RPT_SALES_OFFICE_MTM" as "SALES_OFFICE_MTM" 
+
+		keys generate local "ID"
+		create forbidden
+		update forbidden
+		delete forbidden;
+
+	/*DEFAULT_FCST Variant模糊查询*/
+	"cdp.ebgcfe.models.rpt_sales_office::CV_RPT_SALES_OFFICE_SEARCH_CTO_DEFAULT_FCST_VARIANT_DDL" as "SALES_OFFICE_SEARCH_CTO_DEFAULT_FCST_VARIANT_DDL" 
+		key ("VARIANT")
+		create forbidden
+		update forbidden
+		delete forbidden;
+				
+	/*CTO Variant模糊查询*/
+	"cdp.ebgcfe.models.rpt_sales_office::CV_RPT_SALES_OFFICE_SEARCH_CTO_VARIANT_DDL" as "SALES_OFFICE_SEARCH_CTO_VARIANT_DDL" 
+		key ("VARIANT")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	/*MTM 模糊查询*/
+	"cdp.ebgcfe.models.rpt_sales_office::CV_RPT_SALES_OFFICE_SEARCH_MTM_MTM_NO_DDL" as "SALES_OFFICE_SEARCH_MTM_MTM_NO_DDL" 
+		key ("MTM_NO")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	/*ADDED BY Liss 20151021 END*/			
+	/*INVENTORY REPORT 模糊查询*/
+	"cdp.ebgcfe.models.ui_inventory_report::UI_INVENTORY_REPORT_SEARCH_DDL" as "SEARCH_INVENTORY_REPORT_DDL" 
+		key ("ITEM_VALUE","ITEM_TYPE")
+		create forbidden
+		update forbidden
+		delete forbidden;	
+		
+	"cdp.ebgcfe.models.ui_inventory_report::UI_INVENTORY_REPORT_INFO" as "SEARCH_INVENTORY_REPORT_INFO" 
+		keys generate local "ID"
+		create forbidden
+		update forbidden
+		delete forbidden;	
+	/*9.6 X86 price Consumption Report Design add by zhengyq7 20160322 start */
+	"cdp.ebgcfe.models.ui_mtm_cc_report::CV_MTM_CC_DDL" as "SEARCH_MTM_CC_REPORT_DDL" 
+		key ("ITEM_VALUE","ITEM_TYPE")
+		create forbidden
+		update forbidden
+		delete forbidden;	
+		
+	"cdp.ebgcfe.models.ui_mtm_cc_report::cv_mtm_cc_info" as "SEARCH_MTM_CC_INFO" 
+		keys generate local "ID"
+		create forbidden
+		update forbidden
+		delete forbidden;			
+	/*9.6 X86 price Consumption Report Design add by zhengyq7 20160322 end */
+	   
+	   /*PM RPT FORECAST*/	
+  "cdp.ebgcfe.models.ui_pm_rpt_forecast::AT_UI_PM_RPT_FORECAST" as "PM_RPT_FORECAST"
+   		keys generate local "GENID"
+		create forbidden
+		update forbidden
+		delete forbidden;
+		
+   
+  "cdp.ebgcfe.models.ui_pm_rpt_forecast::CV_UI_PM_RPT_FORECAST_DDL" as "PM_RPT_FORECAST_DDL"
+  		keys generate local "GENID"
+		create forbidden
+		update forbidden
+		delete forbidden;
+		
+  "cdp.ebgcfe.models.ui_pm_rpt_forecast::CV_UI_PM_RPT_FORECAST_PLANT_DDL" as "PM_RPT_FORECAST_PLANT_DDL"
+  		keys generate local "GENID"
+		create forbidden
+		update forbidden
+		delete forbidden;		
+  
+  
+  /*4.9 XOUTFR Weight*/
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_WEIGHT" as "UI_UI_XOUTFR_WEIGHT"
+			key ("CYCLE", "PRODUCT_GROUP", "BRAND", "FAMILY", "MT", "ITEM")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::createUiXoutfrWeight"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::updateUiXoutfrWeight"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::deleteUiXoutfrWeight"
+			;
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_WEIGHT_MT" as "UI_UI_XOUTFR_WEIGHT_MT"
+			key ("CYCLE", "PRODUCT_GROUP", "BRAND", "FAMILY", "MT", "ITEM")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::createUiXoutfrWeight"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::updateUiXoutfrWeight"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::deleteUiXoutfrWeight"
+			;
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_WEIGHT_ITEM" as "UI_UI_XOUTFR_WEIGHT_ITEM"
+			key ("CYCLE", "PRODUCT_GROUP", "BRAND", "FAMILY", "MT", "ITEM")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::createUiXoutfrWeight"
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::updateUiXoutfrWeight"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::deleteUiXoutfrWeight"
+			;
+			
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_S_DDL" as "UI_XOUTFR_WEIGHT_S_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_S_MT_DDL" as "UI_XOUTFR_WEIGHT_S_MT_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_S_ITEM_DDL" as "UI_XOUTFR_WEIGHT_S_ITEM_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		 
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_S_FAMILY_DDL" as "UI_XOUTFR_WEIGHT_S_FAMILY_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			parameters via key and entity "IN_UI_XOUTFR_WEIGHT_S_FAMILY_DDL"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_C_FAMILY_DDL" as "UI_XOUTFR_WEIGHT_C_FAMILY_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			parameters via key and entity "IN_UI_XOUTFR_WEIGHT_C_FAMILY_DDL"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_C_BRAND_DDL" as "UI_XOUTFR_WEIGHT_C_BRAND_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_C_MT_DDL" as "UI_XOUTFR_WEIGHT_C_MT_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_xoutfr_weight::CV_UI_XOUTFR_C_ITEM_DDL" as "UI_XOUTFR_WEIGHT_C_ITEM_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+		
+	/*4.9	end*/
+    /*4.10 XOUTFR Rate*/
+		
+		"cdp.ebgcfe.models.ui_xoutfr_rate::CV_UI_XOUTFR_RATE" as "UI_XOUTFR_RATE"
+			key ("CYCLE", "PRODUCT_GROUP", "BRAND", "PLANT", "FAMILY", "MACHINETYPE","GEO_TYPE", "GEO", "FREIGHT_TYPE")			
+			//parameters via key and entity "INPUT_PERIOD_XOUTFR_RATE"
+			update forbidden
+			//update using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::updateUiXoutfrRate"
+			delete forbidden
+			//delete using "cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRate"
+			;
+		"cdp.ebgcfe.models.ui_xoutfr_rate::CV_UI_XOUTFR_RATE_SEARCH_DDL" as "UI_XOUTFR_RATE_SEARCH_DDL"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+		"cdp.ebgcfe.models.ui_xoutfr_rate::CV_UI_XOUTFR_RATE_SEARCH_PLANT_DDL" as "UI_XOUTFR_RATE_SEARCH_PLANT_DDL"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+		/*"cdp.ebgcfe.models.ui_xoutfr_rate::CV_UI_XOUTFR_RATE_FAMILY" as "UI_XOUTFR_RATE_FAMILY"
+            key("ITEM_TYPE","ITEM_VALUE")            												                                                  
+            parameters via key and entity "INPUT_XOUTFR_RATE";*/
+		 
+	 /*4.10	end*/
+	 
+	 /*2.10 sellable country*/
+	 "cdp.ebgcfe.models.ui_sellable_country::CV_UI_SELLABLE_COUNTRY" as "UI_SELLABLE_COUNTRY"
+			key ("CYCLE","PRODUCT_GROUP", "ITEM", "COUNTRY", "PRODCLASS","COFCAT")
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_sellable_country::updateUiSellableCountry"//add by zhaodan1 20161104
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_sellable_country::deleteUiSellableCountry"
+			;
+	"cdp.ebgcfe.models.ui_sellable_country::CV_UI_SELLABLE_COUNTRY_S_DDL" as "UI_SELLABLE_COUNTRY_S_DDL"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+	/*2.10 sellable country end*/
+	
+	/*6.15 MTM reports*/
+	 "cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM" as "RPT_MTM"
+			key ("PRODUCT_GROUP", "CTO", "ASSEMBLY", "COMPONENT", "PLANT", "SUBGEO","COUNTRY")
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	"cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM_HEADER" as "RPT_MTM_HEADER"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	
+	"cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM_SEARCH_DDL" as "RPT_MTM_SEARCH_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")  
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+	"cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM_SEARCH_CTO_DDL" as "RPT_MTM_SEARCH_CTO_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")  
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+	"cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM_SEARCH_FAMILY_DDL" as "RPT_MTM_SEARCH_FAMILY_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")  
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+	"cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM_SEARCH_SUBGEO_COUNTRY_DDL" as "RPT_MTM_SEARCH_SUBGEO_COUNTRY_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")  
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+	"cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM_SEARCH_ASSEMBLY_DDL" as "RPT_MTM_SEARCH_ASSEMBLY_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")  
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+	"cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM_E_CYCLE_DDL" as "RPT_MTM_E_CYCLE_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")  
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+	"cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM_E_MONTH_DDL" as "RPT_MTM_E_MONTH_DDL"
+			key("ITEM_TYPE","ITEM_VALUE")  
+			parameters via key and entity "IN_RPT_MTM_E_MONTH_DDL"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;
+	"cdp.ebgcfe.models.rpt_mtm::CV_RPT_MTM_BATCH_EXECUTE" as "RPT_MTM_BATCH_EXECUTE" 
+		keys generate local "IDX"
+		aggregates always
+		parameters via entity "INPUT_RPT_MTM_BATCH_EXECUTE";	 	
+				
+	/*6.15 MTM reports end*/
+	
+
+    /*11.1 CTO-FC Adder*/
+		
+		"cdp.ebgcfe.models.ui_ctofc_adder::CV_UI_CTOFC_ADDER" as "UI_CTOFC_ADDER"
+			key ("CYCLE", "PRODUCT_GROUP", "CTO", "FC", "PLANT", "SUBGEO","ADDER_NAME")
+			parameters via key and entity "INPUT_PERIOD_CTOFC_ADDER"
+			create forbidden
+			update using "cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::updateUiCtoFcAdder"
+			delete using "cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::deleteUiCtoFcAdder"
+			;
+		"cdp.ebgcfe.models.ui_ctofc_adder::CV_UI_CTOFC_ADDER_CURRENT" as "UI_CTOFC_ADDER_CURRENT"
+			key ("CYCLE", "PRODUCT_GROUP", "CTO", "FC", "PLANT", "SUBGEO","ADDER_NAME")
+			create using "cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::createUiCtoFcAdder"
+			update  forbidden
+			delete  forbidden
+			;	
+			
+		"cdp.ebgcfe.models.ui_ctofc_adder::CV_UI_CTOFC_ADDER_SEARCH_DDL" as "UI_CTOFC_ADDER_SEARCH_DDL"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+		"cdp.ebgcfe.models.ui_ctofc_adder::CV_UI_CTOFC_ADDER_C_DDL" as "UI_CTOFC_ADDER_C_DDL"
+		    keys generate local "IDX"
+			parameters via entity "INPUT_CTOFC_ADDER_C_DDL"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;	
+	 /*11.1	end*/
+	 	 
+	 /*9.8	buy & sell part no start  zhaodan1 2016/8/25*/	
+		"cdp.ebgcfe.models.ui_pm_bs_part_no::CV_UI_PM_BS_PART_NO" as "UI_PM_BS_PART_NO"
+			key ("PART_NO")
+			update forbidden
+			delete forbidden
+			;
+		"cdp.ebgcfe.models.ui_pm_bs_part_no::CV_UI_PM_BS_PART_NO_SEARCH_DDL" as "UI_PM_BS_PART_NO_SEARCH_DDL"
+			keys generate local "GENID"
+			create forbidden
+			update forbidden
+			delete forbidden
+			;		 
+	/*9.8	buy & sell part no end */ 	
+	
+	
+
+	 
+		
+}

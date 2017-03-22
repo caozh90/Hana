@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_FORECAST_COST_PUBLISH_CTO" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_FORECAST_COST_PUBLISH_CTO"/>
+  <defaultSchema schemaName="EBGCFE"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="BIZ_CTO_COMMISSIONCOST_ALL" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews/>
+  <logicalModel id="BIZ_CTO_COMMISSIONCOST_ALL">
+    <attributes>
+      <attribute id="PRODUCT_GROUP" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="VARIANT" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VARIANT"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="VARIANT"/>
+      </attribute>
+      <attribute id="SALES_ORG" key="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SALES_ORG"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="SALES_ORG"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_1" key="true" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTHIER_1"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="PRODUCTHIER_1"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_2" key="true" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTHIER_2"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="PRODUCTHIER_2"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_3" key="true" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTHIER_3"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="PRODUCTHIER_3"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_4" key="true" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTHIER_4"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="PRODUCTHIER_4"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="CURRENCY_NAME" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CURRENCY_NAME"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="CURRENCY_NAME"/>
+      </attribute>
+      <attribute id="CYCLE" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="CYCLE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="FROM_DATE" hidden="false" order="15" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FROM_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;FROM_DATE_TRAN&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="TO_DATE" hidden="false" order="16" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TO_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;TO_DATE_TRAN&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="SYS_LAST_MODIFIED_DATE" hidden="false" order="17" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_LAST_MODIFIED_DATE_TRAN&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="FROM_DATE_TRAN" hidden="true" order="8" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="FROM_DATE"/>
+        <measureMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="FROM_DATE"/>
+      </measure>
+      <measure id="TO_DATE_TRAN" hidden="true" order="9" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="TO_DATE"/>
+        <measureMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="TO_DATE"/>
+      </measure>
+      <measure id="M1" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M1"/>
+        <measureMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="M1"/>
+      </measure>
+      <measure id="SYS_LAST_MODIFIED_DATE_TRAN" hidden="true" order="11" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <measureMapping schemaName="EBGCFE" columnObjectName="BIZ_CTO_COMMISSIONCOST_ALL" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

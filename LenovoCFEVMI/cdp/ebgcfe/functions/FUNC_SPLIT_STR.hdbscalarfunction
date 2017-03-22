@@ -1,0 +1,242 @@
+FUNCTION "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR" ( 
+	IN v_content VARCHAR(200)
+)  
+	RETURNS lv1 VARCHAR(100),lv2 VARCHAR(100),lv3 VARCHAR(100),lv4 VARCHAR(100),lv5 VARCHAR(100)
+			,lv6 VARCHAR(100),lv7 VARCHAR(100),lv8 VARCHAR(100),lv9 VARCHAR(100),lv10 VARCHAR(100)
+			,tag1 VARCHAR(10),tag2 VARCHAR(10),tag3 VARCHAR(10),tag4 VARCHAR(10),tag5 VARCHAR(10),
+			tag6 VARCHAR(10),tag7 VARCHAR(10),tag8 VARCHAR(10),tag9 VARCHAR(10),tag10 VARCHAR(10),
+			tba1 VARCHAR(100),tba2 VARCHAR(100),tba3 VARCHAR(100),tba4 VARCHAR(100),tba5 VARCHAR(100)
+			,tba6 VARCHAR(100),tba7 VARCHAR(100),tba8 VARCHAR(100),tba9 VARCHAR(100),tba10 VARCHAR(100)
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER
+/************************************************************************
+*name       : FUNC_SPLIT_STR              
+*function   : Split string
+*input      ：v_content : raw data 
+*output     : parsed data
+*author     : Alex Fan
+*CreateDate : 2015-01-20
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	 
+AS
+	i integer:=1;
+	separator varchar(1) := ';';  --separator as ';'
+    n integer; --for cycle
+    tmp_b varchar(100);
+    tmp_lvl varchar(200);	
+    tmp_idx integer;
+    c_tba_type_dollar varchar(10) := 'US_DOLLAR';
+    c_tba_type_percentage varchar(10) := 'PERCENTAGE';
+BEGIN
+		tag1:=0;
+		tag2:=0;
+		tag3:=0;
+		tag4:=0;
+		tag5:=0;
+		tag6:=0;
+		tag7:=0;
+		tag8:=0;
+		tag9:=0;
+		tag10:=0;
+    --SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_TBATYPE_USDOLLAR INTO c_tba_type_dollar FROM dummy;
+    --SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_TBATYPE_PERCENTAGE INTO c_tba_type_percentage FROM dummy;
+	IF v_content IS NULL THEN
+		lv1:=NULL;
+		lv2:=NULL;
+		lv3:=NULL;
+		lv4:=NULL;
+		lv5:=NULL;
+		lv6:=NULL;
+		lv7:=NULL;
+		lv8:=NULL;
+		lv9:=NULL;
+		lv10:=NULL;
+	ELSE
+		tmp_idx:=LOCATE (v_content, :separator);  
+		IF :tmp_idx=0 THEN
+			lv1:=v_content;
+			tag1:=LOCATE (lv1,'$');
+			IF tag1>0 THEN
+				tag1 := :c_tba_type_dollar;
+			ELSE
+				tag1 := :c_tba_type_percentage;
+			END IF;
+		ELSE
+			n:=(LENGTH(v_content) - LENGTH(REPLACE(v_content,:separator,''))); --4
+			tmp_b:=substr_before(:v_content,:separator);          --A
+			tmp_lvl:=substr_after(:v_content,:separator);         --B,C,D
+			lv1:=tmp_b;
+			tag1:=LOCATE (lv1,'$');
+			IF tag1>0 THEN
+				tag1 := :c_tba_type_dollar;
+			ELSE
+				tag1 := :c_tba_type_percentage;
+			END IF;
+			FOR i in 2..:n DO      --2-3
+				    tmp_b:=substr_before(:tmp_lvl,:separator);
+				    tmp_lvl:=substr_after(:tmp_lvl,:separator);
+					IF :i=2 THEN
+						lv2:=tmp_b;
+						tag2:=LOCATE (lv2,'$');
+						IF tag2>0 THEN
+							tag2 := :c_tba_type_dollar;
+						ELSE
+							tag2 := :c_tba_type_percentage;
+						END IF;
+					ELSEIF :i=3 THEN
+						lv3:=tmp_b;
+						tag3:=LOCATE (lv3,'$');
+						IF tag3>0 THEN
+							tag3 := :c_tba_type_dollar;
+						ELSE
+							tag3 := :c_tba_type_percentage;
+						END IF;
+					ELSEIF :i=4 THEN
+						lv4:=tmp_b;
+						tag4:=LOCATE (lv4,'$');
+						IF tag4>0 THEN
+							tag4 := :c_tba_type_dollar;
+						ELSE
+							tag4 := :c_tba_type_percentage;
+						END IF;
+					ELSEIF :i=5 THEN
+						lv5:=tmp_b;
+						tag5:=LOCATE (lv5,'$');
+						IF tag5>0 THEN
+							tag5 := :c_tba_type_dollar;
+						ELSE
+							tag5 := :c_tba_type_percentage;
+						END IF;
+					ELSEIF :i=6 THEN
+						lv6:=tmp_b;	
+						tag6:=LOCATE (lv6,'$');
+						IF tag6>0 THEN
+							tag6 := :c_tba_type_dollar;
+						ELSE
+							tag6 := :c_tba_type_percentage;
+						END IF;
+					ELSEIF :i=7 THEN
+						lv7:=tmp_b;
+						tag7:=LOCATE (lv7,'$');
+						IF tag7>0 THEN
+							tag7 := :c_tba_type_dollar;
+						ELSE
+							tag7 := :c_tba_type_percentage;
+						END IF;
+					ELSEIF :i=8 THEN
+						lv8:=tmp_b;
+						tag8:=LOCATE (lv8,'$');
+						IF tag8>0 THEN
+							tag8 := :c_tba_type_dollar;
+						ELSE
+							tag8 := :c_tba_type_percentage;
+						END IF;
+					ELSEIF :i=9 THEN
+						lv9:=tmp_b;
+						tag9:=LOCATE (lv9,'$');
+						IF tag9>0 THEN
+							tag9 := :c_tba_type_dollar;
+						ELSE
+							tag9 := :c_tba_type_percentage;
+						END IF;
+					ELSE 
+						lv10:=tmp_b;
+						tag10:=LOCATE (lv10,'$');
+						IF tag10>0 THEN
+							tag10 := :c_tba_type_dollar;
+						ELSE
+							tag10 := :c_tba_type_percentage;
+						END IF;
+					END IF;
+			END FOR;
+			
+			i:=i+1;
+			IF :i=2 THEN
+				lv2:=tmp_lvl;
+				tag2:=LOCATE (lv2,'$');
+				IF tag2>0 THEN
+					tag2 := :c_tba_type_dollar;
+				ELSE
+					tag2 := :c_tba_type_percentage;
+				END IF;
+			ELSEIF :i=3 THEN
+				lv3:=tmp_lvl;
+				tag3:=LOCATE (lv3,'$');
+				IF tag3>0 THEN
+					tag3 := :c_tba_type_dollar;
+				ELSE
+					tag3 := :c_tba_type_percentage;
+				END IF;
+			ELSEIF i=4 THEN
+				lv4:=tmp_lvl;
+				tag4:=LOCATE (lv4,'$');
+				IF tag4>0 THEN
+					tag4 := :c_tba_type_dollar;
+				ELSE
+					tag4 := :c_tba_type_percentage;
+				END IF;
+			ELSEIF i=5 THEN
+				lv5:=tmp_lvl;
+				tag5:=LOCATE (lv5,'$');
+				IF tag5>0 THEN
+					tag5 := :c_tba_type_dollar;
+				ELSE
+					tag5 := :c_tba_type_percentage;
+				END IF;
+			ELSEIF i=6 THEN
+				lv6:=tmp_lvl;
+				tag6:=LOCATE (lv6,'$');
+				IF tag6>0 THEN
+					tag6 := :c_tba_type_dollar;
+				ELSE
+					tag6 := :c_tba_type_percentage;
+				END IF;			
+			ELSEIF i=7 THEN
+				lv7:=tmp_lvl;
+				tag7:=LOCATE (lv7,'$');
+				IF tag7>0 THEN
+					tag7 := :c_tba_type_dollar;
+				ELSE
+					tag7 := :c_tba_type_percentage;
+				END IF;
+			ELSEIF i=8 THEN
+				lv8:=tmp_lvl;
+				tag8:=LOCATE (lv8,'$');
+				IF tag8>0 THEN
+					tag8 := :c_tba_type_dollar;
+				ELSE
+					tag8 := :c_tba_type_percentage;
+				END IF;		
+			ELSEIF i=9 THEN
+				lv9:=tmp_lvl;
+				tag9:=LOCATE (lv9,'$');
+				IF tag9>0 THEN
+					tag9 := :c_tba_type_dollar;
+				ELSE
+					tag9 := :c_tba_type_percentage;
+				END IF;
+			ELSE 
+				lv10:=tmp_lvl;
+				tag10:=LOCATE (lv10,'$');
+				IF tag10>0 THEN
+					tag10 := :c_tba_type_dollar;
+				ELSE
+					tag10 := :c_tba_type_percentage;
+				END IF;
+			END IF;	
+		END IF;
+		
+	tba1:=SUBSTRING(:lv1,1,LENGTH(:lv1)-1);
+	tba2:=SUBSTRING(:lv2,1,LENGTH(:lv2)-1);
+	tba3:=SUBSTRING(:lv3,1,LENGTH(:lv3)-1);
+	tba4:=SUBSTRING(:lv4,1,LENGTH(:lv4)-1);
+	tba5:=SUBSTRING(:lv5,1,LENGTH(:lv5)-1);
+	tba6:=SUBSTRING(:lv6,1,LENGTH(:lv6)-1);
+	tba7:=SUBSTRING(:lv7,1,LENGTH(:lv7)-1);
+	tba8:=SUBSTRING(:lv8,1,LENGTH(:lv8)-1);
+	tba9:=SUBSTRING(:lv9,1,LENGTH(:lv9)-1);
+	tba10:=SUBSTRING(:lv10,1,LENGTH(:lv10)-1);
+	
+	END IF;
+	
+END;

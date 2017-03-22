@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_PN_CLASS" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_UI_PN_CLASS"/>
+  <defaultSchema schemaName="EBGDF"/>
+  <localVariables>
+    <variable id="IN_MFI_FFI_FC_IND" parameter="true">
+      <descriptions defaultDescription="IN_MFI_FFI_FC_IND_IND"/>
+      <variableProperties datatype="VARCHAR" defaultValue=" " length="3" mandatory="false">
+        <valueDomain type="AttributeValue">
+          <attribute name="MFI_FFI_FC_IND"/>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="IN_MFI_FFI_FC" parameter="true">
+      <descriptions defaultDescription="IN_MFI_FFI_FC"/>
+      <variableProperties datatype="VARCHAR" defaultValue=" " length="20" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="IN_PPN" parameter="true">
+      <descriptions defaultDescription="IN_PPN"/>
+      <variableProperties datatype="VARCHAR" defaultValue=" " length="12" mandatory="false">
+        <valueDomain type="AttributeValue">
+          <attribute name="PPN"/>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="IN_ABCD_T" parameter="true">
+      <descriptions defaultDescription="IN_ABCD_TT"/>
+      <variableProperties datatype="VARCHAR" defaultValue=" " length="15" mandatory="false">
+        <valueDomain type="AttributeValue">
+          <attribute name="ABCD_T"/>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="IN_TYPE" parameter="true">
+      <descriptions defaultDescription="IN_TYPE"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="" length="20" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="CYCLE_ID" length="9"/>
+        <viewAttribute datatype="VARCHAR" id="MFI_FFI_FC_IND" length="3"/>
+        <viewAttribute datatype="VARCHAR" id="MFI_FFI_FC" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="PPN" length="12"/>
+        <viewAttribute datatype="VARCHAR" id="ABCD_T" length="15"/>
+        <viewAttribute datatype="TIMESTAMP" id="LOD"/>
+        <viewAttribute datatype="VARCHAR" id="ABCD" length="1"/>
+        <viewAttribute datatype="VARCHAR" id="ABCD_1" length="1"/>
+        <viewAttribute datatype="VARCHAR" id="ABCD_2" length="1"/>
+        <viewAttribute datatype="VARCHAR" id="ABCD_3" length="1"/>
+        <viewAttribute datatype="VARCHAR" id="ABCD_4" length="1"/>
+        <viewAttribute datatype="VARCHAR" id="ABCD_5" length="1"/>
+        <viewAttribute datatype="TIMESTAMP" id="CREATE_TS"/>
+        <viewAttribute datatype="VARCHAR" id="CREATE_USERID" length="128"/>
+        <viewAttribute datatype="TIMESTAMP" id="LAST_UPDATE_TS"/>
+        <viewAttribute datatype="VARCHAR" id="LAST_UPDATE_USERID" length="128"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#IN_MFI_FFI_FC_IND</localVariable>
+      <localVariable>#IN_MFI_FFI_FC</localVariable>
+      <localVariable>#IN_PPN</localVariable>
+      <localVariable>#IN_ABCD_T</localVariable>
+      <localVariable>#IN_TYPE</localVariable>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = 
+ 	 
+ 	 SELECT A.CYCLE_ID,
+			A.MFI_FFI_FC_IND,
+			A.MFI_FFI_FC,
+			A.PPN,
+			A.ABCD_T,
+			A.LOD,
+			A.ABCD,
+			A.ABCD_1,
+			A.ABCD_2,
+			A.ABCD_3,
+			A.ABCD_4,
+			A.ABCD_5,
+			A.CREATE_TS,
+			A.CREATE_USERID,
+			A.LAST_UPDATE_TS,
+			A.LAST_UPDATE_USERID
+ 	 FROM ( SELECT CYCLE_ID,
+					MFI_FFI_FC_IND,
+					MFI_FFI_FC,
+					PPN,
+					ABCD_T,
+					LOD,
+					ABCD,
+					ABCD_1,
+					ABCD_2,
+					ABCD_3,
+					ABCD_4,
+					ABCD_5,
+					CREATE_TS,
+					CREATE_USERID,
+					LAST_UPDATE_TS,
+					LAST_UPDATE_USERID
+				FROM RPT_PN_CLASS
+				WHERE ( MFI_FFI_FC_IND = TRIM(IN_MFI_FFI_FC_IND) OR IN_MFI_FFI_FC_IND IS NULL OR TRIM(IN_MFI_FFI_FC_IND) = '' )
+				AND ( MFI_FFI_FC LIKE '%'||TRIM(IN_MFI_FFI_FC)||'%'  OR IN_MFI_FFI_FC IS NULL OR TRIM(IN_MFI_FFI_FC) = '' )
+				AND ( PPN LIKE '%'||TRIM(IN_PPN)||'%'  OR IN_PPN IS NULL OR TRIM(IN_PPN) = '' )
+				AND ( ABCD_T = TRIM(IN_ABCD_T)  OR IN_ABCD_T IS NULL OR TRIM(IN_ABCD_T) = '' )
+				 ) AS A
+	 WHERE A.ABCD = ( SELECT MAX(ABCD) FROM RPT_PN_CLASS WHERE MFI_FFI_FC_IND = A.MFI_FFI_FC_IND AND MFI_FFI_FC = A.MFI_FFI_FC)
+	 AND IN_TYPE = 'PN_CLASS'                
+	UNION
+	SELECT A.CYCLE_ID,
+			A.MFI_FFI_FC_IND,
+			A.MFI_FFI_FC,
+			A.PPN,
+			A.ABCD_T,
+			A.LOD,
+			A.ABCD,
+			A.ABCD_1,
+			A.ABCD_2,
+			A.ABCD_3,
+			A.ABCD_4,
+			A.ABCD_5,
+			A.CREATE_TS,
+			A.CREATE_USERID,
+			A.LAST_UPDATE_TS,
+			A.LAST_UPDATE_USERID
+ 	 FROM ( SELECT CYCLE_ID,
+					MFI_FFI_FC_IND,
+					MFI_FFI_FC,
+					PPN,
+					ABCD_T,
+					LOD,
+					ABCD,
+					ABCD_1,
+					ABCD_2,
+					ABCD_3,
+					ABCD_4,
+					ABCD_5,
+					CREATE_TS,
+					CREATE_USERID,
+					LAST_UPDATE_TS,
+					LAST_UPDATE_USERID
+				FROM RPT_PN_CLASS
+				WHERE ( MFI_FFI_FC_IND = TRIM(IN_MFI_FFI_FC_IND) OR IN_MFI_FFI_FC_IND IS NULL OR TRIM(IN_MFI_FFI_FC_IND) = '' )
+				AND ( MFI_FFI_FC LIKE '%'||TRIM(IN_MFI_FFI_FC)||'%'  OR IN_MFI_FFI_FC IS NULL OR TRIM(IN_MFI_FFI_FC) = '' )
+				AND ( PPN LIKE '%'||TRIM(IN_PPN)||'%'  OR IN_PPN IS NULL OR TRIM(IN_PPN) = '' )
+				AND ( ABCD_T = TRIM(IN_ABCD_T)  OR IN_ABCD_T IS NULL OR TRIM(IN_ABCD_T) = '' ) 
+				) AS A
+	 WHERE A.ABCD &lt;> ( SELECT MAX(ABCD) FROM RPT_PN_CLASS WHERE MFI_FFI_FC_IND = A.MFI_FFI_FC_IND AND MFI_FFI_FC = A.MFI_FFI_FC)
+	 AND IN_TYPE = 'OVERRIDEN';
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="CYCLE_ID" order="1">
+        <descriptions defaultDescription="CYCLE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE_ID"/>
+      </attribute>
+      <attribute id="MFI_FFI_FC_IND" order="2">
+        <descriptions defaultDescription="MFI_FFI_FC_IND"/>
+        <keyMapping columnObjectName="Script_View" columnName="MFI_FFI_FC_IND"/>
+      </attribute>
+      <attribute id="MFI_FFI_FC" order="3">
+        <descriptions defaultDescription="MFI_FFI_FC"/>
+        <keyMapping columnObjectName="Script_View" columnName="MFI_FFI_FC"/>
+      </attribute>
+      <attribute id="PPN" order="4">
+        <descriptions defaultDescription="PPN"/>
+        <keyMapping columnObjectName="Script_View" columnName="PPN"/>
+      </attribute>
+      <attribute id="ABCD_T" order="5">
+        <descriptions defaultDescription="ABCD_T"/>
+        <keyMapping columnObjectName="Script_View" columnName="ABCD_T"/>
+      </attribute>
+      <attribute id="LOD" order="6">
+        <descriptions defaultDescription="LOD"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOD"/>
+      </attribute>
+      <attribute id="ABCD" order="7">
+        <descriptions defaultDescription="ABCD"/>
+        <keyMapping columnObjectName="Script_View" columnName="ABCD"/>
+      </attribute>
+      <attribute id="ABCD_1" order="8">
+        <descriptions defaultDescription="ABCD_1"/>
+        <keyMapping columnObjectName="Script_View" columnName="ABCD_1"/>
+      </attribute>
+      <attribute id="ABCD_2" order="9">
+        <descriptions defaultDescription="ABCD_2"/>
+        <keyMapping columnObjectName="Script_View" columnName="ABCD_2"/>
+      </attribute>
+      <attribute id="ABCD_3" order="10">
+        <descriptions defaultDescription="ABCD_3"/>
+        <keyMapping columnObjectName="Script_View" columnName="ABCD_3"/>
+      </attribute>
+      <attribute id="ABCD_4" order="11">
+        <descriptions defaultDescription="ABCD_4"/>
+        <keyMapping columnObjectName="Script_View" columnName="ABCD_4"/>
+      </attribute>
+      <attribute id="ABCD_5" order="12">
+        <descriptions defaultDescription="ABCD_5"/>
+        <keyMapping columnObjectName="Script_View" columnName="ABCD_5"/>
+      </attribute>
+      <attribute id="CREATE_USERID" order="14">
+        <descriptions defaultDescription="CREATE_USERID"/>
+        <keyMapping columnObjectName="Script_View" columnName="CREATE_USERID"/>
+      </attribute>
+      <attribute id="LAST_UPDATE_USERID" order="16">
+        <descriptions defaultDescription="LAST_UPDATE_USERID"/>
+        <keyMapping columnObjectName="Script_View" columnName="LAST_UPDATE_USERID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="CREATE_TS" order="13" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="CREATE_TS"/>
+        <measureMapping columnObjectName="Script_View" columnName="CREATE_TS"/>
+      </measure>
+      <measure id="LAST_UPDATE_TS" order="15" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="LAST_UPDATE_TS"/>
+        <measureMapping columnObjectName="Script_View" columnName="LAST_UPDATE_TS"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

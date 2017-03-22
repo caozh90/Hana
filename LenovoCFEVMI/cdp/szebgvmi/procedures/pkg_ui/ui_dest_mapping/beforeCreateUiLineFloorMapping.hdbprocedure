@@ -1,0 +1,39 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_dest_mapping::beforeCreateUiLineFloorMapping" (
+	IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_LINE_FLOOR_MAPPING_T",
+	OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	READS SQL DATA 
+	AS
+	 DS_LINE NVARCHAR(200);
+	 PHYSICAL_PLANT NVARCHAR(40);
+	 v_tmp INTEGER;
+BEGIN
+	SELECT DS_LINE,PHYSICAL_PLANT
+		INTO DS_LINE,PHYSICAL_PLANT
+			FROM :newInfo;
+			
+	SELECT count(1) into v_tmp FROM UI_LINE_FLOOR_MAPPING where  DS_LINE =:DS_LINE and 
+			PHYSICAL_PLANT=:PHYSICAL_PLANT;
+	if v_tmp > 0
+	then
+		errorinfo = select 400 as http_status_code, 
+     		'Primary key constraint' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+
+	
+	
+	select count(*) into v_tmp from (Select PHYSICALPLANT from CONF_SITEMASTER where PHYSICALPLANT=:PHYSICAL_PLANT);
+	if v_tmp = 0
+	then
+		errorinfo = select 400 as http_status_code, 
+     		'PHYSICAL_PLANT: VALIDATION FAILED, NOT EXIST IN CONF_SITEMASTER' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+	
+END;

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_SA" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_SA"/>
+  <localVariables>
+    <variable id="IN_LIFNR" parameter="true">
+      <descriptions defaultDescription="IN_LIFNR"/>
+      <variableProperties datatype="VARCHAR" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="IN_MATNR" parameter="true">
+      <descriptions defaultDescription="IN_MATNR"/>
+      <variableProperties datatype="VARCHAR" length="20" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="SA" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="SA"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="SA_NUMBER"/>
+        <viewAttribute id="SA_LINE_ID"/>
+        <viewAttribute id="START_DATE"/>
+        <viewAttribute id="END_DATE"/>
+        <viewAttribute id="LIFNR"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="WERKS"/>
+        <viewAttribute id="OPEN_QTY"/>
+        <viewAttribute id="QTY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#SA">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_NUMBER" source="SA_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_LINE_ID" source="SA_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="START_DATE" source="START_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="END_DATE" source="END_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LIFNR" source="LIFNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OPEN_QTY" source="OPEN_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY" source="QTY"/>
+      </input>
+      <filter>(&quot;LIFNR&quot; ='$$IN_LIFNR$$' ) and  ( &quot;MATNR&quot; ='$$IN_MATNR$$')</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="SA_NUMBER" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SA_NUMBER"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SA_NUMBER"/>
+      </attribute>
+      <attribute id="SA_LINE_ID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SA_LINE_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SA_LINE_ID"/>
+      </attribute>
+      <attribute id="START_DATE" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="START_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="START_DATE"/>
+      </attribute>
+      <attribute id="END_DATE" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="END_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="END_DATE"/>
+      </attribute>
+      <attribute id="LIFNR" hidden="true" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LIFNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LIFNR"/>
+      </attribute>
+      <attribute id="MATNR" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="WERKS" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="WERKS"/>
+      </attribute>
+      <attribute id="OPEN_QTY" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="OPEN_QTY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="OPEN_QTY"/>
+      </attribute>
+      <attribute id="QTY" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QTY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="QTY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures>
+      <measure id="MS" hidden="false" order="10" aggregationType="count" measureType="simple" datatype="VARCHAR" length="1">
+        <descriptions defaultDescription="MS"/>
+        <formula>1</formula>
+      </measure>
+    </calculatedMeasures>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="210"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

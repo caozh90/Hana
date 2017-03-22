@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_RPT_OUTLOOK_DOWNLOAD" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_RPT_OUTLOOK_DOWNLOAD"/>
+  <localVariables>
+    <variable id="IN_WHERE" parameter="true">
+      <descriptions defaultDescription="IN_WHERE"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="" length="2048" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <informationModelLayout relativeWidthScenario="27"/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="FIELDS" length="2048"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#IN_WHERE</localVariable>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ --/^\d+((e|E)\d+)$/
+--SELECT REPLACE_REGEXPR('([[:digit:]].*(e|E)[[:digit:]].*)' IN ifnull(ASSEMBLY,'') WITH
+--'''\1''' OCCURRENCE ALL) &quot;replace_regexpr&quot; FROM DUMMY
+ BEGIN 
+ 	tb_outlook = SELECT PRODUCT_GROUP,CYCLE,BRAND,FAMILY,ASSEMBLY,
+						PLANT,SUBGEO,COUNTRY,DESCRIPTION,CTO,
+						ifnull(TO_NVARCHAR(M1), '') AS   M1_T  ,  ifnull(TO_NVARCHAR(M2), '') AS  M2_T ,  ifnull(TO_NVARCHAR(M3), '') AS   M3_T,  ifnull(TO_NVARCHAR(M4), '') AS  M4_T ,  ifnull(TO_NVARCHAR(M5), '') AS  M5_T ,  ifnull(TO_NVARCHAR(M6), '') AS  M6_T ,  ifnull(TO_NVARCHAR(M7), '') AS  M7_T ,  ifnull(TO_NVARCHAR(M8), '') AS  M8_T ,  ifnull(TO_NVARCHAR(M9), '') AS  M9_T ,  ifnull(TO_NVARCHAR(M10), '') AS   M10_T,  ifnull(TO_NVARCHAR(M11), '') AS  M11_T ,  ifnull(TO_NVARCHAR(M12), '') AS  M12_T ,
+					    ifnull(TO_NVARCHAR(M13), '') AS  M13_T ,  ifnull(TO_NVARCHAR(M14), '') AS  M14_T  ,  ifnull(TO_NVARCHAR(M15), '') AS  M15_T  ,  ifnull(TO_NVARCHAR(M16), '') AS  M16_T ,  ifnull(TO_NVARCHAR(M17), '') AS  M17_T ,  ifnull(TO_NVARCHAR(M18), '') AS  M18_T ,
+					    ifnull(TO_NVARCHAR(LM1), '') AS  LM1_T ,  ifnull(TO_NVARCHAR(LM2), '') AS  LM2_T ,  ifnull(TO_NVARCHAR(LM3), '') AS  LM3_T ,  ifnull(TO_NVARCHAR(LM4), '') AS  LM4_T ,  ifnull(TO_NVARCHAR(LM5), '') AS  LM5_T ,  ifnull(TO_NVARCHAR(LM6), '') AS  LM6_T  ,  ifnull(TO_NVARCHAR(LM7), '') AS  LM7_T ,  ifnull(TO_NVARCHAR(LM8), '') AS  LM8_T ,  ifnull(TO_NVARCHAR(LM9), '') AS  LM9_T  ,  ifnull(TO_NVARCHAR(LM10), '') AS  LM10_T ,  ifnull(TO_NVARCHAR(LM11), '') AS  LM11_T ,  ifnull(TO_NVARCHAR(LM12), '') AS  LM12_T ,
+					    ifnull(TO_NVARCHAR(LM13), '') AS  LM13_T ,  ifnull(TO_NVARCHAR(LM14), '') AS  LM14_T ,  ifnull(TO_NVARCHAR(LM15), '') AS  LM15_T  ,  ifnull(TO_NVARCHAR(LM16), '') AS  LM16_T  ,  ifnull(TO_NVARCHAR(LM17), '') AS  LM17_T ,  ifnull(TO_NVARCHAR(LM18), '') AS  LM18_T ,
+					    ifnull(TO_NVARCHAR(Q1), '') AS  Q1_T ,  ifnull(TO_NVARCHAR(Q2), '') AS  Q2_T ,  ifnull(TO_NVARCHAR(Q3), '') AS  Q3_T ,  ifnull(TO_NVARCHAR(Q4), '') AS  Q4_T  ,  ifnull(TO_NVARCHAR(Q5), '') AS  Q5_T ,  ifnull(TO_NVARCHAR(Q6), '') AS  Q6_T  ,
+						STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,
+						EOL_STATUS,CURRENCY,FC,COST_TYPE,QUANTITY,GEO 
+                   FROM EBGCFE.RPT_OUTLOOK ORDER BY BRAND,FAMILY,ASSEMBLY,CTO,FC,COST_TYPE,PLANT,GEO,SUBGEO,COUNTRY ASC;
+ 	tb_outlook_filter = apply_filter(:tb_outlook, :IN_WHERE);
+ 	 
+ 	 var_out =  
+ 	 SELECT ifnull(CYCLE,'') || ',' || ifnull(BRAND,'') || ',' || ifnull(FAMILY,'') || ',' 
+ 	  || REPLACE_REGEXPR('(^(0{1})[[:digit:]]*$)' IN REPLACE_REGEXPR('([[:digit:]].*(e|E)[[:digit:]].*)' IN ifnull(CTO,'') WITH '“\1' OCCURRENCE ALL) WITH '“\1' OCCURRENCE ALL) || ',' 
+ 	  || REPLACE_REGEXPR('(^(0{1})[[:digit:]]*$)' IN REPLACE_REGEXPR('([[:digit:]].*(e|E)[[:digit:]].*)' IN ifnull(ASSEMBLY,'') WITH '“\1' OCCURRENCE ALL) WITH '“\1' OCCURRENCE ALL) || ',' 
+ 	  || REPLACE_REGEXPR('(^(0{1})[[:digit:]]*$)' IN REPLACE_REGEXPR('([[:digit:]].*(e|E)[[:digit:]].*)' IN ifnull(FC,'') WITH '“\1' OCCURRENCE ALL) WITH '“\1' OCCURRENCE ALL) || ',' 
+ 	  || ifnull(COST_TYPE,'') || ',' 
+	  || ifnull(EOL_STATUS,'') || ',' || ifnull(PLANT,'') || ',' || ifnull(GEO,'') || ',' || ifnull(SUBGEO,'') || ',' || ifnull(COUNTRY,'') || ',' || REPLACE (ifnull(DESCRIPTION,''),',', '，')  || ',' || ifnull(CURRENCY,'')  || ',' 
+	  || M1_T || ',' ||  M2_T || ',' ||  M3_T || ',' ||  M4_T || ',' ||  M5_T || ','   
+	  || M6_T || ',' ||  M7_T || ',' ||  M8_T || ',' ||  M9_T || ',' ||  M10_T || ','   
+	  || M11_T || ',' ||  M12_T || ',' ||  M13_T || ',' ||  M14_T || ',' ||  M15_T || ','   
+	  || M16_T || ',' ||  M17_T || ',' ||  M18_T || ',' ||  LM1_T || ',' ||  LM2_T || ','   
+	  || LM3_T || ',' ||  LM4_T || ',' ||  LM5_T || ',' ||  LM6_T || ',' ||  LM7_T || ','   
+	  || LM8_T || ',' ||  LM9_T || ',' ||  LM10_T || ',' ||  LM11_T || ',' ||  LM12_T || ','   
+	  || LM13_T || ',' ||  LM14_T || ',' ||  LM15_T || ',' ||  LM16_T || ',' ||  LM17_T || ',' ||  LM18_T || ','   
+	  || Q1_T || ',' ||  Q2_T || ',' ||  Q3_T || ',' ||  Q4_T || ',' ||  Q5_T || ',' ||  Q6_T || ','  	  
+	  || ifnull(SYS_LAST_MODIFIED_BY,'') || ',' || ifnull(SYS_LAST_MODIFIED_DATE,'')
+ AS FIELDS FROM :tb_outlook_filter 
+ ;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="FIELDS" order="1">
+        <descriptions defaultDescription="FIELDS"/>
+        <keyMapping columnObjectName="Script_View" columnName="FIELDS"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

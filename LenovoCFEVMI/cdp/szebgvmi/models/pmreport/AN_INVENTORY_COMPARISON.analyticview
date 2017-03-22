@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cube:cube xmlns:Cube="http://www.sap.com/ndb/BiModelCube.ecore" schemaVersion="1.5" id="AN_INVENTORY_COMPARISON" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled">
+  <descriptions defaultDescription="AN_INVENTORY_COMPARISON"/>
+  <localVariables/>
+  <privateMeasureGroup id="MeasureGroup">
+    <attributes>
+      <attribute id="MATNR" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="MATNR"/>
+      </attribute>
+      <attribute id="WERKS" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="WERKS"/>
+      </attribute>
+      <attribute id="LIFNR" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LIFNR"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="LIFNR"/>
+      </attribute>
+      <attribute id="STORAGE_TYPE" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STORAGE_TYPE"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="STORAGE_BIN" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STORAGE_BIN"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="STORAGE_BIN"/>
+      </attribute>
+      <attribute id="HOLD_TYPE" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="HOLD_TYPE"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="HOLD_TYPE"/>
+      </attribute>
+      <attribute id="SYS_SOURCE" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_SOURCE"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="SYS_SOURCE"/>
+      </attribute>
+      <attribute id="R3_TIMESTAMP001" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="R3_TIMESTAMP001"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="R3_TIMESTAMP"/>
+      </attribute>
+      <attribute id="TPL_TIMESTAMP001" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TPL_TIMESTAMP001"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="TPL_TIMESTAMP"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="R3_TIMESTAMP_DATE" hidden="false" order="1" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="R3_TIMESTAMP_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;R3_TIMESTAMP001&quot;,1)) +'-' + lpad(string(component(&quot;R3_TIMESTAMP001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;R3_TIMESTAMP001&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="TPL_TIMESTAMP" hidden="false" order="2" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TPL_TIMESTAMP"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>if(isnull(&quot;TPL_TIMESTAMP001&quot;) ,string(null),string(component(&quot;TPL_TIMESTAMP001&quot;,1)) +'/' + lpad(string(component(&quot;TPL_TIMESTAMP001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;TPL_TIMESTAMP001&quot;,3)) ,2,'0') +' '+ lpad(string(component(&quot;TPL_TIMESTAMP001&quot;,4)) ,2,'0')+':'+lpad(string(component(&quot;TPL_TIMESTAMP001&quot;,5)) ,2,'0'))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="R3_TIMESTAMP" hidden="false" order="3" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="R3_TIMESTAMP"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(component(&quot;R3_TIMESTAMP001&quot;,1)) +'/' + lpad(string(component(&quot;R3_TIMESTAMP001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;R3_TIMESTAMP001&quot;,3)) ,2,'0') +' '+ lpad(string(component(&quot;R3_TIMESTAMP001&quot;,4)) ,2,'0')+':'+lpad(string(component(&quot;R3_TIMESTAMP001&quot;,5)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies>
+        <tableProxy centralTable="true">
+          <table schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP"/>
+        </tableProxy>
+      </tableProxies>
+      <joins/>
+      <layout>
+        <shapes>
+          <shape modelObjectName="RPT_INVENTORY_COMP" modelObjectNameSpace="SZEBGVMI" modelObjectType="catalog">
+            <upperLeftCorner x="9" y="74"/>
+          </shape>
+          <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+            <upperLeftCorner x="0" y="0"/>
+            <rectangleSize height="84" width="179"/>
+          </shape>
+        </shapes>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="R3_QTY" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="R3_QTY"/>
+        <measureMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="R3_QTY"/>
+      </measure>
+      <measure id="TPL_QTY" order="11" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="TPL_QTY"/>
+        <measureMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="TPL_QTY"/>
+      </measure>
+      <measure id="R3_TPL_DIFF" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="R3_TPL_DIFF"/>
+        <measureMapping schemaName="SZEBGVMI" columnObjectName="RPT_INVENTORY_COMP" columnName="R3_TPL_DIFF"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <sharedDimensions/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="MEASURE_GROUP" modelObjectType="repository">
+          <upperLeftCorner x="17" y="85"/>
+        </shape>
+        <shape modelObjectName="LogicalView" modelObjectNameSpace="MeasureGroup" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateMeasureGroup>
+</Cube:cube>

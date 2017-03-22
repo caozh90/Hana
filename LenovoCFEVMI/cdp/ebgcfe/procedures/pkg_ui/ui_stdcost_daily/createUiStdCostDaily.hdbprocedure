@@ -1,0 +1,111 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_daily::createUiStdCostDaily" ( 
+ IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_STDCOST_DAILY_T"
+        ,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "EBGCFE"
+    AS 
+    /************************************************************************
+    *name      :                     createuistdcostdaily
+    *function    :               
+    *input     ：               
+    *output     :                
+	*author     :                     li shunshun
+	*CreateDate    :                  2015.8.11
+    *UpdateDate  :        
+    *************************************************************************/  
+		v_full_name NVARCHAR(100):= 'cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_daily::updateuistdcostdaily';
+		v_ui_name NVARCHAR(100):= 'ui_stdcost_daily';
+		v_product_group NVARCHAR(100):= 'EBG';
+		
+        aI_DETAIL NVARCHAR(300) :='';   
+        alogide INTEGER :=0; 
+        v_resourceExists BIGINT; 
+        privilegeExists  NVARCHAR(300)  ;     
+        
+  
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000; 
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+        aI_DETAIL := :v_full_name ||' error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+        
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+             I_TYPE=>'PROC_ERROR'   
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>:v_full_name
+            ,I_MODULE=>'EBGCFE'
+            ,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+            ,I_DETAIL=>:aI_DETAIL
+        );  
+ 
+        errorInfo = select 400 as http_status_code, 
+            'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+            aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    :v_ui_name||'::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+        I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>:v_full_name
+       ,I_MODULE=>'EBGCFE'
+    ); 
+
+    select count(1) into v_resourceExists 
+    from UI_STDCOST_DAILY a,:newInfo b 
+    where A.CYCLE=B.CYCLE 
+    AND A.PRODUCT_GROUP=B.PRODUCT_GROUP 
+    AND A.ITEM=B.ITEM 
+    AND A.PLANT=B.PLANT;
+
+    if  :v_resourceExists > 0 
+        then
+            /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists'; 	
+    end if; 
+    
+  
+    insert into UI_STDCOST_DAILY(CYCLE,PRODUCT_GROUP,ITEM,PLANT,STDCOST,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION)
+    select 'CURRENT',:v_product_group,ITEM,PLANT,STDCOST,
+     CURRENT_TIMESTAMP,
+     SESSION_USER,
+     CURRENT_TIMESTAMP,
+     SESSION_USER,
+     'insert'
+   from :newInfo; 
+
+   insert into UI_STDCOST_DAILY_LOG(CYCLE,PRODUCT_GROUP,ITEM,PLANT,STDCOST,
+   AT_ACTION,SYS_CREATED_DATE,SYS_CREATED_BY,AT_MODIFIED_ON,AT_MILLIS)
+   select 'CURRENT',:v_product_group,ITEM,PLANT,STDCOST,
+     'insert', 
+     CURRENT_TIMESTAMP,
+     SESSION_USER,
+     CURRENT_TIMESTAMP,
+     TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))    
+   FROM  :newInfo; 
+     
+    aI_DETAIL := :v_full_name||' successfully inserted . ';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+            I_TYPE=>'PROC_END'  
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>:v_full_name
+            ,I_MODULE=>'EBGCFE'
+            ,I_DETAIL=>:aI_DETAIL
+        );     
+END;
+

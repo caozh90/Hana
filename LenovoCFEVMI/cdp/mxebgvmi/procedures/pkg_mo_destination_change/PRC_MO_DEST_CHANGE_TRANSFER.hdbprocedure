@@ -1,0 +1,125 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_mo_destination_change::PRC_MO_DEST_CHANGE_TRANSFER" (
+    IN iv_id VARCHAR(10), OUT on_exitcode DECIMAL
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_MO_DEST_CHANGE_TRANSFER              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141203                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+
+    AS
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_MO_DESTINATION_CHANGE';    
+      v_logic_proc_name   VARCHAR2 (40) := 'PRC_MO_DEST_CHANGE_TRANSFER';
+      logidi integer:=0;
+      
+      v_dept varchar(40);
+      
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         
+          on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+
+
+      on_exitcode := -20099;
+      
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');       
+     
+/*
+   add by xwu. 2015/8/26
+*/ 
+     select top 1 dept into v_dept  from "MXEBGVMI"."CONF_SITE_SCHEDULE" as a;
+---------------------------
+
+      DELETE FROM "PCDW"."EXP_ECC_MO_DEST_CHANGE"
+            WHERE werks IN (SELECT siteid
+                              FROM conf_site_schedule
+                             WHERE ID = iv_id);
+
+      DELETE FROM Z_PCDW_RSP_MO_DEST_CHANGE;
+
+      --added by wenfei @2007-11-12
+      UPDATE mo_dest_change
+         SET status = 'XI_IN_PROCESS'
+       WHERE status = 'COMPLETED'
+                                 --and SYS_SOURCE='FP'
+             AND werks IN (SELECT siteid
+                             FROM conf_site_schedule
+                            WHERE ID = iv_id);
+
+      --COMMIT;
+
+	--BACK UP
+	DELETE FROM "PCDW"."BAK_EXP_ECC_MO_DEST_CHANGE" 
+ 	WHERE DAYS_BETWEEN(SYS_TIMESTAMP,CURRENT_TIMESTAMP)>90;                                                     
+
+   INSERT INTO "PCDW"."BAK_EXP_ECC_MO_DEST_CHANGE"
+                  (productionordid, bomname, matnr, dest_storage_loc, werks,
+                   dept, RSPOS, status,SYS_TIMESTAMP)
+    SELECT productionordid, bomname, matnr, dest_storage_loc, werks,
+                :v_dept, posnr, status,CURRENT_TIMESTAMP     -- updated from dept to :dept 2015/8/26 by xwu.
+           FROM mo_dest_change
+          WHERE status = 'XI_IN_PROCESS' AND werks IN (SELECT siteid
+                                                         FROM conf_site_schedule
+                                                        WHERE ID = iv_id);
+
+    INSERT INTO "PCDW"."EXP_ECC_MO_DEST_CHANGE"
+                  (productionordid, bomname, matnr, dest_storage_loc, werks,
+                   dept, RSPOS, status,SYS_TIMESTAMP)
+         SELECT productionordid, bomname, matnr, dest_storage_loc, werks,
+                :v_dept, posnr, status, CURRENT_TIMESTAMP    -- updated from dept to :dept 2015/8/26 by xwu.
+           FROM mo_dest_change
+          WHERE status = 'XI_IN_PROCESS' AND werks IN (SELECT siteid
+                                                         FROM conf_site_schedule
+                                                        WHERE ID = iv_id);
+
+      IF ::ROWCOUNT >= 1
+      THEN
+         UPDATE conf_cfg_xi_para xp
+            SET xp.low = 1
+          WHERE xp.progname = 'ZRFC_VMI_MEX_CHANGEMO_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      ELSE
+         UPDATE conf_cfg_xi_para xp
+            SET xp.low = 0
+          WHERE xp.progname = 'ZRFC_VMI_MEX_CHANGEMO_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      END IF;
+
+      UPDATE mo_dest_change
+         SET status = 'SENT'
+       WHERE status = 'XI_IN_PROCESS'
+                                     --and SYS_SOURCE='FP'
+             AND werks IN (SELECT siteid
+                             FROM conf_site_schedule
+                            WHERE ID = iv_id);
+
+      --COMMIT;
+      on_exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!'); 
+END;

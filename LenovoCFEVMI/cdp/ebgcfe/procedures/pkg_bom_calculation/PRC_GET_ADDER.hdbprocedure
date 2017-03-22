@@ -1,0 +1,375 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_ADDER" ( 
+    IN  p_change_id     VARCHAR(100),
+    IN  p_product_group VARCHAR(20),
+    IN  p_user_id       VARCHAR(64),
+    OUT p_out_exitcode  INTEGER,
+    OUT p_out_exitmess  VARCHAR(500)
+)  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_GET_ADDER              
+*function   : Get Cost Adders
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : Leonard Ling
+*CreateDate : 2014-11-06
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+
+   -- data
+   DECLARE     v_g_pkg_name        VARCHAR(30) := 'PKG_BOM_CALCULATION';
+   DECLARE     v_change_id         VARCHAR(100) := p_change_id;
+   DECLARE     v_product_group     VARCHAR(20)  := p_product_group;
+   DECLARE     v_user_id           VARCHAR(64)  := p_user_id;
+        --v_tba_array         dbms_sql.Varchar2_Table;
+   DECLARE     v_prc_name          VARCHAR(30)  := 'PRC_GET_ADDER';
+   DECLARE     v_subprc_name       VARCHAR(30);
+   DECLARE     v_subprc_exitcode   INTEGER;
+        --(see exception block)--exp_procedure       EXCEPTION;
+   DECLARE     v_full_name         VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+        -- log_data_process    type_log_proc := type_log_proc (v_full_name);	 
+   DECLARE     v_init_date         TIMESTAMP;           
+   DECLARE     v_found             INTEGER := 1;       
+   DECLARE     v_row_count         INTEGER;
+   DECLARE     i                   INTEGER;
+   DECLARE     v_tba               VARCHAR(40);
+   DECLARE     v_g_curr_date       DATE         := CURRENT_DATE;
+   DECLARE     v_runlvl            VARCHAR(20);
+   DECLARE     v_runlvl_val1       VARCHAR(20);
+   DECLARE     v_runlvl_val2       VARCHAR(20);
+   DECLARE     logidi              INTEGER;
+   
+   DECLARE     v_swr_bmc_switch    VARCHAR(10);
+           
+  -- exception
+   DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;   
+   
+   DECLARE EXIT HANDLER FOR exp_procedure   
+     BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );       
+            CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+			I_MESSAGE=>'ERROR', I_DETAIL=>:p_out_exitmess); 	
+     END;    
+       
+  DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found 
+     BEGIN     
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );  
+           SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY;
+			CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+			I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );
+           --EXEC 'COMMIT';              
+     END;
+     
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );  
+           SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY;
+			CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+			I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );
+           --EXEC 'COMMIT';           
+    END;                   
+    
+  -- process logic
+        p_out_exitcode := -1;
+        p_out_exitmess := 'FAILED';
+        
+      --log_data_process.proc_start; 
+		 logidi:=0;
+		CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+       
+      insert into CAL_RUNTIME(PKG_NAME,PROC_NAME,START_T,PRD_GROUP)
+      --select v_g_pkg_name,v_prc_name,sysdate,v_product_group from dual;
+      VALUES (:v_g_pkg_name, :v_prc_name, CURRENT_TIMESTAMP, :v_product_group);
+
+     DELETE FROM MID_adder2 WHERE product_group = :v_product_group;  --Truncate not supported    
+     
+      v_subprc_name := 'PRC_GET_CBOM_DIRECTBY_PKG';
+      CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_GET_DIRECTBY_PKG"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);
+                     
+	  IF :v_subprc_exitcode <> 0 THEN
+	      p_out_exitmess := 'ERROR OCCURRED IN '|| :v_subprc_name;
+	      --RAISE exp_procedure;
+	      SIGNAL exp_procedure SET MESSAGE_TEXT = :p_out_exitmess;
+	  END IF;
+	  
+      v_subprc_name := 'PRC_GET_CBOM_GROUP_COST';
+      CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_GET_GROUP_COST"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);
+                     
+	  IF :v_subprc_exitcode <> 0 THEN
+	      p_out_exitmess := 'ERROR OCCURRED IN '|| :v_subprc_name;
+	      --RAISE exp_procedure;
+	      SIGNAL exp_procedure SET MESSAGE_TEXT = :p_out_exitmess;
+	  END IF;	  
+      
+      v_tba_array = SELECT DISTINCT 
+                           CASE WHEN tba = 'BWRR' OR tba = 'PCA' OR tba = 'UPLFT'
+                                    THEN 'BWRR_PCA_UPLFT'
+                                ELSE tba END AS tba 
+                      FROM MID_ui_cost_calcu_formu
+                     WHERE product_group = :v_product_group;
+
+      SELECT COUNT(*) INTO v_row_count FROM :v_tba_array;
+	  IF :v_row_count > 0
+	  THEN
+        FOR i IN 0 .. :v_row_count-1 DO
+          SELECT tba INTO v_tba FROM :v_tba_array LIMIT 1 OFFSET :i;
+            -- CASE...WHEN not supported
+	        IF :v_tba = 'XATT'
+	        THEN v_subprc_name := 'PRC_GET_XATT';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_XATT"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);      
+                     
+	        ELSEIF :v_tba = 'XATTC'
+	        THEN v_subprc_name := 'PRC_GET_XATTC';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_XATTC"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);   
+                     
+            ELSEIF :v_tba = 'XIFRT'
+	        THEN v_subprc_name := 'PRC_GET_XIFRT';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_XIFRT"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);                                                      
+                     
+			ELSEIF :v_tba = 'XMVA'
+			THEN v_subprc_name := 'PRC_GET_XMVA';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_XMVA"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);
+                     
+			ELSEIF :v_tba = 'XOUTFR'
+			THEN v_subprc_name := 'PRC_GET_XOUTFR';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_XOUTFR"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);       
+                     
+			ELSEIF :v_tba = 'WWVAR'
+			THEN v_subprc_name := 'PRC_GET_WWVAR';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_WWVAR"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);   
+            --Added by Zhoubinbin 20150825
+			ELSEIF :v_tba = 'BWRR_PCA_UPLFT'
+			THEN v_subprc_name := 'PRC_GET_BWRR_PCA_UPLFT';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_BWRR_PCA_UPLFT"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);  
+            --Added by Zhoubinbin 20150825
+			ELSEIF :v_tba = 'ADDCST'
+			THEN v_subprc_name := 'PRC_GET_ADDITIONAL_COST';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_ADDITIONAL_COST"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess); 
+            --Added by Liuxt 20170208
+			ELSEIF :v_tba = 'CRYAD'
+			THEN v_subprc_name := 'PRC_GET_CRYAD';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_CRYAD"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);  
+            --Added by Liuxt 20170208
+			ELSEIF :v_tba = 'FRT'
+			THEN v_subprc_name := 'PRC_GET_FRT';
+	            CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_FRT"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess); 
+                                                                                                  
+            END IF;		
+            
+            IF :v_subprc_exitcode <> 0 THEN
+	            p_out_exitmess := 'ERROR OCCURRED IN '|| :v_subprc_name;
+	            
+	            SIGNAL exp_procedure SET MESSAGE_TEXT = :p_out_exitmess;
+	        END IF; 
+        END FOR ;    
+        
+        v_subprc_name := 'PRC_GET_FLEXIBLE_ADDER';
+	    CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_FLEXIBLE_ADDER"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess);     
+      
+        IF :v_subprc_exitcode <> 0 THEN
+	        p_out_exitmess := 'ERROR OCCURRED IN '|| :v_subprc_name;
+	        
+	        SIGNAL exp_procedure SET MESSAGE_TEXT = :p_out_exitmess;
+	    END IF; 
+    END IF;
+    
+    
+      
+    INSERT INTO MID_adder_final
+        (product_group, model, father, lvl, plant, children, item_desc, subgeo,
+         country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+      	 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+   		 altpri, altpercent, path, ct, category, m1, m2, m3, m4, m5, m6, m7, m8, 
+   		 m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, 
+   		 lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18,
+      	 weighted_average,lattest_procur, tba_type, value_type)
+    SELECT product_group, model, father, lvl, plant, children, item_desc, subgeo,
+     	   country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+      	   cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+   		   altpri, altpercent, path, ct, category, m1, m2, m3, m4, m5, m6, m7, m8, 
+   		   m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, 
+   		   lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18,
+      	   weighted_average,lattest_procur, tba_type, tba_type as value_type
+      FROM MID_adder2
+     WHERE product_group = :v_product_group
+       AND model_type   <> 'CTO';
+       
+     DELETE FROM MID_adder_final t1
+     WHERE t1.product_group = :v_product_group
+       AND NOT EXISTS(SELECT 1 FROM BIZ_cbom_mtmsbb t2
+                       WHERE t2.product_group = t1.product_group
+                         AND t2.model         = t1.model
+                         AND t2.plant         = t1.plant)
+       AND NOT EXISTS(SELECT 1 FROM BIZ_cbom_swrcost t3
+                       WHERE t3.product_group = t1.product_group
+                         AND t3.model         = t1.model
+                         AND t3.plant         = t1.plant
+                         AND t3.country       = t1.country);
+        
+     INSERT INTO MID_adder_final
+         (product_group, model, father, lvl, plant, children, item_desc, subgeo,
+      	  country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+      	  cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+   		  altpri, altpercent, path, ct, category, m1, m2, m3, m4, m5, m6, m7, m8, 
+   		  m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, 
+   		  lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18,
+      	  weighted_average,lattest_procur, is_basesbb, tba_type, value_type)
+     SELECT t1.product_group, t1.model, t2.children as fahter, t1.lvl, t1.plant, t1.children, 
+            t1.item_desc, t1.subgeo, t1.country, t1.model_type, t1.model_brand, t1.model_family, 
+            t1.cost_lvl, t1.cost_geo_lvl, t1.cost_geo_value, t1.cost_plant, t1.cost_type, 
+            t1.cost_name, t1.qtyper, t1.altgrup, t1.altpri, t1.altpercent, t1.path, t1.ct, 
+            t1.category, t1.m1, t1.m2, t1.m3, t1.m4, t1.m5, t1.m6, t1.m7, t1.m8, t1.m9, t1.m10, 
+            t1.m11, t1.m12, t1.m13, t1.m14, t1.m15, t1.m16, t1.m17, t1.m18, t1.lm1, t1.lm2, 
+            t1.lm3, t1.lm4, t1.lm5, t1.lm6, t1.lm7, t1.lm8, t1.lm9, t1.lm10, t1.lm11, t1.lm12, 
+            t1.lm13, t1.lm14, t1.lm15, t1.lm16, t1.lm17, t1.lm18, t1.weighted_average, t1.lattest_procur,
+      	    map(t1.category, 'BASE', 1, 'NON-BASE', 0) AS is_basesbb, t1.tba_type, t1.tba_type
+       FROM MID_adder2          t1, 
+            (SELECT DISTINCT product_group, model, children, plant, is_basesbb FROM BIZ_cbom_ctosbb
+             UNION
+             SELECT DISTINCT product_group, model, children, plant, is_basesbb FROM BIZ_cbom_swrcost
+              WHERE item_type_m = 'CTO') t2, 
+            MID_biz_toplayer_ch t3
+      WHERE t1.product_group = t2.product_group
+        AND t1.model         = t2.model
+        AND t1.plant         = t2.plant
+        AND t3.product_group = t1.product_group   -- add by xwu 2016/1/4
+        AND t3.item          = t1.model
+        AND t3.plant         = t1.plant
+        AND t3.country       = t1.country        
+        AND map(t1.category, 'BASE', 1, 'NON-BASE', 0) = t2.is_basesbb
+        AND t1.product_group = :v_product_group
+        AND t1.model_type    = 'CTO';
+        
+        
+            
+     --CTOFC_ADDER  20161028 Liuxt
+     v_subprc_name := 'PRC_GET_CTOFC_ADDER';
+     CALL "cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_CTOFC_ADDER"(
+	                 :v_change_id, :v_product_group, :v_user_id,
+                     :v_subprc_exitcode, :p_out_exitmess); 
+     IF :v_subprc_exitcode <> 0 THEN
+	     p_out_exitmess := 'ERROR OCCURRED IN '|| :v_subprc_name;
+	        
+	     SIGNAL exp_procedure SET MESSAGE_TEXT = :p_out_exitmess;
+	 END IF; 
+                      
+     
+     SELECT pvalue INTO v_swr_bmc_switch
+       FROM conf_parameters
+      WHERE pdomain = 'BOM_CALCULATION'
+        AND pname   = 'SWRBMC_SWITCH';
+     
+     IF v_swr_bmc_switch = 'ON'
+     THEN   
+         --Delete BMC adder from software SBB   
+         DELETE FROM MID_adder_final t1
+         WHERE t1.product_group = :v_product_group
+           AND t1.model_type    = 'CTO'
+           AND t1.cost_lvl      > 0
+           AND t1.cost_lvl      < 5
+           AND NOT EXISTS(SELECT 1 FROM BIZ_cbom_ctosbb t2
+                           WHERE t2.product_group = t1.product_group
+                             AND t2.model         = t1.model
+                             AND t2.children      = t1.father
+                             AND t2.plant         = t1.plant)
+           --Added by Zhoubinbin 20160530, Do not delete software'BMC adders for family in config table
+           AND NOT EXISTS(SELECT 1 FROM conf_parameters t3
+                           WHERE t3.product_group = t1.product_group
+                             AND t3.pvalue        = t1.model_family
+                             AND t3.pdomain       = 'BOM_CALCULATION'
+                             AND t3.pname         = 'SWRBMC_EXCLUD_FAMILY')
+           AND EXISTS(SELECT 1 FROM ui_adder_conf t4 where t4.adder_name=t1.children); 
+         
+         --Delete BMC adder according to SBB's basic name                    
+         DELETE FROM MID_adder_final t1
+         WHERE t1.product_group = :v_product_group
+           AND t1.model_type    = 'CTO'
+           AND t1.cost_lvl      > 0
+           AND t1.cost_lvl      < 5
+           AND EXISTS(SELECT 1 FROM BIZ_cbom_ctosbb t2
+                       WHERE t2.product_group = t1.product_group
+                         AND t2.model         = t1.model
+                         AND t2.children      = t1.father
+                         AND t2.plant         = t1.plant
+                         AND substr_after(left(t2.item_desc, locate(t2.item_desc, ' ', 1, 2)-1), ' ') IN
+                             (SELECT pvalue FROM conf_parameters 
+                               WHERE pdomain = 'BOM_CALCULATION'
+                                 AND pname   = 'DEL_BMC'
+                                 AND product_group = :v_product_group))
+           --20161229 liuxt avoid deleted CTOFC_ADDER
+           AND EXISTS(SELECT 1 FROM ui_adder_conf t4 where t4.adder_name=t1.children); 
+     END IF;
+     
+     
+
+/*  -- comment by xwu 2016/1/4
+        AND EXISTS(SELECT 1 FROM MID_biz_toplayer_ch t3
+                    WHERE t3.product_group = t1.product_group
+                      AND t3.item          = t1.model
+                      AND t3.plant         = t1.plant
+                      AND t3.country       = t1.country);     
+*/
+                      
+    EXEC 'COMMIT';                        
+
+    UPDATE CAL_RUNTIME x 
+       SET end_t = CURRENT_TIMESTAMP
+     WHERE x.pkg_name  = :v_g_pkg_name 
+       AND x.proc_name = :v_prc_name 
+       AND end_t is null 
+       AND prd_group   = :v_product_group;
+
+    p_out_exitcode := 0;
+    p_out_exitmess := 'SUCCESSFUL';
+    
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+	                                            I_LOGSID     => :logidi,
+	                                            I_EVENT_NAME => :v_full_name,
+	                                            I_MODULE     => 'EBGCFE');        
+        
+END;

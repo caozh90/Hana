@@ -1,0 +1,179 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_manual_bom" (
+IN  BOM_LEVEL varchar(10),
+IN	FATHER varchar(18),
+IN	CHILDREN varchar(100),
+IN	PLANT varchar(40),
+IN	QUANTITY varchar(100),
+IN	FLAG varchar(20),
+IN	 	table_name varchar(200),
+IN	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER,
+IN  CYCLE NVARCHAR(20)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_manual_bom              --函数名
+*function  : upload数据至表ui_manual_bom并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Eric               --作者
+*CreateDate    : 2015-01-19       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_sbb_category';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate int;
+		var_oper VARCHAR(10);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_manual_bom_err"(
+			:BOM_LEVEL,:FATHER,:CHILDREN,:PLANT,:QUANTITY,:FLAG,:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE,:CYCLE);
+     	
+    END; 
+    --exception 
+	
+
+	--procedure begin
+	
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+    --Flag转成大写
+    select Upper(:Flag) into Flag from dummy; 	
+
+	select count(1) into validate from ebgcfe.CONF_PARAMETERS where PVALUE = :BOM_LEVEL and PDOMAIN='UI_MANUAL_BOM' and PNAME='BOM_LEVEL'; 
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_manual_bom_err"(
+			:BOM_LEVEL,:FATHER,:CHILDREN,:PLANT,:QUANTITY,:FLAG,:table_name,:business_name,:business_code,:position,'"BOM_LEVEL"::'||:BOM_LEVEL||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	
+	if BOM_LEVEL = 'L1' 
+	then
+		select count(1) into validate from UI_ITEM where item_type in ('OPTION','MTM','CTO','BUNDLE') and item = :FATHER;
+	elseif BOM_LEVEL = 'L2'
+	then
+		select count(1) into validate from UI_ITEM where item_type ='SBB' and item = :FATHER;
+	END IF;	
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_manual_bom_err"(
+			:BOM_LEVEL,:FATHER,:CHILDREN,:PLANT,:QUANTITY,:FLAG,:table_name,:business_name,:business_code,:position,'"FATHER"::'||:FATHER||' is illegal',:CYCLE);
+		
+		return;
+	end if; 	
+			
+	
+	if BOM_LEVEL = 'L1' 
+	then
+		select count(1) into validate from UI_ITEM where item_type in ('SBB','DUMMY','COMPONENT','OPTION', 'SWR') and item = :CHILDREN;
+	elseif BOM_LEVEL = 'L2'
+	then
+		select count(1) into validate from UI_ITEM where  item_type in('DUMMY','COMPONENT','OPTION', 'SWR') and item = :CHILDREN;
+	END IF;	
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_manual_bom_err"(
+			:BOM_LEVEL,:FATHER,:CHILDREN,:PLANT,:QUANTITY,:FLAG,:table_name,:business_name,:business_code,:position,'"CHILDREN"::'||:CHILDREN||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	
+	select count(1) into validate from UI_plant where PLANT = :PLANT;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_manual_bom_err"(
+			:BOM_LEVEL,:FATHER,:CHILDREN,:PLANT,:QUANTITY,:FLAG,:table_name,:business_name,:business_code,:position,'"PLANT"::'||:PLANT||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+    select count(1) into validate from CONF_PARAMETERS where PDOMAIN='UI_MANUAL_BOM' and PNAME='FLAG' and pvalue = :FLAG;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_manual_bom_err"(
+			:BOM_LEVEL,:FATHER,:CHILDREN,:PLANT,:QUANTITY,:FLAG,:table_name,:business_name,:business_code,:position,'"FLAG"::'||:FLAG||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	
+	select count(1) into validate from UI_MANUAL_BOM where BOM_LEVEL = :BOM_LEVEL and FATHER = :FATHER 
+				and CHILDREN = :CHILDREN and PLANT = :PLANT;
+				
+	if validate = 0
+	then
+		    insert into "EBGCFE"."UI_MANUAL_BOM"
+  		(PRODUCT_GROUP,BOM_LEVEL, FATHER, CHILDREN, PLANT, QUANTITY, CYCLE, 
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,FLAG
+		)
+  		values('EBG',:BOM_LEVEL, :FATHER, :CHILDREN, :PLANT, :QUANTITY, 'CURRENT',
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time,:FLAG);
+  		var_oper := 'create';
+  	else
+  		update "EBGCFE"."UI_MANUAL_BOM" set
+    	QUANTITY = :QUANTITY,
+    	SYS_LAST_MODIFIED_BY = :currentUser,
+		SYS_LAST_MODIFIED_DATE =:create_time,
+		FLAG = :FLAG
+    	where
+    	BOM_LEVEL = :BOM_LEVEL
+    	AND FATHER = :FATHER
+        AND CHILDREN = :CHILDREN
+        AND PLANT = :PLANT;
+        var_oper := 'update';
+  	end if;
+
+/*put operation to log table*/
+    insert into "EBGCFE"."UI_MANUAL_BOM_LOG"
+    (
+    	PRODUCT_GROUP,
+	    BOM_LEVEL,
+	    FATHER,
+	    CHILDREN,
+	    PLANT,
+	    QUANTITY,    	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	AT_ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS,
+    	FLAG   	
+    )
+    values
+    (
+    	'EBG',
+	 	:BOM_LEVEL,
+		:FATHER,
+		:CHILDREN,
+		:PLANT,
+		:QUANTITY,
+    	current_date,    	
+    	:var_oper,
+    	session_user,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+    	:FLAG
+    );  	   			
+	
+			
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+	
+END;

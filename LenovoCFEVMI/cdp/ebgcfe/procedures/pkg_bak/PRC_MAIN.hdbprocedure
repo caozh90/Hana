@@ -1,0 +1,145 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bak::PRC_MAIN" (
+  IN   p_in_product_group  VARCHAR(20),
+  IN   p_user_id       VARCHAR(64),   
+  OUT  p_out_exItcode      INTEGER,
+  OUT  p_out_exitmess      VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_TABLE_BAK_PROCESS        
+*function   : Table Backup Processing
+*input      ：  P_IN_PRODUCTGROUP : Product Group / P_IN_TABLE_NAME : Product Group
+*output     : P_OUT_EXITCODE : error code 
+*author     : Zhoubinbin
+*CreateDate : 2015-3-5 
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+    -- DATA
+    DECLARE  v_g_pkg_name       VARCHAR(30)  := 'PKG_BAK';
+    DECLARE  v_prc_name         VARCHAR(50)  := 'PRC_MAIN';
+    DECLARE  v_full_name        VARCHAR(100) := :V_G_PKG_NAME || '.' || :V_PRC_NAME;
+
+    DECLARE  v_cycle_name       VARCHAR(30);
+    DECLARE  v_cycle_type       VARCHAR(30);
+    DECLARE  v_bak_cycle_type   VARCHAR(30);
+    DECLARE  v_process_flag     VARCHAR(30);
+    DECLARE  v_table_name       VARCHAR(30);
+    DECLARE  v_counter          INTEGER;
+    DECLARE  i                  INTEGER;
+    DECLARE  v_prc_exitcode     INTEGER;
+    DECLARE  logidi             INTEGER := 0;   
+    DECLARE  logidj             INTEGER := 0; 
+    DECLARE  v_cycle_current   VARCHAR(20);
+    DECLARE  v_is_bak_cycle     INTEGER;
+
+        
+    -- EXCEPTION
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN     
+	    p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );     
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidi,
+									                I_EVENT_NAME => :v_full_name, 
+									                I_MODULE     => 'EBGCFE',
+									                I_MESSAGE    => 'ERROR', 
+									                I_DETAIl     => to_char(::SQL_ERROR_CODE) || ':' || 
+									                                substr(::SQL_ERROR_MESSAGE, 1, 500 ));							   
+    END;     
+  
+    -- PROCESS
+    p_out_exitcode := -1;
+    p_out_exitmess := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE',
+		                                        I_MESSAGE    => 'PRODUCT_GROUP:'||:p_in_product_group); 
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                I_LOGSID     => :logidj,
+                                                I_EVENT_NAME => :v_full_name,
+                                                I_MODULE     => 'EBGCFE',
+                                                I_MESSAGE    => 'PRODUCT_GROUP:'||:p_in_product_group); 		                                        
+    SELECT cycle_name, cycle_type
+      INTO v_cycle_name, v_cycle_type
+      FROM ui_cycle
+     WHERE product_group = :p_in_product_group
+       AND cycle         = 'CURRENT'; 
+       
+    tab_result = SELECT table_name, process_flag, cycle_type
+                   FROM conf_bak
+                  WHERE product_group = :p_in_product_group;
+                   
+    SELECT COUNT(0) INTO v_counter FROM :tab_result;
+    
+    IF :v_counter > 0
+    THEN
+        FOR i IN 0..:v_counter-1
+        DO
+            SELECT table_name, process_flag, cycle_type 
+              INTO v_table_name, v_process_flag, v_bak_cycle_type
+              FROM :tab_result LIMIT 1 OFFSET :i;
+            IF v_bak_cycle_type = :v_cycle_type OR v_bak_cycle_type = 'ALL'
+            THEN
+                IF v_process_flag = 'NORMAL'
+                THEN
+                    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bak::PRC_TABLE_BAK_NORMAL"
+                             (:p_in_product_group,  v_table_name, :v_prc_exitcode);
+                ELSEIF v_process_flag = 'SPECIAL'
+                THEN
+                    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bak::PRC_TABLE_BAK_SPECIAL"
+                             (:p_in_product_group,  v_table_name, :v_prc_exitcode);                
+                END IF;  
+            END IF;
+        END FOR;  
+    END IF;     
+	
+	SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().CYCLE_CURRENT INTO v_cycle_current FROM dummy;
+	
+	UPDATE UI_CONTROL_POINT a
+	   SET a.CONTROL_POINT_STATUS = 'COMPLETED',
+	       a.CYCLE_NAME = b.cycle_name,
+	       a.CYCLE_TYPE = b.cycle_type,
+	       a.SYS_LAST_MODIFIED_BY = :p_user_id,
+	       a.SYS_LAST_MODIFIED_Date = CURRENT_TIMESTAMP
+	 FROM UI_CYCLE b
+	WHERE b.cycle = :v_cycle_current
+	  AND a.control_point = 'BAKE'
+	  AND a.product_group = 'EBG'; 
+	  
+	--add by zhangxj on 2015.09.29,set CYCLE_NAME for control_point ='WRITE BACK'
+	
+	UPDATE UI_CONTROL_POINT a
+	   SET a.CYCLE_NAME = b.cycle_name,
+	       a.CYCLE_TYPE = b.cycle_type,
+	       a.SYS_LAST_MODIFIED_BY = :p_user_id,
+	       a.SYS_LAST_MODIFIED_Date = CURRENT_TIMESTAMP
+	 FROM UI_CYCLE b
+	WHERE b.cycle = :v_cycle_current
+	  AND a.control_point = 'WRITE_BACK'
+	  AND a.product_group = 'EBG'; 
+	
+	--add by zhangxj on 2015.12.15,move current cycle to history
+	SELECT COUNT(*) INTO v_is_bak_cycle FROM ui_cycle 
+	 WHERE cycle = :v_cycle_name;
+    
+    IF v_is_bak_cycle =0 THEN 
+    	
+		CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_cycle::PRC_CYCLE_CLOSURE"(:v_cycle_name,:p_in_product_group,:p_out_exitcode,:p_out_exitmess);
+			IF :p_out_exitcode <> 0 THEN
+  				RETURN;
+  			END IF;	
+  	END IF;
+  	                                         
+    p_out_exitcode := 0;
+    p_out_exitmess := 'SUCCESS';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END', 
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');   
+END;

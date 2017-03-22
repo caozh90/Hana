@@ -1,0 +1,248 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ctofc_adder_err" 
+( 
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTOFC_ADDER_E"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/***************************** 
+*name        :    ui_ctofc_adder_err
+*function    :               
+*input       :    
+*output      :              
+*author      :    zhaodan1
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2016.06.02
+ *****************************/
+	AS
+	business_code varchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'UI_CTOFC_ADDER';
+	currentUser varchar(100);
+	create_DATE LONGDATE;
+	privilegeExists  NVARCHAR(300)  ;
+	wrongnums INT := 0;
+
+
+BEGIN
+    --添加business信息
+    select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	--business_code := :SEQ;
+		
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_DATE INTO create_DATE FROM DUMMY;
+	newInfo_xsjs = SELECT *  from :newInfo where source = 'xsjs';
+	newInfo_pro = SELECT *   from :newInfo where source = 'procedure';
+
+	-- 	CTO------------------------	 	
+	newInfo_cto = SELECT 'CURRENT' CYCLE, 'EBG' PRODUCT_GROUP,
+                 CTO,       UPPER(FC) FC,	       PLANT,    SUBGEO,
+				 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+				 M1 ,M2 ,M3 ,M4 ,
+				 M5 ,M6 ,M7 ,M8 ,
+				 M9 ,M10,M11,M12,
+				 M13,M14,M15,M16,
+				 M17,M18,
+				 'CTO not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+	 	FROM :newInfo_pro as a
+	 	WHERE 
+	 		  a.CTO NOT IN(  	
+ 	                      SELECT ITEM_VALUE
+						    FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+							     ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'CTO'))
+					  );	 	
+		 	
+
+				 	
+    -- 	FC------------------------	 	
+	newInfo_fc = SELECT 'CURRENT' CYCLE, 'EBG' PRODUCT_GROUP,
+                 CTO,       UPPER(FC) FC,	       PLANT,    SUBGEO,
+				 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+				 M1 ,M2 ,M3 ,M4 ,
+				 M5 ,M6 ,M7 ,M8 ,
+				 M9 ,M10,M11,M12,
+				 M13,M14,M15,M16,
+				 M17,M18,
+				'FC not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+	 	FROM :newInfo_pro as a
+	 	WHERE 
+	 		 UPPER(a.FC) NOT IN(  	
+ 	                      SELECT ITEM_VALUE
+						    FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+							     ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'FC'))
+					  );	 	
+		 	
+
+			
+	-- 	SUBGEO------------------------	
+	newInfo_subgeo = SELECT 'CURRENT' CYCLE, 'EBG' PRODUCT_GROUP,
+                 CTO,       UPPER(FC) FC,	       PLANT,    SUBGEO,
+				 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+				 M1 ,M2 ,M3 ,M4 ,
+				 M5 ,M6 ,M7 ,M8 ,
+				 M9 ,M10,M11,M12,
+				 M13,M14,M15,M16,
+				 M17,M18,
+				 'SUBGEO not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+	 	FROM :newInfo_pro as a
+	 	WHERE 
+	 		  a.SUBGEO NOT IN(  	
+ 	                      SELECT ITEM_VALUE
+						    FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+							     ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'SUBGEO'))
+					  );
+			
+
+	-- 	PLANT------------------------	
+	newInfo_plant = SELECT  'CURRENT' CYCLE, 'EBG' PRODUCT_GROUP,
+			                 CTO,       UPPER(FC) FC,	       PLANT,    SUBGEO,
+							 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+							 M1 ,M2 ,M3 ,M4 ,
+							 M5 ,M6 ,M7 ,M8 ,
+							 M9 ,M10,M11,M12,
+							 M13,M14,M15,M16,
+							 M17,M18,
+							 'PLANT not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+				 	FROM :newInfo_pro as a
+				 	WHERE 
+				 		  a.PLANT NOT IN(  	
+		 	                      SELECT ITEM_VALUE
+								    FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+									     ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'PLANT'))
+							  );
+			
+				
+
+    -- 	COST_LEVEL------------------------
+	newInfo_cost_level = SELECT  'CURRENT' CYCLE, 'EBG' PRODUCT_GROUP,
+			                 CTO,       UPPER(FC) FC,	       PLANT,    SUBGEO,
+							 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+							 M1 ,M2 ,M3 ,M4 ,
+							 M5 ,M6 ,M7 ,M8 ,
+							 M9 ,M10,M11,M12,
+							 M13,M14,M15,M16,
+							 M17,M18,
+							  'COST_LEVEL not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+				 	FROM :newInfo_pro as a
+				 	WHERE 
+				 		  a.COST_LEVEL NOT IN(  	
+ 	                      SELECT ITEM_VALUE
+						    FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+							     ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'COST_LEVEL'))
+					      ) ;
+    -- 	ADDER_NAME------------------------					      
+	newInfo_adder_name = SELECT  'CURRENT' CYCLE, 'EBG' PRODUCT_GROUP,
+			                 CTO,       UPPER(FC) FC,	       PLANT,    SUBGEO,
+							 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+							 M1 ,M2 ,M3 ,M4 ,
+							 M5 ,M6 ,M7 ,M8 ,
+							 M9 ,M10,M11,M12,
+							 M13,M14,M15,M16,
+							 M17,M18,
+							  'ADDER_NAME not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+				 	FROM :newInfo_pro as a
+				 	WHERE 
+				 		  a.ADDER_NAME NOT IN(  	
+ 	                      SELECT ITEM_VALUE
+						    FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+							     ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'ADDER_NAME'))
+					      ) ;
+		-- 	TBA_TYPE------------------------
+	newInfo_tba_type = SELECT  'CURRENT' CYCLE, 'EBG' PRODUCT_GROUP,
+			                 CTO,       UPPER(FC) FC,	       PLANT,    SUBGEO,
+							 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+							 M1 ,M2 ,M3 ,M4 ,
+							 M5 ,M6 ,M7 ,M8 ,
+							 M9 ,M10,M11,M12,
+							 M13,M14,M15,M16,
+							 M17,M18,
+							 'TBA_TYPE not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+				 	FROM :newInfo_pro as a
+				 	WHERE not exists (select 1 from UI_ADDER_CONF as b 
+				 	               where a.adder_name = b.adder_name and
+				 	                     a.tba_type = b.tba_type);		
+	---------------------------------记录upload的错误----------------------------------------
+	error_table = 
+		SELECT * FROM :newInfo_cto UNION
+		SELECT * FROM :newInfo_fc UNION
+		SELECT * FROM :newInfo_subgeo UNION
+		SELECT * FROM :newInfo_plant UNION
+		SELECT * FROM :newInfo_tba_type UNION
+		SELECT * FROM :newInfo_cost_level UNION
+		SELECT * FROM :newInfo_adder_name UNION
+		SELECT 'CURRENT' CYCLE, 'EBG' PRODUCT_GROUP,
+                 CTO,       UPPER(FC) FC,	       PLANT,    SUBGEO,
+				 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+				 M1 ,M2 ,M3 ,M4 ,
+				 M5 ,M6 ,M7 ,M8 ,
+				 M9 ,M10,M11,M12,
+				 M13,M14,M15,M16,
+				 M17,M18,
+				 error_message,
+	              BUSINESS_NAME, SEQ, POSITION,SOURCE
+	 	FROM :newInfo_xsjs;
+		
+	
+	error_info = 
+		SELECT 
+           :table_name || SEQ CODE,
+           position,
+           error_message,
+           :table_name table_name,
+           business_name
+    FROM :error_table;
+           
+	
+	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+	SELECT "EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+	        CODE,POSITION,STRING_AGG(ERROR_MESSAGE,','),table_name,business_name
+	FROM  :error_info
+	GROUP BY CODE,POSITION,table_name,business_name;
+	
+	wrongnums := ::ROWCOUNT;
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+		:table_name || :business_code,:business_name,0,:wrongnums,:table_name);
+	
+    -----------------------------------------------------------------------------------------
+    
+     	
+    --详细记录upload的数据信息
+    INSERT INTO  "EBGCFE"."UI_CTOFC_ADDER_ERR_DETAIL"( 
+                             CODE , 
+							 POSITION , 
+							 CYCLE,  PRODUCT_GROUP,
+			                 CTO,      FC,	       PLANT,    SUBGEO,
+							 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+							 M1 ,M2 ,M3 ,M4 ,
+							 M5 ,M6 ,M7 ,M8 ,
+							 M9 ,M10,M11,M12,
+							 M13,M14,M15,M16,
+							 M17,M18,												 
+							 SYS_CREATED_DATE ,
+							 SYS_CREATED_BY )
+	SELECT   :table_name || business_code,
+			 position,
+			 'CURRENT' , 'EBG',
+             CTO,       UPPER(FC),	       PLANT,    SUBGEO,
+			 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+			 M1 ,M2 ,M3 ,M4 ,
+			 M5 ,M6 ,M7 ,M8 ,
+			 M9 ,M10,M11,M12,
+			 M13,M14,M15,M16,
+			 M17,M18,
+		    :create_DATE,
+		    :currentUser
+	FROM :error_table;											 
+
+
+END;

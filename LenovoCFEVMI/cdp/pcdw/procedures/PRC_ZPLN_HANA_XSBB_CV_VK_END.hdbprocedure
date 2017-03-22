@@ -1,0 +1,101 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_ZPLN_HANA_XSBB_CV_VK_END" ( 
+    IN iv_id  VARCHAR(120),
+    OUT on_exitcode INTEGER
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY INVOKER 
+    DEFAULT SCHEMA PCDW
+    --READS SQL DATA 
+    AS
+   /************************************************************************
+   *name        : ZPLN_HANA_XSBB_CV_VK_END
+   *function    : 
+   *input       : 
+   *output      : 
+   *author      : Frankie   
+   *CreateDate  : 20150130
+   *UpdateDate  :              
+   *************************************************************************/
+    v_prc_name   varchar(30) := 'ZPLN_HANA_XSBB_CV_VK_END';
+    v_date       timestamp;     
+    vMsg         varchar(1024);
+    vCode        integer;
+BEGIN
+  -- Exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+     BEGIN     
+      on_exitcode := ::SQL_ERROR_CODE;
+
+      vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+      INSERT INTO PCDW_PROC_LOG
+         (EVENTTIME,
+          EVENTNAME,
+          SUBEVENT,
+          MSGCODE,
+          EVENTMSG,
+          EVENTTYPE,
+          DATASOURCE,
+          DATADEST,
+          EVENTDESCR)
+      VALUES
+         (CURRENT_TIMESTAMP,
+          :v_prc_name,
+          'OTHERS ERROR',
+          :vCode,
+          :vMsg,
+          '',
+          '',
+          '',
+          'END');
+      --exec 'COMMIT';     
+     END;
+     
+  --START
+  INSERT INTO PCDW_PROC_LOG
+   VALUES
+      (CURRENT_TIMESTAMP,
+       :v_prc_name,
+       '',
+       NULL,
+       '',
+       '',
+       '',
+       '',
+       'START');
+   --EXEC 'COMMIT';
+   
+   
+      SELECT   MAX (wfstartdate)
+        INTO   v_date
+        FROM   pcdw_fcsbb_log
+       WHERE   wfid = iv_id AND programname = 'FCSBBMAPPING';
+
+      UPDATE   pcdw_fcsbb_log
+         SET   wfenddate = current_timestamp, status = 'success'
+       WHERE   wfstartdate = v_date AND wfid = iv_id AND programname = 'FCSBBMAPPING';
+
+      --COMMIT;
+      on_exitcode := 0;
+     --end
+  INSERT INTO PCDW_PROC_LOG
+      (EVENTTIME,
+       EVENTNAME,
+       SUBEVENT,
+       MSGCODE,
+       EVENTMSG,
+       EVENTTYPE,
+       DATASOURCE,
+       DATADEST,
+       EVENTDESCR)
+   VALUES
+      (CURRENT_TIMESTAMP,
+       :v_prc_name,
+       'SUCCESS',
+       :vCode,
+       :vMsg,
+       '',
+       '',
+       '',
+       'END');
+END;

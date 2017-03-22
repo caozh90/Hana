@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Privilege:analyticPrivilege xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Privilege="http://www.sap.com/ndb/BiModelPrivilege.ecore" schemaVersion="1.1" id="AP_SA_FOR_VMI">
+  <descriptions defaultDescription="AP_SA_FOR_VMI"/>
+  <securedModels allInformationModels="false">
+    <modelUri>/cdp.mxebgvmi.models.pmreport/analyticviews/AN_SA_FOR_VMI</modelUri>
+    <modelUri>/cdp.mxebgvmi.models.pmreport/calculationviews/CV_SA_FOR_VMI_DDL</modelUri>
+  </securedModels>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="WERKS">
+      <procedureFilter operator="IN" procedureName="&quot;SECURITY&quot;.cdp.security.procedures::getResourceUserByPLANT"/>
+    </filter>
+    <attributeName>WERKS</attributeName>
+    <originInformationModelUri>/cdp.mxebgvmi.models.pmreport/analyticviews/AN_SA_FOR_VMI</originInformationModelUri>
+  </restriction>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="ITEM_TYPE">
+      <valueFilter xsi:type="AccessControl:SingleValueFilter" operator="NL" including="false" value=""/>
+    </filter>
+    <attributeName>ITEM_TYPE</attributeName>
+    <originInformationModelUri>/cdp.mxebgvmi.models.pmreport/calculationviews/CV_SA_FOR_VMI_DDL</originInformationModelUri>
+  </restriction>
+</Privilege:analyticPrivilege>

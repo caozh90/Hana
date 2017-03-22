@@ -1,0 +1,49 @@
+role cdp.security.roles::sysAdmin
+extends role cdp.init.ebgcfe.roles::Init,
+             cdp.init.mxebgvmi.roles::Init,
+             cdp.init.szebgvmi.roles::Init,
+             cdp.init.pcdw.roles::Init
+
+{
+	//系统管理员，管理各种系统表和过程
+	sql object cdp.security.procedures:createModule.hdbprocedure:EXECUTE;
+	sql object cdp.security.procedures:createMapViewRole.hdbprocedure:EXECUTE;
+	sql object cdp.security.procedures:createInfoRole.hdbprocedure:EXECUTE;
+	
+	sql object cdp.security.procedures:dropInfoRoleGroup.hdbprocedure:EXECUTE;
+	sql object cdp.security.procedures:deleteInfoRoleByName.hdbprocedure:EXECUTE;
+	
+    sql object cdp.init.ebgcfe.procedures:initRole.hdbprocedure:EXECUTE;
+    sql object cdp.init.mxebgvmi.procedures:initRole.hdbprocedure:EXECUTE;
+    sql object cdp.init.pcdw.procedures:initRole.hdbprocedure:EXECUTE;
+
+--2015/8/6 add for x86 sc project
+    sql object cdp.init.szebgvmi.procedures:initRole.hdbprocedure:EXECUTE;
+    sql object cdp.init.szebgvmi.procedures:upgradeRole.hdbprocedure:EXECUTE;
+
+    
+    sql object cdp.init.ebgcfe.procedures:upgradeRole.hdbprocedure:EXECUTE;
+    sql object cdp.init.mxebgvmi.procedures:upgradeRole.hdbprocedure:EXECUTE;
+    sql object cdp.init.pcdw.procedures:upgradeRole.hdbprocedure:EXECUTE;
+    
+    catalog schema "DS_INFO": 	SELECT,CREATE ANY ,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+	catalog schema "PCDW":  	SELECT,CREATE ANY ,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+	catalog schema "EBGCFE":  	SELECT,CREATE ANY ,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+	catalog schema "MXEBGVMI":  SELECT,CREATE ANY ,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+	catalog schema "EX_LOG":  	SELECT,CREATE ANY ,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+
+--2015/8/6 add for x86 sc project
+    catalog schema "DS_INFO_SZ": 	SELECT,CREATE ANY ,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+	catalog schema "SZEBGVMI":  SELECT,CREATE ANY ,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+    
+
+	
+	system privilege :ROLE ADMIN;	
+	system privilege :USER ADMIN;
+	catalog sql object "SYS_REPO"."GRANT_ACTIVATED_ROLE": EXECUTE;
+	catalog sql object "SYS_REPO"."REVOKE_ACTIVATED_ROLE": EXECUTE;	
+	catalog schema "SECURITY": SELECT,INSERT;
+		
+	package cdp.log.service: REPO.READ, REPO.EDIT_NATIVE_OBJECTS, REPO.ACTIVATE_NATIVE_OBJECTS;
+	
+}

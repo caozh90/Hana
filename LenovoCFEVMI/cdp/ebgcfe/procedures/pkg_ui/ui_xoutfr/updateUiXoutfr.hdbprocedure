@@ -1,0 +1,174 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr::updateUiXoutfr" ( 
+        IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_T"
+        ,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_T"
+        ,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER  
+	DEFAULT SCHEMA "EBGCFE"
+    AS
+	/************************************************************************
+	*name      :                     updateUiXifrt
+	*function    :               
+	*input     ：               
+	*output     :                
+	*author     :                     Fangyuan
+	*CreateDate    :                  2014.12.17
+	*UpdateDate  :        
+	*************************************************************************/  
+
+        aI_DETAIL NVARCHAR(300) :='';   
+        alogide INTEGER :=0;  
+        resourceExists integer;    
+        privilegeExists  NVARCHAR(300)  ;      
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+        aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui::updateUiXifrt error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+        
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+             I_TYPE=>'PROC_ERROR'   
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiXifrt'
+            ,I_MODULE=>'EBGCFE'
+            ,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+            ,I_DETAIL=>:aI_DETAIL
+        );  
+ 
+        errorInfo = select 400 as http_status_code, 
+            'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+            aI_DETAIL detail from dummy;
+    END;  
+ 
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_xoutfr::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+   
+ --START
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+        I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiXifrt'
+       ,I_MODULE=>'EBGCFE'
+    ); 
+    SELECT COUNT(*) into resourceExists FROM :oldInfo a,:newInfo b where a.M1 = b.M1 and a.M2 = b.M2 and a.M3 = b.M3 and a.M4 = b.M4
+            and a.M5 = b.M5 and a.M6 = b.M6 and a.M7 = b.M7 and a.M8 = b.M8
+            and a.M9 = b.M9 and a.M10 = b.M10 and a.M11 = b.M11 and a.M12 = b.M12 and a.M13 = b.M13 and a.M14 = b.M14
+            and a.M15 = b.M15 and a.M16 = b.M16 and a.M17 = b.M17 and a.M18 = b.M18;
+    
+	if resourceExists > 0
+	then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;*/
+	     	return;
+	    --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before'; 
+	end if;
+	 
+   UPDATE UI_XOUTFR a SET(a.M1,a.M2,a.M3,a.M4,a.M5,a.M6,a.M7,a.M8,a.M9,a.M10,a.M11,a.M12,a.M13,a.M14,a.M15,a.M16,a.M17,a.M18,a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY)=
+    (b.M1,b.M2,b.M3,b.M4,b.M5,b.M6,b.M7,b.M8,b.M9,b.M10,b.M11,b.M12,b.M13,b.M14,b.M15,b.M16,b.M17,b.M18,CURRENT_TIMESTAMP,SESSION_USER)
+    from :newInfo b 
+    where A.BRAND=B.BRAND AND A.FAMILY=B.FAMILY AND A.PLANT=B.PLANT 
+    AND A.SUBGEO=B.SUBGEO AND A.TBA_TYPE=B.TBA_TYPE;
+
+    INSERT INTO UI_XOUTFR_LOG
+    (
+	"PRODUCT_GROUP",
+	"BRAND",
+	"FAMILY",
+	"PLANT",
+	"SUBGEO",
+	"TBA_TYPE",
+	"M1",
+	"M2",
+	"M3",
+	"M4",
+	"M5",
+	"M6",
+	"M7",
+	"M8",
+	"M9",
+	"M10",
+	"M11",
+	"M12",
+	"M13",
+	"M14",
+	"M15",
+	"M16",
+	"M17",
+	"M18",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"ACTION",
+	"STATUS",
+	"CHANGE_ID",
+	"CHANGE_ACTION",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+    )
+    SELECT
+	"PRODUCT_GROUP",
+	"BRAND",
+	"FAMILY",
+	"PLANT",
+	"SUBGEO",
+	"TBA_TYPE",
+	"M1",
+	"M2",
+	"M3",
+	"M4",
+	"M5",
+	"M6",
+	"M7",
+	"M8",
+	"M9",
+	"M10",
+	"M11",
+	"M12",
+	"M13",
+	"M14",
+	"M15",
+	"M16",
+	"M17",
+	"M18",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"ACTION",
+	"STATUS",
+	"CHANGE_ID",
+	"CHANGE_ACTION",
+     SESSION_USER,
+     'UPDATE',
+     CURRENT_DATE,
+     TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))   	
+    FROM  UI_XOUTFR a
+    WHERE EXISTS
+    (SELECT 1 FROM :oldInfo b
+    where A.BRAND=B.BRAND AND A.FAMILY=B.FAMILY AND A.PLANT=B.PLANT 
+    AND A.SUBGEO=B.SUBGEO AND A.TBA_TYPE=B.TBA_TYPE
+    );  
+    
+        /*END*/
+        aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui::updateUiXifrt successfully created . ';
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+            I_TYPE=>'PROC_END'  
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiXifrt'
+            ,I_MODULE=>'EBGCFE'
+            ,I_DETAIL=>:aI_DETAIL
+        );     
+END;

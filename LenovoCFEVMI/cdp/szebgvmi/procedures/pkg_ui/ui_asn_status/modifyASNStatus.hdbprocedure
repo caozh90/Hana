@@ -1,0 +1,100 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_asn_status::modifyASNStatus" ( 
+	        IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_ASN_STATUS_T",
+	        IN OLDINFO "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_ASN_STATUS_T",
+			OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER --INVOKER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA
+	AS
+/************************************************************************
+*name      : updateASNPullStatus
+*author     : chenjb1
+*CreateDate    : 2015-08-14
+*UpdateDate  :      
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.ui_asn_status';
+		proc_name varchar(100) :='modifyASNStatus';
+		logid0 INTEGER :=0;
+		n2 int; 
+             SCENARIO_ID   Decimal(11,0);
+	 		 PRODUCTIONORDID  varchar(80);
+			 SITEID   varchar(40);
+			 LINENUM   varchar(8);
+			 ITEM  varchar(40);
+			 ITEMDESC   varchar(40);
+			 QTYPER   Decimal(15,4);
+			 LGORT   varchar(4);
+			 STATUS   varchar(40);
+			 CREATION_DATE   NVARCHAR(200);
+			 error_message nvarchar(400);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 	 select  SCENARIO_ID ,
+	 		 PRODUCTIONORDID ,
+			 SITEID ,
+			 LINENUM  ,
+			 ITEM ,
+			 ITEMDESC,  
+			 QTYPER , 
+			 LGORT  ,
+			 STATUS  ,
+			 CREATION_DATE 
+ 	 INTO 		
+             SCENARIO_ID ,
+	 		 PRODUCTIONORDID ,
+			 SITEID ,
+			 LINENUM  ,
+			 ITEM ,
+			 ITEMDESC  ,
+			 QTYPER  ,
+			 LGORT  ,
+			 STATUS  ,
+			 CREATION_DATE  
+	 from :newInfo;
+	select count(1) into n2 from "SZEBGVMI"."PRODUCTIONORDERS_BOM_ASN"
+	 	where   SCENARIO_ID = :SCENARIO_ID
+	 		and PRODUCTIONORDID = :PRODUCTIONORDID
+			and LINENUM = :LINENUM;
+	 if n2 <= 0 then
+	     	error_message := 'The record does not exist in DB';
+		 	errorInfo = select 400 as http_status_code, 
+	     		:error_message ERROR_MESSAGE, 
+	     		:error_message DETAIL from dummy;
+	     	--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);	     		
+	     	return;
+	 
+	 end if;
+	 if STATUS <> 'ASN_DELETED' then
+	     	error_message := 'Current status is not ASN_DELETED ';
+		 	errorInfo = select 400 as http_status_code, 
+	     		:error_message ERROR_MESSAGE, 
+	     		:error_message DETAIL from dummy;
+	     	--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);	     		
+	     	return;
+	 elseif STATUS = 'ASN_DELETED' then
+	 UPDATE "SZEBGVMI"."PRODUCTIONORDERS_BOM_ASN"
+		SET 
+             STATUS = :STATUS,
+             SYS_LAST_MODIFIED_BY = SESSION_USER,		 
+             SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+		where   SCENARIO_ID = :SCENARIO_ID
+	 		and PRODUCTIONORDID = :PRODUCTIONORDID
+			and LINENUM = :LINENUM;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+   end if;
+END;

@@ -1,0 +1,110 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_pcdw_to_vmi::PRC_PURCHASE_PROPORTION" (	
+	IN p_wfname VARCHAR(20), OUT p_out_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA 
+	AS
+/************************************************************************
+*name      : PRC_SA              --函数名
+*function    :               --函数功能
+*input     ：  p_wfname              --输入参数
+*output     : p_out_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2015/03/09                  --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+************************************************************************/
+	v_prc_name VARCHAR(70) := 'PRC_PURCHASE_PROPORTION';	
+	gv_logic_name    VARCHAR2 (40)  := 'PKG_PCDW_TO_VMI';
+	v_full_name VARCHAR(100) := gv_logic_name||'.'||v_prc_name;
+	v_logidi INTEGER := 0;
+	v_total INTEGER;
+	v_count INTEGER;
+	v_per_total DECIMAL(15,4);
+	
+	apo_count integer; --判断APO的表中个数是否是0
+	
+BEGIN
+DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+DECLARE EXIT HANDLER FOR no_data_found   
+BEGIN      
+      select 'NO data found!' error_message from dummy;
+END;     
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+		 p_out_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||'Failure');                                                  
+      
+END;
+p_out_exitcode := -1;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>'Start');
+
+delete from Z_PCDW_PURCHASE_PROPORTION;
+
+select count(1) into apo_count 
+from pcdw.APO_PURCHASE_PROPORTION where wfname=:p_wfname and status='NEW';
+
+if :apo_count != 0
+then
+	select top 1 (case when count(PROPORTION) = 0 then 0 else sum(PROPORTION) end) into v_total 
+	from pcdw.APO_PURCHASE_PROPORTION where wfname=:p_wfname and status='NEW'
+	group by item;
+
+	if :v_total != 0
+	then 
+		insert into Z_PCDW_PURCHASE_PROPORTION(
+						ITEM, 
+						ITEMNAME,
+						SITEID,
+						SITENAME,
+						SUPPLIERID,
+						SUPPLIERNMAE,
+						PROPORTION,
+						STARTDATE,
+						SYS_CREATED_DATE,
+						SYS_CREATE_BY
+					) 
+				select  ITEM, 
+						ITEMNAME,
+						SITEID,
+						SITENAME,
+						SUPPLIERID,
+						SUPPLIERNMAE,
+						round(PROPORTION/:v_total,4),
+						STARTDATE,
+						CURRENT_TIMESTAMP,
+						SESSION_USER from pcdw.APO_PURCHASE_PROPORTION where wfname=:p_wfname and status='NEW';
+	/*
+	select count(*) into v_count from Z_PCDW_PURCHASE_PROPORTION;
+	v_count := :v_count-1;
+	select PROPORTION into v_per_total from Z_PCDW_PURCHASE_PROPORTION limit :v_count;
+	select sum(PROPORTION) into v_per_total from (select PROPORTION from Z_PCDW_PURCHASE_PROPORTION limit :v_count);					
+	update Z_PCDW_PURCHASE_PROPORTION as a 
+			set a.PROPORTION = 1.0 - :v_per_total 
+			from (select * from Z_PCDW_PURCHASE_PROPORTION limit 1 offset :v_count) as b
+			where a.ITEM = b.ITEM and a.SITEID = b.SITEID and a.SUPPLIERID = b.SUPPLIERID and a.STARTDATE=b.STARTDATE;					
+						
+	update pcdw.APO_PURCHASE_PROPORTION set status='COMPLETE' where STATUS='NEW';
+	delete from pcdw.APO_PURCHASE_PROPORTION where 
+		status='COMPLETE' and sys_created_date < ADD_DAYS(current_timestamp,-65) and wfname=:p_wfname;
+		
+		*/
+	
+	end if;
+end if;
+         
+      
+p_out_exitcode := 0;             
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>'Success');             
+END;

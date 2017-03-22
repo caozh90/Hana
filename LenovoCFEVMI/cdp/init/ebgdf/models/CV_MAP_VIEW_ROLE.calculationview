@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_MAP_VIEW_ROLE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true" hierarchiesSQLEnabled="false" translationRelevant="true">
+  <descriptions defaultDescription="CV_INFO_ROLES"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="VIEW_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="MAP_TYPE" length="50"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+BEGIN 
+ /* view name
+--0.1 managementCenter
+--0.2 costBake
+--0.3 newCycle 
+
+*/
+ 
+ 	 var_out = 
+ SELECT  'cdp.security.roles::Access' as ROLE_NAME,'user' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.security.roles::userAdmin' as ROLE_NAME,'user' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleSetup' as ROLE_NAME,'user' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleAdmin' as ROLE_NAME,'user' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAccess' as ROLE_NAME,'log' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAdmin' as ROLE_NAME,'log' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+
+UNION SELECT  'cdp.dssz.roles.configuration::access' as ROLE_NAME,'configuration' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.configuration::access' as ROLE_NAME,'configuration' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsjob::access' as ROLE_NAME,'DSJob' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsjob::access' as ROLE_NAME,'DSJob' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsmonitor::access' as ROLE_NAME,'dsMonitor' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsmonitor::access' as ROLE_NAME,'dsMonitor' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsmonitor::admin' as ROLE_NAME,'dsMonitor' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+/*
+
+/*MFI_PPN
+--1.1 step_1_mfi_ppn
+--1.2 costBake
+--1.3 newCycle 
+*/
+--1.1 step_1_mfi_ppn
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::access' as ROLE_NAME,'Step_1_MFI_PPN' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::createable' as ROLE_NAME,'Step_1_MFI_PPN' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::deleteable' as ROLE_NAME,'Step_1_MFI_PPN' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::exportable' as ROLE_NAME,'Step_1_MFI_PPN' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::uploadable' as ROLE_NAME,'Step_1_MFI_PPN' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::executable' as ROLE_NAME,'Step_1_MFI_PPN' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::deleteallable' as ROLE_NAME,'Step_1_MFI_PPN' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--Step_2_Report_Interlock
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::access' as ROLE_NAME,'Step_2_Report_Interlock' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::createable' as ROLE_NAME,'Step_2_Report_Interlock' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::deleteable' as ROLE_NAME,'Step_2_Report_Interlock' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::exportable' as ROLE_NAME,'Step_2_Report_Interlock' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::uploadable' as ROLE_NAME,'Step_2_Report_Interlock' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::editable' as ROLE_NAME,'Step_2_Report_Interlock' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::executable' as ROLE_NAME,'Step_2_Report_Interlock' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::deleteallable' as ROLE_NAME,'Step_2_Report_Interlock' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--Step_3_Report_pn_class
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::access' as ROLE_NAME,'Step_3_Pn_Class' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::createable' as ROLE_NAME,'Step_3_Pn_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::deleteable' as ROLE_NAME,'Step_3_Pn_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::exportable' as ROLE_NAME,'Step_3_Pn_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::uploadable' as ROLE_NAME,'Step_3_Pn_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::editable' as ROLE_NAME,'Step_3_Pn_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::executable' as ROLE_NAME,'Step_3_Pn_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::deleteallable' as ROLE_NAME,'Step_3_Pn_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--Step_4.1_Report_Pegging Report
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::access' as ROLE_NAME,'Step_4_1_Pegging' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::createable' as ROLE_NAME,'Step_4_1_Pegging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::deleteable' as ROLE_NAME,'Step_4_1_Pegging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::exportable' as ROLE_NAME,'Step_4_1_Pegging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::uploadable' as ROLE_NAME,'Step_4_1_Pegging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::editable' as ROLE_NAME,'Step_4_1_Pegging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::executable' as ROLE_NAME,'Step_4_1_Pegging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::deleteallable' as ROLE_NAME,'Step_4_1_Pegging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--Step_4.2_Report_Rel_Config_Class
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::access' as ROLE_NAME,'Step_4_2_Rel_Config_Class' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::createable' as ROLE_NAME,'Step_4_2_Rel_Config_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::deleteable' as ROLE_NAME,'Step_4_2_Rel_Config_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::exportable' as ROLE_NAME,'Step_4_2_Rel_Config_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::uploadable' as ROLE_NAME,'Step_4_2_Rel_Config_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::editable' as ROLE_NAME,'Step_4_2_Rel_Config_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::executable' as ROLE_NAME,'Step_4_2_Rel_Config_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::deleteallable' as ROLE_NAME,'Step_4_2_Rel_Config_Class' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--Step_4.3_Report_Lead Time
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::access' as ROLE_NAME,'Step_4_3_Lead_Time' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::createable' as ROLE_NAME,'Step_4_3_Lead_Time' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::deleteable' as ROLE_NAME,'Step_4_3_Lead_Time' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::exportable' as ROLE_NAME,'Step_4_3_Lead_Time' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::uploadable' as ROLE_NAME,'Step_4_3_Lead_Time' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::editable' as ROLE_NAME,'Step_4_3_Lead_Time' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::executable' as ROLE_NAME,'Step_4_3_Lead_Time' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::deleteallable' as ROLE_NAME,'Step_4_3_Lead_Time' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--OPTION_Forecast
+UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::access' as ROLE_NAME,'Forecast' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::createable' as ROLE_NAME,'Forecast' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::deleteable' as ROLE_NAME,'Forecast' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::exportable' as ROLE_NAME,'Forecast' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::uploadable' as ROLE_NAME,'Forecast' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::editable' as ROLE_NAME,'Forecast' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::executable' as ROLE_NAME,'Forecast' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--OPTION_ClassPercent
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::access' as ROLE_NAME,'Percent' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::createable' as ROLE_NAME,'Percent' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::deleteable' as ROLE_NAME,'Percent' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::exportable' as ROLE_NAME,'Percent' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::uploadable' as ROLE_NAME,'Percent' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::editable' as ROLE_NAME,'Percent' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::executable' as ROLE_NAME,'Percent' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::deleteallable' as ROLE_NAME,'Percent' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--OPTION_MaxClass
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::access' as ROLE_NAME,'Maxclass' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::createable' as ROLE_NAME,'Maxclass' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::deleteable' as ROLE_NAME,'Maxclass' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::exportable' as ROLE_NAME,'Maxclass' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::uploadable' as ROLE_NAME,'Maxclass' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::editable' as ROLE_NAME,'Maxclass' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::executable' as ROLE_NAME,'Maxclass' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::deleteallable' as ROLE_NAME,'Maxclass' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--OPTION_Attributes
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::access' as ROLE_NAME,'Attributes' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::createable' as ROLE_NAME,'Attributes' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::deleteable' as ROLE_NAME,'Attributes' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::exportable' as ROLE_NAME,'Attributes' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::uploadable' as ROLE_NAME,'Attributes' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::editable' as ROLE_NAME,'Attributes' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::executable' as ROLE_NAME,'Attributes' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::deleteallable' as ROLE_NAME,'Attributes' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+
+--UI_LTVALUE
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::access' as ROLE_NAME,'Ltvalue' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::createable' as ROLE_NAME,'Ltvalue' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::deleteable' as ROLE_NAME,'Ltvalue' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::exportable' as ROLE_NAME,'Ltvalue' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::uploadable' as ROLE_NAME,'Ltvalue' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::editable' as ROLE_NAME,'Ltvalue' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::executable' as ROLE_NAME,'Ltvalue' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::deleteallable' as ROLE_NAME,'Ltvalue' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="ROLE_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="VIEW_NAME" order="2">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="VIEW_NAME"/>
+      </attribute>
+      <attribute id="MAP_TYPE" order="3">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MAP_TYPE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_UI_XMVA_SEARCH_DDL" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_XMVA_SEARCH_DDL"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="UI_CYCLE" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_CYCLE"/>
+    </DataSource>
+    <DataSource id="UI_XMVA" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_XMVA"/>
+    </DataSource>
+    <DataSource id="Aggregation_3$$$$UI_XMVA$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_XMVA"/>
+    </DataSource>
+    <DataSource id="Aggregation_4$$$$UI_XMVA$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_XMVA"/>
+    </DataSource>
+    <DataSource id="CONF_PARAMETERS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="CONF_PARAMETERS"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="10">
+          <formula>'CYCLE'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#UI_CYCLE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="CYCLE"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_2">
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="10">
+          <formula>'BRAND'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#UI_XMVA">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="BRAND"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_3">
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="10">
+          <formula>'PLANT'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Aggregation_3$$$$UI_XMVA$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="PLANT"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_4">
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="10">
+          <formula>'SUBGEO'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Aggregation_4$$$$UI_XMVA$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="SUBGEO"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_5">
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+        <viewAttribute id="PDOMAIN"/>
+        <viewAttribute id="PNAME"/>
+        <viewAttribute id="PTYPE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="10">
+          <formula>'TBA_TYPE'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CONF_PARAMETERS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="PVALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PDOMAIN" source="PDOMAIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PNAME" source="PNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PTYPE" source="PTYPE"/>
+      </input>
+      <filter>(&quot;PDOMAIN&quot; ='UI_MVA') AND (&quot;PNAME&quot; ='TBA_TYPE')</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+        <viewAttribute id="ITEM_TYPE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Aggregation_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Aggregation_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Aggregation_4">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Aggregation_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Aggregation_5">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Union_1">
+    <attributes>
+      <attribute id="ITEM_VALUE" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_VALUE"/>
+        <keyMapping columnObjectName="Union_1" columnName="ITEM_VALUE"/>
+      </attribute>
+      <attribute id="ITEM_TYPE" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_TYPE"/>
+        <keyMapping columnObjectName="Union_1" columnName="ITEM_TYPE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="252" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="335"/>
+        <rectangleSize height="51" width="101"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="137" y="335"/>
+        <rectangleSize height="52" width="111"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="396" y="335"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="262" y="335"/>
+        <rectangleSize height="44" width="120"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_5" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="550" y="335"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="252" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

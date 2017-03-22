@@ -1,0 +1,153 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ctofc_flag" (
+IN   CYCLE NVARCHAR(40),
+IN   PRODUCT_GROUP NVARCHAR(10),
+IN   CTO NVARCHAR(18),
+IN   FC NVARCHAR(40),
+IN   ANNOUNCE_DATE DAYDATE,
+IN   WITHDRAW_DATE DAYDATE,
+IN	 	business_name nvarchar(200),
+IN		SEQ	int,
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      : ui_ctofc_flag              --函数名
+*function  : upload数据至表ui_ctofc_flag并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : ZHAODAN               --作者
+*CreateDate    : 2016-01-15       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		n int;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_CTOFC_FLAG';
+		privilegeExists  NVARCHAR(300)  ;
+		var_oper VARCHAR(10);
+		validate1 int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ctofc_flag_err"(::SQL_ERROR_MESSAGE,:business_name,:CYCLE,
+			:PRODUCT_GROUP,:CTO,:FC,:ANNOUNCE_DATE,:WITHDRAW_DATE,:SEQ,:position);
+     	
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ctofc_flag_err"(::SQL_ERROR_MESSAGE,:business_name,:CYCLE,
+			:PRODUCT_GROUP,:CTO,:FC,:ANNOUNCE_DATE,:WITHDRAW_DATE,:SEQ,:position);
+     	
+    END; 
+    --exception 
+	
+
+	--procedure begin
+	
+	
+	
+	business_code := TO_NVARCHAR (:SEQ);
+	
+	select count(1) into validate1 from "EBGCFE"."UI_ITEM" where item_type='CTO' AND item = :CTO;
+	IF validate1<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ctofc_flag_err"('"CTO"::'||:CTO||' is illegal',:business_name,
+			 	 :CYCLE,:PRODUCT_GROUP,:CTO,:FC,:ANNOUNCE_DATE,:WITHDRAW_DATE,:SEQ,:position);
+		RETURN;
+	END IF;
+	
+	select count(1) into validate1 from "EBGCFE"."BIZ_FCSBBMAP" where FC = :FC;
+	IF validate1<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ctofc_flag_err"('"FC"::'||:FC||' is illegal',:business_name,
+			 	 :CYCLE,:PRODUCT_GROUP,:CTO,:FC,:ANNOUNCE_DATE,:WITHDRAW_DATE,:SEQ,:position);
+		RETURN;
+	END IF;
+	
+/*	select count(1) into validate1 from "EBGCFE"."UI_REGION" where COUNTRY = :COUNTRY;
+	IF validate1<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ctofc_flag_err"('"COUNTRY"::'||:COUNTRY||' is illegal',:business_name,
+			 	 :CYCLE,:PRODUCT_GROUP,:CTO,:FC,:ANNOUNCE_DATE,:WITHDRAW_DATE,:SEQ,:position);
+		RETURN;
+	END IF;
+	*/
+	
+	select count(1) into n from "EBGCFE"."UI_CTOFC_FLAG" 
+	where CYCLE = :CYCLE 
+	  and PRODUCT_GROUP = :PRODUCT_GROUP 
+	  and CTO = :CTO 
+	  and FC = :FC;
+	if n>0 then
+	   var_oper := 'update';
+		update "EBGCFE"."UI_CTOFC_FLAG" 
+			set	ANNOUNCE_DATE = :ANNOUNCE_DATE,
+				WITHDRAW_DATE = :WITHDRAW_DATE,
+				ACTION = 'update',
+				SYS_LAST_MODIFIED_BY = SESSION_USER,
+				SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+			WHERE CYCLE = :CYCLE and PRODUCT_GROUP= :PRODUCT_GROUP 
+			  and CTO = :CTO and FC = :FC ;
+	
+			
+	elseif n = 0 then
+	   var_oper := 'create';
+		insert into "EBGCFE"."UI_CTOFC_FLAG"
+        (
+	         CYCLE,		 PRODUCT_GROUP,		 CTO,
+		     FC,	         ANNOUNCE_DATE,	     WITHDRAW_DATE,
+			 ACTION,		 STATUS,		 CHANGE_ID,
+			 CHANGE_ACTION,		 SYS_CREATED_DATE,		 SYS_CREATED_BY,
+			 SYS_LAST_MODIFIED_DATE,		 SYS_LAST_MODIFIED_BY
+		) 
+	   values 
+	   (
+		    :CYCLE,		 :PRODUCT_GROUP,		 :CTO,
+			:FC,	         :ANNOUNCE_DATE,	     :WITHDRAW_DATE,
+		   'create',--ACTION
+		   '',--STATUS
+		   '',--CHANGE_ID
+		   '',--CHANGE_ACTION
+		   CURRENT_TIMESTAMP,
+		   SESSION_USER,
+		   CURRENT_TIMESTAMP,
+		   SESSION_USER
+	   );	  
+	end if;
+	
+	--update操作需要写入日志
+	insert into "EBGCFE"."UI_CTOFC_FLAG_LOG"(
+		 CYCLE,		 PRODUCT_GROUP,		 CTO,
+	     FC,	      ANNOUNCE_DATE,	     WITHDRAW_DATE,
+		 ACTION,		 STATUS,		 CHANGE_ID,
+		 CHANGE_ACTION,		 SYS_CREATED_DATE,		 SYS_CREATED_BY,
+		 SYS_LAST_MODIFIED_DATE,		 SYS_LAST_MODIFIED_BY,		 AT_MODIFIED_BY,
+		 AT_ACTION,		 AT_MODIFIED_ON,		 AT_MILLIS)
+	VALUES
+		(
+		:CYCLE,		 :PRODUCT_GROUP,		 :CTO,
+	    :FC,	       :ANNOUNCE_DATE,	     :WITHDRAW_DATE,
+		:var_oper,
+	    '',--STATUS
+	    '',--CHANGE_ID
+	    '',--CHANGE_ACTION
+	    CURRENT_TIMESTAMP,
+	    SESSION_USER,
+	    CURRENT_TIMESTAMP,
+	    SESSION_USER,
+ 		SESSION_USER,
+ 		:var_oper,
+ 		CURRENT_TIMESTAMP,
+ 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+	 		
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);		
+	
+
+
+END;

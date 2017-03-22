@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_MAP_ROLEGROUP_ROLE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_INFO_ROLES"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="ROLEGROUP_NAME" length="256"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+BEGIN 
+ 
+ 
+ 	 var_out = 
+ SELECT  'cdp.security.roles::Base' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.security.roles::Access' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.security.roles::userAdmin' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleSetup' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleAdmin' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAccess' as ROLE_NAME,'LOG' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAdmin' as ROLE_NAME,'LOG' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ds.roles.dsmonitor::access' as ROLE_NAME,'DS Job Monitor&amp;Resubmission' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsmonitor::admin' as ROLE_NAME,'DS Job Monitor&amp;Resubmission' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ds.roles.configuration::access' as ROLE_NAME,'DS Workflow Configuration' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsjob::access' as ROLE_NAME,'DS Job Configuration' AS ROLEGROUP_NAME  FROM DUMMY
+
+;
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="ROLE_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="ROLEGROUP_NAME" order="2">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLEGROUP_NAME"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

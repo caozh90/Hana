@@ -1,0 +1,13 @@
+PROCEDURE "MXEBGVMI"."cdp.wf.mx::PRC_PREPARE_INVENTORY" ( 
+	  iv_id               VARCHAR2(10),
+      tpl_id              VARCHAR2(20),
+      OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+	AS
+BEGIN
+	CALL "cdp.mxebgvmi.procedures.pkg_report::PRC_PREPARE_INVENTORY"(:iv_id,:tpl_id,on_exitcode);
+END;

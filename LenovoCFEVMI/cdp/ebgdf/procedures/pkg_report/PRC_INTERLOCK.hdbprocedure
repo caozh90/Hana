@@ -1,0 +1,613 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_report::PRC_INTERLOCK" (
+  OUT P_OUT_EXITCODE INTEGER
+) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER 
+  DEFAULT SCHEMA EBGDF
+
+  AS
+BEGIN
+
+  -- data
+  DECLARE   V_PKG_NAME        VARCHAR(100) := 'PKG_REPORT';    
+  DECLARE   V_PRC_NAME        VARCHAR(100) := 'PRC_INTERLOCK';
+  DECLARE   V_FUNC_FULL_NAME  VARCHAR(100) := :V_PKG_NAME || '.' || :V_PRC_NAME;  
+  DECLARE   logidi            INTEGER := 0;
+  
+  -- exception 
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION  
+    BEGIN              
+            P_OUT_EXITCODE := -1;  
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+          (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+          I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'EBGDF',
+          I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+                                        substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+        RESIGNAL;     
+    END;  
+    
+  -- process logic
+  P_OUT_EXITCODE := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF'); 
+
+
+  --Data massage from UI_FORECAST_MID to UI_FORECAST
+  --EXECUTE IMMEDIATE 'truncate table UI_FORCAST';
+  DELETE FROM ebgdf.UI_FORCAST;
+  
+  insert into ebgdf.UI_FORCAST(  SBB,	
+							YEAR,
+							JAN,	
+							FEB,	
+							MAR,	
+							APR,
+							MAY,	
+							JUN,	
+							JUL,	
+							AUG,	
+							SEP,	
+							OCT,	
+							NOV,	
+							DEC)
+  	        select a.sbb,
+  	        	   a.year,
+      	   		   ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'jan' THEN ifnull(a.FCSTQTY,0) END),0) AS JAN, 
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'feb' THEN ifnull(a.FCSTQTY,0) END),0) AS FEB, 
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'mar' THEN ifnull(a.FCSTQTY,0) END),0) AS MAR, 
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'apr' THEN ifnull(a.FCSTQTY,0) END),0) AS APR, 
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'may' THEN ifnull(a.FCSTQTY,0) END),0) AS MAY, 
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'jun' THEN ifnull(a.FCSTQTY,0) END),0) AS JUN, 
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'jul' THEN ifnull(a.FCSTQTY,0) END),0) AS JUL,
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'aug' THEN ifnull(a.FCSTQTY,0) END),0) AS AUG,
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'sep' THEN ifnull(a.FCSTQTY,0) END),0) AS SEP,
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'oct' THEN ifnull(a.FCSTQTY,0) END),0) AS OCT,
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'nov' THEN ifnull(a.FCSTQTY,0) END),0) AS NOV,
+			       ifnull(SUM(CASE WHEN to_char(a.day_mon,'mon') = 'dec' THEN ifnull(a.FCSTQTY,0) END),0) AS DEC
+    FROM (SELECT ifnull(t2.day_mon, add_days(current_date, -weekday(current_date))) AS day_mon,
+                  t1.sbb, ifnull(t2.fcstqty, 0) fcstqty,
+                  --to_number(to_char(current_date, 'yyyy')) YEAR
+                  --change by castor for INC000003144742,  forecast data missing issue
+                  ifnull(to_number(to_char(day_mon, 'yyyy')),to_number(to_char(current_date, 'yyyy'))) YEAR
+             FROM (SELECT DISTINCT sbb FROM "EBGDF".UI_MFI_PPN) t1
+             LEFT JOIN (SELECT day_mon, sbb, fcstqty,
+                              row_number() over(PARTITION BY day_mon, sbb ORDER BY priority) AS priority
+                         FROM (SELECT day_mon, sbb, SUM(fcstqty) AS fcstqty,
+                                       priority
+                                  FROM (SELECT add_days(fcstwek, -weekday(fcstwek)) AS day_mon,
+                                                sbb, fcstqty, 1 AS priority
+                                           FROM "EBGDF".UI_FORECAST_MID
+                                          WHERE length(sbb) = 7
+                                         UNION ALL
+                                         SELECT add_days(fcstwek, -weekday(fcstwek)) AS day_mon,
+                                                RIGHT(sbb, 7) AS sbb, fcstqty,
+                                                2 AS priority
+                                           FROM "EBGDF".UI_FORECAST_MID
+                                          WHERE length(sbb) > 7
+                                         UNION ALL
+                                         SELECT add_days(fcstwek, -weekday(fcstwek)) AS day_mon,
+                                                sbb, fcstqty, 1 AS priority
+                                           FROM "EBGDF".UI_FORECAST_MID
+                                          WHERE length(sbb) = 10 
+                                         UNION ALL
+                                         SELECT add_days(fcstwek, -weekday(fcstwek)) AS day_mon,
+                                                RIGHT(sbb, 10) AS sbb, fcstqty,
+                                                2 AS priority
+                                           FROM "EBGDF".UI_FORECAST_MID
+                                          WHERE length(sbb) > 10)
+                                 GROUP BY day_mon, sbb, priority)) t2
+               ON t1.sbb = t2.sbb
+                  AND t2.priority = 1) a
+	      group by a.sbb,a.year;
+ 
+  insert into ebgdf.UI_forcast 
+		select distinct a.sbb, year(current_date)+1,
+			   0,0,0,0,0,0,0,0,0,0,0,0
+		  from ebgdf.UI_forcast a 
+		 where exists(select sbb 
+		 				from ebgdf.UI_forcast b 
+		 			   where a.sbb = b.sbb 
+		 			     and year = year(current_date) )
+		   and not exists(select sbb 
+			 				from ebgdf.UI_forcast b 
+			 			   where a.sbb = b.sbb 
+			 			     and year = year(current_date)+1 );
+  
+  --Shipment Data Massage
+ 
+  --EXECUTE IMMEDIATE 'truncate table UI_SHIPMENT_MID';
+  DELETE FROM ebgdf.UI_SHIPMENT_MID;
+  
+  INSERT INTO ebgdf.UI_SHIPMENT_MID ( CTO,
+								PLANNING_ITEM_ID,
+								SHIPPED_DATE,
+								SHIPPED_QTY,
+								SYS_CREATED_DATE,
+								SYS_CREATED_BY,
+								SYS_LAST_MODIFIED_DATE,
+								SYS_LAST_MODIFIED_BY)
+SELECT '0', t1.sbb, ifnull(t2.ship_date, current_date) shipped_date,
+       ifnull(t2.shipped_qty, 0) shipped_qty, current_date sys_created_date,
+       'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC' sys_created_by,
+       current_date sys_last_modified_date,
+       'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC' sys_last_modified_by
+  FROM (SELECT DISTINCT sbb FROM "EBGDF".UI_MFI_PPN) t1
+  LEFT JOIN (SELECT planning_item_id, ship_date, shipped_qty,
+                    row_number() over(PARTITION BY planning_item_id, ship_date ORDER BY priority) AS priority
+               FROM (SELECT planning_item_id, ship_date,
+                             SUM(shipped_qty) AS shipped_qty, priority
+                        FROM (SELECT planning_item_id, ship_date, shipped_qty,
+                                      1 AS priority
+                                 FROM "PCDW".PCDW_SHIP_SW_BAK
+                                WHERE length(planning_item_id) = 7
+                               UNION ALL
+                               SELECT RIGHT(planning_item_id, 7) AS planning_item_id,
+                                      ship_date, shipped_qty, 2 AS priority
+                                 FROM "PCDW".PCDW_SHIP_SW_BAK
+                                WHERE length(planning_item_id) > 7
+                               UNION ALL
+                               SELECT planning_item_id, ship_date, shipped_qty,
+                                      1 AS priority
+                                 FROM "PCDW".PCDW_SHIP_SW_BAK
+                                WHERE length(planning_item_id) = 10
+                               UNION ALL
+                               SELECT RIGHT(planning_item_id, 10) AS planning_item_id,
+                                      ship_date, shipped_qty, 2 AS priority
+                                 FROM "PCDW".PCDW_SHIP_SW_BAK
+                                WHERE length(planning_item_id) > 10)
+                       GROUP BY planning_item_id, ship_date, priority)) t2
+    ON t1.sbb = t2.planning_item_id
+       AND t2.priority = 1;
+	    
+  
+  --EXECUTE IMMEDIATE 'truncate table BAK_UI_SHIPMENT_MID';
+  DELETE FROM ebgdf.BAK_UI_SHIPMENT_MID;
+  --a.Take all data from PCDW.PCDW_SHIP_SW to BAK_UI_SHIPMENT_MID 
+  insert into ebgdf.BAK_UI_SHIPMENT_MID(  CTO,
+									PLANNING_ITEM_ID,
+									SHIPPED_DATE,
+									SHIPPED_QTY,
+									SYS_CREATED_DATE,
+									SYS_CREATED_BY,
+									SYS_LAST_MODIFIED_DATE,
+									SYS_LAST_MODIFIED_BY)
+     select CTO,
+			PLANNING_ITEM_ID,
+			SHIPPED_DATE,
+			SHIPPED_QTY,
+			SYS_CREATED_DATE,
+			SYS_CREATED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			SYS_LAST_MODIFIED_BY
+  	   from ebgdf.UI_SHIPMENT_MID;
+
+
+  --b.Data deletion: BAK_UI_SHIPMENT_MID only keep last 6 months data
+  delete from ebgdf.BAK_UI_SHIPMENT_MID t where t.sys_created_date < NEXT_DAY(LAST_DAY(ADD_MONTHS(CURRENT_DATE ,-6)));  
+  
+  
+  
+  --EXECUTE IMMEDIATE 'truncate table UI_SHIPMENT';
+  DELETE FROM ebgdf.UI_SHIPMENT;
+  
+  
+  --c.clear all data in UI_SHIPMENT_MID and insert with new data
+  insert into ebgdf.UI_SHIPMENT ( PLANNING_ITEM_ID,YEAR,							
+							JAN,FEB,MAR,								
+							APR,MAY,JUN,								
+							JUL,AUG,SEP,								
+							OCT,NOV,DEC)
+    select v.PLANNING_ITEM_ID,
+    	   v.SHIPPED_DATE,
+    	   ifnull(v.JAN,0),ifnull(v.FEB,0),ifnull(v.MAR,0),
+    	   ifnull(v.APR,0),ifnull(v.MAY,0),ifnull(v.JUN,0),
+    	   ifnull(v.JUL,0),ifnull(v.AUG,0),ifnull(v.SEP,0),
+    	   ifnull(v.OCT,0),ifnull(v.NOV,0),ifnull(v.DEC,0)
+      from (select PLANNING_ITEM_ID,year(a.SHIPPED_DATE) SHIPPED_DATE,
+        		   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'jan' THEN ifnull(a.SHIPPED_QTY,0) END) AS JAN, 
+  				   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'feb' THEN ifnull(a.SHIPPED_QTY,0) END) AS FEB, 
+   				   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'mar' THEN ifnull(a.SHIPPED_QTY,0) END) AS MAR, 
+		    	   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'apr' THEN ifnull(a.SHIPPED_QTY,0) END) AS APR, 
+              	   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'may' THEN ifnull(a.SHIPPED_QTY,0) END) AS MAY, 
+				   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'jun' THEN ifnull(a.SHIPPED_QTY,0) END) AS JUN, 
+				   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'jul' THEN ifnull(a.SHIPPED_QTY,0) END) AS JUL,
+				   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'aug' THEN ifnull(a.SHIPPED_QTY,0) END) AS AUG,
+				   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'sep' THEN ifnull(a.SHIPPED_QTY,0) END) AS SEP,
+				   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'oct' THEN ifnull(a.SHIPPED_QTY,0) END) AS OCT,
+				   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'nov' THEN ifnull(a.SHIPPED_QTY,0) END) AS NOV,
+				   SUM(CASE WHEN to_char(a.SHIPPED_DATE,'mon') = 'dec' THEN ifnull(a.SHIPPED_QTY,0) END) AS DEC
+			  from "EBGDF".UI_SHIPMENT_MID a
+		  group by PLANNING_ITEM_ID,year(a.SHIPPED_DATE)) v ;
+  
+  insert into ebgdf.UI_SHIPMENT ( PLANNING_ITEM_ID,YEAR,							
+							JAN,FEB,MAR,								
+							APR,MAY,JUN,								
+							JUL,AUG,SEP,								
+							OCT,NOV,DEC)
+    select distinct sbb,
+    	   to_number(to_char(current_date , 'yyyy')),
+    	   0,0,0,
+    	   0,0,0,
+    	   0,0,0,
+    	   0,0,0
+      from ebgdf.UI_MFI_PPN 
+     where sbb not in (select PLANNING_ITEM_ID from "EBGDF".UI_SHIPMENT);
+  
+  
+  insert into ebgdf.ui_shipment 
+		select a.planning_item_id, year(current_date) -1,
+			   0,0,0,0,0,0,0,0,0,0,0,0
+		  from ebgdf.ui_shipment a 
+		 where exists(select planning_item_id 
+		 				from ebgdf.ui_shipment b 
+		 			   where a.planning_item_id = b.planning_item_id 
+		 			     and B.year = year(current_date) )
+		   and not exists(select planning_item_id 
+			 				from ebgdf.ui_shipment b 
+			 			   where a.planning_item_id = b.planning_item_id 
+			 			     and B.year = year(current_date)-1 )and year=year(current_date);
+  --Add year=year(current_date) in order to filer the duplicate data
+  --Add by yangyue6,2017-2-28 
+
+  insert into ebgdf.ui_shipment 
+		select --Modified by shenhua 20170107
+		       DISTINCT
+		       a.planning_item_id, year(current_date),
+			   0,0,0,0,0,0,0,0,0,0,0,0
+		  from ebgdf.ui_shipment a 
+		 where exists(select planning_item_id 
+		 				from ebgdf.ui_shipment b 
+		 			   where a.planning_item_id = b.planning_item_id 
+		 			     and year = year(current_date)-1 )
+		   and not exists(select planning_item_id 
+			 				from ebgdf.ui_shipment b 
+			 			   where a.planning_item_id = b.planning_item_id 
+			 			     and year = year(current_date) ); 
+
+  --EXECUTE IMMEDIATE 'truncate table RPT_Interlock';
+  DELETE FROM ebgdf.RPT_Interlock;
+  
+  --date of pcdw_itemsitemaster
+  /*
+  tab_pcdw_itemsitemaster_7 = select right(v.item,7) item,v.maktx,ifnull(v.X_WW_ANNC_DATE,to_date('1975/11/17','yyyy/mm/dd')) X_WW_ANNC_DATE,ifnull(v.X_WW_WITHDRAW_DATE,to_date('2050/12/30','yyyy/mm/dd')) X_WW_WITHDRAW_DATE,v1.sbb,v1.ppn,v1.abcd_t
+  							  from (select min(ifnull(b.X_WW_ANNC_DATE,to_date('1975/11/17','yyyy/mm/dd'))) X_WW_ANNC_DATE,
+						                   max(ifnull(b.X_WW_WITHDRAW_DATE,to_date('2050/12/30','yyyy/mm/dd'))) X_WW_WITHDRAW_DATE,
+								           right(b.item,7) item,b.maktx
+							  		 from (select p.item,p.maktx,p.X_WW_ANNC_DATE,p.X_WW_WITHDRAW_DATE
+								         	  from (select item,maktx,case when X_WW_ANNC_DATE is null or X_WW_ANNC_DATE ='' then to_date('1975/11/17','yyyy/mm/dd') else X_WW_ANNC_DATE end as X_WW_ANNC_DATE,
+								         						      case when X_WW_WITHDRAW_DATE is null or X_WW_WITHDRAW_DATE ='' then to_date('2050/12/30','yyyy/mm/dd') else X_WW_WITHDRAW_DATE end as X_WW_WITHDRAW_DATE
+								         			  from pcdw.pcdw_itemsitemaster
+								         			 where length(item) = 7) p
+								                ) b
+								  group by b.item,b.maktx
+							union all
+							select min(ifnull(b.X_WW_ANNC_DATE,to_date('1975/11/17','yyyy/mm/dd'))) X_WW_ANNC_DATE,
+								   max(ifnull(b.X_WW_WITHDRAW_DATE,to_date('2050/12/30','yyyy/mm/dd'))) X_WW_WITHDRAW_DATE,
+								   right(b.item,7) item,b.maktx
+							  from (select p.item,p.maktx,p.X_WW_ANNC_DATE,p.X_WW_WITHDRAW_DATE
+								      from (select item,maktx,case when X_WW_ANNC_DATE is null or X_WW_ANNC_DATE ='' then to_date('1975/11/17','yyyy/mm/dd') else X_WW_ANNC_DATE end as X_WW_ANNC_DATE,
+								         					case when X_WW_WITHDRAW_DATE is null or X_WW_WITHDRAW_DATE ='' then to_date('2050/12/30','yyyy/mm/dd') else X_WW_WITHDRAW_DATE end as X_WW_WITHDRAW_DATE
+								         	  from pcdw.pcdw_itemsitemaster) p
+								     where length(p.item) <> 7 ) b 
+							 where right(item,7) not in (select b.item
+														    from (select p.item,p.maktx,p.X_WW_ANNC_DATE,p.X_WW_WITHDRAW_DATE
+													         	    from (select item,maktx,case when X_WW_ANNC_DATE is null or X_WW_ANNC_DATE ='' then to_date('1975/11/17','yyyy/mm/dd') else X_WW_ANNC_DATE end as X_WW_ANNC_DATE,
+													         						      case when X_WW_WITHDRAW_DATE is null or X_WW_WITHDRAW_DATE ='' then to_date('2050/12/30','yyyy/mm/dd') else X_WW_WITHDRAW_DATE end as X_WW_WITHDRAW_DATE
+													         			    from pcdw.pcdw_itemsitemaster
+													         			   where length(item) = 7) p)b)
+								  group by b.item,b.maktx) v right join (select sbb,ppn,abcd_t from ebgdf.ui_mfi_ppn where length(sbb) = 7) v1
+								  on right(v.item,7) = v1.sbb;
+ 
+  tab_pcdw_itemsitemaster_10 = select right(v.item,10) item,v.maktx,ifnull(v.X_WW_ANNC_DATE,to_date('1975/11/17','yyyy/mm/dd')) X_WW_ANNC_DATE,ifnull(v.X_WW_WITHDRAW_DATE,to_date('2050/12/30','yyyy/mm/dd')) X_WW_WITHDRAW_DATE,v1.sbb,v1.ppn,v1.abcd_t
+  							  from (select min(ifnull(b.X_WW_ANNC_DATE,to_date('1975/11/17','yyyy/mm/dd'))) X_WW_ANNC_DATE,
+						                   max(ifnull(b.X_WW_WITHDRAW_DATE,to_date('2050/12/30','yyyy/mm/dd'))) X_WW_WITHDRAW_DATE,
+								           right(b.item,10) item,b.maktx
+							  		 from (select p.item,p.maktx,p.X_WW_ANNC_DATE,p.X_WW_WITHDRAW_DATE
+								         	  from (select item,maktx,case when X_WW_ANNC_DATE is null or X_WW_ANNC_DATE ='' then to_date('1975/11/17','yyyy/mm/dd') else X_WW_ANNC_DATE end as X_WW_ANNC_DATE,
+								         						      case when X_WW_WITHDRAW_DATE is null or X_WW_WITHDRAW_DATE ='' then to_date('2050/12/30','yyyy/mm/dd') else X_WW_WITHDRAW_DATE end as X_WW_WITHDRAW_DATE
+								         			  from pcdw.pcdw_itemsitemaster
+								         			 where length(item) = 10 and (left(item,1) = '7' or left(item,1) = 'S')) p
+								                ) b
+								  group by b.item,b.maktx) v 
+								  right join (select sbb,ppn,abcd_t from ebgdf.ui_mfi_ppn where length(sbb) = 10) v1
+								  on right(v.item,10) = v1.sbb;
+ 
+  tab_pcdw_itemsitemaster = select distinct item,maktx,sbb,ppn,abcd_t,X_WW_ANNC_DATE,X_WW_WITHDRAW_DATE
+  							  from (select item,maktx,sbb,ppn,abcd_t,X_WW_ANNC_DATE,X_WW_WITHDRAW_DATE from :tab_pcdw_itemsitemaster_7 
+		  						   union all 
+		  						    select item,maktx,sbb,ppn,abcd_t,X_WW_ANNC_DATE,X_WW_WITHDRAW_DATE from :tab_pcdw_itemsitemaster_10
+		  						    );*/
+
+  tab_pcdw_itemsitemaster =  
+  SELECT ifnull(t2.item, t1.sbb) AS item, t2.maktx, t2.x_ww_annc_date,
+       t2.x_ww_withdraw_date, t1.sbb, t1.ppn, t1.abcd_t
+  FROM (SELECT sbb, ppn, abcd_t
+           FROM ebgdf.ui_mfi_ppn
+          WHERE length(sbb) = 7
+                OR length(sbb) = 10) t1
+  LEFT JOIN (SELECT item, maktx,
+                    MIN(ifnull(x_ww_annc_date, to_date('1975/11/17', 'yyyy/mm/dd'))) over(PARTITION BY item) AS x_ww_annc_date,
+                    MAX(ifnull(x_ww_withdraw_date, to_date('2050/12/30', 'yyyy/mm/dd'))) over(PARTITION BY item) AS x_ww_withdraw_date,
+                    row_number() over(PARTITION BY item ORDER BY priority) AS id
+               FROM (SELECT item, maktx, x_ww_annc_date, x_ww_withdraw_date,1 AS priority, siteid, zucod
+                        FROM pcdw.pcdw_itemsitemaster
+                       WHERE length(item) = 7
+                      UNION ALL
+                      SELECT item, maktx, x_ww_annc_date, x_ww_withdraw_date, 2 AS priority, siteid, zucod
+                        FROM pcdw.pcdw_itemsitemaster
+                       WHERE length(item) = 10 AND LEFT(item, 1) IN('7', 'S')
+                      UNION ALL
+                      SELECT item, maktx, x_ww_annc_date, x_ww_withdraw_date,priority, siteid, zucod
+                        FROM (SELECT RIGHT(item, 10) AS item, maktx,x_ww_annc_date, x_ww_withdraw_date,3 AS priority, siteid, zucod
+                                 FROM pcdw.pcdw_itemsitemaster
+                                WHERE length(item) > 10)
+                       WHERE LEFT(item, 1) IN('7', 'S')
+                      UNION ALL
+                      SELECT RIGHT(item, 7) AS item, maktx, x_ww_annc_date, x_ww_withdraw_date, 4 AS priority, siteid, zucod
+                        FROM pcdw.pcdw_itemsitemaster
+                       WHERE length(item) > 7)
+              WHERE --Modified by shenhua, add U471 and H071 plant
+                    (siteid IN ('L070', 'U470', 'X470', 'U471') OR ((siteid = 'H001' OR siteid = 'H071') AND zucod LIKE 'H%'))
+                    AND (zucod <> 'HPBD' OR zucod IS NULL OR zucod = '')) t2
+    ON t1.sbb = t2.item
+       AND t2.id = 1;
+  
+                               		  						    
+  --3M_forecast
+  tab_3m_forecast = select a.sbb,u1.abcd_t,a.SBB_3M_FORECAST from (
+  				 	select sbb,case to_char(current_date, 'MON') 
+								when 'JAN' then ifnull(E.FEB,0)+ifnull(E.MAR,0)+ifnull(E.APR,0)
+								when 'FEB' then ifnull(E.MAR,0)+ifnull(E.APR,0)+ifnull(E.MAY,0)
+								when 'MAR' then ifnull(E.APR,0)+ifnull(E.MAY,0)+ifnull(E.JUN,0)
+								when 'APR' then ifnull(E.MAY,0)+ifnull(E.JUN,0)+ifnull(E.JUL,0)
+								when 'MAY' then ifnull(E.JUN,0)+ifnull(E.JUL,0)+ifnull(E.AUG,0)
+								when 'JUN' then ifnull(E.JUL,0)+ifnull(E.AUG,0)+ifnull(E.SEP,0)
+								when 'JUL' then ifnull(E.AUG,0)+ifnull(E.SEP,0)+ifnull(E.OCT,0)
+								when 'AUG' then ifnull(E.SEP,0)+ifnull(E.OCT,0)+ifnull(E.NOV,0)
+								when 'SEP' then ifnull(E.OCT,0)+ifnull(E.NOV,0)+ifnull(E.DEC,0)
+								when 'OCT' then ifnull(E.NOV,0)+ifnull(E.DEC,0)+ifnull(E.N_JAN,0)
+								when 'NOV' then ifnull(E.DEC,0)+ifnull(e.N_JAN,0)+ifnull(e.N_FEB,0)
+								when 'DEC' then ifnull(e.N_JAN,0)+ifnull(e.N_FEB,0)+ifnull(e.N_MAR,0)
+								end as SBB_3M_FORECAST 
+			        from (select v1.year,v1.sbb,v1.jan,v1.feb,v1.mar,
+			        			v1.apr,v1.may,v1.jun,v1.jul,
+			        			v1.aug,v1.sep,v1.oct,v1.nov,
+			        			v1.dec,v2.jan as n_jan,
+								v2.feb as n_feb,v2.mar as n_mar
+						   from (select * from ebgdf.ui_forcast b) v1 
+					  left join (select jan,FEB,MAR,sbb from ebgdf.ui_forcast where year=year(current_date)+1) v2
+							 on v1.sbb = v2.sbb)e
+					      where e.year=year(current_date)) a,
+					 (select distinct sbb,abcd_t from "EBGDF"."UI_MFI_PPN") u1
+					 where u1.sbb = a.sbb;
+  
+  --3m_shipment
+  tab_3m_shipment = select b.sbb,u1.abcd_t,b.SBB_3M_SHIPMENT from (
+  					select f.PLANNING_ITEM_ID sbb,f.year, case to_char(current_date, 'MON') 
+							when 'JAN' then ifnull(f.l_oct,0)+ifnull(f.l_nov,0)+ifnull(f.l_dec,0) 
+							when 'FEB' then ifnull(f.l_nov,0)+ifnull(f.l_dec,0)+ifnull(f.JAN,0) 
+							when 'MAR' then ifnull(f.l_dec,0)+ifnull(f.JAN,0)+ifnull(f.FEB,0) 
+							when 'APR' then ifnull(f.JAN,0)+ifnull(f.FEB,0)+ifnull(f.MAR,0)
+							when 'MAY' then ifnull(f.FEB,0)+ifnull(f.MAR,0)+ifnull(f.APR,0)
+							when 'JUN' then ifnull(f.MAR,0)+ifnull(f.APR,0)+ifnull(f.MAY,0) 
+							when 'JUL' then ifnull(f.APR,0)+ifnull(f.MAY,0)+ifnull(f.JUN,0) 
+							when 'AUG' then ifnull(f.MAY,0)+ifnull(f.JUN,0)+ifnull(f.JUL,0) 
+							when 'SEP' then ifnull(f.JUN,0)+ifnull(f.JUL,0)+ifnull(f.AUG,0)
+							when 'OCT' then ifnull(f.JUL,0)+ifnull(f.AUG,0)+ifnull(f.SEP,0)
+							when 'NOV' then ifnull(f.AUG,0)+ifnull(f.SEP,0)+ifnull(f.OCT,0) 
+							when 'DEC' then ifnull(f.SEP,0)+ifnull(f.OCT,0)+ifnull(f.NOV,0)
+							end as SBB_3M_SHIPMENT 
+					from (select v1.PLANNING_ITEM_ID ,
+								v1.jan,v1.feb,v1.mar,v1.apr,
+								v1.may,v1.jun,v1.jul,v1.aug,
+								v1.sep,v1.oct,v1.nov,v1.dec,
+								v1.year,v2.oct as l_oct,v2.nov as l_nov,v2.dec as l_dec
+						   from (select * from ebgdf.ui_shipment b) v1 
+					  left join (select oct,nov,dec ,PLANNING_ITEM_ID from ebgdf.ui_shipment where year=year(current_date)-1) v2
+						     on v1.PLANNING_ITEM_ID = v2.PLANNING_ITEM_ID )f 
+						  where f.year = year(current_date))b,
+						(select distinct sbb,abcd_t from "EBGDF"."UI_MFI_PPN") u1
+						where u1.sbb = b.sbb;
+  
+  --date of shipment and forecast													     
+  tab_shipment_forecast =  select v1.sbb,v1.SBB_3M_FORECAST,v1.SBB_3M_SHIPMENT,u1.abcd_t,u1.ppn,v1.percent from (
+  							select v.sbb,v.SBB_3M_FORECAST,v.SBB_3M_SHIPMENT,v.abcd_t,
+	         		             sum(v.percent)over(partition by v.abcd_t order by v.percent desc rows between UNBOUNDED PRECEDING and current row) percent
+				            from (select t.sbb,
+				            			 t.SBB_3M_FORECAST,
+				            			 t.SBB_3M_SHIPMENT,
+				            			 t.abcd_t,
+						         		 case when t.sum_total = 0 then 0 else sum(((t.SBB_3M_FORECAST+t.SBB_3M_SHIPMENT)/(sum_total))) end as percent 
+						            from (select distinct e2.sbb, e2.abcd_t,
+						            			 ifnull(e2.SBB_3M_FORECAST,0) SBB_3M_FORECAST, 
+						            			 ifnull(f2.SBB_3M_SHIPMENT,0) SBB_3M_SHIPMENT,
+						            			 t1.sum_total
+						            		from --forecast date
+						            			 :tab_3m_forecast e2,
+						            	 		 --shipment date
+						            	 		 :tab_3m_shipment f2,
+						            	 		 (select e1.abcd_t,sum(e1.SBB_3M_FORECAST+f1.SBB_3M_SHIPMENT) sum_total 
+						            	 		    from  :tab_3m_forecast e1,:tab_3m_shipment f1
+						            	 		   where e1.sbb = f1.sbb
+						            	 		     and e1.abcd_t = f1.abcd_T
+						            	 		group by e1.abcd_t) t1
+						            	   where e2.sbb=f2.sbb
+						            	     and e2.abcd_t = t1.abcd_t ) t
+						        group by t.sbb,t.SBB_3M_FORECAST,t.SBB_3M_SHIPMENT,t.abcd_t,t.sum_total) v
+				        order by percent) v1,(select distinct sbb,abcd_t,ppn from "EBGDF"."UI_MFI_PPN") u1
+				        where v1.sbb = u1.sbb and v1.abcd_t = u1.abcd_t;
+  
+  --insert into RPT_Interlock
+  INSERT INTO ebgdf.RPT_Interlock(ABCD_T,
+                            SBB_OPT,
+                            SBB_DES,
+                            MFI_FFI_FC_IND,
+							GAD,
+                            LOD,
+                            PPN,
+                            PP_DES,
+                            SUPPLIER,
+                            LENOVO_PPN_OHQ,
+                            PPN_HIQ,
+                            SBB_3M_FORECAST,
+                            SBB_3M_SHIPMENT,
+                            PPN_3M_SHIPMENT,
+                            PRIOR_ABCD,
+                            REC_ABCD,
+                            CREATE_TS,
+                            CREATE_USERID,
+                            LAST_UPDATE_TS,
+                            LAST_UPDATE_USERID)
+  SELECT distinct t1.abcd_t,
+         t1.sbb,
+         replace(t1.maktx,',',' '),
+         'NON',
+         case when X_WW_ANNC_DATE is null or X_WW_ANNC_DATE ='' then to_date('1975/11/17','yyyy/mm/dd') else t1.X_WW_ANNC_DATE end as GAD,
+         case when X_WW_WITHDRAW_DATE is null or X_WW_WITHDRAW_DATE ='' then to_date('2050/12/30','yyyy/mm/dd') else t1.X_WW_WITHDRAW_DATE end as LOD,
+         t1.ppn,
+         replace(t1.maktx,',',' '),
+         'NOT FOUND',
+         NULL LENOVO_PPN_OHQ,
+         NULL PPN_HIQ,
+         ifnull(v2.SBB_3M_FORECAST,0) , 
+         ifnull(v2.SBB_3M_SHIPMENT,0) , 
+         NULL PPN_3M_SHIPMENT,
+         NULL PRIOR_ABCD, 
+         CASE WHEN t1.X_WW_WITHDRAW_DATE>add_months(current_date,1) and v2.percent>0 AND v2.percent<=g.a THEN 'A'
+           WHEN t1.X_WW_WITHDRAW_DATE>add_months(current_date,1) and v2.percent>g.a AND v2.percent<=g.a + g.b THEN 'B'
+           WHEN t1.X_WW_WITHDRAW_DATE>add_months(current_date,1) and v2.percent>g.a + g.b AND v2.percent<=g.a + g.b + g.c THEN 'C'
+           when t1.X_WW_WITHDRAW_DATE<=add_months(current_date,1) then 'D'
+         END AS REC_ABCD,
+         null CREATE_TS,
+         'PRC_INTERLOCK' CREATE_USERID,
+         null LAST_UPDATE_TS,
+         'PRC_INTERLOCK' LAST_UPDATE_USERID 
+    FROM :tab_pcdw_itemsitemaster t1 
+left join :tab_shipment_forecast v2
+      on t1.sbb = v2.sbb
+     and t1.ppn = v2.ppn
+left join (select distinct abcd_t,a,b,c from "EBGDF".ui_class_percent) g
+      on t1.abcd_t = g.abcd_t;
+  
+  --update MFI_FFI_FC_IND
+  update ebgdf.RPT_Interlock t
+     set MFI_FFI_FC_IND = case when t1.itemclass = 'COMPONENT' then 'COM' 
+      						   when t1.itemclass = 'PHANTOM' then 'PHT' else ifnull(t1.itemclass,'NON') end
+    from (select distinct item,ifnull(itemclass,'NON') itemclass from pcdw.pcdw_itemsitemaster ) t1
+   where right(t1.item,7) = t.sbb_opt
+     and length(t.sbb_opt) = 7;
+ 
+  update ebgdf.RPT_Interlock t
+     set MFI_FFI_FC_IND = case when t1.itemclass = 'COMPONENT' then 'COM' 
+      						   when t1.itemclass = 'PHANTOM' then 'PHT' else ifnull(t1.itemclass,'NON') end
+    from (select distinct item,ifnull(itemclass,'NON') itemclass from pcdw.pcdw_itemsitemaster ) t1
+   where right(t1.item,10) = t.sbb_opt
+     and length(t1.item) = 10
+     and (left(t1.item,1) = '7' or left(t1.item,1) = 'S');
+ 
+  --update SUPPLIER
+  tab_pcdw_ecc_supitem = select t.matnr,
+  								t.name1 
+  						   from pcdw.ecc_supitem t
+						  where t.name1 not like 'Hon Hai%'
+							AND t.name1 not like 'HON HAI%'
+							AND t.name1 not like 'Lenovo%';
+						  
+  update ebgdf.RPT_Interlock t
+     set SUPPLIER = ifnull(c.name1,'NOT FOUND')
+    from (SELECT DISTINCT right(matnr,7) matnr, name1 FROM :tab_pcdw_ecc_supitem a,"EBGDF".ui_mfi_ppn b where right(a.matnr,7) = b.ppn) c
+   where right(c.matnr,7) = t.ppn
+     and length(c.matnr) = 7;
+ 
+  update ebgdf.RPT_Interlock t
+     set SUPPLIER = ifnull(c.name1,'NOT FOUND')
+    from (SELECT DISTINCT right(matnr,10) matnr, name1 FROM :tab_pcdw_ecc_supitem a,"EBGDF".ui_mfi_ppn b where right(a.matnr,10) = b.ppn) c
+   where right(c.matnr,10) = t.ppn
+     and length(c.matnr) = 10;
+ 
+  --update LENOVO_PPN_OHQ
+  update ebgdf.RPT_Interlock t
+     set t.LENOVO_PPN_OHQ = t1.sum_VERME
+    from (select sum(VERME) sum_VERME ,b.ppn
+     					from ebgdf.UI_MFI_PPN b,
+     		       		     ebgdf.LOISOI_inventory a
+     				   where b.ppn = right(a.MATNR,7)
+     				     and length(b.ppn) = 7
+     				     and ((a.werks = 'L070' and a.LGTYP = 'L21')
+     				      --Modified by shenhua, add U471 DC
+     				   	  or (a.werks in ('U470','X470','U471') and a.LGTYP like 'L%'))
+     				   	 and a.BESTQ = 'A'
+     				group by b.ppn) t1
+   where t.ppn = t1.ppn;
+ 
+  update ebgdf.RPT_Interlock t
+     set t.LENOVO_PPN_OHQ = t1.sum_VERME
+    from (select sum(VERME) sum_VERME ,b.ppn
+     					from ebgdf.UI_MFI_PPN b,
+     		       		     ebgdf.LOISOI_inventory a
+     				   where b.ppn = right(a.MATNR,10)
+     				     and length(b.ppn) = 10
+     				     and ((a.werks = 'L070' and a.LGTYP = 'L21')
+     				   	  or (a.werks in ('U470','X470','U471') and a.LGTYP like 'L%'))
+     				   	 and a.BESTQ = 'A'
+     				group by b.ppn) t1
+   where t.ppn = t1.ppn;
+ 
+  --update PPN_HIQ
+  update ebgdf.RPT_Interlock t
+     set t.PPN_HIQ = t1.sum_VERME
+    from (select sum(VERME) sum_VERME ,b.ppn
+     					from ebgdf.LOISOI_inventory a, 
+     						 ebgdf.UI_MFI_PPN b
+     				   where ((a.werks = 'L070' and a.LGTYP = 'C21')
+     				      --Modified by shenhua, add U471 DC
+     				   	  or (a.werks in ('U470','X470','U471') and a.LGTYP like 'C%'))
+     				   	 and a.BESTQ = 'A'
+     				   	 and b.ppn = right(a.MATNR,7)
+     				   	 and length(b.ppn) = 7
+     				group by b.ppn) t1
+   where t.ppn = t1.ppn;
+ 
+  update ebgdf.RPT_Interlock t
+     set t.PPN_HIQ = t1.sum_VERME
+    from (select sum(VERME) sum_VERME ,b.ppn
+     					from ebgdf.LOISOI_inventory a, 
+     						 ebgdf.UI_MFI_PPN b
+     				   where ((a.werks = 'L070' and a.LGTYP = 'C21')
+     				      --Modified by shenhua, add U471 DC
+     				   	  or (a.werks in ('U470','X470','U471') and a.LGTYP like 'C%'))
+     				   	 and a.BESTQ = 'A'
+     				   	 and b.ppn = right(a.MATNR,10)
+     				   	 and length(b.ppn) = 10
+     				group by b.ppn) t1
+   where t.ppn = t1.ppn;
+ 
+  --update PRIOR_ABCD
+  update ebgdf.RPT_Interlock t
+     set t.PRIOR_ABCD = t1.lastest_abcd
+    from ebgdf.RPT_Interlock t left join ebgdf.bak_rpt_interlock t1
+      on t.sbb_opt = t1.sbb_opt
+     and t.ppn = t1.ppn;
+
+  --UPDATE PPN 3 MONTHES CONSUME
+  update ebgdf.RPT_Interlock t
+     set t.ppn_3m_shipment = ifnull(mo.cnt,0)
+    from ebgdf.RPT_Interlock t left join (select matnr, sum(BDMNG) cnt
+							                from (select *,row_number()over(partition by aufnr,plnbez,rspos,matnr,werks order by sys_created_date desc) rownum
+							                        from pcdw.bak_ecc_mo_bom) bom, 
+							                     pcdw.bak_ecc_mo mo 
+							               where bom.aufnr = mo.aufnr 
+							                 and mo.status <> 'Deleted'
+							                 and mo.kdauf is not null 
+							                 and mo.kdauf <> ''                
+							                 and bom.rownum = 1 
+							               group by matnr) mo
+      on (mo.matnr LIKE '%' || t.ppn);						               
+                 
+  P_OUT_EXITCODE := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF');  
+  
+end ;

@@ -1,0 +1,74 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_BUNDLE_BOM_INIT" ( 
+  OUT p_out_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_PCDW_BUNDLE_BOM_INIT          
+*function   : Copy Bundle BOM from PCDW
+*input      ：-
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-01-14
+*UpdateDate : 
+*************************************************************************/		
+	AS
+BEGIN
+  -- data
+  DECLARE    v_g_pkg_name   VARCHAR(30) := 'PKG_PCDW_TO_CFE';      
+  DECLARE    v_prc_name   VARCHAR(30) := 'PRC_PCDW_BUNDLE_BOM_INIT';
+  DECLARE    v_full_name         VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+  DECLARE    logidi              INTEGER := 0;
+  DECLARE    v_init_date         TIMESTAMP; 
+  DECLARE    n                   INTEGER;
+    
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+    p_out_exitcode := ::SQL_ERROR_CODE;
+         UPDATE   conf_sync_lastrun
+            SET   ENDDATE = CURRENT_TIMESTAMP, returncode = -1
+          WHERE   pkgname = :v_g_pkg_name AND progname = :v_prc_name;
+
+        p_out_exitcode := ::SQL_ERROR_CODE;      
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+	                                    substr(::SQL_ERROR_MESSAGE, 1, 500) );         
+  END;  
+  
+  -- process logic
+  p_out_exitcode := -1;
+  logidi:=0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+											  I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');      
+		
+   UPDATE conf_sync_lastrun a SET a.startdate = CURRENT_TIMESTAMP, a.enddate = NULL, a.returncode = NULL
+          WHERE a.pkgname = :v_g_pkg_name AND a.progname = :v_prc_name;   
+   SELECT COUNT(1) INTO n FROM conf_sync_lastrun a
+          WHERE a.pkgname = :v_g_pkg_name AND a.progname = :v_prc_name;
+   IF :n<1 THEN SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_init_date INTO v_init_date FROM DUMMY;
+   	INSERT INTO CONF_SYNC_LASTRUN(pkgname, progname, lastrundate, startdate) 
+	       VALUES (:v_g_pkg_name, :v_prc_name, :v_init_date, CURRENT_TIMESTAMP); 
+   END IF;   
+  
+  -- Copy bundle BOM from PCDW
+  DELETE FROM z_pcdw_bundle_bom;
+  INSERT INTO z_pcdw_bundle_bom (BUNDLE,  SEO, QTY, IPC_CREATED_DATE, SYS_CREATED_DATE,
+							 SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY)
+		 ( SELECT distinct BUNDLE,  SEO, QTY, IPC_CREATED_DATE, SYS_CREATED_DATE,
+							 SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY
+	       FROM PCDW.pcdw_bundle_bom );
+   		
+  -- Update run time info
+  UPDATE   conf_sync_lastrun c1
+	   SET   lastrundate = startdate, enddate = CURRENT_TIMESTAMP, returncode = 0
+	 WHERE   pkgname = :v_g_pkg_name AND progname = :v_prc_name;
+        
+  p_out_exitcode := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+	                                          I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 		    
+END;

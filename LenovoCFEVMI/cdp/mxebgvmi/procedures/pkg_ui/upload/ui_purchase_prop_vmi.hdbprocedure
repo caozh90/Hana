@@ -1,0 +1,140 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi" (
+IN  ITEM NVARCHAR(40),
+IN   VENDORID NVARCHAR(40),
+IN   LOGICAL_PLANT NVARCHAR(40),
+IN   PROPORTION DECIMAL(10,3),
+IN   START_DATE LONGDATE,
+IN   END_DATE LONGDATE,
+IN	 	business_name varchar(200),
+IN		seq	NVARCHAR(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+/************************************************************************
+*name      : ui_purchase_prop_vmi              --函数名
+*function  : upload数据至表ui_purchase_prop_vmi并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-19       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.mxebgvmi.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_purchase_prop_vmi';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		SYS_SOURCE nvarchar(25);
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		validate1 int;
+		validate2 int;
+		validate3 int;
+		validate4 int;
+		validate5 int;
+		table_name nvarchar(20):='UI_PURCHASE_PROP_VMI';
+		ITEMDESC NVARCHAR(200);
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,:seq,:position);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,:seq,:position);
+    END; 
+    --exception 
+	
+	--procedure begin
+	
+	SYS_SOURCE := 'UI';
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     
+    --设置businesscode:: table_name+business_code	
+    business_code := :seq; 
+
+	--防止传入的数据中有主键冲突的情况,UI_PURCHASE_PROP_VMI_BUFFER和UI_PURCHASE_PROP_VMI都需要判断
+	SELECT COUNT(1) INTO validate1 FROM "MXEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+ 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND VENDORID = :VENDORID AND START_DATE =:START_DATE;
+ 	
+ 	IF validate1>0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_err"('Duplicated data!',:business_name,
+			 	 :ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,
+				:seq,:position);
+			return;
+	END IF;
+ 	
+ 	SELECT COUNT(1) INTO validate1 FROM "MXEBGVMI"."UI_PURCHASE_PROP_VMI"
+ 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND VENDORID = :VENDORID AND START_DATE =:START_DATE;
+ 	
+ 	IF validate1>0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_err"('Primary key violated!',:business_name,
+			 	 :ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,
+				:seq,:position);
+			return;
+	END IF;
+	
+	--先判断LOGICAL_PLANT
+	select count(1) into validate4 from CONF_SITEMASTER where SITEID = :LOGICAL_PLANT ;
+ 	IF validate4<=0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_err"('"LOGICAL_PLANT"::'||:LOGICAL_PLANT||' is illegal',:business_name,
+			 	  :ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,
+				:seq,:position);
+ 			RETURN;
+ 	END IF;		
+ 	
+	SELECT COUNT(1) into validate2 FROM ITEMSITEMASTER WHERE ITEM=:ITEM AND SITEID= :LOGICAL_PLANT;    
+ 	IF validate2<=0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_err"('"ITEM"::'||:ITEM||' or "LOGICAL_PLANT"::'||:LOGICAL_PLANT||' is illegal'
+			,:business_name,
+			 	  :ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,
+				:seq,:position);
+			return;
+	END IF;
+	--赋值ITEMDESC
+	ITEMDESC := null;
+	SELECT count(1) into n FROM ITEMSITEMASTER WHERE ITEM=:ITEM;   
+	if n>0 then
+		SELECT TOP 1 ITEMDESC into ITEMDESC 
+		FROM ITEMSITEMASTER WHERE ITEM=:ITEM;  
+	end if;
+ 	
+ 	select count(1) into validate3 from "MXEBGVMI"."SUPITEM" where SUPPLIERID = :VENDORID;
+ 	IF validate3<=0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_err"('"VENDORID"::'||:VENDORID||' is illegal',:business_name,
+			 	  :ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,
+				:seq,:position);
+			RETURN;
+	END IF;
+ 	
+	if(:PROPORTION>=0 and :PROPORTION<=1) then
+		--先插入至buffer表中，最后还需验证proportion加和是否为1
+		INSERT INTO "MXEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		(
+			LOGICAL_PLANT,ITEM,ITEMDESC,START_DATE,END_DATE,SYS_SOURCE,VENDORID,
+			PROPORTION,SYS_CREATED_DATE,SYS_CREATED_BY,POSITION
+		)
+		VALUES
+		(
+			:LOGICAL_PLANT,:ITEM,:ITEMDESC,:START_DATE,:END_DATE,:SYS_SOURCE,:VENDORID,
+			:PROPORTION,:create_time,:currentUser,:position
+		);
+		
+	ELSEIF :PROPORTION<0 and :PROPORTION>1 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_err"('Value of "PROPORTION" should between 0 and 1',:business_name,
+			 	  :ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,
+				:seq,:position);
+	        return;
+	END IF;
+	
+END;

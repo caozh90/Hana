@@ -1,0 +1,160 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cost_elem" (
+IN 	ELEMENT_NAME varchar(40),
+IN 	ELEMENT_TYPE varchar(40),
+IN  ASP_PROD_FAMILY varchar(40),
+IN  TOTE VARCHAR(1),
+IN  TOTL VARCHAR(1),
+IN	 	table_name varchar(200),
+IN	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER,
+IN CYCLE varchar(20)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_cost_elem              --函数名
+*function  : upload数据至表ui_cost_elem并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Eric               --作者
+*CreateDate    : 2015-01-20       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_cost_elem';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate int;
+		var_oper VARCHAR(10);
+		privilegeExists  NVARCHAR(300)  ;
+		
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    
+     call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cost_elem_err"(
+			:ELEMENT_NAME,:ELEMENT_TYPE,:ASP_PROD_FAMILY,:TOTE,:TOTL,
+			:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE,:CYCLE);
+     	
+    END; 
+    --exception 
+	
+	--procedure begin
+
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     	
+	select  count(1) into validate from Conf_parameters where pdomain='UI_COST_ELEM' 
+		and Pname='ELEM_TYPE' and Pvalue=:ELEMENT_TYPE;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cost_elem_err"(
+			:ELEMENT_NAME,:ELEMENT_TYPE,:ASP_PROD_FAMILY,:TOTE,:TOTL,
+			:table_name,:business_name,:business_code,:position,'"ELEMENT_TYPE"::'||:ELEMENT_TYPE||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	select  count(1) into validate from Conf_parameters where pdomain='UI_COST_ELEM' and Pname='ASP_PROD_FAMILY'
+		and Pvalue = :ASP_PROD_FAMILY; 
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cost_elem_err"(
+			:ELEMENT_NAME,:ELEMENT_TYPE,:ASP_PROD_FAMILY,:TOTE,:TOTL,
+			:table_name,:business_name,:business_code,:position,'"ASP_PROD_FAMILY"::'||:ASP_PROD_FAMILY||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	
+	
+	select  count(1) into validate from Conf_parameters where pdomain='UI_COST_ELEM' and Pname='TOTE'
+			and pvalue = :TOTE;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cost_elem_err"(
+			:ELEMENT_NAME,:ELEMENT_TYPE,:ASP_PROD_FAMILY,:TOTE,:TOTL,
+			:table_name,:business_name,:business_code,:position,'"TOTE"::'||:TOTE||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	select  count(1) into validate from Conf_parameters where pdomain='UI_COST_ELEM' and Pname='TOTL'
+			and pvalue = :TOTL;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cost_elem_err"(
+			:ELEMENT_NAME,:ELEMENT_TYPE,:ASP_PROD_FAMILY,:TOTE,:TOTL,
+			:table_name,:business_name,:business_code,:position,'"TOTL"::'||:TOTL||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+
+	
+	SELECT top 1 count(1) into validate from "EBGCFE"."UI_COST_ELEM" where ELEMENT_NAME = :ELEMENT_NAME;
+				
+	if validate = 0
+	then
+		    insert into "EBGCFE"."UI_COST_ELEM"
+  	(ELEMENT_NAME, ELEMENT_TYPE, TOTE, TOTL, ASP_PROD_FAMILY, CYCLE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE)
+  	values(:ELEMENT_NAME, :ELEMENT_TYPE, :TOTE, :TOTL, :ASP_PROD_FAMILY, 'CURRENT',
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+
+  		var_oper := 'create';
+  	else
+  		update "EBGCFE"."UI_COST_ELEM" set
+    	ELEMENT_TYPE = :ELEMENT_TYPE,
+    	TOTE = :TOTE,
+    	TOTL = :TOTL,
+    	ASP_PROD_FAMILY = :ASP_PROD_FAMILY,
+    	SYS_LAST_MODIFIED_DATE = current_date,
+    	SYS_LAST_MODIFIED_BY = SESSION_USER
+    	where
+    	ELEMENT_NAME = :ELEMENT_NAME; 
+        var_oper := 'update';
+  	end if;
+
+insert into "EBGCFE"."UI_COST_ELEM_LOG"
+    (
+        CYCLE,
+    	ELEMENT_NAME,
+	    ELEMENT_TYPE,
+	    TOTE,
+	    TOTL,
+	    ASP_PROD_FAMILY,
+    	SYS_LAST_MODIFIED_DATE,   	
+    	CHANGE_ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    values
+    (
+    	'CURRENT',
+    	:ELEMENT_NAME,
+		:ELEMENT_TYPE,
+		:TOTE,
+		:TOTL,
+		:ASP_PROD_FAMILY,
+    	current_date,    	
+    	var_oper,
+    	SESSION_USER,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    ); 
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+	
+	
+	
+END;

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_GET_ALL_USER" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="SCRIPT_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_GET_ALL_USER"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="GROUP_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="USER_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="MODULE_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="MODULE_ID" length="20"/>
+        <viewAttribute datatype="BIGINT" id="MS"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script, Created by Eric Zhou ************/ 
+ BEGIN 
+ 	 var_out = select groups.GROUP_NAME as GROUP_NAME,
+ 	 				  users.USER_NAME as USER_NAME,
+ 	 				  modules.MODULE_NAME as MODULE_NAME,
+ 	 				  modules.MODULE_ID as MODULE_ID,
+ 	 				  sum(0) as MS
+ 	 from  
+ 	 &quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.MAP_GROUP_USER&quot; as maps,
+ 	 &quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_GROUP&quot; as groups,
+ 	 &quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_USER&quot; as users,
+ 	 &quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_MODULE&quot; as modules
+ 	 where maps.GROUP_ID = groups.GROUP_ID
+ 	 	and maps.USER_ID = users.USER_ID
+ 	 	and maps.MODULE_ID = modules.MODULE_ID
+ 	 group by modules.MODULE_ID,MODULE_NAME,GROUP_NAME,USER_NAME
+ 	 order by MODULE_NAME,GROUP_NAME,USER_NAME;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="GROUP_NAME" order="1">
+        <descriptions defaultDescription="GROUP_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="GROUP_NAME"/>
+      </attribute>
+      <attribute id="USER_NAME" order="2">
+        <descriptions defaultDescription="USER_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="USER_NAME"/>
+      </attribute>
+      <attribute id="MODULE_NAME" order="3">
+        <descriptions defaultDescription="MODULE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="MODULE_NAME"/>
+      </attribute>
+      <attribute id="MODULE_ID" order="4">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MODULE_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="MS" order="5" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MS"/>
+        <measureMapping columnObjectName="Script_View" columnName="MS"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

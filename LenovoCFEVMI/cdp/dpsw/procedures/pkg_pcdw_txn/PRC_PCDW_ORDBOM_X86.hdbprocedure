@@ -1,0 +1,68 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_pcdw_txn::PRC_PCDW_ORDBOM_X86" (IN PI_ID  VARCHAR(12),OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_PCDW_ORDBOM_X86        
+*function   : Merge data FROM ECC_* INTO PCDW_*
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2016-01-14
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_lastrun_time timestamp;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_ORDBOM_X86', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_ORDBOM_X86', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1;
+
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_ORDBOM_X86', 'SUCCESS', NULL, '', '', '', '', 'step 1');
+   EXEC 'COMMIT';  
+
+   DELETE FROM PCDW_ORDBOM_X86 T1
+    WHERE EXISTS (SELECT 1
+             FROM ECC_ORDBOM_X86 T2
+            WHERE T1.VBELN = T2.VBELN
+              AND T1.POSNR = T2.POSNR
+              AND T1.WERKS = T2.WERKS);
+
+    EXEC 'COMMIT'; 
+    
+    INSERT INTO PCDW_ORDBOM_X86
+      (VBELN, POSNR, WERKS, MENGE, MATNR, STLNR, IDNRK, Z_WFNAME,
+       SYS_CREATED_BY,SYS_CREATED_DATE,SYS_LAST_MODIFIED_BY, SYS_LAST_MODIFIED_DATE)
+      select VBELN, posnr, WERKS, MENGE, MATNR, STLNR, IDNRK, Z_WFNAME,
+             'pkg_pcdw_txn.PRC_PCDW_ORDBOM_X86', current_timestamp,
+             'pkg_pcdw_txn.PRC_PCDW_ORDBOM_X86', current_timestamp
+        FROM ECC_ORDBOM_X86 t1 ;
+                                   
+
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_ORDBOM_X86', 'SUCCESS', NULL, '', '', '', '', 'step 2');
+   EXEC 'COMMIT'; 
+                                                                                
+   PO_RETURNCODE := 0;
+   -- log process end
+   INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_ORDBOM_X86', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';             
+END;
+

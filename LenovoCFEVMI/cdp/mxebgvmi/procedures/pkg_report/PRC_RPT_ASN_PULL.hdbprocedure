@@ -1,0 +1,137 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_report::PRC_RPT_ASN_PULL" (
+	iv_id VARCHAR2(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA
+/************************************************************************
+*name      : PRC_RPT_ASN_PULL              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/05                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		 
+	AS
+	  v_logidi INTEGER := 0;	
+	  v_pkg_name          VARCHAR (40)            := 'PKG_REPORT';
+	  v_logic_proc_name   VARCHAR (40)            := 'PRC_RPT_ASN_PULL';
+	  v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+	  
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- ---- -- COMMIT;      --comment by Eric Zhou;      --comment by Eric Zhou                      --comment by Eric Zhou;      --comment by Eric Zhou
+	END;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+on_exitcode := -20099;
+
+      --EXECUTE IMMEDIATE 'truncate table rpt_asn_pull_temp';
+      DELETE FROM rpt_asn_pull_temp;
+
+      /*delete pulled and older than 30 days data from asn report */
+      DELETE FROM rpt_asn_pull
+            WHERE created_date < ADD_DAYS(CURRENT_TIMESTAMP, -30) AND notes = 'Pulled';
+
+      -- COMMIT;      --comment by Eric Zhou;
+
+
+INSERT INTO rpt_asn_pull_temp
+                  (dest_storage_bin, dest_storage_type, dest_storage_loc,
+                   werks, physical_plant, is_loi, production_line, supplier,
+                   delivery_date, matnr, pull_qty, src_storage_type,
+                   src_storage_bin, src_storage_loc, vendor, notes,
+                   productionordid)
+         SELECT DISTINCT IFNULL (t3.storage_bin, 'NOCC') AS dest_storage_bin,
+                         IFNULL (t3.storage_type, 'NOCC') AS dest_storage_type,
+                         IFNULL (t3.storage_location,'NOCC') AS dest_storage_loc,
+                         t1.werks AS werks,
+                         IFNULL (t3.physical_plant, 'NOCC') AS physical_plant,
+                         NULL AS is_loi, t1.res_name AS production_line,
+                         NULL AS supplier,
+                         (SELECT MIN (delivery_date)
+                            FROM mid_mo_line
+                           WHERE productionordid =
+                                             t1.work_ord_num)
+                                                             AS delivery_date,
+                         t2.item AS matnr, t2.qtyper AS pull_qty,
+                         NULL AS src_storage_type, NULL AS src_storage_bin,
+                         t2.lgort AS src_storage_loc, NULL AS vendor,
+                         NULL AS notes, t2.productionordid    --2015/10/13 by xwu. change table from PCDW.EXP_ECC_PRODUCTIONORDERS_BOM_ASN to PRODUCTIONORDERS_BOM_ASN
+                    FROM Z_PCDW_DS_MO t1 INNER JOIN PRODUCTIONORDERS_BOM_ASN t2
+                         ON t1.work_ord_num = t2.productionordid
+                       --AND t1.status = t2.status
+                         AND t2.status = 'PULL_IN_PROCESS'
+                         AND t1.status = 'COMPLETE'
+                         AND NOT EXISTS (SELECT 1 FROM MID_CANCEL_MO_LINE t5 WHERE t2.productionordid = t5.productionordid)
+                    
+                    LEFT OUTER JOIN ui_line_floor_mapping t4
+                         ON t1.res_name = t4.ds_line
+                    LEFT OUTER JOIN ui_control_cycle t3
+                         ON t2.item = t3.item AND t2.siteid = t3.logical_plant
+                         AND t4.physical_plant = t3.physical_plant;
+
+      -- COMMIT;      --comment by Eric Zhou;
+
+      INSERT INTO rpt_asn_pull
+                  (dest_storage_bin, dest_storage_type, dest_storage_loc,
+                   werks, physical_plant, is_loi, production_line, supplier,
+                   delivery_date, matnr, pull_qty, src_storage_type,
+                   src_storage_bin, src_storage_loc, vendor, notes)
+         SELECT   dest_storage_bin, dest_storage_type, dest_storage_loc,
+                  werks, physical_plant, NULL AS is_loi, production_line,
+                  NULL AS supplier, delivery_date, matnr, SUM (pull_qty),
+                  NULL AS src_storage_type, NULL AS src_storage_bin,
+                  src_storage_loc, NULL AS vendor, NULL AS notes
+             FROM rpt_asn_pull_temp
+         GROUP BY matnr,
+                  src_storage_loc,
+                  dest_storage_loc,
+                  dest_storage_type,
+                  dest_storage_bin,
+                  werks,
+                  physical_plant,
+                  production_line,
+                  is_loi,
+                  delivery_date;
+
+      -- COMMIT;      --comment by Eric Zhou;
+
+      --//Update the status ='OLD' after archive to report.
+      /* Formatted on 2009/05/20 09:20 (Formatter Plus v4.8.8) */
+        UPDATE PRODUCTIONORDERS_BOM_ASN t1   --2015/10/13 by xwu. change table from PCDW.EXP_ECC_PRODUCTIONORDERS_BOM_ASN to PRODUCTIONORDERS_BOM_ASN
+           SET t1.status = 'PULL_GENERATED',SYS_LAST_MODIFIED_DATE=CURRENT_TIMESTAMP
+         WHERE t1.status = 'PULL_IN_PROCESS'
+           AND t1.asnflag = 'Y'
+           AND EXISTS (
+                  SELECT 1
+                    FROM Z_PCDW_DS_MO t2
+                   --WHERE t2.status = 'IN_PROCESS'
+                  WHERE  t2.status = 'COMPLETE'
+                     AND t1.productionordid = t2.work_ord_num)
+           AND NOT EXISTS (SELECT 1
+                             FROM mid_cancel_mo_line t5
+                            WHERE t1.productionordid = t5.productionordid);
+      -- COMMIT;      --comment by Eric Zhou;
+      on_exitcode := 0;
+             
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success'); 
+			              
+END;

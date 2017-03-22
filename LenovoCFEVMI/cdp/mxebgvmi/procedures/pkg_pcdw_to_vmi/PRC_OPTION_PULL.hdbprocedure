@@ -1,0 +1,108 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_pcdw_to_vmi::PRC_OPTION_PULL" (
+    IN p_wfname VARCHAR(20), OUT p_out_exitcode NUMBER ) 
+	LANGUAGE SQLSCRIPT
+	--SQL SECURITY INVOKER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA
+	 AS
+    /************************************************************************
+    *name      : PRC_OPTION_PULL              --函数名
+    *function  :               --函数功能
+    *input     ：  p_wfname  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20150128                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  	 
+    v_prc_name VARCHAR(70) := 'PRC_OPTION_PULL';
+    gv_logic_name    VARCHAR2 (40)  := 'PKG_PCDW_TO_VMI';
+    v_full_name VARCHAR(100) := gv_logic_name||'.'||v_prc_name;
+    v_logidi INTEGER := 0;
+    gv_dept             VARCHAR(40) := 'MEXEBG';   -- add by xwu 2016/1/18
+
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+         p_out_exitcode := ::SQL_ERROR_CODE;
+         CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+             I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_MESSAGE=>'ERROR',
+             I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||'Failure');                                                  
+         
+         --COMMIT;       
+    END;
+
+    CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+             I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>'Start');
+
+    --2016/1/11 by xwu.
+    UPDATE PCDW.APO_OPTION_PULL SET WFNAME = 'SZEBGVMI' WHERE PLANT = 'L070';
+
+    DELETE FROM Z_PCDW_OPTION_PULL;
+    insert INTO Z_PCDW_OPTION_PULL 
+    (
+	"REQUEST_ID",
+	"WERKS",
+	"MATNR",
+	"SRC_STORAGE_LOC",
+	"DEST_STORAGE_LOC",
+	"QTY",
+	"CREATE_DATE",
+"DEPT",
+"DELIVERY_TIME",
+"SYS_SOURCE",
+"SYS_TIMESTAMP"  
+    )
+    SELECT
+	"SEQ",
+	"PLANT",
+	"MATERIAL",
+	"I_SLOC",
+	"R_SLOC",
+	"QUANTITY",
+	"CHANGE_DATE",
+	--'MEX',  
+    :gv_dept,   -- modify by xwu106/1/18 change detp from MEX TO MEXEBG.
+     CURRENT_TIMESTAMP,
+     'DF',
+       CURRENT_TIMESTAMP
+     from PCDW.APO_OPTION_PULL 
+where wfname=:p_wfname and status='NEW';
+    
+    /*
+    insert INTO Z_PCDW_OPTION_PULL 
+    (
+	"REQUEST_ID",
+	"WERKS",
+	"MATNR",
+	"SRC_STORAGE_LOC",
+	"DEST_STORAGE_LOC",
+	"QTY",
+	"CREATE_DATE"    
+    )
+    SELECT
+	"SEQ",
+	"PLANT",
+	"MATERIAL",
+	"I_SLOC",
+	"R_SLOC",
+	"QUANTITY",
+	"CHANGE_DATE"    
+     from PCDW.APO_OPTION_PULL 
+    where wfname=:p_wfname and status='NEW';
+    */
+    update PCDW.APO_OPTION_PULL set status='COMPLETE' where STATUS='NEW' and  wfname= :p_wfname;  -- modify by xwu 2016/1/11
+    
+    delete from PCDW.APO_OPTION_PULL where status='COMPLETE' and sys_created_date <ADD_DAYS ( CURRENT_TIMESTAMP, -65)
+     and wfname= :p_wfname; 
+
+    p_out_exitcode := 0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+             I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>'Success');  
+END;

@@ -1,0 +1,62 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_exchange_rate_err" (
+IN 	CURRENCY_NAME varchar(20),
+IN 	CYCLE varchar(40),
+IN  PRODUCT_GROUP VARCHAR(10),
+--IN	COUNTRY varchar(20),
+IN  M1 varchar(20),
+IN  M2 varchar(20),
+IN  M3 varchar(20),
+IN  M4 varchar(20),
+IN  M5 varchar(20),
+IN  M6 varchar(20),
+IN  M7 varchar(20),
+IN  M8 varchar(20),
+IN  M9 varchar(20),
+IN  M10 varchar(20),
+IN  M11 varchar(20),
+IN  M12 varchar(20),
+IN  M13 varchar(20),
+IN  M14 varchar(20),
+IN  M15 varchar(20),
+IN  M16 varchar(20),
+IN  M17 varchar(20),
+IN  M18 varchar(20),
+IN 	 	table_name varchar(100),
+IN 	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER,
+IN 	 	error_message	varchar(4096)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_exchange_rate_err              --函数名
+*function  : 保存在上传数据至表ui_exchange_rate时产生的错误信息              --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2015-01-21       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+	
+	    call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || to_varchar(:business_code),:business_name,0,1,:table_name); 
+
+     	--记录upload的错误
+     	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || to_varchar(:business_code),:position,:error_message,:table_name,:business_name); 
+     	--详细记录upload的数据信息
+     	insert into "EBGCFE"."UI_EXCHANGE_RATE_ERR_DETAIL"(CODE,POSITION,
+			PRODUCT_GROUP,CURRENCY_NAME,CYCLE,OUTPUT_M1,OUTPUT_M2,OUTPUT_M3,OUTPUT_M4,OUTPUT_M5,OUTPUT_M6,
+			OUTPUT_M7,OUTPUT_M8,OUTPUT_M9,OUTPUT_M10,OUTPUT_M11,OUTPUT_M12,OUTPUT_M13,OUTPUT_M14,OUTPUT_M15,
+			OUTPUT_M16,OUTPUT_M17,OUTPUT_M18)
+		VALUES(:table_name || to_varchar(:business_code),:position,
+			:PRODUCT_GROUP,:CURRENCY_NAME,:CYCLE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,
+			:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+END;

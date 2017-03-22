@@ -1,0 +1,43 @@
+role cdp.utility.roles::mxebgvmiDev 
+extends role sap.hana.xs.lm.roles::ExecuteTransport,
+			 sap.hana.xs.lm.roles::Administrator
+{
+
+		--添加cdp的读权限
+		package cdp:	
+						REPO.READ;
+		--添加cdp.mxebgvmi的存储过程包的修改和激活权限
+		
+		
+		package cdp.mxebgvmi.procedures:	
+						REPO.READ, 
+						REPO.EDIT_NATIVE_OBJECTS, 
+						REPO.EDIT_IMPORTED_OBJECTS, 
+						REPO.ACTIVATE_IMPORTED_OBJECTS, 
+						REPO.ACTIVATE_NATIVE_OBJECTS, 
+						REPO.MAINTAIN_NATIVE_PACKAGES,
+						REPO.MAINTAIN_IMPORTED_PACKAGES;
+		package cdp.init.mxebgvmi:	
+						REPO.READ, 
+						REPO.EDIT_NATIVE_OBJECTS,
+						REPO.EDIT_IMPORTED_OBJECTS,
+						REPO.ACTIVATE_IMPORTED_OBJECTS, 
+						REPO.ACTIVATE_NATIVE_OBJECTS, 
+						REPO.MAINTAIN_NATIVE_PACKAGES,
+						REPO.MAINTAIN_IMPORTED_PACKAGES;														
+			
+		--使用CR所需的权限
+		system privilege : REPO.MODIFY_CHANGE, REPO.MODIFY_OWN_CONTRIBUTION, REPO.MAINTAIN_DELIVERY_UNITS;	
+		
+		--Modeling所需权限
+		catalog schema "_SYS_BIC": SELECT;
+		catalog schema "_SYS_BI":  SELECT;
+		catalog sql object "SYS"."REPOSITORY_REST": EXECUTE;
+		
+		--Analytic privileges
+		catalog analytic privilege : "_SYS_BI_CP_ALL";
+
+	    catalog schema "DS_INFO": 	SELECT,CREATE ANY ,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+		catalog schema "PCDW":  	SELECT,CREATE ANY,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+		catalog schema "MXEBGVMI": SELECT,DELETE,INSERT,CREATE ANY ,DEBUG, EXECUTE,ALTER ,DELETE ,UPDATE,DEBUG;
+}

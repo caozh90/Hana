@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_EXP_CFE_MTM_BW" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="reportingEnabled" calculationScenarioType="SCRIPT_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription=""/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="MTM_NO" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SALES_ORG" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="CURRENCY" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="PRICE_UNIT" length="6"/>
+        <viewAttribute datatype="DECIMAL" id="M1" length="13" scale="2"/>
+        <viewAttribute datatype="DECIMAL" id="M1_USD" length="13" scale="2"/>
+        <viewAttribute datatype="VARCHAR" id="COST_TYPE" length="20"/>
+        <viewAttribute datatype="DATE" id="FROM_DATE"/>
+        <viewAttribute datatype="DATE" id="TO_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="ACTION" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="STATUS" length="20"/>
+        <viewAttribute datatype="TIMESTAMP" id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_BY" length="50"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = 
+ 	 SELECT
+	 p.mtm_no ,
+	 p.sales_org ,
+	 h.currency ,
+	 'EA' AS price_unit ,
+	 p.m1*r.m1 AS m1 ,
+	 p.m1 AS m1_usd,
+	 p.cost_type,
+	 TO_DATE(TO_CHAR(p.sys_created_date,'YYYYMMDD'),'YYYYMMDD') AS from_date,
+	 TO_DATE('99991231','YYYYMMDD') AS to_date,
+	 NULL AS action,
+	 NULL AS status,
+	 CURRENT_TIMESTAMP AS sys_last_modified_date,
+	 CURRENT_USER AS sys_last_modified_by 
+FROM pcdw.exp_mtm_salesorg_pre p,
+	 pcdw.exp_cfe_exchange_rate_lastcycle r,
+	 (SELECT DISTINCT sales_org,currency,SUBSTR(cycle,1,6) AS cycle 
+	 FROM ebgcfe.ui_country_salesorg_mapping_his) h 
+WHERE p.cost_type = 'BOML' 
+AND p.sales_org = h.sales_org 
+AND p.cycle = r.cycle 
+AND r.cycle = h.cycle 
+AND r.currency_name = h.currency 
+AND p.product_group = r.product_group; 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="MTM_NO" order="1">
+        <descriptions defaultDescription="MTM_NO"/>
+        <keyMapping columnObjectName="Script_View" columnName="MTM_NO"/>
+      </attribute>
+      <attribute id="SALES_ORG" order="2">
+        <descriptions defaultDescription="SALES_ORG"/>
+        <keyMapping columnObjectName="Script_View" columnName="SALES_ORG"/>
+      </attribute>
+      <attribute id="CURRENCY" order="3">
+        <descriptions defaultDescription="CURRENCY"/>
+        <keyMapping columnObjectName="Script_View" columnName="CURRENCY"/>
+      </attribute>
+      <attribute id="PRICE_UNIT" order="4">
+        <descriptions defaultDescription="PRICE_UNIT"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRICE_UNIT"/>
+      </attribute>
+      <attribute id="COST_TYPE" order="7">
+        <descriptions defaultDescription="COST_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="COST_TYPE"/>
+      </attribute>
+      <attribute id="ACTION" order="10">
+        <descriptions defaultDescription="ACTION"/>
+        <keyMapping columnObjectName="Script_View" columnName="ACTION"/>
+      </attribute>
+      <attribute id="STATUS" order="11">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping columnObjectName="Script_View" columnName="STATUS"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="13">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="M1" order="5" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M1"/>
+        <measureMapping columnObjectName="Script_View" columnName="M1"/>
+      </measure>
+      <measure id="M1_USD" order="6" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M1_USD"/>
+        <measureMapping columnObjectName="Script_View" columnName="M1_USD"/>
+      </measure>
+      <measure id="FROM_DATE" order="8" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="FROM_DATE"/>
+        <measureMapping columnObjectName="Script_View" columnName="FROM_DATE"/>
+      </measure>
+      <measure id="TO_DATE" order="9" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="TO_DATE"/>
+        <measureMapping columnObjectName="Script_View" columnName="TO_DATE"/>
+      </measure>
+      <measure id="SYS_LAST_MODIFIED_DATE" order="12" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <measureMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

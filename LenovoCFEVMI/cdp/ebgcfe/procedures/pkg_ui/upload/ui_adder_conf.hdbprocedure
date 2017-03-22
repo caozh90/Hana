@@ -1,0 +1,185 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_adder_conf" (
+IN   CYCLE NVARCHAR(40),
+IN   ADDER_NAME VARCHAR(40),
+IN   ADDER_DESC VARCHAR(200),
+IN   ASP_PROD_FAMILY VARCHAR(40),
+IN	 	business_name nvarchar(200),
+IN		SEQ	int,
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      : ui_adder_conf              --函数名
+*function  : upload数据至表ui_adder_conf并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-01-21       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_adder_conf';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_ADDER_CONF';
+		validate1 int;
+		validate2 int;
+		TBA_TYPE NVARCHAR(40);
+		FLEXIBLE NVARCHAR(10) :='Y';
+		PRODUCT_GROUP NVARCHAR(40) :='EBG';
+		Z_WFNAME NVARCHAR(5) ;
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_adder_conf_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:CYCLE,:ADDER_NAME,:ADDER_DESC,:ASP_PROD_FAMILY,:SEQ,:position);
+     	
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_adder_conf_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:CYCLE,:ADDER_NAME,:ADDER_DESC,:ASP_PROD_FAMILY,:SEQ,:position);
+    END; 
+    --exception 
+/*	call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_adder_conf::uploadable'           ,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+	--procedure begin
+	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'EBGCFE',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+*/	
+	business_code := :SEQ;
+	
+	--Z_WFNAME := RIGHT(ADDER_NAME,1);
+	
+	SELECT RIGHT(ADDER_NAME,1) INTO Z_WFNAME FROM DUMMY;
+	
+	select count(1) into validate1 from "EBGCFE"."CONF_PARAMETERS" 
+	where PDOMAIN='UI_ADDER_CONF' AND PNAME = 'TBA_TYPE' AND Z_WFNAME = :Z_WFNAME;
+	IF validate1<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_adder_conf_err"('"ADDER_NAME"::'||:ADDER_NAME||' is illegal',:business_name,
+			 	 :CYCLE,:ADDER_NAME,:ADDER_DESC,:ASP_PROD_FAMILY,
+				:SEQ,:position);
+		--error log
+		
+
+		return;
+	END IF;
+	select TOP 1 PVALUE into TBA_TYPE from "EBGCFE"."CONF_PARAMETERS" 
+	where PDOMAIN='UI_ADDER_CONF' AND PNAME = 'TBA_TYPE' AND Z_WFNAME = :Z_WFNAME;
+	
+	select count(1) into validate2 from "EBGCFE"."CONF_PARAMETERS" 
+	where pdomain='UI_ADDER_CONF' and pname='ASP_PROD_FAMILY' and PVALUE=:ASP_PROD_FAMILY;
+	IF validate2<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_adder_conf_err"('"ASP_PROD_FAMILY"::'||:ASP_PROD_FAMILY||' is illegal',:business_name,
+			 	 :CYCLE,:ADDER_NAME,:ADDER_DESC,:ASP_PROD_FAMILY,
+				:SEQ,:position);
+		--error log
+		
+	 	return;
+	END IF;
+
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	if(validate1 >0 and validate2>0) then
+	
+		select count(1) into n from "EBGCFE"."UI_ADDER_CONF" 
+		where CYCLE = :CYCLE and PRODUCT_GROUP = :PRODUCT_GROUP and ADDER_NAME = :ADDER_NAME;
+
+		if n>0 then
+			update "EBGCFE"."UI_ADDER_CONF" 
+			set	
+				ADDER_DESC = :ADDER_DESC,
+				ASP_PROD_FAMILY = :ASP_PROD_FAMILY,
+				FLEXIBLE = :FLEXIBLE,
+				TBA_TYPE = :TBA_TYPE,
+				SYS_LAST_MODIFIED_BY = :currentuser,
+				SYS_LAST_MODIFIED_DATE = :create_time
+			where CYCLE = :CYCLE and PRODUCT_GROUP = :PRODUCT_GROUP and ADDER_NAME = :ADDER_NAME;
+		
+			--update操作需要写入日志
+			insert into "EBGCFE"."UI_ADDER_CONF_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				ADDER_NAME,ADDER_DESC,ASP_PROD_FAMILY,
+				FLEXIBLE,PRODUCT_GROUP,
+		 	SYS_LAST_MODIFIED_BY,
+		 	SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+				(:currentUser,
+				'update',
+				:create_time,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:ADDER_NAME,:ADDER_DESC,:ASP_PROD_FAMILY,
+				:FLEXIBLE,:PRODUCT_GROUP,
+				:currentUser,
+				:create_time);
+			
+		ELSEIF n=0 THEN
+			INSERT INTO "EBGCFE"."UI_ADDER_CONF"(
+				ADDER_NAME,ADDER_DESC,ASP_PROD_FAMILY,
+				FLEXIBLE,CYCLE,PRODUCT_GROUP,TBA_TYPE,
+		 		SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		 	)
+		 	VALUES(
+			 	 :ADDER_NAME,:ADDER_DESC,:ASP_PROD_FAMILY,
+			 	 :FLEXIBLE,:CYCLE,:PRODUCT_GROUP,:TBA_TYPE,
+			 	 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+		 	--insert操作需要写入日志
+			insert into "EBGCFE"."UI_ADDER_CONF_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				ADDER_NAME,ADDER_DESC,ASP_PROD_FAMILY,
+				FLEXIBLE,PRODUCT_GROUP,
+		 		SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+			 	(:currentUser,
+			 	'create',
+			 	:create_time,
+			 	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:ADDER_NAME,:ADDER_DESC,:ASP_PROD_FAMILY,
+				:FLEXIBLE,:PRODUCT_GROUP,
+			 	 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);	 			 	
+		END IF;
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+	END IF;
+/*	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'EBGCFE',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+*/
+END;

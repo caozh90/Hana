@@ -1,0 +1,95 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_pcdw_to_vmi::PRC_MO_BOM" (
+	IN p_wfname VARCHAR(20), 
+	OUT p_out_exitcode NUMBER	
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA 
+	AS
+/************************************************************************
+*name      : PRC_MO_BOM              --函数名
+*function    :               --函数功能
+*input     ：  p_wfname              --输入参数
+*output     : p_out_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/22                 --创建时间
+*UpdateDate  :               --函数更改信息（包括作者、时间、更改内容等）
+************************************************************************/ 
+	v_prc_name VARCHAR(70) := 'PRC_MO_BOM';
+	gv_logic_name    VARCHAR2 (40)  := 'PKG_PCDW_TO_VMI';
+	v_full_name VARCHAR(100) := gv_logic_name||'.'||v_prc_name;
+	v_logidi INTEGER := 0;
+BEGIN
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 p_out_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||'Failure');                                                  
+		 
+         --COMMIT;       
+	END;
+	p_out_exitcode := -1;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>'Start');
+   
+   /* 
+    delete from Z_PCDW_MO;
+    delete from Z_PCDW_MO_BOM;
+    
+    insert into z_pcdw_mo(PRODUCTIONORDID,WERKS,BOMNAME,MO_TYPE,
+    						ORDER_TYPE,STATUS,QTY,RELEASEDATE,SALESORDERID,BUILD_ENTITY,SYS_CREATED_BY,SYS_CREATED_DATE) 
+    			SELECT AUFNR,WERKS,PLNBEZ,ZMOTYPE,AUART,
+    					STATUS,GAMNG,IDAT1,KDAUF,ZAUFNR,session_user,current_timestamp 
+    					from PCDW.ECC_MO where wfname=:p_wfname;
+
+    -- add by xwu 2015/9/22 -remark, vendor, linenum
+    insert into z_pcdw_mo_bom(PRODUCTIONORDID,BOMNAME,POSNR,MATNR,	
+    					QTY,ITEMCATEGORY,WERKS,LOCATION,SYS_CREATED_BY,SYS_CREATED_DATE,
+    					REMARK, VENDOR, LINENUM) 
+    			select AUFNR,PLNBEZ,RSPOS,MATNR,BDMNG,POSTP,WERKS,LGORT,session_user,current_timestamp,
+    			        REMARK, VENDOR, LINENUM  
+    					from PCDW.ECC_MO_BOM where wfname=:p_wfname;
+    */
+     
+     --   ECC_MO, ECC_MO_BOM 增量处理, 对应的PCDW保留120天历史记录
+	 DELETE FROM Z_PCDW_MO WHERE DAYS_BETWEEN(RELEASEDATE,CURRENT_TIMESTAMP)>120;
+	 DELETE FROM Z_PCDW_MO_BOM AS a
+	 WHERE NOT EXISTS ( SELECT  'x' FROM Z_PCDW_MO AS b WHERE a.PRODUCTIONORDID = b.PRODUCTIONORDID
+	                                                                                                    AND a.WERKS = b.WERKS
+	                                                                                                    AND a.BOMNAME = b.BOMNAME ) ;
+     
+     upsert z_pcdw_mo(PRODUCTIONORDID,WERKS,BOMNAME,MO_TYPE,
+    						ORDER_TYPE,STATUS,QTY,RELEASEDATE,SALESORDERID,BUILD_ENTITY,SYS_CREATED_BY,SYS_CREATED_DATE) 
+    			SELECT AUFNR,WERKS,PLNBEZ,ZMOTYPE,AUART,
+    					STATUS,GAMNG,IDAT1,KDAUF,ZAUFNR,session_user,current_timestamp 
+    					from PCDW.ECC_MO where wfname=:p_wfname;
+     
+     upsert z_pcdw_mo_bom(PRODUCTIONORDID,BOMNAME,POSNR,MATNR,	
+    					QTY,ITEMCATEGORY,WERKS,LOCATION,SYS_CREATED_BY,SYS_CREATED_DATE,
+    					REMARK, VENDOR, LINENUM) 
+    			select AUFNR,PLNBEZ,RSPOS,MATNR,BDMNG,POSTP,WERKS,LGORT,session_user,current_timestamp,
+    			        REMARK, VENDOR, LINENUM  
+    					from PCDW.ECC_MO_BOM where wfname=:p_wfname;     
+
+     -- 处理那种ITME被删除的情况
+	 delete from z_pcdw_mo_bom as a
+	 where PRODUCTIONORDID in(select AUFNR from PCDW.ECC_MO_BOM where werks='L070')
+	    and not exists (select 1 from PCDW.ECC_MO_BOM  as b
+		                           where a.PRODUCTIONORDID = b.AUFNR
+		                               and a.BOMNAME = b.PLNBEZ
+		                               and a.POSNR = b.RSPOS
+		                               and a.MATNR = b.MATNR
+		                               and a.WERKS = b.WERKS);
+		                               
+    p_out_exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>'Success');           
+END;

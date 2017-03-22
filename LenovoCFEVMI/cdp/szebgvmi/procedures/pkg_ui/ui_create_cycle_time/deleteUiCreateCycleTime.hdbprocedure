@@ -1,0 +1,84 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_create_cycle_time::deleteUiCreateCycleTime" ( 
+    IN "TPL_ID" VARCHAR(40),
+    IN "PULL_TYPE" VARCHAR(20),
+    IN "EVENT_TYPE" VARCHAR(64),
+    IN "CYCLE_TIME" DECIMAL(10,2)
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "SZEBGVMI"
+    --READS SQL DATA
+	/************************************************************************
+	*name      :                     createUiOptionDestMapping
+	*function    :               
+	*input     ：               newInfo
+	*output     :    errorInfo            
+	*author     :                     FangYuan
+	*CreateDate    :                  2014.12.30
+	*UpdateDate  :        
+	*************************************************************************/ 
+	AS
+        path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.';
+        proc_name varchar(100) :='deleteUiOptionDestMapping';
+        delta int;
+        sys_last_modified_date TIMESTAMP;
+        log_detail NVARCHAR(300) :='';
+        logid0 INTEGER :=0;
+        sessionuser varchar(100);
+        create_time TIMESTAMP;
+		privilegeExists  NVARCHAR(300)  ;
+	
+BEGIN
+    --exception     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+        CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);             
+    END; 
+     
+     call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'createcyceltime::deleteable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    --procedure begin
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+    
+    select session_user into sessionuser from dummy;
+    select CURRENT_TIMESTAMP into create_time from dummy;
+        
+                
+    --delete操作需要写入日志
+       INSERT INTO "SZEBGVMI"."UI_CREATE_CYCLETIME_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+                "TPL_ID",
+                "PULL_TYPE",
+                "EVENT_TYPE",
+                "CYCLE_TIME"
+            )
+         SELECT session_user,
+                'delete',
+                current_timestamp,
+                TPL_ID,
+                PULL_TYPE,
+                EVENT_TYPE,
+                CYCLE_TIME
+         from UI_CREATE_CYCLETIME
+    where TPL_ID = :TPL_ID AND PULL_TYPE = :PULL_TYPE AND EVENT_TYPE =:EVENT_TYPE; 
+              
+    --delete              
+    delete from UI_CREATE_CYCLETIME
+    where TPL_ID = :TPL_ID AND PULL_TYPE = :PULL_TYPE AND EVENT_TYPE =:EVENT_TYPE;
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+END;

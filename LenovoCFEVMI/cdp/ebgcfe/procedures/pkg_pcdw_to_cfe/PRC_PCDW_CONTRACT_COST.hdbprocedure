@@ -1,0 +1,110 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_CONTRACT_COST" (
+     out p_out_exitcode    integer
+) 
+    language sqlscript sql security definer
+    default schema EBGCFE
+    AS
+ /*
+   name:  
+       PRC_PCDW_CONTRACT_COST
+   function:
+       PCDW.PCDW_CONTRACT_COST -> BGCFE.BIZ _CONTRACT_COST -> ui_cost_tape_ori
+   intput: 
+       
+   output:
+       1. p_out_exitcode    
+   create/updated : 
+      20161102 Liuxt
+ */ 
+BEGIN
+
+    ------------------------------------------ variables -----------------------------------------------
+    declare v_g_pkg_name  varchar(30) := 'PKG_PCDW_TO_CFE';
+    declare v_prc_name      varchar(30) := 'PRC_PCDW_CONTRACT_COST';
+    declare v_full_name      varchar(60) := :v_g_pkg_name || '.' || :v_prc_name;
+    declare logidi                integer :=0;
+    declare v_init_date        timestamp;
+    declare n                      integer;
+    declare v_count            integer;
+    
+     ------------------------------------ // sql exception  //-------------------------------------------
+    declare exit handler for SQLEXCEPTION
+    begin
+         p_out_exitcode := ::sql_error_code;
+         call "EX_LOG"."cdp.log.procedures::logProc"(
+                                   I_TYPE                => 'PROC_ERROR',
+                                   I_LOGSID           => :logidi, 
+                                   I_EVENT_NAME  => :v_full_name, 
+                                   I_MODULE         => 'EBGCFE',
+                                   I_MESSAGE        => 'ERROR', 
+                                   I_DETAIL             => to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) ); 
+    end;
+    
+    DELETE FROM biz_contract_cost;
+    
+    --werks IS NOT NULL  20161215 Liuxt:add DATAB and DATBI condition
+    INSERT INTO biz_contract_cost
+                (lifnr,ebeln,ekorg,ekgrp,kdatb,ktimestamp,bsart,waers,ebelp,matnr,con_tab,werks,datab,datbi,knumh,konwa,
+                kbetr,kpein,kmein,sys_creation_timestamp,source_file )
+    SELECT lifnr,ebeln,ekorg,ekgrp,kdatb,ktimestamp,bsart,'USD' waers,ebelp,
+           CASE WHEN LENGTH(matnr)=18 THEN RIGHT(matnr, 10) ELSE matnr END AS matnr,con_tab,werks,datab,datbi,knumh,
+           konwa,kbetr/t2.m1,kpein,kmein,sys_creation_timestamp,source_file 
+      FROM (SELECT t.*,ROW_NUMBER() OVER(PARTITION BY matnr, werks ORDER BY datab DESC) rn 
+              FROM (SELECT * FROM pcdw.pcdw_contract_cost t WHERE 
+              IFNULL(datab,CURRENT_TIMESTAMP)<=CURRENT_TIMESTAMP AND IFNULL(datbi,CURRENT_TIMESTAMP)>=CURRENT_TIMESTAMP) t) t1,
+            ebgcfe.ui_exchange_rate t2
+     WHERE t1.waers=t2.currency_name
+       AND rn=1 AND t1.werks<>'';
+    
+    --werks IS NULL  
+    INSERT INTO biz_contract_cost
+                (lifnr,ebeln,ekorg,ekgrp,kdatb,ktimestamp,bsart,waers,ebelp,matnr,con_tab,werks,datab,datbi,knumh,
+                konwa,kbetr,kpein,kmein,sys_creation_timestamp,source_file )
+    SELECT lifnr,ebeln,ekorg,ekgrp,kdatb,ktimestamp,bsart,'USD' waers,ebelp,
+           CASE WHEN LENGTH(matnr)=18 THEN RIGHT(matnr, 10) ELSE matnr END AS matnr,con_tab,t3.pvalue werks,datab,datbi,knumh,
+           konwa,kbetr/t2.m1,kpein,kmein,sys_creation_timestamp,source_file 
+      FROM (SELECT t.*,ROW_NUMBER() OVER(PARTITION BY matnr, werks ORDER BY datab DESC) rn 
+              FROM (SELECT * FROM pcdw.pcdw_contract_cost t WHERE 
+              IFNULL(datab,CURRENT_TIMESTAMP)<=CURRENT_TIMESTAMP AND IFNULL(datbi,CURRENT_TIMESTAMP)>=CURRENT_TIMESTAMP) t) t1,
+           ebgcfe.ui_exchange_rate t2,
+           ebgcfe.conf_parameters t3
+     WHERE t1.waers=t2.currency_name
+       AND rn=1 AND t1.werks='' AND pdomain='PCDW_CONTRACT_COST' AND pname='WERKS'
+       AND NOT EXISTS(SELECT 1 FROM biz_contract_cost t4 WHERE t1.matnr=t4.matnr AND t4.werks=t3.pvalue);  
+       
+     --biz——> ui_cost_tape_ori  20161124 Liuxt: cancel sys_last_modified_by condition and add m1 condition and add cost_elem condition
+     DELETE FROM ui_cost_tape_ori t1
+      WHERE EXISTS(SELECT 1 FROM biz_contract_cost t2 
+                           WHERE t1.part_number=t2.matnr and t1.mfg_plant=t2.werks AND t1.m1<>(t2.kbetr/t2.kpein))
+        AND cost_elem='PUR';
+       
+     INSERT INTO ui_cost_tape_ori
+                 (cycle,product_group,part_number,mfg_plant,cost_elem,pg,spec,commodity,is_validate,description,currency_name,
+                 m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,new_part_number,owner_costtape,
+                 last_modified_date_costtape,created_date_costtape,company_confidential,landed,cost_periods,action,status,
+                 sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by,change_id,change_action)
+     SELECT 'CURRENT' cycle,'EBG' product_group,matnr,werks,'PUR' cost_elem,NULL pg,NULL spec,IFNULL(t3.commodity,t2.item_type) commodity,
+            'INVALIDATE' is_validate,IFNULL(t3.description,t2.item_desc) description,t1.waers,kbetr/kpein m1,kbetr/kpein m2,kbetr/kpein m3,
+            kbetr/kpein m4,kbetr/kpein m5,kbetr/kpein m6,kbetr/kpein m7,kbetr/kpein m8,kbetr/kpein m9,kbetr/kpein m10,
+            kbetr/kpein m11,kbetr/kpein m12,kbetr/kpein m13,kbetr/kpein m14,kbetr/kpein m15,kbetr/kpein m16,kbetr/kpein m17,
+            kbetr/kpein m18,'' new_part_number,'ECC_CONTRACT' owner_costtape,NULL last_modified_date_costtape,
+            NULL created_date_costtape,NULL company_confidential,NULL landed,NULL cost_periods,NULL action,
+            'INACTIVE' status,CURRENT_TIMESTAMP sys_created_date,'PKG_PCDW_TO_CFE.PRC_PCDW_CONTRACT_COST' sys_created_by,
+            CURRENT_TIMESTAMP sys_last_modified_date,
+            'PKG_PCDW_TO_CFE.PRC_PCDW_CONTRACT_COST' sys_last_modified_by,NULL change_id,NULL change_action
+       FROM ebgcfe.ui_item t2,biz_contract_cost t1 LEFT JOIN 
+            (SELECT part_number,commodity,description,ROW_NUMBER() OVER(PARTITION BY part_number ORDER BY commodity,description) rn 
+               FROM ui_cost_tape_ori) t3 ON t1.matnr=t3.part_number AND t3.rn=1 
+      WHERE t1.matnr=t2.item
+        AND NOT EXISTS(SELECT 1 FROM ui_cost_tape_ori t4 
+                               WHERE t4.part_number=t1.matnr and t4.mfg_plant=t1.werks AND t4.m1=(t1.kbetr/t1.kpein));
+       
+     --------------------------------------- // end log  //---------------------------------------------
+    call "EX_LOG"."cdp.log.procedures::logProc"(
+                        I_TYPE               => 'PROC_END',
+                        I_LOGSID          => :logidi,
+                        I_EVENT_NAME => :v_full_name,
+                        I_MODULE        => 'EBGCFE');   
+    -- sucessful exit code=0
+    p_out_exitcode := 0;  
+END;

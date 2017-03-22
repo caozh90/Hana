@@ -1,0 +1,414 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull" (
+IN   DEST_STORAGE_LOC NVARCHAR(40),
+IN   DEST_STORAGE_TYPE NVARCHAR(40),
+IN   DEST_STORAGE_BIN NVARCHAR(40),
+IN   SRC_WERKS NVARCHAR(4),
+IN   PHYSICAL_PLANT NVARCHAR(40),
+IN   INVENTORY_TYPE NVARCHAR(40),
+IN   PRODUCTION_LINE NVARCHAR(40),
+IN   HEAD_SUPPLIERID NVARCHAR(10),
+IN   DELIVERY_DATE NVARCHAR(200),
+IN   MATNR NVARCHAR(18),
+IN   PULL_QTY DECIMAL(13,3),
+IN   SRC_STORAGE_TYPE NVARCHAR(40),
+IN   SRC_STORAGE_BIN NVARCHAR(40), 
+IN   SRC_STORAGE_LOC NVARCHAR(40),
+IN   temp_LINE_SUPPLIERID NVARCHAR(40),
+IN   REMARK NVARCHAR(250),
+IN   PULL_TYPE nvarchar(25),
+IN	 	business_name varchar(200),
+IN		seq	int,
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	DEFAULT SCHEMA SZEBGVMI 
+	AS
+/************************************************************************
+*name      : ui_manual_pull              --函数名
+*function  : upload数据至表ui_manual_pull并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-23       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_manual_pull';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		n2 int;
+		currentUser varchar(100);
+		create_time nvarchar(1024);
+		business_code nvarchar(20);
+		validate1 int;
+		validate2 int;
+		validate3 int;
+		validate4 int;
+		validate5 int;
+		PULL_CREATE_DATE nvarchar(1024);
+		STATUS nvarchar(25):='DRAFT';
+		MATNR_DESCR nvarchar(40);
+		FULL_BOX_QTY DECIMAL(13,3);
+		PULL_HEADER_ID nvarchar(20);
+		PULL_LINE_ID nvarchar(20);
+	 	table_name nvarchar(20):='UI_MANUAL_PULL';
+		LINE_SUPPLIERID NVARCHAR(40);--根据inventory_type的值不同，需要做不同处理
+		SYS_SOURCE NVARCHAR(425):='CSE';--默认设为CSE
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,:seq,:position);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,:seq,:position);
+    END; 
+    --exception 
+	
+	--procedure begin
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+	PULL_CREATE_DATE := :create_time;
+	LINE_SUPPLIERID := :temp_LINE_SUPPLIERID;--若INVENTORY_TYPE取值'LOI',LINE_SUPPLIERID默认为'3PL'
+	if(:INVENTORY_TYPE='LOI') then
+		LINE_SUPPLIERID := '3PL';
+	end if;
+     	
+	--设置businesscode:: table_name+business_code	
+	business_code := :seq;
+
+	--验证特定字段的合法性，PULL_LINE_ID, PULL_HEADER_ID使用定义的sequence
+	SELECT  count(1) into validate1
+	FROM ITEMSITEMASTER
+	WHERE (SITEID =:SRC_WERKS) AND (ITEM = :MATNR);
+	if validate1<=0 then
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"
+		('"MATNR" is illegal',:business_name,
+		 :DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,
+		 :PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,:HEAD_SUPPLIERID,
+		 :DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,
+		 :SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,:seq,:position);
+		 --error log
+		 return;
+	end if;
+	
+	SELECT count(1) into validate2 FROM "SZEBGVMI"."CONF_PARAMETER" 
+		WHERE PTYPE='INVENTORY_TYPE' and PVALUE = :INVENTORY_TYPE;
+	if(:INVENTORY_TYPE != 'SOI' AND :INVENTORY_TYPE != 'LOI')	then
+		--INVENTORY_TYPE只有两种取值
+		validate2 :=0;
+	end if;
+	
+	if validate2<=0 then
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"
+		('"INVENTORY_TYPE" should be "LOI" or "SOI"',
+		:business_name,:DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,
+		:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,
+		:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,
+		:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+		:seq,:position);
+		--error log
+		return;
+	end if;
+	
+	validate3 := 0;
+	if(INVENTORY_TYPE='LOI' and LINE_SUPPLIERID = '3PL') then
+		 validate3 := 1;
+	elseif(INVENTORY_TYPE='SOI') then
+		SELECT count(1) into validate3 FROM "SZEBGVMI"."SUPITEM" WHERE ITEM= :MATNR AND SITEID=:SRC_WERKS AND SUPPLIERID=:LINE_SUPPLIERID;
+	end if;
+	
+	
+	if validate3<=0 then
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"
+		('"LINE_SUPPLIERID" is illegal',
+		:business_name,:DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,
+		:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,
+		:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,
+		:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+		:seq,:position);
+		--error log
+		return;
+	end if;
+	--赋值MATNR_DESCR
+	MATNR_DESCR := '';
+	select count(1) into n FROM "SZEBGVMI"."ITEMSITEMASTER" WHERE ITEM=:MATNR AND SITEID=:SRC_WERKS; 
+	if n>0 then
+		SELECT top 1 ITEMDESC into MATNR_DESCR FROM "SZEBGVMI"."ITEMSITEMASTER" WHERE ITEM=:MATNR AND SITEID=:SRC_WERKS; 
+	end if;
+	FULL_BOX_QTY := :PULL_QTY;
+	
+	--添加Dropdown list的校验, 变量 validate3 重复使用
+	validate3 := 1;
+	if(PULL_TYPE = 'MANUAL' or PULL_TYPE = 'manual') then
+	 	if(INVENTORY_TYPE ='SOI') THEN
+	 		SELECT count(1) into validate3 FROM "SZEBGVMI"."CONF_PARAMETER" 
+			WHERE PTYPE='SOI_TPL_ID' and PVALUE = :HEAD_SUPPLIERID;
+	 	ELSEIF(INVENTORY_TYPE ='LOI') THEN
+	 		SELECT count(1) into validate3 FROM "SZEBGVMI"."CONF_PARAMETER" 
+			WHERE PTYPE='LOI_TPL_ID' and PVALUE = :HEAD_SUPPLIERID;
+	 	END IF;
+	elseif(PULL_TYPE = 'SHIPPING_GROUP' or PULL_TYPE = 'shipping_group') then
+		select count(1) into validate3 from "SZEBGVMI"."SUPITEM"
+		where SUPPLIERID = :HEAD_SUPPLIERID;
+/*	elseif(PULL_TYPE= 'MANUAL_PACKAGING') then
+	 	SELECT count(1) into validate3 FROM "SZEBGVMI"."CONF_PARAMETER" 
+		WHERE PTYPE='SOI_TPL_ID' and PVALUE = :HEAD_SUPPLIERID;*/
+	end if;
+	
+	if(validate3<=0) then
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"
+		('"HEAD_SUPPLIERID" is illegal',:business_name,
+		 :DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,
+		 :HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+		 :seq,:position);
+		 --error log
+		 return;
+	end if;
+	
+	select count(1) into validate3 from "SZEBGVMI"."CONF_SITEMASTER"
+	where SITEID = :SRC_WERKS;
+	if(validate3<=0) then
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"
+		('"SRC_WERKS" is illegal',:business_name,
+		 :DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,
+		 :HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+		 :seq,:position);
+		 --error log
+		 return;
+	end if;
+	
+	--select count(1) into validate3 from "SZEBGVMI"."CONF_SITEMASTER"
+	--where PHYSICALPLANT = :PHYSICAL_PLANT;
+	--if(validate3<=0) then
+	--	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"
+	--	('"PHYSICAL_PLANT" is illegal',:business_name,
+	--	 :DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,
+	--	 :HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+	--	 :seq,:position);
+		--error log
+	--	 return;
+	--end if;
+	
+	--校验PRODUCTION_LINE
+	--select count(1) into validate3 from "SZEBGVMI"."UI_LINE_FLOOR_MAPPING"
+	--where DS_LINE = :PRODUCTION_LINE and PHYSICAL_PLANT = :PHYSICAL_PLANT;
+	--if(validate3<=0) then
+	--	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"
+	--	('"PRODUCTION_LINE" is illegal',:business_name,
+	--	 :DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,
+	--	 :HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+	--	 :seq,:position);
+		--error log
+	--	 return;
+	--end if;
+	
+	--验证Dest打头的几个字段
+	select count(1) into validate3 from "SZEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :DEST_STORAGE_TYPE and STORAGE_LOCATION = :DEST_STORAGE_LOC and STORAGE_BIN = :DEST_STORAGE_BIN
+		 and TYPE = 'LOI' and werks = :SRC_WERKS  and IS_DEST = 'Y';	
+	
+/*	if(PULL_TYPE = 'MANUAL' or PULL_TYPE = 'manual') then
+	--Manual pull
+		select count(1) into validate3 from "SZEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :DEST_STORAGE_TYPE and STORAGE_LOCATION = :DEST_STORAGE_LOC and STORAGE_BIN = :DEST_STORAGE_BIN
+		 and OWNER = :HEAD_SUPPLIERID and TYPE = :INVENTORY_TYPE and werks = :SRC_WERKS and IS_SOURCE = 'Y';		
+	elseif(PULL_TYPE = 'SHIPPING_GROUP' or PULL_TYPE = 'shipping_group') then
+	--Pull from supplier
+		select count(1) into validate3 from "SZEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :DEST_STORAGE_TYPE and STORAGE_LOCATION = :DEST_STORAGE_LOC and STORAGE_BIN = :DEST_STORAGE_BIN
+		 and TYPE = 'LOI' and werks = :SRC_WERKS  and IS_DEST = 'Y';	
+ 	elseif (PULL_TYPE = 'MANUAL_PACKAGING') then
+ 	--Manual packaging
+ 		 select count(1) into validate3 from "SZEBGVMI"."CONF_WAHREHOUSE_INFO"
+			where STORAGE_TYPE = :DEST_STORAGE_TYPE and STORAGE_LOCATION = :DEST_STORAGE_LOC and STORAGE_BIN = :DEST_STORAGE_BIN
+			 and werks = :SRC_WERKS and IS_DEST = 'Y';	
+	end if;*/
+	
+	if validate3<=0 
+	then
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"
+		('"DEST_STORAGE_TYPE" or "DEST_STORAGE_LOC" or "DEST_STORAGE_BIN" is illegal',:business_name,
+		 :DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,
+		 :HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+		 :seq,:position);
+		 --error log
+		 return;
+	end if;
+	
+	--验证SRC打头的几个字段
+	if(PULL_TYPE = 'MANUAL' or PULL_TYPE = 'manual') then
+	--Manual pull
+		select count(1) into validate3 from "SZEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :SRC_STORAGE_TYPE and STORAGE_LOCATION = :SRC_STORAGE_LOC and STORAGE_BIN = :SRC_STORAGE_BIN
+		 and OWNER = :HEAD_SUPPLIERID and TYPE = :INVENTORY_TYPE and werks = :SRC_WERKS and IS_SOURCE = 'Y';		
+	elseif(PULL_TYPE = 'SHIPPING_GROUP' or PULL_TYPE = 'shipping_group') then
+	--Pull from supplier
+		select count(1) into validate3 from "SZEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :SRC_STORAGE_TYPE and STORAGE_LOCATION = :SRC_STORAGE_LOC and STORAGE_BIN = :SRC_STORAGE_BIN
+		 and TYPE = 'SOI' and werks = :SRC_WERKS  and IS_SOURCE = 'Y';	
+	end if;
+	
+	if validate3<=0 
+	then
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err"
+		('"SRC_STORAGE_TYPE" or "SRC_STORAGE_LOC" or "SRC_STORAGE_BIN" is illegal',:business_name,
+		 :DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,
+		 :HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+		 :seq,:position);
+		 --error log
+		 return;
+	end if;
+	
+	--给Header_id赋值
+	select count(1) into n from "SZEBGVMI"."UI_MANUAL_PULL"
+	where DEST_STORAGE_TYPE = :DEST_STORAGE_TYPE and DEST_STORAGE_LOC = :DEST_STORAGE_LOC 
+	and DEST_STORAGE_BIN = :DEST_STORAGE_BIN and HEAD_SUPPLIERID = :HEAD_SUPPLIERID 
+	and INVENTORY_TYPE = :INVENTORY_TYPE and SRC_WERKS = :SRC_WERKS and PHYSICAL_PLANT = :PHYSICAL_PLANT
+	and PULL_TYPE = :PULL_TYPE and PRODUCTION_LINE=:PRODUCTION_LINE and DELIVERY_DATE = :DELIVERY_DATE;
+	
+	
+	if(n<=0) then
+		--n<=0，这批数据还不存在,使用sequence
+		select  'P'||"SZEBGVMI"."cdp.szebgvmi.sequences::SEQ_PULL_HEADER_ID".NEXTVAL 
+		into PULL_HEADER_ID from dummy;
+		
+		--避免主键冲突，sequence为HEADER_ID迭代
+	 	select count(1) into n2 from "SZEBGVMI"."UI_MANUAL_PULL"
+		  where PULL_HEADER_ID = :PULL_HEADER_ID;
+
+		 while n2>0 do
+		    select 'P'||"SZEBGVMI"."cdp.szebgvmi.sequences::SEQ_PULL_HEADER_ID".NEXTVAL 
+			  	into PULL_HEADER_ID  from dummy;	
+			select count(1) into n2 from "SZEBGVMI"."UI_MANUAL_PULL"
+		  	 	where PULL_HEADER_ID = :PULL_HEADER_ID;
+		 end while;
+		 
+		--生成的pull_header_id写入中间表
+		insert into "SZEBGVMI"."UPLOAD_PULL_HEADER_ID"(PULL_HEADER_ID)
+		values
+		(:PULL_HEADER_ID);
+	elseif(n>0) then
+		--n>0 数据存在，还需判断是否系新上传的
+	
+		tab_header_id = 
+		select B.PULL_HEADER_ID
+		from "SZEBGVMI"."UI_MANUAL_PULL" A,"SZEBGVMI"."UPLOAD_PULL_HEADER_ID" B	
+		where DEST_STORAGE_TYPE = :DEST_STORAGE_TYPE and DEST_STORAGE_LOC = :DEST_STORAGE_LOC 
+		and DEST_STORAGE_BIN = :DEST_STORAGE_BIN and HEAD_SUPPLIERID = :HEAD_SUPPLIERID 
+		and INVENTORY_TYPE = :INVENTORY_TYPE and SRC_WERKS = :SRC_WERKS and PHYSICAL_PLANT = :PHYSICAL_PLANT
+		and PULL_TYPE = :PULL_TYPE and PRODUCTION_LINE=:PRODUCTION_LINE and DELIVERY_DATE = :DELIVERY_DATE
+		AND A.PULL_HEADER_ID = B.PULL_HEADER_ID;
+		
+		--验证存在的PULL_HEADER_ID是否系新生成的
+		select count(1) into n 
+		from :tab_header_id;
+		--n=0 则代表不是新数据生成的HEADER_ID,需要使用sequence生成
+		if(n=0) then
+			select  'P'||"SZEBGVMI"."cdp.szebgvmi.sequences::SEQ_PULL_HEADER_ID".NEXTVAL 
+			into PULL_HEADER_ID from dummy;
+			
+			--避免主键冲突，sequence为HEADER_ID迭代
+		 	select count(1) into n2 from "SZEBGVMI"."UI_MANUAL_PULL"
+			  where PULL_HEADER_ID = :PULL_HEADER_ID;
+	
+			 while n2>0 do
+			    select 'P'||"SZEBGVMI"."cdp.szebgvmi.sequences::SEQ_PULL_HEADER_ID".NEXTVAL 
+				  	into PULL_HEADER_ID  from dummy;	
+				select count(1) into n2 from "SZEBGVMI"."UI_MANUAL_PULL"
+			  	 	where PULL_HEADER_ID = :PULL_HEADER_ID;
+			 end while;
+			 
+			--生成的pull_header_id写入中间表
+			insert into "SZEBGVMI"."UPLOAD_PULL_HEADER_ID"(PULL_HEADER_ID)
+			values
+			(:PULL_HEADER_ID);
+		elseif n>0 then
+			SELECT TOP 1 PULL_HEADER_ID INTO PULL_HEADER_ID 
+			FROM :tab_header_id;
+
+		end if;
+	end if;
+	
+	--LINE_ID,每条数据都执行+1操作		
+	select  'PL'||"SZEBGVMI"."cdp.szebgvmi.sequences::SEQ_PULL_LINE_ID".NEXTVAL 
+	into PULL_LINE_ID from dummy;
+	
+/*	生成header_id时已处理过，line_id无需处理
+	--避免主键冲突，sequence为LINE_ID迭代
+	select count(1) into n from "SZEBGVMI"."UI_MANUAL_PULL"
+	where PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :PULL_LINE_ID;
+	WHILE n>0 DO
+		select  'PL'||"SZEBGVMI"."cdp.szebgvmi.sequences::SEQ_PULL_LINE_ID".NEXTVAL 
+		 	into PULL_LINE_ID from dummy;
+		select count(1) into n from "SZEBGVMI"."UI_MANUAL_PULL"
+		where PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :PULL_LINE_ID;
+	END WHILE;
+*/
+	if(validate1 >0 and validate2>0 and validate3>0) then
+		INSERT INTO "SZEBGVMI"."UI_MANUAL_PULL"(PULL_HEADER_ID,PULL_LINE_ID,
+				PULL_TYPE,
+			 	STATUS,
+				DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK,
+				SYS_SOURCE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		 	)
+		 VALUES(:PULL_HEADER_ID,:PULL_LINE_ID,
+		 		 :PULL_TYPE,
+			 	 :STATUS,
+			 	 :DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,
+			 	 CASE TRIM(:PHYSICAL_PLANT) WHEN NULL THEN 'SZEBGVMI' 
+			 	 				      		WHEN '' THEN 'SZEBGVMI' 
+			 	 					  		ELSE :PHYSICAL_PLANT END ,
+			 	 :INVENTORY_TYPE,:PRODUCTION_LINE,:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+				 :SYS_SOURCE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+		--insert操作需要写入日志
+		insert into "SZEBGVMI"."UI_MANUAL_PULL_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+			 	PULL_HEADER_ID,PULL_LINE_ID,
+			 	PULL_TYPE,
+			 	STATUS,
+				DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK,
+				SYS_SOURCE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+		VALUES
+		(:currentUser,
+			 	'create',
+			 	:create_time,
+			 	:PULL_HEADER_ID,:PULL_LINE_ID,
+			 	:PULL_TYPE,
+			 	:STATUS,
+				:DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+				:SYS_SOURCE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time
+		);	 			 	
+		--END IF;
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+
+	END IF;
+	
+END;

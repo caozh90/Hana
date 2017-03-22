@@ -1,0 +1,141 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_time_fence::createUiTimeFence" (
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_TIEMFENCE_T",
+	OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+ )  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER--INVOKER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA
+	 AS
+/***************************** 
+*name      :                     createUiTimeFence
+*function    :               
+*input     :               
+*output     :                
+*author     :                     chenwh3
+*CreateDate    :                  2016.03.04
+*UpdateDate  :    
+ *****************************/
+ 	
+	 OEM_NAME 		 	NVARCHAR(40);
+	 TIME_FENCE		 	NVARCHAR(1000);
+	 FUNCTION_TYPE	 	NVARCHAR(40);
+	 TIME_FENCE_TYPE	NVARCHAR(40);
+	 DATA_TYPE 			NVARCHAR(40);
+	 PROFIT_CENTER		NVARCHAR(40);
+	 START_DATE			TIMESTAMP;
+	 END_DATE			TIMESTAMP;
+	 aI_DETAIL 			NVARCHAR(300) :='';	
+	 privilegeExists  	NVARCHAR(300)  ;
+	 alogide 			INTEGER :=0;
+	 resourceExists 	INTEGER;
+BEGIN
+	DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui::createUiTimeFence error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::createUiTimeFence'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+	END ;
+	--check the privilege
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_time_fence::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+     --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::createUiTimeFence'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+    --get the newinfo
+    SELECT
+    	 OEM_NAME ,		 	
+	 	 TIME_FENCE,		 	
+	 	 FUNCTION_TYPE,	 	
+	 	 TIME_FENCE_TYPE,	
+	 	 PROFIT_CENTER	,	
+	 	 START_DATE	,		
+	 	 END_DATE
+	into
+	 	 OEM_NAME ,		 	
+	 	 TIME_FENCE,		 	
+	 	 FUNCTION_TYPE,	 	
+	 	 TIME_FENCE_TYPE,	
+	 	 PROFIT_CENTER	,	
+	 	 START_DATE	,		
+	 	 END_DATE
+	FROM :newinfo;
+	 
+	--TIME_FENCE := CONCAT( CONCAT( TO_DATS(START_DATE), '-'), TO_DATS( END_DATE));
+--check the newinfo validation	
+	SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."PM_UI_TIME_FENCE" A    
+     WHERE  A.OEM_NAME 		= :OEM_NAME
+        and A.TIME_FENCE 	= :TIME_FENCE
+        and A.PROFIT_CENTER = :PROFIT_CENTER
+          ;  
+    if  :resourceExists > 0 
+    then
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists'; 
+    end if; 
+--insert the newinfo into the table	
+	insert into "EBGCFE"."PM_UI_TIME_FENCE"
+  	(PRODUCT_GROUP, OEM_NAME, TIME_FENCE, FUNCTION_TYPE, TIME_FENCE_TYPE, PROFIT_CENTER, START_DATE, END_DATE,SYS_CREATED_BY,SYS_CREATED_DATE)
+  	values('EBG',  :OEM_NAME,:TIME_FENCE,:FUNCTION_TYPE,:TIME_FENCE_TYPE,:PROFIT_CENTER,:START_DATE,:END_DATE,SESSION_USER, CURRENT_TIMESTAMP);
+--insert the log info into the log table
+ insert into "EBGCFE"."PM_UI_TIME_FENCE_LOG"
+    (    PRODUCT_GROUP,
+    	 OEM_NAME, 
+    	 TIME_FENCE, 
+    	 FUNCTION_TYPE, 
+    	 TIME_FENCE_TYPE, 
+    	 PROFIT_CENTER, 
+    	 START_DATE, 
+    	 END_DATE,
+    	 SYS_CREATED_BY,
+    	 SYS_CREATED_DATE,
+    	 AT_ACTION,
+    	 log_date
+    	  	
+    )
+    values
+    (	'EBG',
+    	:OEM_NAME,
+    	:TIME_FENCE,
+    	:FUNCTION_TYPE,
+    	:TIME_FENCE_TYPE,
+    	:PROFIT_CENTER,
+    	:START_DATE,
+    	:END_DATE,
+    	SESSION_USER,
+    	CURRENT_TIMESTAMP,
+    	'create',
+    	CURRENT_TIMESTAMP
+    );  	  	
+
+  	    /*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui::createUiTimeFence  successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::createUiTimeFence'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	   	
+END;

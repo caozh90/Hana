@@ -1,0 +1,146 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_mt_eol" (
+IN   CYCLE NVARCHAR(40),
+IN   PRODUCT_GROUP NVARCHAR(10),
+IN   MT NVARCHAR(10),
+IN   EOL_STATUS NVARCHAR(10),
+IN	 	business_name nvarchar(200),
+IN		SEQ	int,
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      : ui_mt_eol              --函数名
+*function  : upload数据至表ui_mt_eol并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : ZHAODAN               --作者
+*CreateDate    : 2016-01-20       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		n int;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_MT_EOL';
+		privilegeExists  NVARCHAR(300)  ;
+		var_oper VARCHAR(10);
+		
+	    v_event_name  VARCHAR(200) := 'cdp.ebgcfe.procedures.pkg_ui.upload::ui_mt_eol';
+        v_exitcode    DECIMAL;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_mt_eol_err"(::SQL_ERROR_MESSAGE,:business_name,:CYCLE,
+			:PRODUCT_GROUP,:MT,:EOL_STATUS,:SEQ,:position);
+     	
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_mt_eol_err"(::SQL_ERROR_MESSAGE,:business_name,:CYCLE,
+			:PRODUCT_GROUP,:MT,:EOL_STATUS,:SEQ,:position);
+     	
+    END; 
+    --exception 
+	
+
+	--procedure begin
+	
+	
+	
+	business_code := TO_NVARCHAR (:SEQ);
+	
+	select count(1) into n from "EBGCFE"."UI_MT_EOL" 
+	where CYCLE = :CYCLE 
+	  and PRODUCT_GROUP = :PRODUCT_GROUP 
+	  and MT = :MT ;
+	  --and EOL_STATUS = :EOL_STATUS; comment by zhangxj @ 20160414
+	if n>0 then
+	   var_oper := 'update';
+		--update "EBGCFE"."UI_MT_EOL_LOG" comment by zhangxj @ 20160414
+		  update "EBGCFE"."UI_MT_EOL"
+		  	set	EOL_STATUS = :EOL_STATUS,
+				ACTION = 'update',
+				SYS_LAST_MODIFIED_BY = SESSION_USER,
+				SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+			WHERE CYCLE = :CYCLE and PRODUCT_GROUP= :PRODUCT_GROUP 
+			  and MT = :MT ;
+	
+			
+	elseif n = 0 then
+	   var_oper := 'create';
+		insert into "EBGCFE"."UI_MT_EOL"
+        (
+	         CYCLE,		 PRODUCT_GROUP,		 MT,
+		     EOL_STATUS,
+			 ACTION,		 STATUS,		 CHANGE_ID,
+			 CHANGE_ACTION,		 SYS_CREATED_DATE,		 SYS_CREATED_BY,
+			 SYS_LAST_MODIFIED_DATE,		 SYS_LAST_MODIFIED_BY
+		) 
+	   values 
+	   (
+		    :CYCLE,		 :PRODUCT_GROUP,		 :MT,
+			:EOL_STATUS,
+		   'create',--ACTION
+		   '',--STATUS
+		   '',--CHANGE_ID
+		   '',--CHANGE_ACTION
+		   CURRENT_TIMESTAMP,
+		   SESSION_USER,
+		   CURRENT_TIMESTAMP,
+		   SESSION_USER
+	   );	  
+	end if;
+	
+	--update操作需要写入日志
+	insert into "EBGCFE"."UI_MT_EOL_LOG"(
+		 CYCLE,		 PRODUCT_GROUP,		 MT,
+	     EOL_STATUS,
+		 ACTION,		 STATUS,		 CHANGE_ID,
+		 CHANGE_ACTION,		 SYS_CREATED_DATE,		 SYS_CREATED_BY,
+		 SYS_LAST_MODIFIED_DATE,		 SYS_LAST_MODIFIED_BY,		 AT_MODIFIED_BY,
+		 AT_ACTION,		 AT_MODIFIED_ON,		 AT_MILLIS)
+	VALUES
+		(
+		:CYCLE,		 :PRODUCT_GROUP,		 :MT,
+	    :EOL_STATUS,
+		:var_oper,
+	    '',--STATUS
+	    '',--CHANGE_ID
+	    '',--CHANGE_ACTION
+	    CURRENT_TIMESTAMP,
+	    SESSION_USER,
+	    CURRENT_TIMESTAMP,
+	    SESSION_USER,
+ 		SESSION_USER,
+ 		:var_oper,
+ 		CURRENT_TIMESTAMP,
+ 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+
+/*-- added by zhangxj 20160311 start
+ --use mt_eol_status to set eol_status   	
+	UPDATE "EBGCFE".UI_ITEM T1
+       SET --Modified by Zhoubinbin 20161115, set eol status by priority.
+           --T1.EOL_STATUS = :EOL_STATUS,
+           T1.MT_EOL     = :EOL_STATUS,
+           T1.EOL_STATUS = IFNULL(MAP(LENGTH(user_eol_status), 0, NULL, user_eol_status), 
+                           IFNULL(MAP(LENGTH(mmr_eol), 0, NULL, mmr_eol), 
+                           IFNULL(MAP(LENGTH(:MT), 0, NULL, :MT), 
+                           IFNULL(MAP(LENGTH(family_eol), 0, NULL, family_eol), eol_status))))
+     WHERE T1.MACHINE_TYPE               = :MT;   	
+-- added by zhangxj 20160311 end  	 	*/
+
+    --Added by Zhoubinbin 20161127, Set eol status logic
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.base_funcs::updateEolStatus"('MT', :MT, :v_event_name, :v_exitcode); 
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);		
+	
+	
+
+END;

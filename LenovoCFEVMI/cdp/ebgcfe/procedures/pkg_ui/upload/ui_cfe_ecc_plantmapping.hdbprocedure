@@ -1,0 +1,155 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cfe_ecc_plantmapping" (
+IN 	CFE_PLANT varchar(40),
+IN 	ECC_PLANT varchar(40),
+IN 	ITEM_TYPE varchar(40),
+IN 	SUBGEO varchar(40),
+IN 	CURRENCY varchar(40),
+IN	 	table_name varchar(200),
+IN	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_cfe_ecc_plantmapping               --函数名
+*function  : upload数据至表ui_cfe_ecc_plantmapping并记录信息              --函数功能
+*input     ：    			     --输入参数
+*output    :                 --输出参数
+*author     : Fan Fangxing   --作者
+*CreateDate    : 2015-08-30  --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_cfe_ecc_plantmapping';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate int;
+		var_oper VARCHAR(10);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cfe_ecc_plantmapping_err"(
+			:CFE_PLANT,:ECC_PLANT,:ITEM_TYPE,:SUBGEO,:CURRENCY,
+			:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE);
+    END; 
+    --exception 
+	
+	
+
+	
+	--procedure begin
+select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+	
+	select  count(1) into validate from  UI_Plant where PLANT = :CFE_PLANT;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cfe_ecc_plantmapping_err"(
+			:CFE_PLANT,:ECC_PLANT,:ITEM_TYPE,:SUBGEO,:CURRENCY,
+			:table_name,:business_name,:business_code,:position,'"CFE_PLANT"::'||:CFE_PLANT||' is illegal');
+		
+		return;
+	end if;
+
+	select  count(1) into validate from  UI_Plant where PLANT = :ECC_PLANT;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cfe_ecc_plantmapping_err"(
+			:CFE_PLANT,:ECC_PLANT,:ITEM_TYPE,:SUBGEO,:CURRENCY,
+			:table_name,:business_name,:business_code,:position,'"ECC_PLANT"::'||:ECC_PLANT||' is illegal');
+		
+		return;
+	end if;
+
+	select  count(1) into validate from  CONF_ITEMTYPE where item_type = :ITEM_TYPE;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cfe_ecc_plantmapping_err"(
+			:CFE_PLANT,:ECC_PLANT,:ITEM_TYPE,:SUBGEO,:CURRENCY,
+			:table_name,:business_name,:business_code,:position,'"ITEM_TYPE"::'||:ITEM_TYPE||' is illegal');
+		
+		return;
+	end if;
+	
+	IF :SUBGEO <> 'ALL' THEN
+		select  count(1) into validate from  UI_REGION where subgeo = :SUBGEO;
+		if validate = 0  then
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cfe_ecc_plantmapping_err"(
+				:CFE_PLANT,:ECC_PLANT,:ITEM_TYPE,:SUBGEO,:CURRENCY,
+				:table_name,:business_name,:business_code,:position,'"SUBGEO"::'||:SUBGEO||' is illegal');
+			
+			return;
+		end if;
+	END IF;
+	
+	select  count(1) into validate from  UI_EXCHANGE_RATE where CURRENCY_NAME = :CURRENCY;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cfe_ecc_plantmapping_err"(
+			:CFE_PLANT,:ECC_PLANT,:ITEM_TYPE,:SUBGEO,:CURRENCY,
+			:table_name,:business_name,:business_code,:position,'"CURRENCY"::'||:CURRENCY||' is illegal');
+		
+		return;
+	end if;
+	
+SELECT top 1 count(1) into validate from "EBGCFE"."UI_CFE_ECC_PLANTMAPPING" 
+		where CFE_PLANT=:CFE_PLANT 
+		  AND ECC_PLANT=:ECC_PLANT
+		  AND ITEM_TYPE=:ITEM_TYPE
+		  AND SUBGEO=:SUBGEO
+		  AND CURRENCY=:CURRENCY  ;
+	if validate = 0
+	then
+		    insert into "EBGCFE"."UI_CFE_ECC_PLANTMAPPING"(CYCLE,PRODUCT_GROUP,CFE_PLANT,ECC_PLANT,ITEM_TYPE,SUBGEO,CURRENCY,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,
+				ACTION
+									) 
+	values ('CURRENT','EBG',:CFE_PLANT,:ECC_PLANT,:ITEM_TYPE,:SUBGEO,:CURRENCY,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time,
+			 	 'insert');
+  		var_oper := 'insert';
+  	else
+  		update "EBGCFE"."UI_CFE_ECC_PLANTMAPPING" a set (CURRENCY,
+				SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION) = 
+				(:CURRENCY,CURRENT_TIMESTAMP,SESSION_USER,'update')
+		where CYCLE = 'CURRENT'
+          and A.CFE_PLANT=:CFE_PLANT 
+		  AND A.ECC_PLANT=:ECC_PLANT
+		  AND A.ITEM_TYPE=:ITEM_TYPE
+		  AND A.SUBGEO=:SUBGEO
+		  AND A.CURRENCY=:CURRENCY  ;
+        var_oper := 'update';      
+  	end if;	
+  	
+
+insert into "EBGCFE"."UI_CFE_ECC_PLANTMAPPING_LOG"(CYCLE,
+									PRODUCT_GROUP,
+									CFE_PLANT,
+									ECC_PLANT,
+									ITEM_TYPE,
+									SUBGEO,
+									CURRENCY,
+									SYS_CREATED_BY,
+									SYS_CREATED_DATE,
+									AT_ACTION,
+									AT_MODIFIED_ON,
+    								AT_MILLIS 
+									)
+	values ('CURRENT','EBG',:CFE_PLANT,:ECC_PLANT,ITEM_TYPE,SUBGEO,CURRENCY,
+				SESSION_USER,CURRENT_TIMESTAMP,:var_oper,current_timestamp,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+	
+	
+			
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+END;

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_INFO_ROLES" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_INFO_ROLES"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="DISPLAY_ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="COMMENT" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="IS_SYSROLE" length="5"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+
+ BEGIN 
+ 
+ 
+ 	 var_out = 
+SELECT  'cdp.ds.roles::Access' as ROLE_NAME,'DS Access' AS DISPLAY_ROLE_NAME ,'ds base role ' AS COMMENT ,'true' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::Base' as ROLE_NAME,'securityBase' AS DISPLAY_ROLE_NAME ,'base role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::Access' as ROLE_NAME,'securityAccess' AS DISPLAY_ROLE_NAME ,'open user management view. ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::userAdmin' as ROLE_NAME,'securityUserAdmin' AS DISPLAY_ROLE_NAME ,' user and user group management . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleSetup' as ROLE_NAME,'securityRoleSetup' AS DISPLAY_ROLE_NAME ,' role and role group management . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleAdmin' as ROLE_NAME,'securityRoleAdmin' AS DISPLAY_ROLE_NAME ,' grant activated role  . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAccess' as ROLE_NAME,'logAccess' AS DISPLAY_ROLE_NAME ,'to view the log information of related module.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAdmin' as ROLE_NAME,'logAdmin' AS DISPLAY_ROLE_NAME ,'can delete log information of related module.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.ds.roles.configuration::access' as ROLE_NAME,'configuration::access' AS DISPLAY_ROLE_NAME ,' DS Workflow Configuration  . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsjob::access' as ROLE_NAME,'dsjob::access' AS DISPLAY_ROLE_NAME ,'DS Job Configuration.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsmonitor::access' as ROLE_NAME,'dsmonitor::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsmonitor::admin' as ROLE_NAME,'dsmonitor::admin' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+
+;
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="ROLE_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="DISPLAY_ROLE_NAME" order="2">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="DISPLAY_ROLE_NAME"/>
+      </attribute>
+      <attribute id="COMMENT" order="3">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="COMMENT"/>
+      </attribute>
+      <attribute id="IS_SYSROLE" order="4">
+        <descriptions defaultDescription="IS_SYS_ROLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="IS_SYSROLE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

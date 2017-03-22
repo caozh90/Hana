@@ -1,0 +1,10 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::getUploadBusinessInfoByUser" (
+	OUT displayUser "SZEBGVMI"."cdp.szebgvmi.service.upload.data::Upload.DISPLAY_USER" 
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	READS SQL DATA AS
+BEGIN
+	displayUser = select session_user as SYS_OPERATED_BY from dummy;
+END;

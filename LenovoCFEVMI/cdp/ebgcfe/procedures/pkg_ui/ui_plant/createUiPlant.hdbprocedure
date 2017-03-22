@@ -1,0 +1,136 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_plant::createUiPlant" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PLANT_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      :                     createUiPlant
+*function    :               
+*input     ：               
+*output     :                
+*author     :                     shangqian
+*CreateDate    :                  2014.12.2
+*UpdateDate  :        
+*************************************************************************/	
+		aPlant NVARCHAR(20); 
+		aPlantType NVARCHAR(20);
+		aPlantDesc NVARCHAR(100);
+		aPlantSubGeo NVARCHAR(20);
+		
+		resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui::createUiPlant error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::createUiPlant'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_plant::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::createUiPlant'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+select 
+	--PRODUCT_GROUP,	
+    PLANT,
+    PLANT_TYPE,
+    PLANT_DESC,
+    PLANT_SUBGEO
+  into 
+ 	--aProduct_group,
+ 	aPlant,
+	aPlantType,
+	aPlantDesc,
+	aPlantSubGeo
+  from :newInfo;
+  
+    SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_PLANT" A    
+     WHERE /*A.PRODUCT_GROUP = :aProduct_group
+          AND*/ A.PLANT = :aPlant;
+   
+    if  :resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+    end if;
+    
+    insert into "EBGCFE"."UI_PLANT"
+  	(PRODUCT_GROUP, PLANT, PLANT_TYPE, PLANT_DESC, PLANT_SUBGEO, CYCLE, SYS_LAST_MODIFIED_BY, SYS_LAST_MODIFIED_DATE, SYS_CREATED_BY, SYS_CREATED_DATE)
+  	values(/*:aProduct_group*/'EBG', :aPlant, :aPlantType, :aPlantDesc, :aPlantSubGeo, 'CURRENT', session_user, CURRENT_TIMESTAMP, session_user, CURRENT_TIMESTAMP);
+
+/*put operation to log table*/
+    insert into "EBGCFE"."UI_PLANT_LOG"
+    (
+    	PRODUCT_GROUP,
+    	PLANT,
+    	PLANT_TYPE,
+    	PLANT_DESC,
+    	PLANT_SUBGEO,    	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    values
+    (
+    	'EBG',
+    	:aPlant,
+    	:aPlantType,
+    	:aPlantDesc,
+    	:aPlantSubGeo,
+    	current_date,    	
+    	'create',
+    	session_user,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    );  	
+  	    /*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui::createUiPlant ('||:aPlant||' ,) successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::createUiPlant'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+
+   	
+END;

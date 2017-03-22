@@ -1,0 +1,346 @@
+namespace cdp.ebgdf.data;
+
+@Schema: 'EBGDF'
+context EBGDF_T {
+	type HttpError {
+        HTTP_STATUS_CODE: Integer;
+        ERROR_MESSAGE: String(100);
+        DETAIL: String(100);
+   		};
+   		
+    type UI_MFIPPN_T {
+   			ABCD_T :String(15);
+        	SBB: String(12);
+        	PPN: String(12);
+   		};
+   		
+    type UI_REPORTINTERLOCK_T {
+   			ABCD_T :String(15);
+			SBB_OPT :String(12);
+			SBB_DES :String(200);
+			MFI_FFI_FC_IND :String(3); 
+			GAD : UTCTimestamp;
+			LOD : UTCTimestamp;
+			PPN :String(12);
+			PP_DES :String(200);
+			SUPPLIER :String(100);
+			LENOVO_PPN_OHQ :Decimal(8,0);
+			PPN_HIQ :Decimal(8,0);
+			SBB_3M_FORECAST :Decimal(8,0);
+			SBB_3M_SHIPMENT :Decimal(8,0);
+			PPN_3M_SHIPMENT :Decimal(8,0);
+			PRIOR_ABCD :String(1);
+			REC_ABCD :String(1);
+   		};
+   		
+    type UI_PNCLASS_T {
+   			CYCLE_ID :String(9);
+			MFI_FFI_FC_IND :String(3);
+			MFI_FFI_FC :String(20);
+			PPN :String(12);
+			ABCD_T :String(15);
+			LOD : UTCTimestamp;
+			ABCD :String(1);
+			ABCD_1 :String(1);
+			ABCD_2 :String(1);
+			ABCD_3 :String(1);
+			ABCD_4 :String(1);
+			ABCD_5 :String(1);
+   		};
+   		
+   	type UI_PEGGING_T {
+			ABCD_T :String(15);
+			MTM :String(18);
+			MTM_ABCD :String(1);
+			SBB :String(12);
+			SBB_DES :String(200);
+			SBB_ABCD :String(1);
+			SBB_ABCD_1 :String(1);
+			SBB_ABCD_2 :String(1);
+			SBB_ABCD_3 :String(1);
+			SBB_ABCD_4 :String(1);
+			SBB_ABCD_5 :String(1);
+   		};
+
+    type UI_RELCONFCLASS_T {
+		    CYCLE_ID :String(9);
+			MTM :String(18);
+			MACH_T :String(4);
+			BIZ_LINE :String(100);
+			X_NAME :String(100);
+			PROJECT :String(100);
+			LOD : UTCTimestamp;
+			ABCD :String(1);
+			ABCD_1 :String(1);
+			ABCD_2 :String(1);
+			ABCD_3 :String(1);
+			ABCD_4 :String(1);
+			ABCD_5 :String(1);
+   		};
+ 
+    type UI_LEADTIME_T {
+			CYCLE_ID :String(9);
+			MFI_FFI_FC_IND :String(3);
+			MFI_FFI_FC :String(20);
+			PPN :String(12); 
+			ABCD_T :String(15);
+			ABCD :String(1);
+			LEADTIME :String(3);
+   		};
+
+   	type UI_FORECAST_MID_T {
+			SBB :String(12);
+			GEO :String(10);
+			FCSTQTY :String(6);
+			FCSTWEK :UTCTimestamp;
+			LOCID :String(30);
+			TRANS_DATE :UTCTimestamp;
+   		};
+   	
+   	type UI_CLASS_PERCENT_T {
+			ABCD_T :String(30);
+			A :Decimal(4,2);
+			B :Decimal(4,2);
+			C :Decimal(4,2);
+   		};
+   	
+   	type UI_MAX_CLASS_T {
+			MT :String(10);
+			MAX_CLASS :String(1);
+   		};
+   		
+   	type UI_ATTRIBUTES_T {
+			MT :String(4);
+			BIZ_LINE :String(100);
+			X_NAME :String(100);
+			PROJECT :String(100);
+   		};
+   		
+   	type UI_LTVALUE_T {
+			ABCD :String(1);
+			LEADTIME :String(3);
+   		};
+   	
+   	@Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_MFI_PPN_S {
+	   key ABCD_T :String(15);
+	   key SBB :String(12);
+	   key PPN :String(12);
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+	  };
+   	 
+   	 @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_MFI_PPN_ES {
+	   		key ABCD_T :String(200);
+   	 		key SBB :String(200);
+   	 		key PPN :String(200);
+   	 		ERROR_MESSAGE :String(4096);
+   	 		BUSINESS_NAME :String(4096);
+   	 		SEQ :Integer;
+   	 		POSITION :Integer;
+	  };
+	  
+	 @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_LEAD_TIME_S {
+        CYCLE_ID :String(9);
+	   key MFI_FFI_FC_IND :String(3);
+	   key MFI_FFI_FC :String(20);
+	   key PPN :String(12);
+	    ABCD_T :String(15);
+		ABCD :String(1);
+		LEADTIME :String(3);
+		
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+	  };
+
+   	 @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_LEAD_TIME_E {
+	   		CYCLE_ID :String(4096);
+		   key MFI_FFI_FC_IND :String(200);
+		   key MFI_FFI_FC :String(200);
+		   key PPN :String(200);
+		    ABCD_T :String(4096);
+			ABCD :String(4096);
+			LEADTIME :String(4096);
+   	 		
+   	 		ERROR_MESSAGE :String(4096);
+   	 		BUSINESS_NAME :String(4096);
+   	 		SEQ :Integer;
+   	 		POSITION :Integer;
+	  };
+	 
+	  @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_REPORTINTERLOCK_S {
+        ABCD_T :String(15);
+		key SBB_OPT :String(12);
+		SBB_DES :String(200);
+		MFI_FFI_FC_IND :String(3); 
+		GAD : UTCTimestamp;
+		LOD : UTCTimestamp;
+		key PPN :String(12);
+		PP_DES :String(200);
+		key SUPPLIER :String(100);
+		LENOVO_PPN_OHQ :Decimal(8,0);
+		PPN_HIQ :Decimal(8,0);
+		SBB_3M_FORECAST :Decimal(8,0);
+		SBB_3M_SHIPMENT :Decimal(8,0);
+		PPN_3M_SHIPMENT :Decimal(8,0);
+		PRIOR_ABCD :String(1);
+		REC_ABCD :String(1);
+		
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+	  };
+
+   	 @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_REPORTINTERLOCK_E {
+   		ABCD_T :String(4096);
+		key SBB_OPT :String(500);
+		SBB_DES :String(4096);
+		MFI_FFI_FC_IND :String(4096);
+		GAD : String(4096);
+		LOD : String(4096);
+		key PPN :String(500);
+		PP_DES :String(4096);
+		key SUPPLIER :String(500);
+		LENOVO_PPN_OHQ :String(4096);
+		PPN_HIQ :String(4096);
+		SBB_3M_FORECAST :String(4096);
+		SBB_3M_SHIPMENT :String(4096);
+		PPN_3M_SHIPMENT :String(4096);
+		PRIOR_ABCD :String(4096);
+		REC_ABCD :String(4096);
+ 		
+ 		ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(4096);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  };
+	  
+	 @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_PNCLASS_S {
+        CYCLE_ID :String(9);
+		key MFI_FFI_FC_IND :String(3);
+		key MFI_FFI_FC :String(20);
+		key PPN :String(12);
+		ABCD_T :String(15);
+		LOD : UTCTimestamp;
+		ABCD :String(1);
+		ABCD_1 :String(1);
+		ABCD_2 :String(1);
+		ABCD_3 :String(1);
+		ABCD_4 :String(1);
+		ABCD_5 :String(1);
+		
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+	  };
+
+   	 @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_PNCLASS_E {
+   		CYCLE_ID :String(4096);
+		key MFI_FFI_FC_IND :String(500);
+		key MFI_FFI_FC :String(500);
+		key PPN :String(500);
+		ABCD_T :String(4096);
+		LOD  :String(4096);
+		ABCD :String(4096);
+		ABCD_1 :String(4096);
+		ABCD_2 :String(4096);
+		ABCD_3 :String(4096);
+		ABCD_4 :String(4096);
+		ABCD_5 :String(4096);
+ 		
+ 		ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(4096);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  };
+	  @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_RELCONFCLASS_S {
+        CYCLE_ID :String(9);
+		key MTM :String(18);
+		MACH_T :String(4);
+		BIZ_LINE :String(100);
+		X_NAME :String(100);
+		PROJECT :String(100);
+		LOD : UTCTimestamp;
+		ABCD :String(1);
+		ABCD_1 :String(1);
+		ABCD_2 :String(1);
+		ABCD_3 :String(1);
+		ABCD_4 :String(1);
+		ABCD_5 :String(1);
+		
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+	  };
+
+   	 @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_RELCONFCLASS_E {
+   		CYCLE_ID :String(4096);
+		key MTM :String(4096);
+		MACH_T :String(4096);
+		BIZ_LINE :String(4096);
+		X_NAME :String(4096);
+		PROJECT :String(4096);
+		LOD  :String(4096);
+		ABCD :String(4096);
+		ABCD_1 :String(4096);
+		ABCD_2 :String(4096);
+		ABCD_3 :String(4096);
+		ABCD_4 :String(4096);
+		ABCD_5 :String(4096);
+ 		
+ 		ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(4096);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  };
+	@Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_PEGGING_S {
+        ABCD_T :String(15);
+		key MTM :String(18);
+		MTM_ABCD :String(1);
+		key SBB :String(12);
+		SBB_DES :String(200);
+		SBB_ABCD :String(1);
+		SBB_ABCD_1 :String(1);
+		SBB_ABCD_2 :String(1);
+		SBB_ABCD_3 :String(1);
+		SBB_ABCD_4 :String(1);
+		SBB_ABCD_5 :String(1);
+
+		
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+	  };
+
+   	 @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_PEGGING_E {
+   		ABCD_T :String(4096);
+		key MTM :String(500);
+		MTM_ABCD :String(4096);
+		key SBB :String(500);
+		SBB_DES :String(4096);
+		SBB_ABCD :String(4096);
+		SBB_ABCD_1 :String(4096);
+		SBB_ABCD_2 :String(4096);
+		SBB_ABCD_3 :String(4096);
+		SBB_ABCD_4 :String(4096);
+		SBB_ABCD_5 :String(4096);
+ 		
+ 		ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(4096);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  };
+};

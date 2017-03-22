@@ -1,0 +1,264 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_BOM_INIT" ( 
+  IN p_in_product_group VARCHAR(20),
+  OUT p_out_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_PCDW_BOM_INIT            
+*function   : Bill of Material Initial Load
+*input      ：p_in_product_group : product group
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2014-12-03
+*UpdateDate : 20150114 - Add logic for SEO BOM
+*************************************************************************/		
+	AS 
+BEGIN
+
+    -- data
+    DECLARE    v_g_pkg_name        VARCHAR(30) := 'PKG_PCDW_TO_CFE';      
+    DECLARE    v_prc_name          VARCHAR(30) := 'PRC_PCDW_BOM_INIT';
+    DECLARE    v_full_name         VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+    DECLARE    logidi              INTEGER := 0;
+    DECLARE    v_init_date         TIMESTAMP;  
+    DECLARE    n                   INTEGER;
+           
+    -- exception
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+        UPDATE conf_sync_lastrun
+           SET enddate    = CURRENT_TIMESTAMP, 
+               returncode = -1
+        WHERE pkgname    = :v_g_pkg_name 
+          AND progname   = :v_prc_name;
+
+       p_out_exitcode := ::SQL_ERROR_CODE;      
+       CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+                                                   I_LOGSID      => :logidi, 
+                                                   I_EVENT_NAME  => :v_full_name, 
+                                                   I_MODULE      => 'EBGCFE',
+				                                   I_MESSAGE     => 'ERROR', 
+				                                   I_DETAIL      => to_char(::SQL_ERROR_CODE) || ':' ||
+	                                                                substr(::SQL_ERROR_MESSAGE, 1, 500) );           
+    END;  
+  
+    -- process logic
+    p_out_exitcode := -1;
+	logidi:=0;
+	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',
+	                                            I_LOGSID=>:logidi,
+		                                        I_EVENT_NAME=>:v_full_name,
+		                                        I_MODULE=>'EBGCFE');       
+   
+    UPDATE conf_sync_lastrun a 
+       SET a.startdate  = CURRENT_TIMESTAMP, 
+           a.enddate    = NULL, 
+           a.returncode = NULL
+     WHERE a.pkgname  = :v_g_pkg_name 
+       AND a.progname = :v_prc_name;
+   
+    SELECT COUNT(1) INTO n 
+      FROM conf_sync_lastrun a
+     WHERE a.pkgname = :v_g_pkg_name 
+       AND a.progname = :v_prc_name;
+
+    IF :n<1 
+    THEN 
+        SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_init_date INTO v_init_date FROM DUMMY;
+        
+   	    INSERT INTO CONF_SYNC_LASTRUN(pkgname, progname, lastrundate, startdate) 
+	    VALUES (:v_g_pkg_name, :v_prc_name, :v_init_date, CURRENT_TIMESTAMP); 
+     END IF;   
+
+     DELETE FROM z_pcdw_bom 
+      WHERE product_group = :p_in_product_group;
+   
+     --DELETE FROM mid_pcdwbom_datuv;
+
+     -- 20150114 Begin - Add logic for SEO BOM
+     INSERT INTO z_pcdw_bom 
+         (NAME, STLNR, WERKS, IDNRK, MENGE, SANKO, DATUV, DATUB, ALPGR, ALPRF,
+          EWAHR, SANKA, CHARACTER, VALUE, TEXT1, TEXT2, OD, STLST, ACTION,
+          STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+          SYS_LAST_MODIFIED_BY, PRODUCT_GROUP, OEM, ITEM_TYPE_F, MTART_F,
+          BESKZ_F)
+     SELECT DISTINCT                               
+            MAP(LENGTH(A.SEO), 18, RIGHT(A.SEO, 10), A.SEO) AS NAME, 
+            '', b.PLANT, 
+            MAP(LENGTH(A.SBB), 18, RIGHT(A.SBB, 10), A.SBB) AS IDNRK,
+            a.QTY, null, null,  null, null, null, null,
+            null, null, null, null, null, null, null, 'INSERT', 'ACTIVE',
+            CURRENT_TIMESTAMP, :v_full_name, CURRENT_TIMESTAMP,
+            :v_full_name, B.PRODUCT_GROUP, B.OEM, C.ITEM_TYPE,
+            C.MTART, C.BESKZ
+       FROM PCDW.PCDW_SEO_BOM        A, 
+            CONF_PLANT_BUGRP_MAPPING B, 
+            UI_ITEM                  C
+      WHERE MAP(LENGTH(A.SEO), 18, RIGHT(A.SEO, 10), A.SEO) = C.ITEM
+        AND B.PRODUCT_GROUP = C.PRODUCT_GROUP
+        AND C.PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+        AND C.ITEM_TYPE IN('MTM')
+        --Added by Zhoubinbin 20170209
+        AND B.BOM_COPY      = 'Y'
+        AND NOT EXISTS(SELECT 1 FROM Z_PCDW_BOM D
+                        WHERE D.PRODUCT_GROUP = B.PRODUCT_GROUP
+                          AND D.WERKS         = B.PLANT
+                          AND D.NAME          = MAP(LENGTH(A.SEO), 18, RIGHT(A.SEO, 10), A.SEO)); 
+                          
+     --BUNDEL BOM                    
+     INSERT INTO Z_PCDW_BOM 
+         (NAME, STLNR, WERKS, IDNRK, MENGE, SANKO, DATUV, DATUB, ALPGR, ALPRF,
+          EWAHR, SANKA, CHARACTER, VALUE, TEXT1, TEXT2, OD, STLST, ACTION,
+          STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+          SYS_LAST_MODIFIED_BY, PRODUCT_GROUP, OEM, ITEM_TYPE_F, MTART_F,
+          BESKZ_F)
+     SELECT DISTINCT   
+            MAP(LENGTH(A.BUNDLE), 18, RIGHT(A.BUNDLE, 10), A.BUNDLE) AS NAME, 
+            '', b.PLANT, 
+            MAP(LENGTH(A.SEO), 18, RIGHT(A.SEO, 10), A.SEO) AS IDNRK,
+            A.QTY, null, null,  null, null, null, null,
+            null, null, null, null, null, null, null, 'INSERT', 'ACTIVE',
+            CURRENT_TIMESTAMP, :v_full_name, CURRENT_TIMESTAMP,
+            :v_full_name, B.PRODUCT_GROUP, B.OEM, C.ITEM_TYPE,
+            C.MTART, C.BESKZ
+       FROM PCDW.PCDW_BUNDLE_BOM     A, 
+            CONF_PLANT_BUGRP_MAPPING B, 
+            UI_ITEM                  C
+      WHERE MAP(LENGTH(A.BUNDLE), 18, RIGHT(A.BUNDLE, 10), A.BUNDLE) = C.ITEM
+        AND B.PRODUCT_GROUP = C.PRODUCT_GROUP
+        AND C.PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+        AND C.ITEM_TYPE     = 'BUNDLE'
+        --Added by Zhoubinbin 20160209
+        AND B.BOM_COPY      = 'Y'
+        AND NOT EXISTS(SELECT 1 FROM Z_PCDW_BOM D
+                        WHERE D.PRODUCT_GROUP = B.PRODUCT_GROUP
+                          AND D.NAME          = MAP(LENGTH(A.BUNDLE), 18, RIGHT(A.BUNDLE, 10), A.BUNDLE)
+                          AND D.WERKS         = B.PLANT);                           
+   
+      --ecc_bom   date  insert  into  z_pcdw_bom   name and idnrk  18bit  change 10bit
+    INSERT INTO z_pcdw_bom 
+        (NAME, STLNR, WERKS, IDNRK, MENGE, SANKO, DATUV, DATUB, ALPGR, ALPRF,
+         EWAHR, SANKA, CHARACTER, VALUE, TEXT1, TEXT2, OD, STLST, ACTION,
+         STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+         SYS_LAST_MODIFIED_BY, PRODUCT_GROUP, OEM, ITEM_TYPE_F, MTART_F,
+         BESKZ_F)
+    SELECT MAP(LENGTH(A.NAME), 18, RIGHT(A.NAME, 10), A.NAME) AS NAME, 
+           A.STLNR, A.WERKS, 
+           MAP(LENGTH(A.IDNRK), 18, RIGHT(A.IDNRK, 10), A.IDNRK) AS IDNRK, 
+           A.MENGE, A.SANKO, A.DATUV,
+           A.DATUB, A.ALPGR, A.ALPRF, A.EWAHR, A.SANKA, A.CHARACTER,
+           A.VALUE, A.TEXT1, A.TEXT2, A.OD, A.STLST, 'INSERT', 'ACTIVE',
+           CURRENT_TIMESTAMP, :v_full_name, CURRENT_TIMESTAMP, :v_full_name,
+           B.PRODUCT_GROUP, B.OEM, C.ITEM_TYPE, C.MTART, C.BESKZ
+      FROM PCDW.ECC_BOM             A, 
+           CONF_PLANT_BUGRP_MAPPING B, 
+           UI_ITEM                  C
+     WHERE A.WERKS         = B.PLANT
+       AND MAP(LENGTH(A.NAME), 18, RIGHT(A.NAME, 10), A.NAME) = C.ITEM
+       AND B.PRODUCT_GROUP = C.PRODUCT_GROUP
+       AND C.PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+       AND CURRENT_TIMESTAMP >= datuv
+       AND CURRENT_TIMESTAMP < datub
+       AND NOT EXISTS(SELECT 1 FROM Z_PCDW_BOM D
+                       WHERE D.PRODUCT_GROUP = B.PRODUCT_GROUP
+                         AND D.NAME          = MAP(LENGTH(A.NAME), 18, RIGHT(A.NAME, 10), A.NAME)
+                         AND D.WERKS         = A.WERKS);
+                         
+     --Get OPTION's BOM from ECC_BOM table first, then get from PCDW_SEO_BOM table
+     INSERT INTO z_pcdw_bom 
+         (NAME, STLNR, WERKS, IDNRK, MENGE, SANKO, DATUV, DATUB, ALPGR, ALPRF,
+          EWAHR, SANKA, CHARACTER, VALUE, TEXT1, TEXT2, OD, STLST, ACTION,
+          STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+          SYS_LAST_MODIFIED_BY, PRODUCT_GROUP, OEM, ITEM_TYPE_F, MTART_F,
+          BESKZ_F)
+     SELECT DISTINCT                               
+            MAP(LENGTH(A.SEO), 18, RIGHT(A.SEO, 10), A.SEO) AS NAME, 
+            '', b.PLANT, 
+            MAP(LENGTH(A.SBB), 18, RIGHT(A.SBB, 10), A.SBB) AS IDNRK,
+            a.QTY, null, null,  null, null, null, null,
+            null, null, null, null, null, null, null, 'INSERT', 'ACTIVE',
+            CURRENT_TIMESTAMP, :v_full_name, CURRENT_TIMESTAMP,
+            :v_full_name, B.PRODUCT_GROUP, B.OEM, C.ITEM_TYPE,
+            C.MTART, C.BESKZ
+       FROM PCDW.PCDW_SEO_BOM        A, 
+            CONF_PLANT_BUGRP_MAPPING B, 
+            UI_ITEM                  C
+      WHERE MAP(LENGTH(A.SEO), 18, RIGHT(A.SEO, 10), A.SEO) = C.ITEM
+        AND B.PRODUCT_GROUP = C.PRODUCT_GROUP
+        AND C.PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+        AND C.ITEM_TYPE IN('OPTION')
+        --Added by Zhoubinbin 20160209
+        AND B.BOM_COPY      = 'Y'
+        AND NOT EXISTS(SELECT 1 FROM Z_PCDW_BOM D
+                        WHERE D.PRODUCT_GROUP = B.PRODUCT_GROUP
+                          AND D.WERKS         = B.PLANT
+                          AND D.NAME          = MAP(LENGTH(A.SEO), 18, RIGHT(A.SEO, 10), A.SEO));                              
+                          
+    DELETE FROM Z_PCDW_BOM T1
+     WHERE T1.PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+       AND EXISTS(SELECT 1 FROM UI_ITEM T2
+                   WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                     AND T2.ITEM          = T1.NAME
+                     AND T2.ITEM_TYPE     = 'CTO')
+       AND EXISTS(SELECT 1 FROM BIZ_FCSBBMAP T3
+                   WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                     AND T3.MATNR         = T1.NAME);                          
+                          
+     --Get CTO L1 BOM from biz_fcsbbmap table
+     INSERT INTO Z_PCDW_BOM 
+         (NAME, STLNR, WERKS, IDNRK, MENGE, SANKO, DATUV, DATUB, ALPGR, ALPRF,
+          EWAHR, SANKA, CHARACTER, VALUE, TEXT1, TEXT2, OD, STLST, ACTION,
+          STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+          SYS_LAST_MODIFIED_BY, PRODUCT_GROUP, OEM, ITEM_TYPE_F, MTART_F,
+          BESKZ_F)
+     SELECT DISTINCT 
+            T1.MATNR, NULL, T4.PLANT, T1.IDNRK, T1.QUANTITY, NULL, NULL, NULL, 
+            NULL, NULL, 100 AS EWAHR, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+            'INSERT', 'ACTIVE', CURRENT_TIMESTAMP, :V_FULL_NAME, CURRENT_TIMESTAMP,
+            :V_FULL_NAME, T1.PRODUCT_GROUP, T4.OEM, T2.ITEM_TYPE, T2.MTART, 
+            T2.BESKZ
+       FROM BIZ_FCSBBMAP             T1, 
+            UI_ITEM                  T2,
+            UI_ITEM                  T3,
+            CONF_PLANT_BUGRP_MAPPING T4
+      WHERE T1.PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+        AND T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+        AND T1.MATNR         = T2.ITEM
+        AND T2.ITEM_TYPE     = 'CTO'
+        AND T1.PRODUCT_GROUP = T3.PRODUCT_GROUP
+        AND T1.IDNRK         = T3.ITEM
+        AND T3.ITEM_TYPE     = 'SBB'
+        --AND T3.BRAND         = 'BUILDING BLOCK'
+        AND T1.PRODUCT_GROUP = T4.PRODUCT_GROUP
+        --Added by Zhoubinbin 20160209
+        AND T4.BOM_COPY      = 'Y';  
+
+    UPDATE conf_sync_lastrun c1
+       SET lastrundate = startdate, 
+           returncode  = 0, 
+           enddate     = CURRENT_TIMESTAMP
+     WHERE pkgname = :v_g_pkg_name 
+       AND progname = :v_prc_name;
+
+    UPDATE conf_sync_lastrun c1
+       SET lastrundate = (SELECT startdate
+                            FROM conf_sync_lastrun
+                           WHERE pkgname = :v_g_pkg_name 
+                             AND progname = :v_prc_name),
+           returncode = 0,
+           enddate = CURRENT_TIMESTAMP
+     WHERE pkgname = :v_g_pkg_name 
+       AND progname = 'PRC_PCDW_BOM_NETCHG';
+   
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+                                                I_EVENT_NAME => :v_full_name,
+                                                I_MODULE     => 'EBGCFE');   
+                                                
+    p_out_exitcode := 0;  
+ 
+END;

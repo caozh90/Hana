@@ -1,0 +1,240 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_MATERIALMARGIN_BYCYCLE_MTM" 
+( 
+    IN  p_in_cycle_type    			VARCHAR(40),
+    IN  p_in_cycle_name    			VARCHAR(40),
+    IN	V_BIZ_COST_MODEL_LIST 		"EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.T_BIZ_COST_MODEL_LIST",
+    OUT p_out_exitcode     			NUMBER,
+    OUT V_T_MID_RPT_MATERIALMARGIN_MTM_OUT "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	DEFAULT SCHEMA EBGCFE 
+	
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_RPT_MATERIALMARGIN_BYCYCLE_MTM 
+*function   : Material Margin Report
+*input      : p_in_cycle_type, p_in_cycle_name
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-02-05
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+AS
+	  v_user_id         VARCHAR(64) := SESSION_USER;
+      v_pkg_name        VARCHAR(30) := 'PKG_REPORT';
+      v_prc_name        VARCHAR(50) := 'PRC_RPT_MATERIALMARGIN_BYCYCLE_MTM';
+      v_full_name       VARCHAR(100) := :v_pkg_name || '.' || :v_prc_name;	
+      v_exitmess        VARCHAR(200) := '';
+      logidi            INTEGER := 0;
+      v_mon             VARCHAR(3);
+      v_residue         INTEGER;
+BEGIN    
+	DECLARE V_T_MID_RPT_MATERIALMARGIN_MTM1 "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN";
+	DECLARE V_T_MID_RPT_MATERIALMARGIN_MTM2 "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN";
+	DECLARE V_T_MID_RPT_MATERIALMARGIN_MTM3 "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN";
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN         
+        p_out_exitcode:=::SQL_ERROR_CODE;
+               
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+	                                                I_LOGSID     => :logidi,
+		                                            I_EVENT_NAME => :v_full_name, 
+		                                            I_MODULE     => 'EBGCFE',
+		                                            I_MESSAGE    => 'ERROR', 
+		                                            I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || 
+		                                                            substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+    --process logic  
+    p_out_exitcode := -1;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  
+		                                        
+
+
+    IF :p_in_cycle_name = 'CURRENT'
+    THEN
+    
+      --Get mtm-component/mtm-option(purchase type is F)
+        V_T_MID_RPT_MATERIALMARGIN_MTM1=
+        SELECT t1.product_group, :p_in_cycle_name as CYCLE, :p_in_cycle_type as CYCLE_TYPE, t1.brand, 
+               t1.asp_prd_family as family, '' AS cto, t1.item as assembly, 
+               t1.eol_status, t1.item_desc as assembly_desc, t2.qtyper*t3.qtyper AS qty,
+               t3.children as component, t3.item_desc as comp_desc, t1.plant, 
+               t1.subgeo, t1.country, t3.m1, t3.m2, t3.m3, t3.m4, t3.m5, t3.m6, 
+               t3.m7, t3.m8, t3.m9, t3.m10, t3.m11, t3.m12, t3.m13, t3.m14, t3.m15, 
+               t3.m16, t3.m17, t3.m18
+          FROM biz_cost_model_list t1,
+               biz_cbom_mtmsbb     t2, 
+               biz_cbom_sbb        t3
+         WHERE t1.product_group = t2.product_group
+           AND t1.item          = t2.model
+           AND t1.plant         = t2.plant
+           AND t2.product_group = t3.product_group
+           AND t2.children      = t3.model
+           AND t2.plant         = t3.plant
+           AND EXISTS(SELECT 1 FROM :V_BIZ_COST_MODEL_LIST t4
+                       WHERE t4.product_group = t1.product_group
+                         AND t4.item          = t1.item
+                         AND t4.plant         = t1.plant
+                         AND t4.country       = t1.country);
+         
+        --Get mtm-component/mtm-option(purchase type is F)/mtm-sbb(key sbb which is no bom)   
+
+		V_T_MID_RPT_MATERIALMARGIN_MTM2=
+        SELECT t1.product_group, :p_in_cycle_name as CYCLE, :p_in_cycle_type as CYCLE_TYPE, t1.brand, 
+               t1.asp_prd_family as family, '' AS cto, t1.item AS assembly, 
+               t1.eol_status, t1.item_desc AS assembly_desc, t2.qtyper AS qty,
+               t2.children AS component, t2.item_desc AS comp_desc, t1.plant, 
+               t1.subgeo, t1.country, t2.m1, t2.m2, t2.m3, t2.m4, t2.m5, t2.m6, t2.m7, 
+               t2.m8, t2.m9, t2.m10, t2.m11, t2.m12, t2.m13, t2.m14, t2.m15, t2.m16, 
+               t2.m17, t2.m18
+          FROM biz_cost_model_list t1,
+               biz_cbom_mtmsbb     t2
+         WHERE t1.product_group = t2.product_group
+           AND t1.item          = t2.model
+           AND t1.plant         = t2.plant
+           AND NOT EXISTS(SELECT 1 FROM biz_cbom_sbb t3
+                           WHERE t3.product_group = t2.product_group
+                             AND t3.model         = t2.children
+                             AND t3.plant         = t2.plant)
+           AND EXISTS(SELECT 1 FROM :V_BIZ_COST_MODEL_LIST t4
+                       WHERE t4.product_group = t1.product_group
+                         AND t4.item          = t1.item
+                         AND t4.plant         = t1.plant
+                         AND t4.country       = t1.country);
+        
+        --Get mtm-adder   
+		V_T_MID_RPT_MATERIALMARGIN_MTM3=
+        SELECT t1.product_group, :p_in_cycle_name as CYCLE, :p_in_cycle_type as CYCLE_TYPE, t1.brand,
+               t1.asp_prd_family as family, '' AS cto, t1.item AS assembly,
+               t1.eol_status, t1.item_desc AS assembly_desc, t2.qtyper AS qty, 
+               t2.children AS component, t2.item_desc AS comp_desc, t1.plant,
+               t2.subgeo, t2.country, t2.m1, t2.m2, t2.m3, t2.m4, t2.m5, t2.m6, t2.m7, 
+               t2.m8, t2.m9, t2.m10, t2.m11, t2.m12, t2.m13, t2.m14, t2.m15, t2.m16, 
+               t2.m17, t2.m18
+          FROM biz_cost_model_list t1,
+               biz_costadder_mtm   t2
+         WHERE t1.product_group = t2.product_group
+           AND t1.item          = t2.model
+           AND t1.plant         = t2.plant
+           AND t1.subgeo        = t2.subgeo
+           AND t1.country       = t2.country
+           --Modified by Zhoubinbin 20161008, show all elements
+           --AND t2.cost_type     = 'TBA'
+           AND t2.cost_type IN('TBA', 'COMP-COST')
+           AND t2.value_type    = 'US_DOLLAR'
+           AND EXISTS(SELECT 1 FROM biz_cbom_mtmsbb t3
+                       WHERE t3.product_group = t2.product_group
+                         AND T3.model         = t2.model
+                         AND t3.plant         = t2.plant)
+           AND EXISTS(SELECT 1 FROM :V_BIZ_COST_MODEL_LIST t4
+                       WHERE t4.product_group = t1.product_group
+                         AND t4.item          = t1.item
+                         AND t4.plant         = t1.plant
+                         AND t4.country       = t1.country);
+
+    ELSE
+        --Get mtm-component/mtm-option(purchase type is F)
+        V_T_MID_RPT_MATERIALMARGIN_MTM1=
+        SELECT t1.product_group, :p_in_cycle_name as CYCLE, :p_in_cycle_type as CYCLE_TYPE, t1.brand, 
+               t1.asp_prd_family as family, '' AS cto, t1.item AS assembly, 
+               t1.eol_status, t1.item_desc AS assembly_desc, t2.qtyper*t3.qtyper AS qty,
+               t3.children AS component, t3.item_desc AS comp_desc, t1.plant, 
+               t1.subgeo, t1.country, t3.m1, t3.m2, t3.m3, t3.m4, t3.m5, t3.m6, 
+               t3.m7, t3.m8, t3.m9, t3.m10, t3.m11, t3.m12, t3.m13, t3.m14, t3.m15, 
+               t3.m16, t3.m17, t3.m18
+          FROM biz_cost_model_list_his t1,
+               biz_cbom_mtmsbb_his     t2, 
+               biz_cbom_sbb_his        t3
+         WHERE t1.cycle_productgroup = :p_in_cycle_name||'EBG'
+           AND t1.cycle_productgroup = t2.cycle_productgroup
+           AND t1.item               = t2.model
+           AND t1.plant              = t2.plant
+           AND t2.cycle_productgroup = t3.cycle_productgroup
+           AND t2.children           = t3.model
+           AND t2.plant              = t3.plant
+           AND EXISTS(SELECT 1 FROM :V_BIZ_COST_MODEL_LIST t4
+                       WHERE t4.product_group = t1.product_group
+                         AND t4.item          = t1.item
+                         AND t4.plant         = t1.plant
+                         AND t4.country       = t1.country);
+        
+        --Get mtm-component/mtm-option(purchase type is F)/mtm-sbb(key sbb which is no bom)   
+
+        V_T_MID_RPT_MATERIALMARGIN_MTM2=
+        SELECT t1.product_group, :p_in_cycle_name as CYCLE, :p_in_cycle_type as CYCLE_TYPE, t1.brand, 
+               t1.asp_prd_family as family, '' AS cto, t1.item AS assembly, 
+               t1.eol_status, t1.item_desc AS assembly_desc, t2.qtyper AS qty,
+               t2.children AS component, t2.item_desc AS comp_desc, t1.plant, 
+               t1.subgeo, t1.country, t2.m1, t2.m2, t2.m3, t2.m4, t2.m5, t2.m6, t2.m7, 
+               t2.m8, t2.m9, t2.m10, t2.m11, t2.m12, t2.m13, t2.m14, t2.m15, t2.m16, 
+               t2.m17, t2.m18
+          FROM biz_cost_model_list_his t1,
+               biz_cbom_mtmsbb_his     t2
+         WHERE t1.cycle_productgroup = :p_in_cycle_name||'EBG'
+           AND t1.cycle_productgroup = t2.cycle_productgroup
+           AND t1.item               = t2.model
+           AND t1.plant              = t2.plant
+           AND NOT EXISTS(SELECT 1 FROM biz_cbom_sbb_his t3
+                           WHERE t3.cycle_productgroup = t2.cycle_productgroup
+                             AND t3.model         = t2.children
+                             AND t3.plant         = t2.plant)
+           AND EXISTS(SELECT 1 FROM :V_BIZ_COST_MODEL_LIST t4
+                       WHERE t4.product_group = t1.product_group
+                         AND t4.item          = t1.item
+                         AND t4.plant         = t1.plant
+                         AND t4.country       = t1.country);
+        
+        --Get mtm-adder   
+
+        V_T_MID_RPT_MATERIALMARGIN_MTM3=
+        SELECT t1.product_group, :p_in_cycle_name as CYCLE, :p_in_cycle_type as CYCLE_TYPE, t1.brand,
+               t1.asp_prd_family as family, '' AS cto, t1.item AS assembly,
+               t1.eol_status, t1.item_desc AS assembly_desc, t2.qtyper AS qty, 
+               t2.children AS component, t2.item_desc AS comp_desc, t1.plant,
+               t2.subgeo, t2.country, t2.m1, t2.m2, t2.m3, t2.m4, t2.m5, t2.m6, t2.m7, 
+               t2.m8, t2.m9, t2.m10, t2.m11, t2.m12, t2.m13, t2.m14, t2.m15, t2.m16, 
+               t2.m17, t2.m18
+          FROM biz_cost_model_list_his t1,
+               biz_costadder_mtm_his   t2
+         WHERE t1.cycle_productgroup = :p_in_cycle_name||'EBG'
+           AND t1.cycle_productgroup = t2.cycle_productgroup
+           AND t1.item               = t2.model
+           AND t1.plant              = t2.plant
+           AND t1.subgeo             = t2.subgeo
+           AND t1.country            = t2.country
+           --Modified by Zhoubinbin 20161008, show all elements
+           --AND t2.cost_type          = 'TBA'
+           AND t2.cost_type IN('TBA', 'COMP-COST')
+           AND t2.value_type         = 'US_DOLLAR'
+           AND EXISTS(SELECT 1 FROM biz_cbom_mtmsbb_his t3
+                       WHERE t3.cycle_productgroup = t2.cycle_productgroup
+                         AND t3.model              = t2.model
+                         AND t3.plant              = t2.plant)
+           AND EXISTS(SELECT 1 FROM :V_BIZ_COST_MODEL_LIST t4
+                       WHERE t4.product_group = t1.product_group
+                         AND t4.item          = t1.item
+                         AND t4.plant         = t1.plant
+                         AND t4.country       = t1.country);
+
+    END IF;
+
+
+	V_T_MID_RPT_MATERIALMARGIN_MTM_OUT=
+	select * from :V_T_MID_RPT_MATERIALMARGIN_MTM1
+	union all  
+	select * from :V_T_MID_RPT_MATERIALMARGIN_MTM2
+	union all 
+	select * from :V_T_MID_RPT_MATERIALMARGIN_MTM3;
+
+
+    p_out_exitcode := 0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+	                                            I_EVENT_NAME => :v_full_name,
+	                                            I_MODULE     => 'EBGCFE');   
+END;

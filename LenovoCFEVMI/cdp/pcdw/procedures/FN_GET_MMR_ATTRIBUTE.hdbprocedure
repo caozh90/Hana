@@ -1,0 +1,315 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::FN_GET_MMR_ATTRIBUTE" ( 
+   IN pi_param1    VARCHAR(100),
+   IN pi_param2    VARCHAR(100),
+   IN pi_param3    VARCHAR(100),
+   IN pi_param4    VARCHAR(100),
+   IN pi_param5    VARCHAR(100),
+   IN pi_param6    VARCHAR(100),
+   IN pi_param7    VARCHAR(100),
+   IN pi_param8    VARCHAR(100),
+   IN pi_flag      VARCHAR(100),
+   OUT result	   VARCHAR(100)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	AS
+	v_attribute     VARCHAR (100);
+   	v_mtart         VARCHAR (100);
+   	v_zeinr         VARCHAR (100);
+   	v_prodh         VARCHAR (100);
+   	v_matkl         VARCHAR (100);
+   	v_extwg         VARCHAR (100);
+   	v_item          VARCHAR (100);
+   	v_zlcod         VARCHAR (100);
+   	v_svprodh       VARCHAR (100);
+   	v_strgr         VARCHAR (100);
+   	v_mvgr1         VARCHAR (100);
+   	v_beskz_sobsl   VARCHAR (100);
+   	v_count         DECIMAL;
+   	vMsg             VARCHAR (1024) := '';
+   	vCode            DECIMAL := 0;
+   	logid1			int :=1;
+   	--temp_result	 	varchar(20);
+   	v_full_name		varchar(100):='FN_GET_MMR_ATTRIBUTE';
+BEGIN
+	--exception
+	 DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	 BEGIN
+      --  vMsg := SUBSTR (DBMS_UTILITY.format_error_backtrace, 1, 512);
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      	vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+           VALUES (CURRENT_DATE,
+                   'PRC_INIT_MATMASTER_PREPROCESS',
+                   'OTHERS ERROR',
+                   vCode,
+                   vMsg,
+                   '',
+                   '',
+                   '',
+                   'END');
+
+      exec 'COMMIT';
+ 	 
+     END;
+	-- exception
+
+
+	IF pi_flag = 'CATEGORY'
+    THEN
+      v_mtart := pi_param1;
+      v_zeinr := pi_param2;
+      v_prodh := pi_param3;
+      v_matkl := pi_param4;
+      v_item := pi_param5;
+      v_strgr := pi_param6;
+      v_mvgr1 := pi_param7;
+      v_beskz_sobsl := pi_param8;
+      
+       SELECT CASE
+                --material group 1, account view 2
+                WHEN :v_mvgr1 = 'FRU'
+                THEN
+                   'FRU'
+                WHEN :v_mtart IN ('KMAT', 'ZMAT')
+                THEN
+                   'CTO'
+                WHEN :v_mtart = 'LG09'
+                THEN
+                   'SUB-MAT'
+                WHEN ( SUBSTR (:v_item,1,12)= '000000000086' OR v_mtart = 'ZKMA')
+                THEN
+                   '86'
+                WHEN    (LENGTH (:v_item) = 10 --AND (v_issbb = 'Y' OR v_strgr = 'ZS')
+ --removed by xinpt for PF project. 2013.10.29. according to songyua's requirement
+                                       --issbb will not be used in the futher.
+                          AND :v_strgr = 'ZS')
+                     OR (    LENGTH (:v_item) = 18
+                         AND (   SUBSTR (:v_item,1,12)= '000000000069'
+                              OR :v_mtart = 'LEER'))
+                THEN
+                   'SBB'
+                WHEN :v_beskz_sobsl = 'E50'                --新老料的PHANTOM都以E50判断
+                THEN
+                   'PHANTOM'                                         --不处理12位料
+                WHEN    :v_mvgr1 = 'OPT'                              --TGB判断规则
+                     OR :v_mtart = 'LG23'                           --18位老料判断规则
+                     --modify start
+                     --modified by xinpt for PF project 2013.12.5
+                     --10位新料判断规则
+                     OR (:v_mtart = 'ZITR'
+                         AND SUBSTR (:v_prodh, 1, 1) IN (SELECT VALUE
+                                                          FROM conf_phc
+                                                         WHERE     NAME =
+                                                                      'PHC_1'
+                                                               AND TYPE =
+                                                                      'OPT'))
+                --modify end
+                THEN
+                   'OPT'
+                ----removed by xinpt for PF project, because IO is not useful for planning
+                --                WHEN v_mtart = 'LG07' OR v_zeinr IN (SELECT VALUE
+                --                                                       FROM conf_basic_name
+                --                                                      WHERE TYPE = 'IO')
+                --                   THEN 'IO'
+                WHEN :v_mtart = 'LG94'
+                     OR :v_zeinr IN (SELECT VALUE
+                                      FROM conf_basic_name
+                                     WHERE TYPE = 'SHELL')
+                THEN
+                   'SHELL'
+                WHEN    :v_mtart IN ('LG99', 'PIPE')
+                     OR :v_zeinr IN (SELECT VALUE
+                                      FROM conf_basic_name
+                                     WHERE TYPE = 'PIPE')
+                THEN
+                   'PIPE'
+                --removed by xinpt for PF project, because mboard is not useful for planning
+                --                WHEN (v_mtart = 'LG03' /*and supplier = 1000031680*/)
+                --                                                OR v_zeinr IN (SELECT VALUE
+                --                                                       FROM conf_basic_name
+                --                                                      WHERE TYPE = 'MBOARD')
+                --                   THEN 'MBOARD'
+                WHEN    :v_mtart = 'LG19'
+                     OR (:v_mtart = 'ZREV'
+                         AND SUBSTR (:v_prodh, 1, 1) IN (SELECT VALUE
+                                                          FROM conf_phc
+                                                         WHERE     NAME =
+                                                                      'PHC_1'
+                                                               AND TYPE =
+                                                                      'LNB'))
+                THEN
+                   'MTM-LNB'
+                WHEN    :v_mtart = 'LG18'
+                     OR ( :v_mtart = 'ZREV'
+                         AND SUBSTR (:v_prodh, 1, 1) IN (SELECT VALUE
+                                                          FROM conf_phc
+                                                         WHERE     NAME =
+                                                                      'PHC_1'
+                                                               AND TYPE =
+                                                                      'LDT'))
+                THEN
+                   'MTM-LDT'
+                WHEN   :v_mtart = 'LG20'
+                     OR (  :v_mtart = 'ZREV'
+                         AND SUBSTR (:v_prodh, 1, 1) IN (SELECT VALUE
+                                                          FROM conf_phc
+                                                         WHERE     NAME =
+                                                                      'PHC_1'
+                                                               AND TYPE =
+                                                                      'LCSV'))
+                THEN
+                   'MTM-LCSV'
+                WHEN    ( :v_mtart = 'LG05')
+                        -- AND REGEXP_INSTR (v_item, '^[0-9]*$') = 1) 全是新料
+                     OR ( SUBSTR (:v_prodh, 1, 1) IN (SELECT VALUE
+                                                          FROM conf_phc
+                                                         WHERE     NAME =
+                                                                      'PHC_1'
+                                                               AND TYPE =
+                                                                      'VIS')
+                         AND SUBSTR (:v_prodh, 8, 1) <> 'N')
+                      --全是新料   AND REGEXP_INSTR (v_item, '^[0-9]*$') = 0)
+                THEN
+                   'VIS-S'
+                WHEN    (    ( :v_mtart = 'LG26'
+                              OR :v_matkl IN ('002001000', '001009000'))
+                        --全是新料 AND REGEXP_INSTR (v_item, '^[0-9]*$') = 1
+                         )
+                     OR (    SUBSTR (:v_prodh, 1, 1) IN (SELECT VALUE
+                                                          FROM conf_phc
+                                                         WHERE     NAME =
+                                                                      'PHC_1'
+                                                               AND TYPE =
+                                                                      'VIS')
+                         AND SUBSTR (:v_prodh, 8, 1) = 'N'
+                         --全是新料 AND REGEXP_INSTR (v_item, '^[0-9]*$') = 0
+                         )
+                THEN
+                   'VIS-B'
+                WHEN :v_mtart = 'ZREV'
+                     AND SUBSTR (:v_prodh, 1, 1) IN (SELECT VALUE
+                                                      FROM conf_phc
+                                                     WHERE     NAME = 'PHC_1'
+                                                           AND TYPE = 'TDT')
+                THEN
+                   'MTM-TDT'
+                WHEN  :v_mtart = 'ZREV'
+                     AND SUBSTR (:v_prodh, 1, 1) IN (SELECT VALUE
+                                                      FROM conf_phc
+                                                     WHERE     NAME = 'PHC_1'
+                                                           AND TYPE = 'TNB')
+                THEN
+                   'MTM-TNB'
+                WHEN :v_mtart = 'ZREV'
+                     AND SUBSTR (:v_prodh, 1, 1) IN (SELECT VALUE
+                                                      FROM conf_phc
+                                                     WHERE     NAME = 'PHC_1'
+                                                           AND TYPE =
+                                                                  'TThinkS')
+                THEN
+                   'MTM-TTS'
+                --modified by xinpt for PF project, 2013.11.4
+                --                WHEN v_mtart = 'ZPPN'
+                --                   THEN 'COMPONENT'
+                ELSE
+                   'COMPONENT'
+             END
+        INTO v_attribute
+        FROM DUMMY;
+   ELSEIF  :pi_flag = 'ODM'   
+   THEN
+      v_extwg := :pi_param1;
+      v_item := :pi_param2;
+      v_zlcod := :pi_param3;
+      v_mtart := :pi_param4;
+
+      SELECT CASE
+                WHEN    (:v_extwg = 'ZDIRECTSHIP' AND LENGTH (v_item) = 18)
+                     OR (    SUBSTR (:v_zlcod, 2, 1) = 'P'
+                         AND SUBSTR (:v_zlcod, 4, 1) = 'P'
+                         AND LENGTH (:v_item) = 10
+                         AND :v_mtart <> 'ZPPN')
+                THEN
+                   'Y'
+                ELSE
+                   'N'
+             END
+        INTO v_attribute
+        FROM DUMMY;
+   ELSEIF :pi_flag = 'BU'
+   THEN
+      v_prodh := :pi_param1;
+      v_item := :pi_param2;
+      
+      SELECT TYPE
+           INTO v_attribute
+           FROM (  SELECT TYPE
+                     FROM conf_phc
+                    WHERE     NAME = 'PHC_4'
+                          AND SUBSTR (v_prodh, 1, LENGTH (VALUE)) = VALUE
+                 ORDER BY LENGTH (VALUE) DESC)
+         -- WHERE ROWNUM = 1;                     --modified by majinga 20140124
+         LIMIT 1 OFFSET 1; --?????
+/*新料
+      IF REGEXP_INSTR (v_item, '^[0-9]*$') = 1
+      THEN
+         SELECT TYPE
+           INTO v_attribute
+           FROM (  SELECT TYPE
+                     FROM conf_phc
+                    WHERE     NAME = 'PHC_4'
+                          AND SUBSTR (v_prodh, 1, LENGTH (VALUE)) = VALUE
+                 ORDER BY LENGTH (VALUE) DESC)
+          WHERE ROWNUM = 1;                     --modified by majinga 20140124
+      ELSE
+         --modified by majinga 20140108 start
+         SELECT TYPE
+           INTO v_attribute
+           FROM (  SELECT TYPE
+                     FROM conf_phc
+                    WHERE     NAME = 'BU'
+                          AND SUBSTR (v_prodh, 1, LENGTH (VALUE)) = VALUE
+                 ORDER BY LENGTH (VALUE) DESC)
+          WHERE ROWNUM = 1;
+      /* SELECT COUNT (1)
+         INTO v_count
+         FROM conf_phc
+        WHERE NAME = 'BU' AND SUBSTR (v_prodh, 1, 7) = VALUE;
+
+       IF v_count > 0
+       THEN
+          SELECT TYPE
+            INTO v_attribute
+            FROM conf_phc
+           WHERE NAME = 'BU' AND SUBSTR (v_prodh, 1, 7) = VALUE;
+       ELSE
+          SELECT TYPE
+            INTO v_attribute
+            FROM conf_phc
+           WHERE NAME = 'BU' AND SUBSTR (v_prodh, 1, LENGTH (VALUE)) = VALUE;
+       END IF;
+      --end
+      END IF;*/
+   ELSEIF :pi_flag = 'PHC'
+   THEN
+      v_prodh := :pi_param1;
+      v_svprodh := :pi_param2;
+
+      SELECT IFNULL (:v_prodh, :v_svprodh) INTO v_attribute FROM DUMMY;
+   END IF;
+	
+	result := :v_attribute;
+
+
+END;

@@ -1,0 +1,46 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createMapRoleGroupForOData" ( 
+IN newInfo "SECURITY"."cdp.security.data::userManagement.MapRoleGroupT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+		
+    aROLEGROUP_ID BIGINT;	--//usergroup id    		
+    aROLE_ID BIGINT;  	--//USER ID     
+    aMODULE_NAME NVARCHAR(200);   
+    
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	将 一些用户加入到某个用户组中。
+	
+	1、首先检查这个用户是否存在。
+	2、如果不存在，则返回。
+	3、这个用户组中是否存在这个用户，如果存在，则返回。
+	4、如果这个用户族中不存在，则insert map_group_user
+	5、检查 这个用户是否在public group 当中，如果在，则从中删除。
+	
+ *****************************/
+ 
+
+    
+ 	select 
+	ROLEGROUP_ID 	--//userid /usergroup id	
+    ,ROLE_ID
+    ,MODULE_NAME
+  into 
+ 	aROLEGROUP_ID  --//module id
+	,aROLE_ID
+	,aMODULE_NAME
+  from :newInfo;
+  
+  CALL  "SECURITY"."cdp.security.procedures::createMapRoleGroup" ( 
+		--aMODULE_NAME,
+		aROLEGROUP_ID,
+		aROLE_ID	
+	, errorInfo); 
+     		
+END;

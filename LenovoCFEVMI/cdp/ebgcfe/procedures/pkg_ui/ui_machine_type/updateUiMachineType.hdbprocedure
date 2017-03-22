@@ -1,0 +1,167 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_machine_type::updateUiMachineType" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MACHINETYPE_T"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MACHINETYPE_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aMachineType NVARCHAR(40);
+	    aProdFamily NVARCHAR(100);
+		aBrand NVARCHAR(40);
+		    	
+		resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ; 
+		
+		v_event_name  VARCHAR(200) := 'cdp.ebgcfe.procedures.pkg_ui.ui_machine_type::updateUiMachineType';
+		v_exitcode    DECIMAL;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui::updateUiMachineType error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiMachineType'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_machine_type::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiMachineType'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+ select 
+    PROD_FAMILY,
+    BRAND    
+  into 
+	aProdFamily,
+	aBrand	
+  from :newInfo;
+ 
+ 
+ select
+    MACHINETYPE
+  into  	
+ 	aMachineType
+  from :oldInfo;
+  
+  	SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_MACHINETYPE" A    
+     WHERE A.MACHINETYPE = :aMachineType
+     AND   A.BRAND = :aBrand
+     AND   A.PROD_FAMILY = :aProdFamily; 
+         
+    if  :resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before'; 
+	    return;
+    end if;
+     
+    update "EBGCFE"."UI_MACHINETYPE" set
+    	PROD_FAMILY = :aProdFamily,
+    	BRAND = :aBrand,
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user
+    where
+    	MACHINETYPE = :aMachineType; 
+
+
+	/*2015-01-28 according to lenovo mail*/
+	update "EBGCFE"."UI_ITEM" A 
+	   set (A.ASP_PRD_FAMILY, A.BRAND) = (:aProdFamily, :aBrand),
+	        A.SYS_LAST_MODIFIED_DATE   = CURRENT_TIMESTAMP,
+	        A.SYS_LAST_MODIFIED_BY     = session_user  
+     where A.MACHINE_TYPE = :aMachineType
+	   --and A.ITEM_TYPE   <> 'OPTION'
+	   AND IFNULL(A.USER_ASP_PRD_FAMILY,'') = '';
+	
+	/*--Update option'family by brand and machine type	  
+	update "EBGCFE"."UI_ITEM" A set(A.ASP_PRD_FAMILY)=(:aProdFamily),
+	    A.SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+	    A.SYS_LAST_MODIFIED_BY = session_user  
+		where A.MACHINE_TYPE = :aMachineType
+		  AND A.BRAND        = :aBrand
+		  AND A.ITEM_TYPE    = 'OPTION'
+		  AND IFNULL(A.USER_ASP_PRD_FAMILY,'') = '';	*/	  
+		  	
+	update "EBGCFE"."UI_ITEM" A 
+	   set A.EOL_STATUS = MAP(IFNULL(A.USER_EOL_STATUS, ''), '', B.EOL_STATUS, A.EOL_STATUS),
+	    A.SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+	    A.SYS_LAST_MODIFIED_BY = session_user  
+	    from "EBGCFE"."UI_PRODFAMILY" B
+		where A.ASP_PRD_FAMILY = B.PROD_FAMILY
+		  and A.BRAND          = B.BRAND
+		  and B.PROD_FAMILY    = :aProdFamily
+		  and B.BRAND          = :aBrand; 
+		  
+/*put operation to log table*/
+insert into "EBGCFE"."UI_MACHINETYPE_LOG"
+    (
+        PRODUCT_GROUP,
+    	MACHINETYPE,
+	    BRAND,
+	    PROD_FAMILY,  	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	AT_ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    values
+    (
+    	'EBG',
+    	:aMachineType,
+	    :aBrand,
+	    :aProdFamily,  	
+    	current_date,    	
+    	'update',
+    	SESSION_USER,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    );
+    
+    --Added by Zhoubinbin 20161127, Set eol status logic
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.base_funcs::updateEolStatus"('MT', :aMachineType, :v_event_name, :v_exitcode);
+
+/*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui::updateUiMachineType ('||:aMachineType||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiMachineType'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

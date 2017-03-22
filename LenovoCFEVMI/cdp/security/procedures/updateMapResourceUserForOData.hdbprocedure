@@ -1,0 +1,52 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::updateMapResourceUserForOData" ( 
+		IN newInfo "SECURITY"."cdp.security.data::userManagement.MapResourceUserT",
+		IN oldInfo "SECURITY"."cdp.security.data::userManagement.MapResourceUserT",
+		OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+	    aRESOURCE_ID BIGINT;
+		aResource_type NVARCHAR(200);
+	    aValue NVARCHAR(200);
+	    aGroup_Id NVARCHAR(50);
+	    aUser_Id BIGINT;
+		aModule_ID  BIGINT;
+
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+       
+ select
+    RESOURCE_TYPE,
+    VALUE      
+  into  	
+ 	aResource_type,
+	aValue		
+  from :newInfo;
+     
+  select 
+  	 MODULE_ID,
+  	 GROUP_ID,
+  	 USER_ID,  	 
+  	 RESOURCE_ID  
+   into 
+     aModule_ID,  --//module id
+     aGroup_Id,
+     aUser_Id,
+     aRESOURCE_ID
+  	from :oldInfo;
+  	
+ CALL "SECURITY"."cdp.security.procedures::updateMapResourceUser" ( 
+		 aRESOURCE_ID
+		,	aResource_type
+	    ,	aValue 
+	    ,	aGroup_Id
+	    ,	aUser_Id 
+		--,	aModule_ID
+		,errorInfo);
+		 
+END;

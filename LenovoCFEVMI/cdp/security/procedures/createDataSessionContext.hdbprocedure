@@ -1,0 +1,111 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createDataSessionContext" (	      
+    IN	 aXSSESSION_ID NVARCHAR(64),
+ 	IN   aSESSION_TYPE NVARCHAR(256),
+	IN   aSESSION_VALUE NVARCHAR(256),
+	IN   aCOMMENT NVARCHAR(256)    
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	ROLEExists Integer := 0;
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aUSER_ID BIGINT;	
+	 privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+/***************************** 
+	create new SESSIOIN CONTEXT
+	
+
+	example:
+	
+call "SECURITY"."cdp.security.procedures::createDataSessionContext" (	      
+    IN	 aXSSESSION_ID NVARCHAR(64),
+ 	IN   aSESSION_TYPE NVARCHAR(256),
+	IN   aSESSION_VALUE NVARCHAR(256),
+	IN   aCOMMENT NVARCHAR(256)  ,?);
+)
+ *****************************/
+      
+    --exception     
+   DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到amodule_ID ,则返回，
+			aI_DETAIL :='cdp.security.procedures::createDataSessionContext can not find the user : '||SESSION_USER ||' .';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createDataSessionContext"'
+     	,I_MODULE=>'SYS'
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);  
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::createDataSessionContext error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createDataSessionContext"'
+     	,I_MODULE=>'SYS'
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);  	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+
+ /*
+	call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityBase'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ */
+--START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createDataSessionContext"'
+	,I_MODULE=>'SYS'); 
+	  
+    SELECT USER_ID into aUSER_ID 
+    FROM "SECURITY"."cdp.security.data::userManagement.INFO_USER" 
+    WHERE "USER_NAME" = SESSION_USER;
+     
+     
+     DELETE FROM "SECURITY"."cdp.security.data::userManagement.DATA_SESSION_CONTEXT"
+     WHERE "USER_ID" = :aUSER_ID;
+     
+insert into "SECURITY"."cdp.security.data::userManagement.DATA_SESSION_CONTEXT"
+			("ID","XSSESSION_ID", "SESSION_TYPE","SESSION_VALUE" ,"USER_ID","COMMENT"  )
+			values("SECURITY"."cdp.security.data::dataSessionContextSeqId".NEXTVAL 
+			,:aXSSESSION_ID, :aSESSION_TYPE,:aSESSION_VALUE ,:aUSER_ID,:aCOMMENT  );
+	    	
+	    --如果成功添加,则log添加成功！
+	    aI_DETAIL := 'cdp.security.procedures::createDataSessionContext (type:'||:aSESSION_TYPE||' ,sessionValue:'||:aSESSION_VALUE||' ,userid:'||:aUSER_ID||') successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createDataSessionContext"'
+     	,I_MODULE=>'SYS'
+     	,I_MESSAGE=>'S000000029'
+     	,I_DETAIL=>:aI_DETAIL); 	
+    		
+END;

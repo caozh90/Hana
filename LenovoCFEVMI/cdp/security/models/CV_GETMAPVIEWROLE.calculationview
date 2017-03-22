@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_GETMAPVIEWROLE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_GETMAPVIEWROLE"/>
+  <localVariables>
+    <variable id="P_MODULE_ID" parameter="true">
+      <descriptions defaultDescription="P_MODULE_ID"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="0" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="AT_GETMAPVIEWROLE" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/cdp.security.models/attributeviews/AT_GETMAPVIEWROLE</resourceUri>
+    </DataSource>
+    <DataSource id="CV_GETMAPALL_USERROLE" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/cdp.security.models/calculationviews/CV_GETMAPALL_USERROLE</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="ID"/>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="VIEW_NAME"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="MODULE_NAME"/>
+        <viewAttribute id="ROLE_NAME"/>
+        <viewAttribute id="MAP_TYPE"/>
+        <viewAttribute id="USER_ID"/>
+        <viewAttribute id="DISPLAY_ROLE_NAME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#AT_GETMAPVIEWROLE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ID" source="ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VIEW_NAME" source="VIEW_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_NAME" source="MODULE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_NAME" source="ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAP_TYPE" source="MAP_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPLAY_ROLE_NAME" source="DISPLAY_ROLE_NAME"/>
+      </input>
+      <input node="#CV_GETMAPALL_USERROLE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="USER_ID" source="USER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+      </input>
+      <joinAttribute name="MODULE_ID"/>
+      <joinAttribute name="ROLE_ID"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_1">
+    <attributes>
+      <attribute id="ID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ID"/>
+        <keyMapping columnObjectName="Join_1" columnName="ID"/>
+      </attribute>
+      <attribute id="MODULE_ID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping columnObjectName="Join_1" columnName="MODULE_ID"/>
+      </attribute>
+      <attribute id="VIEW_NAME" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VIEW_NAME"/>
+        <keyMapping columnObjectName="Join_1" columnName="VIEW_NAME"/>
+      </attribute>
+      <attribute id="ROLE_ID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_ID"/>
+        <keyMapping columnObjectName="Join_1" columnName="ROLE_ID"/>
+      </attribute>
+      <attribute id="COMMENT" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Join_1" columnName="COMMENT"/>
+      </attribute>
+      <attribute id="MODULE_NAME" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODULE_NAME"/>
+        <keyMapping columnObjectName="Join_1" columnName="MODULE_NAME"/>
+      </attribute>
+      <attribute id="ROLE_NAME" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Join_1" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="MAP_TYPE" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAP_TYPE"/>
+        <keyMapping columnObjectName="Join_1" columnName="MAP_TYPE"/>
+      </attribute>
+      <attribute id="USER_ID" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="USER_ID"/>
+        <keyMapping columnObjectName="Join_1" columnName="USER_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="CDP_PRIVILEGE_NAME" hidden="false" order="10" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CDP_PRIVILEGE_NAME"/>
+        <keyCalculation datatype="NVARCHAR" length="300">
+          <formula>'securityBase'</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="243"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

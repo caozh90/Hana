@@ -1,0 +1,998 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_excess_pull::PRC_MAINTAIN_EXCESS_PULL" ( 
+    IN iv_id VARCHAR2(10), OUT on_exitcode DECIMAL
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "SZEBGVMI"
+    --READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_MAINTAIN_EXCESS_PULL              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141204                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+
+    AS
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_EXCESS_PULL';    
+      v_logic_proc_name   VARCHAR2 (40) := 'PRC_MAINTAIN_EXCESS_PULL';
+      logidi integer:=0;
+      logidj integer:=0;
+      
+      -- gv_logic_name        VARCHAR2(40) := 'MAINTAIN_EXCESS_PULL';
+       --V_QTY_MO             NUMBER(20,3);
+      v_flag           VARCHAR2 (20) := 'N';
+      v_matnr          VARCHAR2 (18);
+      v_qty_per        NUMBER;                   --added @2007-10-8 by wenfei
+      v_qty_prev_cut   NUMBER;
+      v_qty_left       NUMBER;
+      v_qty_pull       DECIMAL(13,3);
+      d_loc            VARCHAR2 (18);
+      d_type           VARCHAR2 (18);
+      d_bin            VARCHAR2 (18);
+      --v_qty_mismatch   material_mismatch.mismatch_qty%TYPE;       Deleted by wanby 20110302 PB201102280001
+      v_qty_cutback    DECIMAL(13,3);
+      v_dl_confirmed   SMALLINT;
+      v_src_sloc       VARCHAR2 (40);
+      v_dest_type      VARCHAR2 (40);
+      v_dest_loc       VARCHAR2 (40);
+      v_dest_bin       VARCHAR2 (40);
+      v_werks          VARCHAR2 (4);
+      V_ITEMDESC       VARCHAR2(45);            --2013.07.16 MEX CSE Project baiying Add    
+      
+          
+      index_i integer;
+      tmp_productionordid VARCHAR2(12);
+      tmp_werks VARCHAR2(4);
+      
+BEGIN
+
+         DECLARE CURSOR cur_mo FOR
+        (SELECT   productionordid, werks,
+                              SUM (cutback_qty) cutback_qty
+                         FROM PCDW.ECC_MO_CUTBACK mc
+                        WHERE werks IN (SELECT siteid
+                                          FROM conf_site_schedule
+                                         WHERE ID = :iv_id)
+                          AND cutback_qty IS NOT NULL
+                          AND status = 'PARTIAL'         -- add this @2007-9-4
+                     --and productionordid='L37X11018009'  in (select work_ord_num from ui_process_report)
+                     GROUP BY productionordid, werks);
+                     
+      DECLARE CURSOR cur_mo2 FOR
+         (SELECT   productionordid, werks, SUM (cutback_qty) cutback_qty
+              FROM PCDW.ECC_MO_CUTBACK mc
+             WHERE werks IN (SELECT siteid
+                               FROM conf_site_schedule
+                              WHERE ID = :iv_id)
+               AND cutback_qty IS NOT NULL
+               AND status IS NULL                        -- add this @2007-9-4
+               AND EXISTS (
+                      SELECT 'x'
+                        FROM mid_mo_line mid
+                       WHERE mid.productionordid = mc.productionordid
+                         AND mid.werks = mc.werks)
+                           --fllter out those MOs which haven't been generated
+          GROUP BY productionordid, werks);
+            
+       DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299;    --no data found         
+       DECLARE more_than_req CONDITION FOR SQL_ERROR_CODE 1300;    --Fetch returns more than requested number of rows(ORA-1422)    
+       DECLARE next_loop CONDITION FOR SQL_ERROR_CODE 10000;    --user defined exception for goto next loop;
+
+
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+        BEGIN
+         
+          on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+        END;
+    
+    
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');                                    
+                     
+      --execute immediate 'truncate table mid_mo_bom';
+
+      /*insert into mid_mo_bom(productionordid,matnr,qty_sum,werks)
+      select t.productionordid,t.matnr,sum(t.qty),t.werks from R3_MO_BOM t
+        where t.qty>=0
+          and t.werks in (select siteid from ud_site_schedule where id=iv_id)
+        group by t.productionordid,t.matnr,t.werks;
+
+      commit;*/
+
+      --added @2007-10-24 by wenfei for update status of the records which we don't need in R3_MO_CUTBACK
+      UPDATE PCDW.ECC_MO_CUTBACK mc
+         SET status = 'SYSTEM'
+       WHERE productionordid IN (SELECT DISTINCT productionordid
+                                            FROM cancel_mo
+                                           WHERE werks = mc.werks)
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id);
+
+      --added @2007-12-10 by wenfei
+      /*UPDATE r3_mo_cutback mc SET status = 'SYSTEM'
+        WHERE NOT EXISTS (SELECT 'x' FROM r3_mo_cutback mc2
+                           WHERE mc2.productionordid = mc.productionordid
+                             AND mc2.werks = mc.werks
+                             AND werks IN (SELECT siteid FROM ud_site_schedule WHERE ID = iv_id)
+                             AND EXISTS (SELECT 'xy' FROM mid_mo_line mid
+                                          WHERE mid.productionordid = mc2.productionordid))
+         AND werks IN (SELECT siteid FROM ud_site_schedule WHERE ID = iv_id);*/
+     -- COMMIT;
+
+      /*update mid_mo_bom t1 set qty_per=qty_sum/(select r.qty from R3_MO r where t1.productionordid=r.productionordid
+                                                                            and t1.werks=r.werks)
+       where t1.werks in (select siteid from ud_site_schedule where id=iv_id);
+      commit;*/
+
+      --for the cutback MO which status='PARTIAL'
+      -- we first process those MO with status='PARTIAL',because there might some dispatchs just be confirmed.
+      -- if we first process those fresh MOs whose status is NULL,then then some item will not be cutback
+    for cur_item as cur_mo do
+
+              
+        SELECT COUNT (*)
+           INTO v_dl_confirmed
+           FROM mid_mo_line mo
+          WHERE mo.productionordid = cur_item.productionordid
+            AND NOT EXISTS (
+                   SELECT 'x'
+                     FROM dispatch_list dl
+                    WHERE mo.pull_line_id = dl.pull_line_id
+                      AND mo.pull_header_id = dl.pull_header_id
+                      AND mo.werks = dl.werks
+                      AND dl.status = 'OLD')
+            AND mo.pull_type NOT IN
+                          ('CANDYMAN', 'PACKAGING', 'KANBAN', 'KANBANREPORT')
+            AND mo.werks = cur_item.werks;
+            
+            
+         IF v_dl_confirmed > 0
+                  -- some pull of current MO not be confirmed in DISPATCH_LIST
+         THEN
+            --NULL;
+         ELSE
+            UPDATE PCDW.ECC_MO_CUTBACK
+               SET status = 'COMPLETED'
+             WHERE productionordid = cur_item.productionordid
+               AND status = 'PARTIAL'
+               AND werks = cur_item.werks;
+
+            --COMMIT;
+         END IF;
+
+         v_matnr := ' ';
+        
+         tmp_productionordid:=cur_item.productionordid;
+         tmp_werks:=cur_item.werks;  
+        BEGIN
+        
+        DECLARE CURSOR cur_matnr FOR
+            (SELECT   mid.productionordid productionordid, mid.matnr matnr,
+                      mid.werks werks, mid.dept dept, SUM (mid.pull_qty) qty,
+                      mid.bomname bomname, mid.src_storage_loc src_loc,
+
+                      --mid.src_storage_type         SRC_TYPE,
+                      --mid.src_storage_bin          SRC_BIN,
+                      mid.dest_storage_loc dest_loc,
+                      mid.dest_storage_type dest_type,
+                      mid.dest_storage_bin dest_bin,
+                      case when mid.src_storage_loc is null or lp.priority is null then 999 else lp.priority end pri--get_priority (mid.src_storage_loc) pri
+                 FROM mid_mo_line mid left join loc_priority lp
+                 on mid.src_storage_loc=lp.location
+                WHERE mid.productionordid = :tmp_productionordid
+                  AND mid.werks = :tmp_werks
+                  AND mid.pull_qty > 0
+                  AND mid.pull_type NOT IN
+                          ('CANDYMAN', 'PACKAGING', 'KANBAN', 'KANBANREPORT')
+                  --and mid.mo_cutback_status is null  -- @2007-10-18 we dont need this!!!!
+                  AND mid.matnr NOT IN (
+                                   SELECT DISTINCT matnr
+                                              FROM excess_pull
+                                             WHERE productionordid =mid.productionordid)
+                                                           --added @2007-10-17
+             GROUP BY productionordid,
+                      matnr,
+                      werks,
+                      dept,
+                      bomname,
+                      src_storage_loc,     --SRC_STORAGE_TYPE,SRC_STORAGE_BIN,
+                      dest_storage_loc,
+                      dest_storage_type,
+                      dest_storage_bin,
+                      case when mid.src_storage_loc is null or lp.priority is null then 999 else lp.priority end --get_priority (mid.src_storage_loc)
+             ORDER BY werks, matnr, case when mid.src_storage_loc is null or lp.priority is null then 999 else lp.priority end /*pri*/);
+        
+        FOR cur_matnr_item AS cur_matnr do
+            DECLARE EXIT HANDLER FOR  next_loop
+            BEGIN
+            
+            END;
+                    
+            IF v_matnr <> cur_matnr_item.matnr
+            THEN
+               BEGIN
+
+                  DECLARE EXIT HANDLER FOR no_data_found
+                  BEGIN
+                    
+                    logidj:=0;
+  
+                   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		            (I_TYPE=>'WARN',I_LOGSID=>:logidj,
+		             I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+		             I_MESSAGE=>'Can not find the qtyper for MO: '
+                                       || cur_matnr_item.productionordid
+                                       || ' MATNR: '
+                                       || cur_matnr_item.matnr,
+		             I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                   
+                     v_flag := 'PENDING';
+                    -- GOTO nextloop;--comment added  by FangYuan
+                     signal next_loop; 
+                    
+                  END;
+                  DECLARE EXIT HANDLER FOR more_than_req
+                  BEGIN
+                    logidj:=0;
+                   CALL "EX_LOG"."cdp.log.procedures::logProc"
+                    (I_TYPE=>'WARN',I_LOGSID=>:logidj,
+                     I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                     I_MESSAGE=>'Multiple records for MO: '
+                                       || cur_matnr_item.productionordid
+                                       || ' MATNR: '
+                                       || cur_matnr_item.matnr,
+                     I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                   
+                     v_flag := 'PENDING';
+                    -- GOTO nextloop; --comment added  by FangYuan
+                     signal next_loop;               
+                  END;  
+                  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+                  BEGIN
+                  
+                  END;                
+               
+                  SELECT qty_per
+                    INTO v_qty_per
+                    FROM mid_mo_bom
+                   WHERE productionordid = cur_matnr_item.productionordid
+                     AND matnr = cur_matnr_item.matnr
+                     AND werks = cur_matnr_item.werks;
+               
+               END;
+               
+               
+               v_matnr := cur_matnr_item.matnr;
+               v_werks := cur_matnr_item.werks;
+               v_flag := 'N';
+               v_qty_left := cur_item.cutback_qty * v_qty_per;
+               v_qty_pull := cur_item.cutback_qty * v_qty_per;
+
+               SELECT COUNT (*)
+                 INTO v_dl_confirmed
+                 FROM mid_mo_line mid
+                WHERE NOT EXISTS (
+                         SELECT 'x'
+                           FROM dispatch_list dl
+                          WHERE dl.pull_line_id = mid.pull_line_id
+                            AND dl.pull_header_id = mid.pull_header_id
+                            AND dl.matnr = mid.matnr
+                            AND dl.werks = mid.werks
+                            AND dl.status = 'OLD')
+                  AND mid.productionordid = cur_matnr_item.productionordid
+                  AND mid.matnr = cur_matnr_item.matnr
+                  AND mid.pull_type NOT IN
+                          ('CANDYMAN', 'PACKAGING', 'KANBAN', 'KANBANREPORT')
+                  AND mid.werks = v_werks;
+
+               IF v_dl_confirmed > 0
+               THEN
+                  v_flag := 'PENDING';
+                  --DBMS_OUTPUT.PUT_LINE('There are some pull for '||cur_MATNR.Productionordid||' '||cur_MATNR.Matnr||' not be confirmed');
+                  --GOTO nextloop; --comment added  by FangYuan
+                  signal next_loop; 
+               END IF;
+
+              /*== Deleted by wanby 20110302 PB201102280001
+               --here we begin to change the logic
+               BEGIN
+                  SELECT mismatch_qty
+                    INTO v_qty_mismatch
+                    FROM material_mismatch
+                   WHERE matnr = cur_matnr.matnr AND werks = cur_matnr.werks;
+               EXCEPTION
+                  WHEN NO_DATA_FOUND
+                  THEN
+                     v_qty_mismatch := 0;
+               --DBMS_OUTPUT.PUT_LINE(cur_MATNR.Matnr||' not in MATERIAL_MISMATCH!!!');
+               END;
+
+               v_qty_pull :=
+                  CASE
+                     WHEN v_qty_pull - v_qty_mismatch > 0
+                        THEN v_qty_pull - v_qty_mismatch
+                     ELSE 0
+                  END;
+               ==*/
+
+               BEGIN
+                  DECLARE EXIT HANDLER FOR no_data_found
+                  BEGIN 
+                    v_qty_prev_cut := 0;
+                  END;              
+                  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+                  BEGIN
+                    logidj:=0;
+                   CALL "EX_LOG"."cdp.log.procedures::logProc"
+                    (I_TYPE=>'WARN',I_LOGSID=>:logidj,
+                     I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                     I_DETAIL=>iv_id||':'||'Failure'||to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512));                   
+                  
+                  END;                  
+                    
+                  SELECT ifnull(SUM (pull_qty), 0)
+                    INTO v_qty_prev_cut
+                    FROM excess_pull
+                   WHERE productionordid = cur_matnr_item.productionordid
+                     AND matnr = cur_matnr_item.matnr
+                     AND werks = cur_matnr_item.werks;
+                --and status = 'COMPLETED';
+               --group by dest_storage_loc;  --we don't the dest_storage_loc any more
+ 
+               END;
+               
+               IF v_qty_prev_cut < cur_matnr_item.qty
+               THEN
+                  IF v_qty_pull <= cur_matnr_item.qty - v_qty_prev_cut
+                                   --here V_QTY_LEFT still equal to V_QTY_PULL
+                  THEN
+                     v_qty_cutback := v_qty_left;
+                     v_qty_left := 0;
+                     v_flag := 'Y';
+                  ELSE     --now the mismatch_qty for currnet matnr equal to 0
+                     v_qty_cutback := cur_matnr_item.qty - v_qty_prev_cut;
+                     v_qty_left := v_qty_left - v_qty_cutback;
+                     v_qty_pull := v_qty_cutback;
+                     v_qty_prev_cut := 0;
+                  END IF;
+               ELSE
+                  v_qty_prev_cut := v_qty_prev_cut - cur_matnr_item.qty;
+                  --GOTO nextloop;--comment added  by FangYuan
+                  signal next_loop; 
+               END IF;
+            ELSEIF v_flag = 'Y' OR v_flag = 'PENDING'
+            THEN
+               --GOTO nextloop;--comment added  by FangYuan
+               signal next_loop; 
+            ELSE
+               --v_qty_pull := v_qty_left - v_qty_mismatch;     Deleted by wanby 20110302 PB201102280001
+               v_qty_pull := v_qty_left;
+
+               IF v_qty_prev_cut < cur_matnr_item.qty
+               THEN
+                  IF v_qty_pull <= cur_matnr_item.qty - v_qty_prev_cut
+                  THEN
+                     v_qty_cutback := v_qty_left;
+                     v_qty_left := 0;
+                     --V_QTY_PULL:=V_QTY_LEFT;
+                     v_flag := 'Y';
+                  ELSE
+                     v_qty_cutback := cur_matnr_item.qty - v_qty_prev_cut;
+                     v_qty_left := v_qty_left - v_qty_cutback;
+                     v_qty_pull := v_qty_cutback;
+                     v_qty_prev_cut := 0;
+                  END IF;
+               ELSE
+                  v_qty_prev_cut := v_qty_prev_cut - cur_matnr_item.qty;
+                  --GOTO nextloop;--comment added  by FangYuan
+                  signal next_loop; 
+               END IF;
+            /*V_QTY_CUTBACK:=V_QTY_LEFT;
+              V_QTY_LEFT:=0;*/
+            END IF;               
+            
+            /*  begin
+              select mismatch_qty into V_QTY_MISMATCH from MATERIAL_MISMATCH
+                 where matnr=cur_MATNR.Matnr and werks=cur_MATNR.Werks;
+              exception
+              when no_data_found
+              then
+              V_QTY_MISMATCH:=0;
+              --DBMS_OUTPUT.PUT_LINE(cur_MATNR.Matnr||' not in MATERIAL_MISMATCH!!!');
+              end;*/
+            v_src_sloc := cur_matnr_item.src_loc;
+            v_dest_bin := cur_matnr_item.dest_bin;
+            v_dest_loc := cur_matnr_item.dest_loc;
+            v_dest_type := cur_matnr_item.dest_type;
+            V_ITEMDESC := '';
+
+            /*IF V_SRC_SLOC in('MRNM', 'MRDG', 'MRCD','MRRT')
+            then
+                if V_DEST_TYPE in ('W11','W12','W13')
+                then
+                D_TYPE:='XC1';
+                D_LOC:='MRRT';
+                D_BIN:='NBKIT';
+                elsif V_DEST_TYPE in ('W21','W22','W23')
+                then
+                D_TYPE:='XC2';
+                D_LOC:='MRRT';
+                D_BIN:='NBKIT';
+                elsif V_DEST_TYPE ='W20'
+                then
+                D_TYPE:='XC3';
+
+                if V_SRC_SLOC='MRCD'
+                then
+                    D_LOC:='MRCD';
+                else
+                    D_LOC:='MRNM';
+                end if;
+
+                D_BIN:='OPT';
+                end if;
+            ELSE
+                if V_DEST_TYPE in ('W11','W12','W13')
+                then
+                D_TYPE:='XC1';
+                D_LOC:=V_SRC_SLOC;
+                D_BIN:='NBKIT';
+                elsif V_DEST_TYPE in ('W21','W22','W23')
+                then
+                D_TYPE:='XC2';
+                D_LOC:=V_SRC_SLOC;
+                D_BIN:='NBKIT';
+                elsif V_DEST_TYPE ='W20'
+                then
+                D_TYPE:='XC3';
+                D_LOC:=V_SRC_SLOC;
+                D_BIN:='OPT';
+                end if;
+            END IF;*/  --here we comment those hard coding out
+            --and get corresponding destination info from a line_to_excess_mapping table
+
+         /* Comment by wanby 20110913 fix the no data found in LINE_TO_EXCESS_DEST_MAPPING issue
+         SELECT dm.dest_type,dm.dest_loc,dm.dest_bin into
+                D_TYPE,  D_LOC,  D_BIN
+           FROM LINE_TO_EXCESS_DEST_MAPPING dm
+           WHERE dm.p_src_sto_loc=V_SRC_SLOC AND dm.p_dest_sto_type=V_DEST_TYPE
+             AND dm.logical_plant= V_WERKS  ;
+         */
+
+            begin
+                  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+                  BEGIN
+  
+                   logidj:=0;
+                   CALL "EX_LOG"."cdp.log.procedures::logProc"
+                    (I_TYPE=>'WARN',I_LOGSID=>:logidj,
+                     I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                     I_DETAIL=>iv_id||':'||'Failure! Not Found value in LINE_TO_EXCESS_DEST_MAPPING'||to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512));                   
+                     
+                     --goto nextloop;--comment added  by FangYuan
+                     signal next_loop; 
+                  END;   
+                     SELECT dm.dest_type,dm.dest_loc,dm.dest_bin
+                        into D_TYPE,  D_LOC,  D_BIN
+                        FROM LINE_TO_EXCESS_DEST_MAPPING dm
+                     WHERE dm.p_src_sto_loc=V_SRC_SLOC
+                       AND dm.p_dest_sto_type=V_DEST_TYPE
+                       AND dm.logical_plant= V_WERKS ;
+
+
+            end;            
+            
+           --2013.7.16 MEX CSE Project：For getting material description，relate with MST_ITEMSITEMASTER baiying AS
+             BEGIN
+                  DECLARE EXIT HANDLER FOR no_data_found-- no cutback record for current MATNR
+                  BEGIN
+                    V_ITEMDESC:='';
+                  END;                
+             
+                 SELECT DISTINCT ITEMDESC
+                 INTO V_ITEMDESC
+                 FROM ITEMSITEMASTER itm
+                 Where ITEM = cur_matnr_item.Matnr
+                 AND SITEID = cur_matnr_item.Werks
+                 AND SYS_ENT_STATE = 'ACTIVE'
+                 limit 1;
+
+             END;
+             
+             
+            --2013.7.16 MEX CSE Project：For getting material description，relate with MST_ITEMSITEMASTER baiying AE          
+
+            INSERT INTO excess_pull
+                        (productionordid, matnr_cutback_qty, pull_qty,
+                         matnr, src_storage_type, src_storage_bin,
+                         src_storage_loc, dest_storage_type,
+                         dest_storage_bin, dest_storage_loc, werks, dept,
+                         status,
+                         MATNR_DESCR,SYS_CREATED_BY,SYS_CREATED_DATE,SYS_AUTH_ID      --2013.7.16 MEX CSE Projec baiying Added
+                        )
+                 VALUES (cur_item.productionordid, v_qty_cutback, v_qty_pull,
+                         /*case when V_QTY_CUTBACK>=V_QTY_MISMATCH then V_QTY_CUTBACK-V_QTY_MISMATCH
+                                                                 else 0 end,*/
+                         cur_matnr_item.matnr, v_dest_type, v_dest_bin,
+                         v_dest_loc, d_type,
+                         d_bin,
+                               --cur_MATNR.Dest_Storage_Bin,
+                               d_loc, cur_matnr_item.werks, cur_matnr_item.dept,
+                         'COMPLETED',
+                         V_ITEMDESC,'maintain_excess_pull',current_timestamp,cur_matnr_item.werks     --2013.7.16 MEX CSE Projec baiying Added
+                        );  
+            --COMMIT;
+
+            --added for update mo_cutback_status in mid_mo_line @2007-10-15
+            IF v_qty_left > 0 OR cur_matnr_item.qty - v_qty_prev_cut = v_qty_pull
+            THEN
+               UPDATE mid_mo_line
+                  SET mo_cutback_status = 'COMPLETED'
+                WHERE productionordid = cur_matnr_item.productionordid
+                  AND matnr = cur_matnr_item.matnr
+                  AND werks = cur_matnr_item.werks
+                  AND dept = cur_matnr_item.dept
+                  AND bomname = cur_matnr_item.bomname
+                  AND src_storage_loc = cur_matnr_item.src_loc
+                  AND dest_storage_loc = cur_matnr_item.dest_loc
+                  AND dest_storage_type = cur_matnr_item.dest_type
+                  AND dest_storage_bin = cur_matnr_item.dest_bin
+                  AND mo_cutback_status IS NULL;
+
+               --COMMIT;
+            END IF;
+
+            /*== Deleted by wanby 20110302 PB201102280001
+            IF v_qty_pull > 0
+            THEN
+               UPDATE material_mismatch
+                  SET mismatch_qty = 0
+                WHERE matnr = cur_matnr.matnr AND werks = cur_matnr.werks
+                                                                         --and MISMATCH_QTY<=V_QTY_CUTBACK
+               ;
+            ELSE
+               UPDATE material_mismatch
+                  SET mismatch_qty = mismatch_qty - v_qty_cutback
+                WHERE matnr = cur_matnr.matnr AND werks = cur_matnr.werks
+                                                                         --and MISMATCH_QTY>V_QTY_CUTBACK
+               ;
+            END IF;
+
+            COMMIT;
+            ==*/            
+            --GOTO finished;--comment added  by FangYuan
+
+            --<<nextloop>>--comment added  by FangYuan
+            --dbms_output.put_line('MO:'||cur_MATNR.Productionordid||',  BOMNAME:'||cur_MATNR.Bomname||'  not in R3_MO');
+            --NULL;--comment added  by FangYuan
+
+            --<<finished>>--comment added  by FangYuan
+            --NULL; --comment added  by FangYuan      
+        END FOR;
+        
+        END;
+        
+         --<<next_mo>> --comment added  by FangYuan 
+         --NULL; --comment added  by FangYuan 
+     end for;
+     ---------------------------------------------------------------------------------------------------
+     
+    for cur_item2 as cur_mo2 do
+         SELECT COUNT (*)
+           INTO v_dl_confirmed
+           FROM mid_mo_line mo
+          WHERE mo.productionordid = cur_item2.productionordid
+            AND NOT EXISTS (
+                   SELECT 'x'
+                     FROM dispatch_list dl
+                    WHERE mo.pull_line_id = dl.pull_line_id
+                      AND mo.pull_header_id = dl.pull_header_id
+                      AND mo.werks = dl.werks
+                      AND dl.status = 'OLD')
+            AND mo.pull_type NOT IN
+                          ('CANDYMAN', 'PACKAGING', 'KANBAN', 'KANBANREPORT')
+            AND mo.werks = cur_item2.werks;
+
+         IF v_dl_confirmed >0
+                  -- some pull of current MO not be confirmed in DISPATCH_LIST
+         THEN
+            UPDATE PCDW.ECC_MO_CUTBACK
+               SET status ='PARTIAL'
+                                  --added this new status @2007-9-27 by wenfei
+             WHERE productionordid = cur_item2.productionordid
+               AND status IS NULL                          --added @2007-10-17
+               AND werks = cur_item2.werks;
+
+            --COMMIT;
+         ELSE
+            UPDATE PCDW.ECC_MO_CUTBACK
+               SET status = 'COMPLETED'
+             WHERE productionordid = cur_item2.productionordid
+               AND status IS NULL                          --added @2007-10-17
+               AND werks = cur_item2.werks;
+
+            --COMMIT;
+         END IF;
+
+         v_matnr := ' ';
+         tmp_productionordid:=cur_item2.productionordid;
+         tmp_werks:=cur_item2.werks;  
+         
+        BEGIN
+        DECLARE CURSOR cur_matnr2 FOR
+            (SELECT   mid.productionordid productionordid, mid.matnr matnr,
+                      mid.werks werks, mid.dept dept, SUM (mid.pull_qty) qty,
+                      mid.bomname bomname, mid.src_storage_loc src_loc,
+
+                      --mid.src_storage_type         SRC_TYPE,
+                      --mid.src_storage_bin          SRC_BIN,
+                      mid.dest_storage_loc dest_loc,
+                      mid.dest_storage_type dest_type,
+                      mid.dest_storage_bin dest_bin,
+                      case when mid.src_storage_loc is null or lp.priority is null then 999 else lp.priority end pri--get_priority (mid.src_storage_loc) pri 
+                 FROM mid_mo_line mid left join loc_priority lp
+                 on mid.src_storage_loc=lp.location
+                WHERE mid.productionordid = :tmp_productionordid
+                  --and mid.matnr='0000042T5008'------------------------------------------>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                  AND mid.werks = :tmp_werks
+                  AND mid.pull_qty > 0
+                  AND mid.pull_type NOT IN
+                          ('CANDYMAN', 'PACKAGING', 'KANBAN', 'KANBANREPORT')
+             --and mid.mo_cutback_status is null  @2007-10-18 we dont need this !!!!!
+             GROUP BY productionordid,
+                      matnr,
+                      werks,
+                      dept,
+                      bomname,
+                      src_storage_loc,     --SRC_STORAGE_TYPE,SRC_STORAGE_BIN,
+                      dest_storage_loc,
+                      dest_storage_type,
+                      dest_storage_bin,
+                      case when mid.src_storage_loc is null or lp.priority is null then 999 else lp.priority end --get_priority (mid.src_storage_loc)
+             ORDER BY matnr, case when mid.src_storage_loc is null or lp.priority is null then 999 else lp.priority end /*pri*/);
+             
+       FOR cur_matnr_item2 as cur_matnr2 do
+       
+        DECLARE EXIT HANDLER FOR next_loop
+        BEGIN
+       
+        END;
+        
+            IF v_matnr <> cur_matnr_item2.matnr
+            THEN
+               BEGIN
+               
+                  DECLARE EXIT HANDLER FOR no_data_found
+                  BEGIN
+                   logidj:=0;
+                   CALL "EX_LOG"."cdp.log.procedures::logProc"
+                    (I_TYPE=>'WARN',I_LOGSID=>:logidj,
+                     I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                     I_MESSAGE=>'Can not find the qtyper for MO: '
+                                       || cur_matnr_item2.productionordid
+                                       || ' MATNR: '
+                                       || cur_matnr_item2.matnr,
+                     I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                   
+                     v_flag := 'PENDING';
+                    -- GOTO nextloop;--comment added  by FangYuan
+                     signal next_loop; 
+                    
+                  END;
+                  DECLARE EXIT HANDLER FOR more_than_req
+                  BEGIN
+                    logidj:=0;
+                   CALL "EX_LOG"."cdp.log.procedures::logProc"
+                    (I_TYPE=>'WARN',I_LOGSID=>:logidj,
+                     I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                     I_MESSAGE=>'Multiple records for MO: '
+                                       || cur_matnr_item2.productionordid
+                                       || ' MATNR: '
+                                       || cur_matnr_item2.matnr,
+                     I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                   
+                     v_flag := 'PENDING';
+                    -- GOTO nextloop; --comment added  by FangYuan
+                     signal next_loop;               
+                  END;  
+                  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+                  BEGIN
+                  
+                  END;                               
+              
+                  SELECT qty_per
+                    INTO v_qty_per
+                    FROM mid_mo_bom
+                   WHERE productionordid = cur_matnr_item2.productionordid
+                     AND matnr = cur_matnr_item2.matnr
+                     AND werks = cur_matnr_item2.werks;
+               
+               END;
+               
+               v_matnr := cur_matnr_item2.matnr;
+               v_werks := cur_matnr_item2.werks;
+               v_flag := 'N';
+               v_qty_left := cur_item2.cutback_qty * v_qty_per;
+               v_qty_pull := cur_item2.cutback_qty * v_qty_per;
+
+               SELECT COUNT (*)
+                 INTO v_dl_confirmed
+                 FROM mid_mo_line mid
+                WHERE NOT EXISTS (
+                         SELECT 'x'
+                           FROM dispatch_list dl
+                          WHERE dl.pull_line_id = mid.pull_line_id
+                            AND dl.pull_header_id = mid.pull_header_id
+                            AND dl.matnr = mid.matnr
+                            AND dl.werks = mid.werks
+                            AND dl.status = 'OLD')
+                  AND mid.productionordid = cur_matnr_item2.productionordid
+                  AND mid.matnr = cur_matnr_item2.matnr
+                  AND mid.pull_type NOT IN
+                          ('CANDYMAN', 'PACKAGING', 'KANBAN', 'KANBANREPORT')
+                  AND mid.werks = v_werks;
+
+               IF v_dl_confirmed > 0
+               THEN
+                  v_flag := 'PENDING';
+                  --DBMS_OUTPUT.PUT_LINE('There are some pull for '||cur_MATNR.Productionordid||' '||cur_MATNR.Matnr||' not be confirmed');
+                  --GOTO nextloop; --comment added  by FangYuan
+                  signal next_loop; 
+               END IF;
+
+               /*== Deleted by wanby 20110302  PB201102280001
+
+               --here we begin to change the logic
+               BEGIN
+                  SELECT mismatch_qty
+                    INTO v_qty_mismatch
+                    FROM material_mismatch
+                   WHERE matnr = cur_matnr.matnr AND werks = cur_matnr.werks;
+               EXCEPTION
+                  WHEN NO_DATA_FOUND
+                  THEN
+                     v_qty_mismatch := 0;
+               --DBMS_OUTPUT.PUT_LINE(cur_MATNR.Matnr||' not in MATERIAL_MISMATCH!!!');
+               END;
+
+               v_qty_pull :=
+                  CASE
+                     WHEN v_qty_pull - v_qty_mismatch > 0
+                        THEN v_qty_pull - v_qty_mismatch
+                     ELSE 0
+                  END;
+               ==*/
+
+              BEGIN
+	              DECLARE EXIT HANDLER FOR no_data_found
+	              BEGIN
+	                v_qty_prev_cut := 0;
+	              END;
+	              DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	              BEGIN
+	                    logidj:=0;
+	                   CALL "EX_LOG"."cdp.log.procedures::logProc"
+	                    (I_TYPE=>'WARN',I_LOGSID=>:logidj,
+	                     I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+	                     I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                   
+	              END; 
+              
+                  SELECT IFNULL (SUM (pull_qty), 0)
+                    INTO v_qty_prev_cut
+                    FROM excess_pull
+                   WHERE productionordid = cur_matnr_item2.productionordid
+                     AND matnr = cur_matnr_item2.matnr
+                     AND werks = cur_matnr_item2.werks;
+                --and status = 'COMPLETED';
+               --group by dest_storage_loc;  --we don't the dest_storage_loc any more
+               
+               END;
+
+               IF v_qty_prev_cut < cur_matnr_item2.qty
+               THEN
+                  IF v_qty_pull <= cur_matnr_item2.qty - v_qty_prev_cut
+                                   --here V_QTY_LEFT still equal to V_QTY_PULL
+                  THEN
+                     v_qty_cutback := v_qty_left;
+                     v_qty_left := 0;
+                     v_flag := 'Y';
+                  ELSE     --now the mismatch_qty for currnet matnr equal to 0
+                     v_qty_cutback := cur_matnr_item2.qty - v_qty_prev_cut;
+                     v_qty_left := v_qty_left - v_qty_cutback;
+                     v_qty_pull := v_qty_cutback;
+                     v_qty_prev_cut := 0;
+                  END IF;
+               ELSE
+                  v_qty_prev_cut := v_qty_prev_cut - cur_matnr_item2.qty;
+                   --GOTO nextloop; --comment added  by FangYuan
+                  signal next_loop; 
+               END IF;
+            ELSEIF v_flag = 'Y' OR v_flag = 'PENDING'
+            THEN
+                  --GOTO nextloop; --comment added  by FangYuan
+                  signal next_loop; 
+            ELSE
+               --v_qty_pull := v_qty_left - v_qty_mismatch;     Deleted by wanby 20110302 PB201102280001
+               v_qty_pull := v_qty_left;
+
+               IF v_qty_prev_cut < cur_matnr_item2.qty
+               THEN
+                  IF v_qty_pull <= cur_matnr_item2.qty - v_qty_prev_cut
+                  THEN
+                     v_qty_cutback := v_qty_left;
+                     v_qty_left := 0;
+                     --V_QTY_PULL:=V_QTY_LEFT;
+                     v_flag := 'Y';
+                  ELSE
+                     v_qty_cutback := cur_matnr_item2.qty - v_qty_prev_cut;
+                     v_qty_left := v_qty_left - v_qty_cutback;
+                     v_qty_pull := v_qty_cutback;
+                     v_qty_prev_cut := 0;
+                  END IF;
+               ELSE
+                  v_qty_prev_cut := v_qty_prev_cut - cur_matnr_item2.qty;
+                  --GOTO nextloop; --comment added  by FangYuan
+                  signal next_loop; 
+               END IF;
+            /*V_QTY_CUTBACK:=V_QTY_LEFT;
+              V_QTY_LEFT:=0;*/
+            END IF;
+            /*  begin
+              select mismatch_qty into V_QTY_MISMATCH from MATERIAL_MISMATCH
+                 where matnr=cur_MATNR.Matnr and werks=cur_MATNR.Werks;
+              exception
+              when no_data_found
+              then
+              V_QTY_MISMATCH:=0;
+              --DBMS_OUTPUT.PUT_LINE(cur_MATNR.Matnr||' not in MATERIAL_MISMATCH!!!');
+              end;*/
+            v_src_sloc := cur_matnr_item2.src_loc;
+            v_dest_bin := cur_matnr_item2.dest_bin;
+            v_dest_loc := cur_matnr_item2.dest_loc;
+            v_dest_type := cur_matnr_item2.dest_type;
+            V_ITEMDESC := '';
+
+
+         /* Comment by wanby 20110913 fix the no data found in LINE_TO_EXCESS_DEST_MAPPING issue
+          SELECT dm.dest_type,dm.dest_loc,dm.dest_bin into
+                D_TYPE,  D_LOC,  D_BIN
+           FROM LINE_TO_EXCESS_DEST_MAPPING dm
+           WHERE dm.p_src_sto_loc=V_SRC_SLOC AND dm.p_dest_sto_type=V_DEST_TYPE
+             AND dm.logical_plant= V_WERKS  ;
+         */
+
+            begin
+                  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+                  BEGIN
+                        logidj:=0;
+                       CALL "EX_LOG"."cdp.log.procedures::logProc"
+                        (I_TYPE=>'WARN',I_LOGSID=>:logidj,
+                         I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                         I_DETAIL=>iv_id||':'||'Failure! Not Found value in LINE_TO_EXCESS_DEST_MAPPING.'||to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512));                   
+                       
+                        --GOTO nextloop; --comment added  by FangYuan
+                        signal next_loop; 
+                  END;             
+            
+                     SELECT dm.dest_type,dm.dest_loc,dm.dest_bin
+                        into D_TYPE,  D_LOC,  D_BIN
+                        FROM LINE_TO_EXCESS_DEST_MAPPING dm
+                     WHERE dm.p_src_sto_loc=V_SRC_SLOC
+                       AND dm.p_dest_sto_type=V_DEST_TYPE
+                       AND dm.logical_plant= V_WERKS ;
+
+            end;
+
+           --2013.7.16 MEX CSE Project：For getting material description，relate with MST_ITEMSITEMASTER baiying AS
+             BEGIN
+                  DECLARE EXIT HANDLER FOR no_data_found
+                  BEGIN
+                    V_ITEMDESC:='';
+                  END;             
+             
+                 SELECT DISTINCT ITEMDESC
+                 INTO V_ITEMDESC
+                 FROM ITEMSITEMASTER itm
+                 Where ITEM = cur_matnr_item2.Matnr
+                 AND SITEID = cur_matnr_item2.Werks
+                 AND SYS_ENT_STATE = 'ACTIVE'
+                 limit 1;
+            END;
+
+            INSERT INTO excess_pull
+                        (productionordid, matnr_cutback_qty, pull_qty,
+                         matnr, src_storage_type, src_storage_bin,
+                         src_storage_loc, dest_storage_type,
+                         dest_storage_bin, dest_storage_loc, werks, dept,
+                         status,
+                         MATNR_DESCR,SYS_CREATED_BY,SYS_CREATED_DATE,SYS_AUTH_ID   --2013.7.16 MEX CSE Project baiying Added
+                        )
+                 VALUES (cur_item2.productionordid, v_qty_cutback, v_qty_pull,
+                         /*case when V_QTY_CUTBACK>=V_QTY_MISMATCH then V_QTY_CUTBACK-V_QTY_MISMATCH
+                                                                 else 0 end,*/
+                         cur_matnr_item2.matnr, v_dest_type, v_dest_bin,
+                         v_dest_loc, d_type,
+                         d_bin,
+                               --cur_MATNR.Dest_Storage_Bin,
+                               d_loc, cur_matnr_item2.werks, cur_matnr_item2.dept,
+                         'COMPLETED',
+                         V_ITEMDESC,'maintain_excess_pull',CURRENT_TIMESTAMP,cur_matnr_item2.werks   --2013.7.16 MEX CSE Project baiying Added
+                        );
+
+           -- COMMIT;
+
+            --added for update mo_cutback_status in mid_mo_line @2007-10-15
+            IF v_qty_left > 0 OR cur_matnr_item2.qty - v_qty_prev_cut = v_qty_pull
+            THEN
+               UPDATE mid_mo_line
+                  SET mo_cutback_status = 'COMPLETED'
+                WHERE productionordid = cur_matnr_item2.productionordid
+                  AND matnr = cur_matnr_item2.matnr
+                  AND werks = cur_matnr_item2.werks
+                  AND dept = cur_matnr_item2.dept
+                  AND bomname = cur_matnr_item2.bomname
+                  AND src_storage_loc = cur_matnr_item2.src_loc
+                  AND dest_storage_loc = cur_matnr_item2.dest_loc
+                  AND dest_storage_type = cur_matnr_item2.dest_type
+                  AND dest_storage_bin = cur_matnr_item2.dest_bin
+                  AND mo_cutback_status IS NULL;
+
+               --COMMIT;
+            END IF;
+
+            /*== Deleted by wanby 20110302 PB201102280001
+
+            IF v_qty_pull > 0
+            THEN
+               UPDATE material_mismatch
+                  SET mismatch_qty = 0
+                WHERE matnr = cur_matnr.matnr AND werks = cur_matnr.werks
+                                                                         --and MISMATCH_QTY<=V_QTY_CUTBACK
+               ;
+            ELSE
+               UPDATE material_mismatch
+                  SET mismatch_qty = mismatch_qty - v_qty_cutback
+                WHERE matnr = cur_matnr.matnr AND werks = cur_matnr.werks
+                                                                         --and MISMATCH_QTY>V_QTY_CUTBACK
+               ;
+            END IF;
+
+            COMMIT;
+            ==*/
+           -- GOTO finished;--comment added  by FangYuan
+
+            --<<nextloop>>--comment added  by FangYuan
+            --dbms_output.put_line('MO:'||cur_MATNR.Productionordid||',  BOMNAME:'||cur_MATNR.Bomname||'  not in R3_MO');
+            --NULL;--comment added  by FangYuan
+
+            --<<finished>>--comment added  by FangYuan
+            --NULL;--comment added  by FangYuan
+
+
+       END FOR;
+
+    END;
+    
+         --<<next_mo>>--comment added  by FangYuan
+        -- NULL;--comment added  by FangYuan
+    end for;
+    --COMMIT;
+
+    on_exitcode := 0;
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!'); 
+      
+END;

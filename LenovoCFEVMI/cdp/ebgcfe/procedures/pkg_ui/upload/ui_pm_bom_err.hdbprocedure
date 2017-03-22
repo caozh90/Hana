@@ -1,0 +1,67 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bom_err" ( 
+	IN error_message	varchar(4096),
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int	,
+	IN CYCLE NVARCHAR(40),
+	IN PRODUCT_GROUP NVARCHAR(10),
+	IN OEM_NAME NVARCHAR(40),
+	IN ITEM NVARCHAR(20),
+	IN BS_PART NVARCHAR(20),
+	IN PART_QTY NVARCHAR(400)
+	) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      ui_pm_bom_err
+*function    :      upload data   
+*input       ：              error_message&business_name etc
+*output      :                
+*author      :      leon Bian
+*CreateDate  :      2015.10.10
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	business_code varchar(20);
+	table_name varchar(1000) := 'UI_PM_BOM';
+	PRODUCT_GROUP NVARCHAR(20) :='EBG';
+	currentUser varchar(100);
+	create_DATE LONGDATE;
+	privilegeExists  NVARCHAR(300)  ;
+BEGIN
+    --添加business信息
+	business_code := :SEQ;
+		
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_DATE INTO create_DATE FROM DUMMY;
+		
+  	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+		:table_name || :business_code,:business_name,0,1,:table_name);   
+			
+	--记录upload的错误
+    INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+    VALUES("EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+    :table_name || :business_code,:position,:error_message,:table_name,:business_name); 
+     	
+    --详细记录upload的数据信息
+    insert into "EBGCFE"."UI_PM_BOM_ERR_DETAIL"(CODE,POSITION,CYCLE,PRODUCT_GROUP,
+	OEM_NAME,ITEM,
+	ITEM_DESC,
+	ITEM_TYPE,
+	BS_PART,
+	COMMODITY,
+	PART_DESC,
+	PART_QTY,
+	SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY)
+	VALUES(:table_name || :business_code,:position,:CYCLE,:PRODUCT_GROUP,
+	:OEM_NAME,:ITEM,
+	(select ITEM_DESC from UI_ITEM WHERE ITEM = :ITEM AND PRODUCT_GROUP = :PRODUCT_GROUP),--ITEM_DESC
+	(select ITEM_TYPE from UI_ITEM WHERE ITEM = :ITEM AND PRODUCT_GROUP = :PRODUCT_GROUP),--ITEM_TYPE
+	:BS_PART,
+	(select COMMODITY from UI_PM_BS_PART WHERE BS_PART = :BS_PART AND PRODUCT_GROUP = :PRODUCT_GROUP and OEM_NAME = :OEM_NAME),--COMMODITY
+	(select ITEM_DESC from UI_ITEM WHERE ITEM = :BS_PART AND PRODUCT_GROUP = :PRODUCT_GROUP),--PART_DESC
+	:PART_QTY,
+	:create_DATE,:currentUser,:create_DATE,:currentUser);
+END;

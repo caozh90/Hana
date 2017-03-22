@@ -1,0 +1,95 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::updateUiCostFlag" 
+( 
+	 IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COSTFLAG_T",
+	 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COSTFLAG_T",
+	 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS
+		aI_DETAIL NVARCHAR(300) :='';
+	    alogide INTEGER :=0;
+	    resourceExists BIGINT;
+	    privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+/*****************************    
+*name      :                     updateUiCostFlag
+*function    :               
+*input     ：               oldInfo/newInfo
+*output     :    errorInfo            
+*author     :                chenwh3
+*UpdateDate    :             2015.07.24
+*DeleteDate  : 
+*CreateDate:       
+ *****************************/
+ 
+	DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN 
+    		aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::updateUiCostFlag error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::updateUiCostFlag'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy; 
+    END ;    
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_cost_flag::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    	errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF; 
+        
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::updateUiCostFlag'
+       ,I_MODULE=>'EBGCFE'
+   	);
+   	SELECT COUNT(*) into resourceExists FROM :oldInfo a,:newInfo b 
+   		where a.sbb_type = b.sbb_type   and a.vk = b.vk AND a.cost_flag = b.cost_flag;
+   	if resourceExists > 0
+   	then
+   		return;
+   	end if;
+---update into "EBGCFE"."UI_COSTFLAG"
+	update "EBGCFE"."UI_COSTFLAG" a set  (a.cost_flag,a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY,a.ACTION)  =
+		(b.cost_flag,CURRENT_TIMESTAMP,SESSION_USER,'update')
+		from :newinfo b where a.sbb_type = b.sbb_type and a.vk = b.vk;
+		
+		
+  --INSERT INTO UI_COSTFLAG_LOG TABLE
+    insert into "EBGCFE"."UI_COSTFLAG_LOG"(PRODUCT_GROUP,SBB_TYPE,VK,COST_FLAG,AT_ACTION,AT_MODIFIED_BY,AT_MODIFIED_ON,AT_MILLIS)SELECT 
+		    'EBG',
+		    a.SBB_TYPE,
+		    a.VK,
+		    a.COST_FLAG,
+		    'update',
+	 		SESSION_USER,
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a; 	
+		
+    
+	aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::updateUiCostFlag successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::updateUiCostFlag'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+END;

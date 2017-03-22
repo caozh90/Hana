@@ -1,0 +1,118 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part_no::deleteUiPmBsPartNo" ( 
+    IN delInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_BS_PART_NO_DEL",
+    OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+    
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiPmBsPartNo
+*function    :               
+*input       ：              delInfo
+*output      :      errorInfo            
+*author      :      zhaodan1
+*CreateDate  :      2016.07.04
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part_no::deleteUiPmBsPartNo error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part_no::deleteUiPmBsPartNo'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+   call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_pm_bs_part_no::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part_no::deleteUiPmBsPartNo'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+ 
+
+deleted_rec = 
+   select distinct A.* from  "EBGCFE"."PM_UI_BS_PART" AS A , :delInfo AS B 
+          WHERE B.PART_NO = A.PART_NO;
+                
+-- delete record from table	  	
+DELETE FROM "EBGCFE"."PM_UI_BS_PART" AS A
+  WHERE EXISTS ( SELECT 1 FROM :deleted_rec 
+                  WHERE PART_NO = A.PART_NO
+                      ); 
+  
+if ::rowcount <= 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';*/
+	 
+	 RETURN;
+	 
+end if;	
+
+
+
+--insert log table
+
+INSERT INTO "EBGCFE"."PM_UI_BS_PART_LOG"(
+		  PART_NO,PART_DESC,
+		  CREATED_BY,CREATION_DATE,
+		  AT_MODIFIED_BY,
+		  AT_ACTION,
+		  AT_MODIFIED_ON,
+		  AT_MILLIS		
+	 )SELECT 
+		 a.PART_NO,a.PART_DESC,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		SESSION_USER,
+		'delete',
+		CURRENT_TIMESTAMP,
+		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+	  FROM :deleted_rec a;
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part_no::deleteUiPmBsPartNo successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part_no::deleteUiPmBsPartNo'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+     errorInfo = select 200 as http_status_code, 
+     		'SUCCESS' ERROR_MESSAGE, 
+     		'' DETAIL from dummy;	
+     	
+END;

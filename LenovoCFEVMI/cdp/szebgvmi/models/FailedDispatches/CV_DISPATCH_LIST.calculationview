@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_DISPATCH_LIST" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_DISPATCH_LIST"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="DISPATCH_LIST" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SZEBGVMI" columnObjectName="DISPATCH_LIST"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="WERKS"/>
+        <viewAttribute id="PULL_LINE_ID"/>
+        <viewAttribute id="PULL_HEADER_ID"/>
+        <viewAttribute id="SRC_STORAGE_TYPE"/>
+        <viewAttribute id="SRC_STORAGE_LOC"/>
+        <viewAttribute id="SRC_STORAGE_BIN"/>
+        <viewAttribute id="DEST_STORAGE_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_LOC"/>
+        <viewAttribute id="DEST_STORAGE_BIN"/>
+        <viewAttribute id="LOI_STORAGE_TYPE"/>
+        <viewAttribute id="LOI_STORAGE_BIN"/>
+        <viewAttribute id="SA_NUMBER"/>
+        <viewAttribute id="INVENTORY_TYPE"/>
+        <viewAttribute id="LIFNR"/>
+        <viewAttribute id="WHS_NO"/>
+        <viewAttribute id="LINE_QTY"/>
+        <viewAttribute id="LOI_QTY"/>
+        <viewAttribute id="DISPATCH_QTY"/>
+        <viewAttribute id="DIFFERENCE_QTY"/>
+        <viewAttribute id="DEPT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="STATUS"/>
+        <viewAttribute id="SA_LINE_ID"/>
+        <viewAttribute id="SYS_SOURCE"/>
+        <viewAttribute id="PULL_TYPE"/>
+        <viewAttribute id="UNRESERVED_QTY"/>
+        <viewAttribute id="SHIPPED_DATE_RAW"/>
+        <viewAttribute id="REASON_CODE"/>
+        <viewAttribute id="HEADER_LIFNR"/>
+        <viewAttribute id="MISMATCH_CAL_STATUS"/>
+        <viewAttribute id="SYS_TIMESTAMP_RAW"/>
+        <viewAttribute id="ECC_STEP"/>
+        <viewAttribute id="TR_NUMBER"/>
+        <viewAttribute id="TR_ITEM_NUMBER"/>
+        <viewAttribute id="MATERIAL_DOCUMENT_YEAR"/>
+        <viewAttribute id="MATERIAL_DOCUMENT"/>
+        <viewAttribute id="TPL_ID"/>
+        <viewAttribute id="MATNR_DESCR"/>
+        <viewAttribute id="DELIVERY_DATE_RAW"/>
+        <viewAttribute id="SYS_CREATED_DATE_RAW"/>
+        <viewAttribute id="SYS_AUTH_ID"/>
+        <viewAttribute id="SYS_CREATED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE_RAW"/>
+        <viewAttribute id="DEST_WERKS"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="SHIPPED_DATE" length="20">
+          <formula>string(seconddate(&quot;SHIPPED_DATE_RAW&quot;))</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="SYS_TIMESTAMP" length="20">
+          <formula>string(seconddate(&quot;SYS_TIMESTAMP_RAW&quot;))</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="DELIVERY_DATE" length="20">
+          <formula>string(seconddate(&quot;DELIVERY_DATE_RAW&quot;))</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="SYS_CREATED_DATE" length="20">
+          <formula>string(seconddate(&quot;SYS_CREATED_DATE_RAW&quot;))</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_DATE" length="20">
+          <formula>string(seconddate(&quot;SYS_LAST_MODIFIED_DATE_RAW&quot;))</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#DISPATCH_LIST">
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_LINE_ID" source="PULL_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_TYPE" source="SRC_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_LOC" source="SRC_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_BIN" source="SRC_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_TYPE" source="DEST_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_BIN" source="DEST_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOI_STORAGE_TYPE" source="LOI_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOI_STORAGE_BIN" source="LOI_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_NUMBER" source="SA_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="INVENTORY_TYPE" source="INVENTORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LIFNR" source="LIFNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WHS_NO" source="WHS_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINE_QTY" source="LINE_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOI_QTY" source="LOI_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPATCH_QTY" source="DISPATCH_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DIFFERENCE_QTY" source="DIFFERENCE_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEPT" source="DEPT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_LINE_ID" source="SA_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_SOURCE" source="SYS_SOURCE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_TYPE" source="PULL_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UNRESERVED_QTY" source="UNRESERVED_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SHIPPED_DATE_RAW" source="SHIPPED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REASON_CODE" source="REASON_CODE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="HEADER_LIFNR" source="HEADER_LIFNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MISMATCH_CAL_STATUS" source="MISMATCH_CAL_STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_TIMESTAMP_RAW" source="SYS_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ECC_STEP" source="ECC_STEP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TR_NUMBER" source="TR_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TR_ITEM_NUMBER" source="TR_ITEM_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATERIAL_DOCUMENT_YEAR" source="MATERIAL_DOCUMENT_YEAR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATERIAL_DOCUMENT" source="MATERIAL_DOCUMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TPL_ID" source="TPL_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR_DESCR" source="MATNR_DESCR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELIVERY_DATE_RAW" source="DELIVERY_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE_RAW" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_AUTH_ID" source="SYS_AUTH_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_BY" source="SYS_CREATED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE_RAW" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_WERKS" source="DEST_WERKS"/>
+      </input>
+      <filter>&quot;STATUS&quot; ='ERROR'</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="SHIPPED_DATE" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SHIPPED_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SHIPPED_DATE"/>
+      </attribute>
+      <attribute id="SYS_TIMESTAMP" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_TIMESTAMP"/>
+      </attribute>
+      <attribute id="DELIVERY_DATE" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DELIVERY_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DELIVERY_DATE"/>
+      </attribute>
+      <attribute id="SYS_CREATED_DATE" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_CREATED_DATE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="WERKS" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="WERKS"/>
+      </attribute>
+      <attribute id="PULL_LINE_ID" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_LINE_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PULL_LINE_ID"/>
+      </attribute>
+      <attribute id="PULL_HEADER_ID" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_HEADER_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PULL_HEADER_ID"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_TYPE" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SRC_STORAGE_TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SRC_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_LOC" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SRC_STORAGE_LOC"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SRC_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_BIN" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SRC_STORAGE_BIN"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SRC_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_TYPE" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEST_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_LOC" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_LOC"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEST_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_BIN" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_BIN"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEST_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="LOI_STORAGE_TYPE" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOI_STORAGE_TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOI_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="LOI_STORAGE_BIN" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOI_STORAGE_BIN"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOI_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="SA_NUMBER" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SA_NUMBER"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SA_NUMBER"/>
+      </attribute>
+      <attribute id="INVENTORY_TYPE" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="INVENTORY_TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="INVENTORY_TYPE"/>
+      </attribute>
+      <attribute id="LIFNR" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LIFNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LIFNR"/>
+      </attribute>
+      <attribute id="WHS_NO" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WHS_NO"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="WHS_NO"/>
+      </attribute>
+      <attribute id="LINE_QTY" order="21" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LINE_QTY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LINE_QTY"/>
+      </attribute>
+      <attribute id="LOI_QTY" order="22" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOI_QTY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOI_QTY"/>
+      </attribute>
+      <attribute id="DISPATCH_QTY" order="23" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPATCH_QTY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DISPATCH_QTY"/>
+      </attribute>
+      <attribute id="DIFFERENCE_QTY" order="24" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DIFFERENCE_QTY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DIFFERENCE_QTY"/>
+      </attribute>
+      <attribute id="DEPT" order="25" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEPT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEPT"/>
+      </attribute>
+      <attribute id="MATNR" order="26" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="STATUS" order="27" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="STATUS"/>
+      </attribute>
+      <attribute id="SA_LINE_ID" order="28" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SA_LINE_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SA_LINE_ID"/>
+      </attribute>
+      <attribute id="SYS_SOURCE" order="29" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_SOURCE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_SOURCE"/>
+      </attribute>
+      <attribute id="PULL_TYPE" order="30" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PULL_TYPE"/>
+      </attribute>
+      <attribute id="UNRESERVED_QTY" order="31" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="UNRESERVED_QTY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="UNRESERVED_QTY"/>
+      </attribute>
+      <attribute id="SHIPPED_DATE_RAW" order="32" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SHIPPED_DATE_1"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SHIPPED_DATE_RAW"/>
+      </attribute>
+      <attribute id="REASON_CODE" order="33" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="REASON_CODE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="REASON_CODE"/>
+      </attribute>
+      <attribute id="HEADER_LIFNR" order="34" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="HEADER_LIFNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="HEADER_LIFNR"/>
+      </attribute>
+      <attribute id="MISMATCH_CAL_STATUS" order="35" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MISMATCH_CAL_STATUS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MISMATCH_CAL_STATUS"/>
+      </attribute>
+      <attribute id="SYS_TIMESTAMP_RAW" order="36" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP_1"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_TIMESTAMP_RAW"/>
+      </attribute>
+      <attribute id="ECC_STEP" order="37" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ECC_STEP"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ECC_STEP"/>
+      </attribute>
+      <attribute id="TR_NUMBER" order="38" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TR_NUMBER"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="TR_NUMBER"/>
+      </attribute>
+      <attribute id="TR_ITEM_NUMBER" order="39" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TR_ITEM_NUMBER"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="TR_ITEM_NUMBER"/>
+      </attribute>
+      <attribute id="MATERIAL_DOCUMENT_YEAR" order="40" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATERIAL_DOCUMENT_YEAR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATERIAL_DOCUMENT_YEAR"/>
+      </attribute>
+      <attribute id="MATERIAL_DOCUMENT" order="41" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATERIAL_DOCUMENT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATERIAL_DOCUMENT"/>
+      </attribute>
+      <attribute id="TPL_ID" order="42" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TPL_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="TPL_ID"/>
+      </attribute>
+      <attribute id="MATNR_DESCR" order="43" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR_DESCR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATNR_DESCR"/>
+      </attribute>
+      <attribute id="DELIVERY_DATE_RAW" order="44" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DELIVERY_DATE_1"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DELIVERY_DATE_RAW"/>
+      </attribute>
+      <attribute id="SYS_CREATED_DATE_RAW" order="45" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_DATE_1"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_CREATED_DATE_RAW"/>
+      </attribute>
+      <attribute id="SYS_AUTH_ID" order="46" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_AUTH_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_AUTH_ID"/>
+      </attribute>
+      <attribute id="SYS_CREATED_BY" order="47" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_BY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_CREATED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="48" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE_RAW" order="49" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE_1"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_LAST_MODIFIED_DATE_RAW"/>
+      </attribute>
+      <attribute id="DEST_WERKS" order="50" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_WERKS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEST_WERKS"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="230"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

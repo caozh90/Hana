@@ -1,0 +1,204 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_INTERFACE_CBOM" ( 
+      IN  p_change_id      VARCHAR(100),
+      IN  p_product_group  VARCHAR(20),
+      IN  p_user_id        VARCHAR(64),
+      OUT p_out_exitcode   INTEGER,
+      OUT p_out_exitmess   VARCHAR(500)  
+)
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA  
+/************************************************************************
+*name       : PRC_INTERFACE_CBOM             
+*function   : Cost BOM Run
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : Fangyuan
+*CreateDate : 2014-11-14
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS 
+        v_g_pkg_name                 VARCHAR(20) := 'PKG_BOM_CALCULATION';
+        v_runlvl                     VARCHAR(20);
+        v_adder_category             VARCHAR(10);
+        v_adder_name                 VARCHAR(20);
+        v_change_id                  VARCHAR(100) := p_change_id;
+        v_product_group              VARCHAR(20)  := p_product_group;
+        v_user_id                    VARCHAR(64)  := p_user_id;
+        v_subprc_name                VARCHAR(30);
+        v_subprc_exitcode            DECIMAL;
+
+        v_prc_name                   VARCHAR(30)  := 'PRC_INTERFACE_CBOM';
+        v_full_name                  VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+        
+        n_count,logidi,logidj,logidk,logida,logidb,logidc, logid4 integer;
+
+        v_debug                      CHAR(1);                
+        v_time, v_taking_time        DECIMAL(17,3);   
+        v_step_counter               INTEGER;                
+BEGIN
+    DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001; --user defined exception      
+            
+    DECLARE EXIT HANDLER FOR exp_procedure             
+    BEGIN  
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );                            
+        logida:=0;      
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR', 
+                                                    I_LOGSID     => :logida,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => :p_out_exitmess);
+    END;  
+            
+    DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found 
+    BEGIN 
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );                 
+        logidb:=0;      
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidb,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || ' (' ||
+                                                                    substr(::SQL_ERROR_MESSAGE , 1, 500) || ')');
+    END;    
+         
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   --others
+    BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );                                 
+        logidc:=0;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidc,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || ' (' ||
+                                                                    substr(::SQL_ERROR_MESSAGE , 1, 500) || ')');             
+    END; 
+
+    --session parameters
+    SELECT SESSION_CONTEXT('v_step_counter_bom_calculation') INTO v_step_counter FROM DUMMY;
+            
+    p_out_exitcode := -1;
+    p_out_exitmess := 'FAILED';
+  
+    logidi:=0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',
+                                                I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:v_full_name,
+                                                I_MODULE=>'EBGCFE');          
+
+    select "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy;
+
+    IF :v_debug='T'
+    THEN
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;        
+    
+    DELETE FROM MID_adder_final WHERE product_group = :v_product_group;
+    
+    --SBB      
+    v_subprc_name := 'PRC_CBOM_GET_COSTTAPE';
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_GET_COSTTAPE"(v_change_id, v_product_group, v_user_id,v_subprc_exitcode, p_out_exitmess);
+                           
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN '||v_subprc_name;
+        SIGNAL exp_procedure;
+    END IF;
+            
+    --MTM
+    v_subprc_name := 'PRC_CBOM_GEN_MTMSBB';
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_GEN_MTMSBB"(v_change_id, v_product_group, v_user_id,v_subprc_exitcode, p_out_exitmess);
+            
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN '||v_subprc_name;
+        SIGNAL exp_procedure;
+    END IF;
+
+    --CTO
+    v_subprc_name := 'PRC_CBOM_GEN_CTOSBB';            
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_GEN_CTOSBB"(v_change_id, v_product_group, v_user_id,v_subprc_exitcode, p_out_exitmess);
+            
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN '||v_subprc_name;
+        SIGNAL exp_procedure;
+    END IF;
+    
+    --CTO
+    v_subprc_name := 'PRC_PBOM_GEN_SWR_COUNTRY';            
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_PBOM_GEN_SWR_COUNTRY"(v_change_id, v_product_group, v_user_id,v_subprc_exitcode, p_out_exitmess);
+            
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN '||v_subprc_name;
+        SIGNAL exp_procedure;
+    END IF;    
+            
+    --CTO
+    v_subprc_name := 'PRC_GET_FORMULA';            
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_FORMULA"(v_change_id, v_product_group, v_user_id,v_subprc_exitcode, p_out_exitmess);
+            
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN '||v_subprc_name;
+        SIGNAL exp_procedure;
+    END IF;      
+            
+    v_subprc_name := 'PRC_GET_ADDER';            
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_ADDER"(v_change_id, v_product_group, v_user_id,v_subprc_exitcode, p_out_exitmess);
+            
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN '||v_subprc_name;
+        SIGNAL exp_procedure;
+    END IF;  
+            
+    v_subprc_name := 'PRC_CBOM_CAL_FINALCOST';            
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_CAL_FINALCOST"(v_change_id, v_product_group, v_user_id,v_subprc_exitcode, p_out_exitmess);
+            
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN '||v_subprc_name;
+        SIGNAL exp_procedure;
+    END IF;     
+            
+    v_subprc_name := 'PRC_CBOM_GEN_COSTADDER_MTM';            
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_GEN_COSTADDER_MTM"(v_change_id, v_product_group, v_user_id,v_subprc_exitcode, p_out_exitmess);
+            
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN '||v_subprc_name;
+        SIGNAL exp_procedure;
+    END IF;
+            
+    v_subprc_name := 'PRC_CBOM_GEN_COSTADDER_CTO';            
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_GEN_COSTADDER_CTO"(v_change_id, v_product_group, v_user_id,v_subprc_exitcode, p_out_exitmess);
+            
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN '||v_subprc_name;
+        SIGNAL exp_procedure;
+    END IF;            
+
+    IF :v_debug='T'
+    THEN
+        v_step_counter := :v_step_counter + 1;
+        logid4 := 0;
+            
+        v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - v_time;
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+            
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO',I_LOGSID=>:logid4,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+        
+        I_MESSAGE=>'step '||to_char(:v_step_counter)||': ' || to_char(:v_taking_time) || ' sec'); 
+            
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+        
+    p_out_exitcode := 0;
+    p_out_exitmess := 'SUCCESSFUL';
+
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); --imodule need to be determined       
+       
+    EXEC 'SET ''v_step_counter_bom_calculation'' ='''|| ifnull(:v_step_counter,'0') ||'''' ;
+END;

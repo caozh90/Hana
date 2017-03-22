@@ -1,0 +1,57 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_report::PRC_BAK_INTERLOCK" (
+  OUT P_OUT_EXITCODE INTEGER
+) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER 
+  DEFAULT SCHEMA EBGDF
+
+  AS
+BEGIN
+
+  -- data
+  DECLARE   V_PKG_NAME        VARCHAR(100) := 'PKG_REPORT';    
+  DECLARE   V_PRC_NAME        VARCHAR(100) := 'PRC_BAK_INTERLOCK';
+  DECLARE   V_FUNC_FULL_NAME  VARCHAR(100) := :V_PKG_NAME || '.' || :V_PRC_NAME;  
+  DECLARE   logidi            INTEGER := 0;
+  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+            P_OUT_EXITCODE := -1;  
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+          (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+          I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'EBGDF',
+          I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+                                        substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+        RESIGNAL;     
+    END;  
+    
+  -- process logic
+  P_OUT_EXITCODE := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF'); 
+  
+  --delete bak_prt_interlock
+  delete from bak_rpt_interlock;
+  
+  insert into bak_rpt_interlock ( SBB_OPT,
+								  PPN,
+								  LASTEST_ABCD,
+								  TRANS_DATE)
+    select t1.mfi_ffi_fc,
+    	   t1.ppn,
+    	   t1.abcd,
+    	   current_timestamp
+      from (select mfi_ffi_fc,ppn,abcd from ebgdf.rpt_pn_class )t1,
+      	   (select mfi_ffi_fc,max(abcd) abcd from ebgdf.rpt_pn_class group by mfi_ffi_fc) t
+     where t.mfi_ffi_fc = t1.mfi_ffi_fc
+       and t1.abcd = t.abcd;
+
+
+			 
+  P_OUT_EXITCODE := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF');  
+end ;

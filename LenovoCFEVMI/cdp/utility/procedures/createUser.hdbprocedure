@@ -1,0 +1,41 @@
+PROCEDURE "SYSTEM"."cdp.utility.procedures::createUser" (
+	in userName NVARCHAR(256), 
+	in passwd NVARCHAR(256))
+LANGUAGE SQLSCRIPT SQL SECURITY INVOKER AS 
+	RTName String; 
+	userExists Integer := 0; 
+	 
+	--LANGUAGE SQLSCRIPT
+	--SQL SECURITY INVOKER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA AS
+BEGIN
+
+ /**********************
+
+call "SYSTEM"."cdp.utility.procedures::createUser"('T12345','Password12345')
+
+write by leo.lin 
+2014-10-28
+*********************/
+
+	DECLARE NOT_CONFIGURED_COND CONDITION FOR SQL_ERROR_CODE 10001; 
+	DECLARE EXIT HANDLER FOR NOT_CONFIGURED_COND SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; 
+-- Create & Grant Roles to User.
+	RTName := upper(userName); 
+	SELECT top 1 count(1) into userExists FROM "SYS"."USERS" WHERE "USER_NAME" = :RTName; 
+	if :userExists = 0 then 
+		exec 'create user ' || :RTName || ' password ' || passwd; 
+		end if; 
+		
+	--exec 'grant "CONTENT_ADMIN" to ' || :RTName;
+	--exec 'grant "MODELING" to ' || :RTName;
+	--exec 'call "_SYS_REPO"."GRANT_ACTIVATED_ROLE"(''cdp.utility.roles::DevelopmentRole'','''|| :RTName||''')';
+	
+	-- permission go grant and revoke privileges on activated content (like, for example, attribute views)
+	--exec 'grant EXECUTE ON GRANT_PRIVILEGE_ON_ACTIVATED_CONTENT TO ' || :RTName;
+	--exec 'grant EXECUTE ON REVOKE_PRIVILEGE_ON_ACTIVATED_CONTENT TO ' || :RTName;
+	
+	-- privileges needed to run the search rules
+	--exec 'grant EXECUTE ON sys.execute_search_rule_set TO ' || :RTName;
+END;

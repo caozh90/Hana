@@ -1,0 +1,384 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createInfoUser" (
+			IN USERNAME NVARCHAR(256), 
+	         IN passwd NVARCHAR(256),
+             IN LOGINNAME NVARCHAR(256),
+             IN FIRSTNAME NVARCHAR(256),
+             IN LASTNAME NVARCHAR(256),
+             IN EMAILADDRESS NVARCHAR(200),
+             IN STATUS NVARCHAR(20),
+             IN LOCALE NVARCHAR(16),
+             IN DESIGNATION NVARCHAR(200)
+             ,IN	PHONENUMBER  NVARCHAR(50)
+  			,IN		DEPARTMENT NVARCHAR(256) --//部门
+  			,IN		COMPANY NVARCHAR(256)		--//公司
+  			,IN		USER_GROUP NVARCHAR(256)	--	//用户账户组
+  			,IN		VALID_FROM Timestamp --//Data as of which the user can connect
+  			,IN		VALID_UNTIL Timestamp --//Data as of which the user can no longer connect
+  			,IN		INTERNAL_SIGN NVARCHAR(256) --//内部用户标识
+  			,IN		EXTERNAL_SIGN NVARCHAR(256) --//外部用户标识
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+             ) 
+LANGUAGE SQLSCRIPT 
+SQL SECURITY DEFINER 
+--DEFAULT SCHEMA "SECURITY"
+
+AS 
+	RTName String; 
+	userExists Integer := 0;
+	groupExists Integer := 0;
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aMODULE_NAME NVARCHAR(256);
+	
+	aID 	NVARCHAR(10);
+	aUSER_ID BIGINT;
+	aROLE_ID BIGINT;
+    aMODULE_ID NVARCHAR(10);
+    aMODULE_PATH NVARCHAR(200);
+    aGROUP_ID NVARCHAR(10);
+    aLOGINNAME NVARCHAR(256);
+    aUSER_GROUP NVARCHAR(256);
+    aVALID_FROM NVARCHAR(256);
+    aVALID_UNTIL NVARCHAR(256);
+    privilegeExists  NVARCHAR(300)  ;
+    
+     aREAL_NAME NVARCHAR(256) ARRAY;
+     V_INDEX INTEGER;
+    aTEMP_NAME NVARCHAR(256) ;
+BEGIN
+
+/***************************** 
+	create new user
+	
+	1\首先判断是否存在module 模块名称是否存在，如果存在则获取他的模块 ＩＤ
+	2\如果不存在，则返回同时写日志log
+	3\存在，则判断username是否存在，如果存在，则返回日志，不做任何操作
+	4\不存在，则添加user ，
+
+	5、需要维护  ---MAP_MODULE_USER  --根据module id 和 user id 添加 MAP_MODULE_USER 
+	"SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER"
+	6、首先需要获得 Public Group （根据 module id 查找）的 同时让他属于 然后维护 MAP_GROUP_USER
+	"SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"
+	example:
+	
+   call "SECURITY"."cdp.security.procedures::createInfoUser" (
+			'sap_test002'--IN USERNAME NVARCHAR(256), 
+	         , 'Password12345',--IN passwd NVARCHAR(256),
+             '',--IN LOGINNAME NVARCHAR(256),
+             'sap_test002',--IN FIRSTNAME NVARCHAR(256),
+             'sap_test002',--IN LASTNAME NVARCHAR(256),
+             'sap_test002@l.com',--IN EMAILADDRESS NVARCHAR(200),
+             'ACTIVATE',--IN STATUS NVARCHAR(20),
+             '',--IN LOCALE NVARCHAR(16),
+             '',--IN DESIGNATION NVARCHAR(200)
+             '',--,IN	PHONENUMBER  NVARCHAR(50)
+  			'',--,IN		DEPARTMENT NVARCHAR(256) --//部门
+  			'',--,IN		COMPANY NVARCHAR(256)		--//公司
+  			'Public Group',--IN		USER_GROUP NVARCHAR(256)	--	//用户账户组
+  			null,--,IN		VALID_FROM Timestamp --//Data as of which the user can connect
+  			null,--,IN		VALID_UNTIL Timestamp --//Data as of which the user can no longer connect
+  			null,--,IN		INTERNAL_SIGN NVARCHAR(256) --//内部用户标识
+  			null,--,IN		EXTERNAL_SIGN NVARCHAR(256) --//外部用户标识
+             --IN aMODULE_NAME NVARCHAR(200)
+?);          
+             
+ *****************************/
+
+    
+    --exception     
+   DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+   DECLARE sameUserName CONDITION FOR SQL_ERROR_CODE 10001;
+    DECLARE EXIT HANDLER FOR sameUserName 
+    BEGIN
+    aI_DETAIL :='cdp.security.procedures::createInfoUser error : User name ->' ||:RTName||' already exists .';
+		
+		
+		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+	     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoUser"'
+	     	,I_MODULE=>:aMODULE_NAME
+	     	,I_MESSAGE=>'W000000003'
+	     	,I_DETAIL=>:aI_DETAIL);
+	   
+	   errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : W000000003' error_message, 
+     		aI_DETAIL detail from dummy;  	
+    END ;
+   
+   
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到aROLE_ID ,则返回，同时告知不存在这个权限明细
+			aI_DETAIL :='cdp.security.procedures::createInfoUser can not find the module : '||aMODULE_NAME ||' .';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+     	I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERROR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::createInfoUser error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE||:aLOGINNAME;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+    	I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERROR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);   	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL 
+     		||'create user ' || :RTName || ' password ' || passwd ||' VALID ' ||:aVALID_FROM ||' '||:aVALID_UNTIL
+     		
+     		detail
+     		 from dummy;
+    END; 
+   
+   call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityUserAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+    --START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoUser"'
+	,I_MODULE=>:aMODULE_NAME); 
+   
+   if LOGINNAME='' or LOGINNAME is null then
+  	 aLOGINNAME := USERNAME;
+  	 else
+  	 aLOGINNAME := LOGINNAME;
+   end if;
+   /*
+    SELECT MODULE_ID,MODULE_PATH into aMODULE_ID,aMODULE_PATH 
+    FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" 
+    WHERE "MODULE_NAME" = :aMODULE_NAME;
+     */
+     
+     SELECT top 1 count(1) into groupExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" A
+    	
+     WHERE A."MODULE_ID" = :aMODULE_ID     
+     AND A."GROUP_NAME" = :USER_GROUP ;
+     if  :groupExists = 0 then
+     	aUSER_GROUP := 'Public Group' ;
+    		SELECT top 1 count(1) into groupExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" A
+		    	,"SECURITY"."cdp.security.data::userManagement.INFO_MODULE" B
+		     WHERE A."MODULE_ID" = B."MODULE_ID"
+		     AND B."MODULE_NAME" = :aMODULE_NAME
+		     AND A."GROUP_NAME" = 'Public Group' ;
+		     if  :groupExists = 0 then
+		     	CALL "SECURITY"."cdp.security.procedures::createInfoGroup" (  
+					'Public Group',	'',errorInfo);
+		     
+		     /*
+		    	 aI_DETAIL := 'cdp.security.procedures::createInfoUser can not find the GROUP_NAME : Public Group .';
+		     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+		     	I_EVENT_TYPE=>'SEC_LOG'	
+		     	,I_STATUS=>'WARN'
+		     	,I_LOGSID=>:alogidk
+		     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoUser"'
+		     	,I_MODULE=>:aMODULE_NAME
+		     	,I_MESSAGE=>'W000000002'
+		     	,I_DETAIL=>:aI_DETAIL);
+		     	
+		     	RETURN ;
+		     	
+		     	*/
+		     end if;
+ELSE
+aUSER_GROUP := USER_GROUP;
+     end if;
+     
+     
+     
+     
+     
+    SELECT GROUP_ID into aGROUP_ID FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" A
+    	,"SECURITY"."cdp.security.data::userManagement.INFO_MODULE" B
+     WHERE A."MODULE_ID" = B."MODULE_ID"
+     AND B."MODULE_NAME" = :aMODULE_NAME
+     AND A."GROUP_NAME" = :aUSER_GROUP ;
+   
+    
+    RTName := upper(:aLOGINNAME); 
+	
+	
+	
+	SELECT TOP 1 count(1) into userExists FROM "SYS"."USERS" WHERE "USER_NAME" = :RTName ; 
+	if :userExists = 0 then
+		--SIGNAL sameUserName; 
+		
+	     --else
+	     exec 'create user ' || :RTName || ' password ' || passwd; 	
+	     --return ;
+	end if; 
+	
+	/*
+	if VALID_FROM is null then 
+		aVALID_FROM := '' ;
+	ELSE
+		if trim(TO_NVARCHAR(:VALID_FROM,'YYYY-MM-DD'))='' then
+		aVALID_FROM := '' ;
+		else
+		aVALID_FROM := ' VALID FROM '''||TO_NVARCHAR(:VALID_FROM ,'YYYY-MM-DD') ||'''';
+		end if;
+		
+		
+	END IF	;
+
+	
+	if VALID_UNTIL is null then 
+	 aVALID_UNTIL := '';
+	 else
+	 if trim(TO_NVARCHAR(:VALID_UNTIL,'YYYY-MM-DD'))='' then
+	 aVALID_UNTIL := '';
+	 else
+	 	if aVALID_FROM='' then
+	 		aVALID_UNTIL := ' VALID UNTIL '''||TO_NVARCHAR(:VALID_UNTIL ,'YYYY-MM-DD')||'''';
+	 		else
+	 		aVALID_UNTIL := ' UNTIL '''||TO_NVARCHAR(:VALID_UNTIL ,'YYYY-MM-DD')||'''';
+	 		end if;
+	 	end if;
+	END IF;
+	*/
+	--exec 'create user ' || :RTName || ' password ' || passwd ||' VALID ' ||:aVALID_FROM ||' '||:aVALID_UNTIL ||';'
+	--; 
+	
+	
+	
+	--exec 'create user ' || :RTName || ' password ' || passwd; 
+		--exec 'create user ' || :RTName || ' password ' || passwd||'';
+		--create user 
+		
+	if STATUS='DEACTIVATE' then
+		exec 'ALTER USER '||:RTName||' DEACTIVATE ';
+	end if;	
+	
+	--if aVALID_FROM<>'' or aVALID_UNTIL<>'' then
+	--	exec 'ALTER USER '||:RTName||:aVALID_FROM ||' '||:aVALID_UNTIL ||';';
+	--end if;
+	
+		
+		select USER_ID into aUSER_ID from "SYS"."USERS" WHERE "USER_NAME" = :RTName;
+		
+		SELECT TOP 1 count(1) into userExists FROM "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER"
+		 WHERE "USER_ID" = :aUSER_ID 
+		 AND "MODULE_ID" = :aMODULE_ID; 
+		if :userExists <> 0 then
+			SIGNAL sameUserName; 
+		END IF;
+		
+		call "_SYS_REPO"."GRANT_ACTIVATED_ROLE"('cdp.security.roles::Base',:RTName);
+		
+		VREAL_NAME = SELECT "ROLE_NAME" 
+				FROM "cdp.security.data::userManagement.INFO_ROLES" 
+				WHERE  (LOWER("IS_SYSROLE") = 'true')
+					AND "MODULE_ID" = :aMODULE_ID; 
+					 
+		aREAL_NAME := ARRAY_AGG(:VREAL_NAME.ROLE_NAME);			
+		 FOR V_INDEX IN 1 .. CARDINALITY(:aREAL_NAME) DO 
+ 				aTEMP_NAME := :aREAL_NAME[:V_INDEX];
+ 				call "_SYS_REPO"."GRANT_ACTIVATED_ROLE"(aTEMP_NAME,:RTName);
+ 		 END FOR;
+		 
+		--分配最低的权限
+		
+		select top 1 ROLE_ID into aROLE_ID from "SECURITY"."cdp.security.data::userManagement.INFO_ROLES"
+		 WHERE "ROLE_NAME" = 'cdp.security.roles::Base';
+		
+		select "SECURITY"."cdp.security.data::mapAllSeqId".NEXTVAL INTO aID FROM DUMMY;
+  
+  insert into "SECURITY"."cdp.security.data::userManagement.MAP_ALL"
+			    ("ID" ,"MODULE_ID","GROUP_ID","USER_ID","ROLEGROUP_ID","ROLE_ID")
+				 values (:aID,
+				 :aModule_ID,
+				0, 
+				 :aUSER_ID,
+				 0, 
+				 :aROLE_ID );
+				 
+		--call "SECURITY"."cdp.security.procedures::createMapAll" ( 
+   		--		0,    :aROLE_ID,    0,    :aUSER_ID,errorInfo); 
+
+		SELECT TOP 1 count(1) into userExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_USER"
+		 WHERE "USER_NAME" = :RTName ; 
+		if :userExists = 0 then
+		insert into "SECURITY"."cdp.security.data::userManagement.INFO_USER"
+			("USER_ID", "USER_NAME","LOGINNAME" ,"FIRSTNAME" ,"LASTNAME" ,"EMAILADDRESS","STATUS","LOCALE" ,"DESIGNATION"
+				,"PHONENUMBER"  
+  			,		"DEPARTMENT"  --//部门
+  			,		"COMPANY" 	--//公司
+  			,		"USER_GROUP" 
+  			,		"VALID_FROM" 
+  			,		"VALID_UNTIL"
+  			,		"INTERNAL_SIGN" 
+  			,		"EXTERNAL_SIGN" 
+			 )
+			values(:aUSER_ID, :RTName, :aLOGINNAME, :FIRSTNAME, :LASTNAME, :EMAILADDRESS, :STATUS
+			,:LOCALE ,:DESIGNATION
+			,		:PHONENUMBER  
+  			,		:DEPARTMENT  --//部门
+  			,		:COMPANY 
+  			,		:USER_GROUP
+  			,		:VALID_FROM
+  			,		:VALID_UNTIL
+  			,		:INTERNAL_SIGN
+  			,		:EXTERNAL_SIGN
+			);
+			
+		end if;
+		
+		
+		insert into "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER"
+		("ID", "MODULE_ID","USER_ID"  )
+			values("SECURITY"."cdp.security.data::mapModuleUserSeqId".NEXTVAL
+				,:aMODULE_ID ,:aUSER_ID)	;
+    	 
+   	if aUSER_GROUP = 'Public Group'  then
+	    --code := 0;
+	    --首先需要获得 Public Group （根据 module id 查找）的 同时让他属于 然后维护 MAP_GROUP_USER
+	    insert into "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"
+	    ("ID" , "MODULE_ID","GROUP_ID","USER_ID")
+	    values("SECURITY"."cdp.security.data::mapGroupUserSeqId".NEXTVAL
+	    	,:aMODULE_ID,:aGROUP_ID ,:aUSER_ID);
+	 else
+	 
+	  call "SECURITY"."cdp.security.procedures::createMapGroupUser" ( 
+			:aGROUP_ID ,:aUSER_ID ,errorInfo ); 
+	 end if;
+		
+	    --如果成功添加,则log添加成功！
+	    aI_DETAIL := 'cdp.security.procedures::createInfoUser ('||:RTName||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000002'
+     	,I_DETAIL=>:aI_DETAIL); 	
+	    	
+    		
+END;

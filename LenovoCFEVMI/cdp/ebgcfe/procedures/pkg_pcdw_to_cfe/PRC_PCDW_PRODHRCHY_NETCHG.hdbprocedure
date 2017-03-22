@@ -1,0 +1,91 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_PRODHRCHY_NETCHG" ( 
+  IN p_in_lastrundate TIMESTAMP,
+  OUT p_out_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA  
+/************************************************************************
+*name       : PRC_PCDW_PRODHRCHY_NETCHG          
+*function   : Product Hierarchy Net Change
+*input      ：p_in_lastrundate : last run date
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-01-14
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+  -- data
+  DECLARE    v_g_pkg_name    VARCHAR(30) := 'PKG_PCDW_TO_CFE';   
+  DECLARE    v_prc_name      VARCHAR(30) := 'PRC_PCDW_PRODHRCHY_NETCHG';
+  DECLARE    v_lastrundate   TIMESTAMP;  
+  DECLARE    v_full_name     VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+  DECLARE    v_logidi        INTEGER := 0;    
+  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+      --   ROLLBACK;
+      /* originally commented out
+         UPDATE   conf_sync_lastrun
+            SET   ENDDATE = CURRENT_TIMESTAMP, returncode = -1
+          WHERE   pkgname = :v_g_pkg_name AND progname = :v_prc_name;
+         COMMIT;  */
+      p_out_exitcode := ::SQL_ERROR_CODE; 
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+				I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );         
+       --  COMMIT;  
+  END;  
+    
+  -- process logic
+      p_out_exitcode := -1;
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+												  I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  
+      --COMMIT;
+
+      v_lastrundate := p_in_lastrundate;
+
+ 
+      --  exists  Z_PCDW_PRODHRCHY  and   PCDW_PRODH  date  delete   Z_PCDW_PRODHRCHY date
+      DELETE FROM   Z_PCDW_PRODHRCHY z1
+            WHERE   EXISTS
+                       (SELECT   NULL
+                          FROM   PCDW.PCDW_PRODH e1
+                         WHERE   z1.PRODH = e1.PRODH AND Z1.SPRAS = e1.SPRAS
+                                 AND IFNULL (e1.sys_last_modified_date, CURRENT_TIMESTAMP) > :v_lastrundate);
+
+      --PCDW_PRODH  SPRAS = 'E' OR SPRAS = '1'  insert  into   Z_PCDW_PRODHRCHY
+      INSERT INTO Z_PCDW_PRODHRCHY (SPRAS,
+                                    PRODH,
+                                    STUFE,
+                                    VTEXT,
+                                    SYS_CREATED_DATE,
+                                    SYS_CREATED_BY,
+                                    SYS_LAST_MODIFIED_DATE,
+                                    SYS_LAST_MODIFIED_BY)
+         SELECT   t1.spras,
+                  t1.prodh,
+                  t1.stufe,
+                  t1.vtext,
+                  SYS_CREATED_DATE,
+                  :v_g_pkg_name || '.' || :v_prc_name,
+                  SYS_LAST_MODIFIED_DATE,
+                  :v_g_pkg_name || '.' || :v_prc_name
+           FROM   PCDW.PCDW_PRODH t1
+          WHERE   IFNULL (t1.sys_last_modified_date, CURRENT_TIMESTAMP) > :v_lastrundate
+                  AND (t1.SPRAS = 'E' OR t1.SPRAS = '1');
+      --COMMIT;
+
+      p_out_exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+      --COMMIT;
+   /* -- originally commented out
+                           UPDATE   conf_sync_lastrun c1
+            SET   lastrundate = startdate, returncode = 0, ENDDATE = SYSDATE
+          WHERE   pkgname = v_g_pkg_name AND progname = v_prc_name;
+         COMMIT;*/  
+    
+END;

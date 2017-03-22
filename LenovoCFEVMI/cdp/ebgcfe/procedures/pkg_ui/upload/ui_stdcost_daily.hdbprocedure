@@ -1,0 +1,132 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_stdcost_daily" ( 
+
+IN 	ITEM varchar(120),
+IN 	PLANT varchar(20),
+IN 	STDCOST  DECIMAL(15,4),
+IN	 	table_name varchar(200),
+IN	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_stdcost_daily              --函数名
+*function  : upload数据至表ui_stdcost_daily并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Li shunshun               --作者
+*CreateDate    : 2015-08-10      --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_stdcost_daily';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate int;
+		var_oper VARCHAR(10);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_stdcost_daily_err"(
+			:ITEM,:PLANT,:STDCOST,
+			:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE);
+    END; 
+    --exception 
+	
+	
+
+	
+	--procedure begin
+
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+
+    /*
+	select  count(1) into validate from  UI_CYCLE where CYCLE = 'CURRENT';
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_stdcost_daily_err"(
+			:CYCLE,:ITEM,:PLANT,STDCOST,
+			:table_name,:business_name,:business_code,:position,'"CYCLE"::'||:CYCLE||' is illegal');
+		
+		return;
+	end if;  
+	*/  	
+	
+	select  count(1) into validate from  UI_Plant where PLANT = :PLANT;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_stdcost_daily_err"(
+			:ITEM,:PLANT,:STDCOST,
+			:table_name,:business_name,:business_code,:position,'"PLANT"::'||:PLANT||' is illegal');
+		
+		return;
+	end if;
+	
+	select  count(1) into validate from  UI_ITEM where ITEM = :ITEM and item_type in ('OPTION','COMPONENT');
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_stdcost_daily_err"(
+			:ITEM,:PLANT,:STDCOST,
+			:table_name,:business_name,:business_code,:position,'"ITEM"::'||:ITEM||' is illegal');
+		
+		return;
+	end if;
+	
+	SELECT top 1 count(1) into validate from "EBGCFE"."UI_STDCOST_DAILY" 
+		where CYCLE = 'CURRENT'
+		and ITEM = :ITEM 
+		and PLANT = :PLANT  ;
+	if validate = 0
+	then
+		    insert into "EBGCFE"."UI_STDCOST_DAILY"(CYCLE,PRODUCT_GROUP,ITEM,PLANT,STDCOST,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,
+				ACTION
+									) 
+	values ('CURRENT','EBG',:ITEM,:PLANT,:STDCOST,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time,
+			 	 'insert');
+  		var_oper := 'insert';
+  	else
+  		update "EBGCFE"."UI_STDCOST_DAILY" a set (STDCOST,
+				SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION) = 
+				(:STDCOST,CURRENT_TIMESTAMP,SESSION_USER,'update')
+		where CYCLE = 'CURRENT'
+		and ITEM = :ITEM 
+		and PLANT = :PLANT ;
+        var_oper := 'update';      
+  	end if;
+  	
+
+insert into "EBGCFE"."UI_STDCOST_DAILY_LOG"(CYCLE,
+									PRODUCT_GROUP,
+									ITEM,
+									PLANT,
+									STDCOST,
+									SYS_CREATED_BY,
+									SYS_CREATED_DATE,
+									AT_ACTION,
+									AT_MODIFIED_ON,
+    								AT_MILLIS 
+									)
+	values ('CURRENT','EBG',:ITEM,:PLANT,STDCOST,
+				SESSION_USER,CURRENT_TIMESTAMP,:var_oper,current_timestamp,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+			
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+	
+	
+	
+END;

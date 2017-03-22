@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cube:cube xmlns:Cube="http://www.sap.com/ndb/BiModelCube.ecore" schemaVersion="1.5" id="AN_MO_CUTBACK_REPORT" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled">
+  <descriptions defaultDescription="AN_MO_CUTBACK_REPORT"/>
+  <localVariables/>
+  <privateMeasureGroup id="MeasureGroup">
+    <attributes>
+      <attribute id="PLAN_TIMESTAMP" hidden="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLAN_TIMESTAMP"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK" columnName="PLAN_TIMESTAMP"/>
+      </attribute>
+      <attribute id="PRODUCTION_LINE" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTION_LINE"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK" columnName="PRODUCTION_LINE"/>
+      </attribute>
+      <attribute id="RETURN_PULL_ID" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="RETURN_PULL_ID"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK" columnName="RETURN_PULL_ID"/>
+      </attribute>
+      <attribute id="SYS_TIMESTAMP" hidden="true" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK" columnName="SYS_TIMESTAMP"/>
+      </attribute>
+      <attribute id="CUTBACK_TIMESTAMP" hidden="true" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CUTBACK_TIMESTAMP"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK" columnName="CUTBACK_TIMESTAMP"/>
+      </attribute>
+      <attribute id="MO_ID" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MO_ID"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK" columnName="PRODUCTIONORDID"/>
+      </attribute>
+      <attribute id="ORIGINAL_PULL_ID" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ORIGINAL_PULL_ID"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK" columnName="ORIGINAL_PULL_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="PLAN_TIME" hidden="false" order="2" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLAN_TIME"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>lpad(string(component(&quot;PLAN_TIMESTAMP&quot;,4)),2,'0') +':' + lpad(string(component(&quot;PLAN_TIMESTAMP&quot;,5)) ,2,'0')+':'+lpad(string(component(&quot;PLAN_TIMESTAMP&quot;,6)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="PLAN_DATE" hidden="false" order="3" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLAN_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;PLAN_TIMESTAMP&quot;,1)) +'-' + lpad(string(component(&quot;PLAN_TIMESTAMP&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;PLAN_TIMESTAMP&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="PULL_DATE" hidden="false" order="8" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;SYS_TIMESTAMP&quot;,1)) +'-' + lpad(string(component(&quot;SYS_TIMESTAMP&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;SYS_TIMESTAMP&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="PULL_TIME" hidden="false" order="9" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_TIME"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>lpad(string(component(&quot;SYS_TIMESTAMP&quot;,4)) ,2,'0') +':' + lpad(string(component(&quot;SYS_TIMESTAMP&quot;,5)) ,2,'0')+':'+lpad(string(component(&quot;SYS_TIMESTAMP&quot;,6)) ,2,'0')&#xD;
+</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="CUTBACK_TIME" hidden="false" order="10" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CUTBACK_TIME"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>lpad(string(component(&quot;CUTBACK_TIMESTAMP&quot;,4)),2,'0') +':' + lpad(string(component(&quot;CUTBACK_TIMESTAMP&quot;,4)) ,2,'0')+':'+lpad(string(component(&quot;CUTBACK_TIMESTAMP&quot;,6)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="CUTBACK_DATE" hidden="false" order="11" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CUTBACK_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;CUTBACK_TIMESTAMP&quot;,1)) +'-' + lpad(string(component(&quot;CUTBACK_TIMESTAMP&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;CUTBACK_TIMESTAMP&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies>
+        <tableProxy centralTable="true">
+          <table schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK"/>
+        </tableProxy>
+      </tableProxies>
+      <joins/>
+      <layout>
+        <shapes>
+          <shape modelObjectName="RPT_MO_CUTBACK" modelObjectNameSpace="MXEBGVMI" modelObjectType="catalog">
+            <upperLeftCorner x="70" y="30"/>
+          </shape>
+        </shapes>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="CUTBACK_QTY" order="13" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="CUTBACK_QTY"/>
+        <measureMapping schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK" columnName="CUTBACK_QTY"/>
+      </measure>
+      <measure id="ORIGINAL_QTY" order="14" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="ORIGINAL_QTY"/>
+        <measureMapping schemaName="MXEBGVMI" columnObjectName="RPT_MO_CUTBACK" columnName="ORIGINAL_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <sharedDimensions/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="MEASURE_GROUP" modelObjectType="repository">
+          <upperLeftCorner x="300" y="200"/>
+        </shape>
+        <shape modelObjectName="LogicalView" modelObjectNameSpace="MeasureGroup" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateMeasureGroup>
+</Cube:cube>

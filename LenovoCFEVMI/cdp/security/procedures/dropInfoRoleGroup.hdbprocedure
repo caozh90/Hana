@@ -1,0 +1,202 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::dropInfoRoleGroup" (
+	IN	aROLEGROUP_NAME NVARCHAR(256)
+   ,IN	aMODULE_NAME NVARCHAR(200)
+	,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	groupExists Integer := 0;
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aROLEGROUP_ID BIGINT; 
+    aMODULE_ID NVARCHAR(10);
+    --aMODULE_NAME NVARCHAR(256); 
+    aCOMMENT NVARCHAR(256); 
+    privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+/***************************** 
+	DELETE ROLE GROUP
+	成功则：drop role
+	
+	exec 'DROP ROLE "cdp.security.cdr.rolegroup::' ||:aROLEGROUP_ID ||'"';
+	
+
+	example:
+	call "SECURITY"."cdp.security.procedures::deleteInfoRoleGroup" (
+	'aROLEGROUP_NAME'
+    ,'aMODULE_NAME'
+	,?             ) ;
+
+)
+ *****************************/
+      
+    --exception     
+   DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到amodule_ID ,则返回，
+			aI_DETAIL :='cdp.security.procedures::deleteInfoRoleGroup can not find the module : '||aMODULE_NAME ||' .';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoRoleGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL); 
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::deleteInfoRoleGroup error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoRoleGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL); 	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+    
+   call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityRoleSetup'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+--CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+ --START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoRoleGroup"'
+	,I_MODULE=>:aMODULE_NAME);
+	
+    if aROLEGROUP_NAME = 'Other Roles' then
+    aI_DETAIL := 'cdp.security.procedures::deleteInfoRoleGroup   the OTHER ROLES can not be deleted .';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoRoleGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000016'
+     	,I_DETAIL=>:aI_DETAIL); 
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'OTHER ROLES can not be deleted' error_message, 
+     		aI_DETAIL detail from dummy;
+    return ;
+    end if;
+      SELECT "MODULE_ID" INTO aMODULE_ID FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE"
+  WHERE "MODULE_NAME" = :aMODULE_NAME;
+  
+    
+     
+     SELECT top 1 count(1) into groupExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" A    
+     WHERE A."MODULE_ID" = :aMODULE_ID
+          AND A."ROLEGROUP_NAME" = :aROLEGROUP_NAME ;
+     if  :groupExists = 0 then
+    	 aI_DETAIL := 'cdp.security.procedures::deleteInfoRoleGroup  not find the ROLEGROUP_NAME : '||:aROLEGROUP_NAME||'  .';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoRoleGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000017'
+     	,I_DETAIL=>:aI_DETAIL); 
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'ROLE GROUP NAME NOT exist' error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+     	return ;
+     end if;
+     
+     SELECT top 1 count(1) into groupExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" A    
+     WHERE A."MODULE_ID" = :aMODULE_ID
+          AND A."ROLEGROUP_NAME" = :aROLEGROUP_NAME 
+          --AND A."IS_SYSROLEGROUP" ='TRUE';
+          ;
+     if  :groupExists = 0 then
+    	 aI_DETAIL := 'cdp.security.procedures::deleteInfoRoleGroup find the ROLEGROUP_NAME : '||:aROLEGROUP_NAME||' IS SYSTEM ROLE GROUP .';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoRoleGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000028'
+     	,I_DETAIL=>:aI_DETAIL); 
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'ROLE GROUP NAME exist' error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+     	return ;
+     end if;
+     
+     
+     SELECT MODULE_ID ,ROLEGROUP_ID into aMODULE_ID  ,aROLEGROUP_ID
+    FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" 
+    WHERE "MODULE_ID" = :aMODULE_ID AND "ROLEGROUP_NAME" = :aROLEGROUP_NAME;
+    
+    delete from "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" 
+  	where  ROLEGROUP_ID = :aROLEGROUP_ID and MODULE_ID = :aMODULE_ID
+  	--AND IS_SYSROLEGROUP !='TRUE'
+  	;
+   		
+
+delete from "SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" 
+  	where  ROLEGROUP_ID = :aROLEGROUP_ID ;
+	    
+	 delete from "SECURITY"."cdp.security.data::userManagement.MAP_ALL" 
+  	where  ROLEGROUP_ID = :aROLEGROUP_ID 
+  	;--AND U_TYPE = 'usergroup';
+  		
+--**## exec 'DROP ROLE "cdp.security.cdr.rolegroup::' ||:aROLEGROUP_ID ||'"';
+  	
+ SELECT ROLEGROUP_ID into aROLEGROUP_ID
+    FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" 
+    WHERE "MODULE_ID" = :aMODULE_ID AND "ROLEGROUP_NAME" = 'Other Roles';
+    
+  	--要将在这个模块当中的 \并且不再 group 当中的用户，加入到缺省的 public group当中来。
+  insert into "SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"
+	    ("ID" ,"ROLEGROUP_ID","ROLE_ID" ,"MODULE_ID")
+	    SELECT "SECURITY"."cdp.security.data::mapRoleGroupRoleSeqId".NEXTVAL
+	    ,:aROLEGROUP_ID,"ROLE_ID" ,:aMODULE_ID
+	    FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLES"
+	    WHERE "ROLE_ID" NOT IN (
+	    SELECT "ROLE_ID" FROM "SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"
+	    WHERE "MODULE_ID" = aMODULE_ID
+	    )
+	    
+;
+  	
+	    --如果成功添加,则log添加成功！
+	    aI_DETAIL := 'cdp.security.procedures::deleteInfoRoleGroup ('||:aROLEGroup_NAME||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoRoleGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000011'
+     	,I_DETAIL=>:aI_DETAIL);		
+
+
+END;

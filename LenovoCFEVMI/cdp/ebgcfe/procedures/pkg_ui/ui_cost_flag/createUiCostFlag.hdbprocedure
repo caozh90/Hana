@@ -1,0 +1,108 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::createUiCostFlag"
+ ( 
+ 	 IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COSTFLAG_T"
+	,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS
+	   aI_DETAIL 	    NVARCHAR(300) :='';
+	   alogide 			INTEGER :=0;
+	   privilegeExists  NVARCHAR(300)  ; 
+	   V_SBB_TYPE 	 	NVARCHAR(30);
+	   V_VK				NVARCHAR(30);
+	   V_COST_FLAG      NVARCHAR(10);
+	   v_resourceExists BIGINT;
+	    		
+BEGIN
+/***************************** 
+*name        :    createUiCostFlag
+*function    :               
+*input       :    oldInfo/newInfo
+*output      :    errorInfo            
+*author      :    chenwh3
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2015.07.24
+ *****************************/
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::createUiCostFlag error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::createUiCostFlag'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END ;  
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_cost_flag::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;  
+    
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::createUiCostFlag'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	SELECT sbb_type,vk ,COST_FLAG
+   		into v_sbb_type ,v_vk,V_COST_FLAG
+   		from :newinfo;
+   		
+   	IF  V_VK = '' or V_VK is null THEN
+   		V_VK := 'N/A';
+   	END IF ;
+   	
+   	IF  V_SBB_TYPE = '' or V_SBB_TYPE is null THEN
+   		V_SBB_TYPE := 'N/A';
+   	END IF ;
+   	
+   	SELECT count(*) into v_resourceExists
+   		from  "EBGCFE"."UI_COSTFLAG"
+   		WHERE SBB_TYPE = :V_SBB_TYPE AND VK = :V_VK;
+   	IF v_resourceExists > 0
+   	THEN
+   		 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+   	END IF;
+ ---INSERT INTO UI_COSTFLAG  
+ 	
+	  insert into "EBGCFE"."UI_COSTFLAG"(SBB_TYPE,VK,COST_FLAG,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION) 
+	  	values (V_SBB_TYPE,V_VK,UPPER(V_COST_FLAG),CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER,'insert');
+	  	
+	  	--INSERT INTO UI_COSTFLAG_LOG TABLE
+insert into "EBGCFE"."UI_COSTFLAG_LOG"(PRODUCT_GROUP,SBB_TYPE,VK,COST_FLAG,AT_ACTION,AT_MODIFIED_BY,AT_MODIFIED_ON,AT_MILLIS)SELECT 
+	       
+		    'EBG',
+		    a.SBB_TYPE,
+		    a.VK,
+		    a.COST_FLAG,
+		    'insert',
+	 		SESSION_USER,
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :newInfo a; 	
+	   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::createUiCostFlag successfully inserted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::createUiCostFlag'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+END;

@@ -1,0 +1,208 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_create_data_apo::PRC_GET_BACKLOG_APO" (OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_GET_BACKLOG_APO        
+*function   : Prepare BACKLOG Data for APO
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Liuyg5
+*CreateDate : 2016-08-22
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_gen_rsd_sql      VARCHAR2(100);
+   v_rsd_startdate    DATE;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_BACKLOG_APO', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_BACKLOG_APO', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+
+     DELETE FROM z_mid_pcdw_backlog_so_apo;
+     
+  INSERT INTO z_mid_pcdw_backlog_so_apo
+    (order_id, line_item_id, planning_item_id, geo_id, rsd, order_qty, item_type, land1, plant)
+    SELECT t1.vbeln, lpad(t1.posnr, 6, '0') AS line_item_id, t1.matnr AS planning_item_id, t3.geo_id,
+           (SELECT mfg_wk FROM conf_weekly_calendar WHERE t1.rsd BETWEEN start_dt AND end_dt) rsd,
+           t1.kwmeng AS order_qty,
+           MAP(t2.mtart, 'ZITR', 'OPTION', 'ZREV', 'MTM', 'ZXMT', 'CTO') AS item_type,
+           t1.ship2_land1 AS land1, t1.werks
+      FROM pcdw_so t1, pcdw_itemsitemaster t2, apo_ztdp_sw_geo t3
+     WHERE t1.matnr = t2.item
+           AND t1.werks=t2.siteid
+           AND t2.zucod LIKE 'H%'
+           AND (t1.l_abgru IS NULL OR length(t1.l_abgru) = 0) --active
+           AND t1.ad_country = t3.country
+           AND t1.rsd >= add_days(current_date, -60) 
+           AND t1.kwmeng <> '0'; --同一个订单会有多条,去重
+
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_BACKLOG_APO', 'Get So', NULL, '', '', '', '', 'step 2');
+    EXEC 'COMMIT';    
+    
+    DELETE FROM z_mid_pcdw_backlog_ship_apo;
+
+    INSERT INTO z_mid_pcdw_backlog_ship_apo (order_id, line_item_id, shipped_qty)
+       SELECT t1.vbeln AS order_id,
+              LPAD (t1.posnr, 6, '0') AS line_item_id,
+              SUM (t1.shipqty) AS shipped_qty
+         FROM pcdw_ship_so t1, z_mid_pcdw_backlog_so_apo t2
+        WHERE     t1.vbeln = t2.order_id
+              AND LPAD (t1.posnr, 6, '0') = LPAD (t2.line_item_id, 6, '0')
+       GROUP BY t1.vbeln, LPAD (t1.posnr, 6, '0');
+         
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_BACKLOG_APO', 'Get Ship', NULL, '', '', '', '', 'step 3');
+    EXEC 'COMMIT';  
+
+    DELETE FROM z_mid_pcdw_backlog_apo;
+    
+    INSERT INTO z_mid_pcdw_backlog_apo (order_id,
+                                        line_item_id,
+                                        planning_item_id,
+                                        geo_id,
+                                        rsd,
+                                        backlog,
+                                        item_type,
+                                        plant,
+                                        land1)
+       SELECT t1.order_id,
+              t1.line_item_id,
+              t1.planning_item_id,
+              t1.geo_id,
+              t1.rsd,
+              CASE
+                 WHEN (t1.order_qty - ifnull (t2.shipped_qty, 0)) < 0 THEN 0
+                 ELSE t1.order_qty - ifnull (t2.shipped_qty, 0)
+              END AS backlog,
+              t1.item_type,
+              t1.plant,
+              t1.land1
+         FROM z_mid_pcdw_backlog_so_apo t1
+              LEFT JOIN z_mid_pcdw_backlog_ship_apo t2
+                 ON     t1.order_id = t2.order_id
+                    AND t1.line_item_id = t2.line_item_id;
+ 
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_BACKLOG_APO', 'So-Ship', NULL, '', '', '', '', 'step 4');
+    EXEC 'COMMIT';  
+       
+    DELETE FROM pcdw_backlog_apo;
+    
+    INSERT INTO pcdw_backlog_apo (mandt,
+                                  mmatnr,
+                                  plant,
+                                  smatnr,
+                                  rsd,
+                                  ztime,
+                                  geo,
+                                  land1,
+                                  mlfimg,
+                                  slfimg,
+                                  mtart,
+                                  mmeins,
+                                  smeins,
+                                  sys_created_by,
+                                  sys_created_date,
+                                  sys_last_modified_by,
+                                  sys_last_modified_date)
+       SELECT '301' AS mandt,
+              mmatnr,
+              plant,
+              smatnr,
+              rsd,
+              ztime,
+              geo_id,
+              land1,
+              SUM (mlfimg),
+              SUM (slfimg),
+              mtart,
+              '' AS mmeins,
+              '' AS smeins,
+              'pkg_create_data_apo.PRC_GET_BACKLOG_APO',
+              CURRENT_TIMESTAMP,
+              'pkg_create_data_apo.PRC_GET_BACKLOG_APO',
+              CURRENT_TIMESTAMP
+         FROM (
+              --cto/mtm
+              SELECT t1.planning_item_id AS mmatnr,
+                      t1.plant,
+                      t2.idnrk AS smatnr,
+                      t1.rsd,
+                      t1.rsd AS ztime,
+                      t1.geo_id,
+                      t1.land1,
+                      t1.backlog AS mlfimg,
+                      t1.backlog * t2.menge AS slfimg,
+                      t1.item_type AS mtart
+                 FROM z_mid_pcdw_backlog_apo t1, pcdw_ordbom_x86 t2
+                WHERE     t1.order_id = t2.vbeln
+                      AND t1.line_item_id = t2.posnr
+                      AND t1.planning_item_id = t2.matnr
+                      AND t1.item_type IN ('CTO', 'MTM')
+                      AND EXISTS
+                             (SELECT 1
+                                FROM pcdw_itemsitemaster t3
+                               WHERE     t2.idnrk = t3.item
+                                     AND t1.plant = t3.siteid 
+                                     --AND t3.itemclass = 'SBB'
+                                     AND (t3.STRGR = 'ZS' or SUBSTR(t3.ZUCOD,1,4)='HCSB')
+                                     AND t3.zucod LIKE 'H%')
+               UNION ALL
+               --option
+               SELECT t1.planning_item_id AS mmatnr,
+                      t1.plant,
+                      'DUMMY' AS smatnr,
+                      t1.rsd,
+                      t1.rsd AS ztime,
+                      t1.geo_id,
+                      t1.land1,
+                      t1.backlog AS mlfimg,
+                      t1.backlog AS slfimg,
+                      t1.item_type AS mtart
+                 FROM z_mid_pcdw_backlog_apo t1
+                WHERE t1.item_type = 'OPTION')
+       GROUP BY mmatnr, plant, smatnr, rsd, ztime, geo_id, land1, mtart
+       HAVING SUM (mlfimg) > 0;
+
+    UPDATE pcdw_backlog_apo t1
+       SET t1.smeins =
+              (SELECT t2.meins
+                 FROM pcdw_itemsitemaster t2
+                WHERE     t1.smatnr = t2.item
+                      AND t1.plant = t2.siteid);
+
+    UPDATE pcdw_backlog_apo t1
+       SET t1.mmeins =
+              (SELECT t2.meins
+                 FROM pcdw_itemsitemaster t2
+                WHERE     t1.mmatnr = t2.item
+                      AND t1.plant = t2.siteid);
+
+    UPDATE pcdw_backlog_apo t1
+       SET t1.smeins =
+              (SELECT t2.meins
+                 FROM pcdw_itemsitemaster t2
+                WHERE     t1.mmatnr = t2.item
+                      AND t1.plant = t2.siteid)
+     WHERE smatnr = 'DUMMY';
+     
+   PO_RETURNCODE := 0;
+   -- log process end
+    INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_BACKLOG_APO', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';    
+END;

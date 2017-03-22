@@ -1,0 +1,85 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_soifailedgr::deleteUISOIFailedGR" (
+	IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_SOIFAILEDGR_T",
+	OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+		aTPL_RECEIPT_LINE_ID	NVARCHAR(20);
+	 	aTPL_RECEIPT_ID			NVARCHAR(20);
+	 	aTPL_ID					NVARCHAR(60);
+		
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.szebgvmi.procedures.pkg_ui.ui_SOIfailedgr::deleteUISOIFailedGR error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.ui_SOIfailedgr::deleteUISOIFailedGR'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+ -----LOGIC START-------
+   call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'soifailed::deleteable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ 	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.ui_SOIfailedgr::deleteUISOIFailedGR'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+  
+ select
+    TPL_RECEIPT_LINE_ID,
+	TPL_RECEIPT_ID,
+	TPL_ID   
+  into  	
+ 	aTPL_RECEIPT_LINE_ID,
+	aTPL_RECEIPT_ID,
+	aTPL_ID					
+  from :newInfo; 
+  
+ --LOG---
+	INSERT INTO SOI_GR_LOG
+	SELECT *,session_user,'delete',current_timestamp
+	from SOI_GR
+	where TPL_RECEIPT_LINE_ID = :aTPL_RECEIPT_LINE_ID AND TPL_RECEIPT_ID = :aTPL_RECEIPT_ID AND
+		   TPL_ID = :aTPL_ID;  
+ 
+ --delete操作
+ delete from SOI_GR
+ where TPL_RECEIPT_LINE_ID = :aTPL_RECEIPT_LINE_ID AND TPL_RECEIPT_ID = :aTPL_RECEIPT_ID AND
+		   TPL_ID = :aTPL_ID;
+
+/*END*/
+ 	    aI_DETAIL := 'cdp.szebgvmi.procedures::deleteUISOIFailedGR() successfully executed.';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures::deleteUISOIFailedGR'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	 	      	 
+END;

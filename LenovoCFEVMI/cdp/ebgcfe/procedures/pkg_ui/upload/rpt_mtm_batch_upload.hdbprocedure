@@ -1,0 +1,108 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::rpt_mtm_batch_upload"
+(
+IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MTM_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+	currentUser varchar(100);
+	insert_n int;
+	update_n int;
+	
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+
+    END; 
+       
+	--procedure begin
+	 --赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	FILTER_TABLE = 
+	SELECT ITEM,MT,FAMILY
+	FROM :newInfo a
+	WHERE ITEM IN (
+					(SELECT DISTINCT ITEM FROM EBGCFE.UI_ITEM WHERE ITEM_TYPE IN ('CTO','MTM','BUNDLE','OPTION')) 
+					UNION 
+					(SELECT DISTINCT ITEM FROM EBGCFE.UI_ITEM_HIS WHERE ITEM_TYPE IN ('CTO','MTM','BUNDLE','OPTION'))
+					UNION 
+					(SELECT 'N/A' "ITEM" FROM DUMMY)
+					)
+		AND MT IN (
+					SELECT DISTINCT MACHINETYPE FROM "EBGCFE"."UI_MACHINETYPE"
+					UNION 
+					SELECT 'N/A' "MACHINETYPE" FROM DUMMY
+					)
+		AND FAMILY IN (
+					SELECT DISTINCT PROD_FAMILY FROM "EBGCFE".UI_prodfamily
+					UNION 
+					SELECT 'N/A' "PROD_FAMILY" FROM DUMMY
+					)	
+	;
+	
+	INSERT_TABLE = select * from :FILTER_TABLE as a where not exists (
+			SELECT 1
+			FROM EBGCFE.UI_RPT_MODELLIST
+			WHERE ITEM = a.ITEM
+			AND MT = a.MT
+			AND FAMILY = a.FAMILY
+			AND REPORT_NAME = 'RPT_MTM'
+		);
+	
+	UPDATE_TABLE = select * from :FILTER_TABLE as a where exists (
+			SELECT 1
+			FROM EBGCFE.UI_RPT_MODELLIST
+			WHERE ITEM = a.ITEM
+			AND MT = a.MT
+			AND FAMILY = a.FAMILY
+			AND REPORT_NAME = 'RPT_MTM'
+		);
+	
+	SELECT count(1) into insert_n
+	 	FROM :INSERT_TABLE;	 
+	SELECT count(1) into update_n
+	 	FROM :UPDATE_TABLE;	 
+	
+	IF insert_n > 0 THEN
+	INSERT INTO "EBGCFE"."UI_RPT_MODELLIST"(
+			ITEM,
+			MT,
+			FAMILY,
+			REPORT_NAME,
+			MODIFIED_BY
+			)
+			SELECT a.ITEM,
+				   a.MT,
+				   a.FAMILY,
+				   'RPT_MTM',
+				   :currentUser
+			FROM :INSERT_TABLE as a
+			;
+	END IF;
+	
+	IF update_n > 0 THEN
+	UPDATE "EBGCFE"."UI_RPT_MODELLIST" as b SET(
+			b.MODIFIED_BY
+			) = 
+			(
+			 :currentUser
+		      )
+			FROM :UPDATE_TABLE as a, "EBGCFE"."UI_RPT_MODELLIST" as b
+			WHERE b.ITEM = a.ITEM AND b.MT = a.MT AND b.FAMILY = a.FAMILY AND b.REPORT_NAME = 'RPT_MTM';
+	
+	END IF;
+	
+	
+END;

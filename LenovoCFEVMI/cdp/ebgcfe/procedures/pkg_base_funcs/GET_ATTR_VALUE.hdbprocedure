@@ -1,0 +1,58 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_base_funcs::GET_ATTR_VALUE" ( 
+  IN p_in_attr_array "cdp.ebgcfe.data::EBGCFE_T.PROC_T.TYP_UI_ATTR_ARRAY",
+  IN p_in_key VARCHAR(30),
+  OUT p_out_result VARCHAR(2000)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : GET_ATTR_VALUE               
+*function   : Get Attribute Value
+*input      ：p_in_attr_array : attribute table / p_in_key : attribute key
+              (note: as of HANA SPS8, table type is supported only in procedure, not in function)
+*output     : p_out_result : attribute value
+*author     : Leonard Ling
+*CreateDate : 2014-12-04
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+  DECLARE logidi            INTEGER;
+   
+  -- exception
+  
+  DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299  --no_data_found
+  BEGIN
+  	    p_out_result := ::SQL_ERROR_CODE;     
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>'PKG_BASE_FUNCS.GET_ATTR_VALUE', I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=> :p_in_key ||  ' IS NOT IN THE INPUT PARAMS;'
+                                             || substr(::SQL_ERROR_MESSAGE, 1, 500) );        
+	    RESIGNAL;   
+  END;
+  
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN   
+    	    p_out_result := ::SQL_ERROR_CODE;  
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>'PKG_BASE_FUNCS.GET_ATTR_VALUE', I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+	                                    substr(::SQL_ERROR_MESSAGE, 1, 500) );        
+	    RESIGNAL; 
+  END;    
+  
+  -- process logic
+  logidi:=0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+   (I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+	I_EVENT_NAME=>'PKG_BASE_FUNCS.GET_ATTR_VALUE',I_MODULE=>'EBGCFE');     
+  
+  SELECT VALUE
+    INTO p_out_result
+    FROM :p_in_attr_array
+   WHERE UPPER (KEY) = UPPER (:p_in_key);
+END;

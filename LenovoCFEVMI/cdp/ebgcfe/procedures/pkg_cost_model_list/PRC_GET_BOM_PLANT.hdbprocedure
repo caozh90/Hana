@@ -1,0 +1,245 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cost_model_list::PRC_GET_BOM_PLANT" ( 
+  OUT P_OUT_EXITCODE INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_GET_BOM_PLANT             
+*function   : Get BOM Plant 
+*input      ：-
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2014-12-29
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+  -- datag 
+  DECLARE    V_PKG_NAME          VARCHAR(100) := 'PKG_COST_MODEL_LIST';    
+  DECLARE    V_PRC_NAME          VARCHAR(50) := 'PRC_GET_BOM_PLANT';
+  DECLARE    V_FUNC_FULL_NAME    VARCHAR(100) := :V_PKG_NAME || '.' || :V_PRC_NAME;
+  DECLARE    logidi              INTEGER := 0;
+  
+  DECLARE    V_OEM_SBOM_PLANT    VARCHAR(20);
+  
+  DECLARE CURSOR C_PLANTS FOR 
+          SELECT PVALUE FROM CONF_PARAMETERS
+           WHERE PDOMAIN = 'MODEL_LIST'
+             AND PNAME   = 'OEM_BOM_PLANT'
+          ORDER BY PTYPE;  
+      
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+            P_OUT_EXITCODE := -1;  
+			CALL "EX_LOG"."cdp.log.procedures::logProc"
+					(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+					I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'EBGCFE',
+					I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+		                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );         
+            RESIGNAL;
+    END; 
+      
+  -- process logic
+  P_OUT_EXITCODE := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGCFE');    
+
+  --EXECUTE IMMEDIATE 'truncate table MID_MODEL_LIST_PLANT_BOM';
+  --EXECUTE IMMEDIATE 'truncate table MID_MODEL_WITH_PLANT';
+  DELETE FROM MID_MODEL_LIST_PLANT_BOM;
+  DELETE FROM MID_MODEL_WITH_PLANT;
+
+  --get BOM plant 
+  INSERT INTO MID_MODEL_LIST_PLANT_BOM (PRODUCT_GROUP,
+                                              PLANT,
+                                              ITEM,
+                                              ITEM_TYPE,
+                                              BOM_PLANT,
+                                              PROD_FAMILY,
+                                              BRAND)
+         SELECT DISTINCT PRODUCT_GROUP,
+                         PLANT,
+                         ITEM,
+                         ITEM_TYPE,
+                         BOM_PLANT,
+                         PROD_FAMILY,
+                         BRAND
+           FROM MID_COST_MODEL_LIST_TMP
+          WHERE PRODUCT_GROUP ='EBG';
+  
+      --COMMIT;
+
+        INSERT INTO MID_MODEL_WITH_PLANT (PRODUCT_GROUP,
+                                          NAME,
+                                          WERKS,
+                                          OEM)
+         SELECT DISTINCT PRODUCT_GROUP,
+                         NAME,
+                         WERKS,
+                         OEM
+           FROM Z_PCDW_BOM
+          WHERE     PRODUCT_GROUP = 'EBG'
+          AND ITEM_TYPE_F IN ('MTM', 'CTO', 'OPTION', 'BUNDLE');
+          
+        INSERT INTO MID_MODEL_WITH_PLANT (PRODUCT_GROUP,
+                                          NAME,
+                                          WERKS,
+                                          OEM)
+         SELECT DISTINCT A.PRODUCT_GROUP,
+                         father,
+                         A.Plant,
+                         'N' AS OEM
+           FROM UI_MANUAL_BOM a ,UI_ITEM b, UI_plant c
+          WHERE a.PRODUCT_GROUP = 'EBG'
+            AND a.plant         = c.plant
+            AND a.father        = b.item
+            AND a.bom_level     = 'L1'
+            AND a.flag         <> 'DELETE'
+            AND c.plant_type   <> 'OEM'
+            AND b.ITEM_TYPE IN ('MTM', 'CTO', 'OPTION', 'BUNDLE')            
+            and not exists (select 1 from MID_MODEL_WITH_PLANT as d
+                                    where a.product_group = d.product_group 
+                                        and a.father      = d.name
+                                        and a.plant       = d.werks);
+                                        
+        INSERT INTO MID_MODEL_WITH_PLANT (PRODUCT_GROUP,
+                                          NAME,
+                                          WERKS,
+                                          OEM)
+         SELECT DISTINCT A.PRODUCT_GROUP,
+                         A.father,
+                         C.Plant,
+                         'N' AS OEM
+           FROM UI_MANUAL_BOM a ,UI_ITEM b, conf_plant_bugrp_mapping c
+          WHERE a.PRODUCT_GROUP = 'EBG'
+            AND a.father        = b.item
+            AND a.bom_level     = 'L1'
+            AND a.flag         <> 'DELETE'
+            AND c.plant_type   = 'OEM'
+            AND b.ITEM_TYPE IN ('MTM', 'CTO', 'OPTION', 'BUNDLE')  
+            AND c.plant_type   = 'PLANT'          
+            and not exists (select 1 from MID_MODEL_WITH_PLANT as d
+                                    where a.product_group = d.product_group 
+                                        and a.father      = d.name
+                                        and c.plant       = d.werks);                                        
+            --2016/4/5 by xwu.
+            --AND (a.product_group, a.father, a.plant) NOT IN
+            --    (SELECT product_group, name, werks FROM MID_MODEL_WITH_PLANT);  
+                    
+        /*INSERT INTO MID_MODEL_WITH_PLANT (PRODUCT_GROUP,
+                                          NAME,
+                                          WERKS,
+                                          OEM)
+         SELECT DISTINCT A.PRODUCT_GROUP,
+                         father,
+                         A.Plant,
+                         'Y' AS  OEM
+           FROM UI_MANUAL_BOM a ,UI_ITEM b, UI_plant c
+          WHERE a.PRODUCT_GROUP = 'EBG'
+            AND a.plant         = c.plant
+            AND a.father        = b.item
+            AND a.bom_level     = 'L1'
+            AND a.flag         <> 'DELETE'
+            AND c.plant_type    = 'OEM'
+            AND b.ITEM_TYPE IN ('MTM', 'CTO', 'OPTION', 'BUNDLE')
+            and not exists (select 1 from MID_MODEL_WITH_PLANT as b
+                                   where a.product_group = b.product_group
+                                      and a.father = b.name
+                                      and b.oem = 'Y');*/
+            --2016/4/5 by xwu.
+            --AND (a.product_group, a.father) NOT IN
+            --    (SELECT product_group, name FROM MID_MODEL_WITH_PLANT
+            --      WHERE oem = 'Y');                              
+
+  --COMMIT;
+
+  UPDATE MID_MODEL_LIST_PLANT_BOM A 
+	SET BOM_PLANT= PLANT
+	Where EXISTS 
+	(SELECT 1 FROM MID_MODEL_WITH_PLANT B WHERE 
+	    A.PRODUCT_GROUP = 'EBG'   
+	AND B.PRODUCT_GROUP = A.PRODUCT_GROUP
+	                           AND B.NAME = A.ITEM
+	                           AND B.WERKS = A.PLANT
+	                           );
+  
+  /*--Get bom plant from hub plant for oem finish goods	                           
+  UPDATE MID_MODEL_LIST_PLANT_BOM T1
+     SET T1.BOM_PLANT = T2.WERKS
+    FROM MID_MODEL_WITH_PLANT T2
+   WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+     AND T1.ITEM          = T2.NAME
+     AND T1.BOM_PLANT IS NULL
+     AND T2.OEM           = 'Y'
+     AND T1.ITEM_TYPE    <> 'OPTION'
+     AND EXISTS(SELECT 1 FROM UI_PLANT T3
+                 WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                   AND T3.PLANT         = T1.PLANT
+                   AND T3.PLANT_TYPE    = 'OEM');*/
+  
+  --Get OEM OPTION's BOM plant from IN-HOUSE plant                 
+  FOR CUR_PRI AS C_PLANTS
+  DO
+      UPDATE MID_MODEL_LIST_PLANT_BOM T1
+         SET T1.BOM_PLANT = T2.WERKS
+        FROM MID_MODEL_WITH_PLANT T2
+       WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+         AND T1.ITEM          = T2.NAME
+         AND T2.WERKS         = CUR_PRI.PVALUE
+         AND T1.BOM_PLANT IS NULL
+         AND EXISTS(SELECT 1 FROM UI_PLANT T3
+                 WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                   AND T3.PLANT         = T1.PLANT
+                   AND T3.PLANT_TYPE    = 'OEM');
+  END FOR;
+
+/*   comment by xwu2016/4/5
+  SELECT PVALUE INTO V_OEM_SBOM_PLANT 
+    FROM CONF_PARAMETERS
+   WHERE PDOMAIN = 'MODEL_LIST'
+     AND PNAME   = 'OEM_SBOM_PLANT';
+*/
+  
+  /*--OEM plant dont have SBB's BOM, should get its from IN-HOUSE plant                
+  UPDATE MID_MODEL_LIST_PLANT_BOM T1
+     SET T1.SBOM_PLANT = CASE WHEN T1.ITEM_TYPE <> 'OPTION' AND T2.PLANT_TYPE = 'OEM'
+                                THEN V_OEM_SBOM_PLANT
+                              ELSE T1.BOM_PLANT END
+    FROM UI_PLANT T2
+   WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+     AND T1.PLANT         = T2.PLANT
+     AND T1.BOM_PLANT IS NOT NULL;
+     
+  UPDATE MID_MODEL_LIST_PLANT_BOM T1
+     SET T1.SBOM_PLANT = V_OEM_SBOM_PLANT
+    FROM UI_PLANT T2
+   WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+     AND T1.SBOM_PLANT    = T2.PLANT
+     AND T2.PLANT_TYPE    = 'OEM';*/
+                   
+  UPDATE MID_COST_MODEL_LIST_TMP T2
+     SET T2.BOM_PLANT  = T1.BOM_PLANT
+     FROM MID_MODEL_LIST_PLANT_BOM T1
+     WHERE T1.ITEM  = T2.ITEM
+       AND T1.PLANT = T2.PLANT
+       AND T2.PRODUCT_GROUP = 'EBG';
+  
+  --Set swr fg's bom plant to SWR                   
+  UPDATE MID_COST_MODEL_LIST_TMP T1
+     SET T1.BOM_PLANT = 'SWR'
+   WHERE T1.PRODUCT_GROUP = 'EBG'
+     AND T1.BOM_PLANT IS NULL
+     AND EXISTS(SELECT 1 FROM BIZ_SWR T2
+                 WHERE T2.MATNR = T1.ITEM);
+                     
+  --COMMIT;
+
+  P_OUT_EXITCODE := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGCFE');   
+END;

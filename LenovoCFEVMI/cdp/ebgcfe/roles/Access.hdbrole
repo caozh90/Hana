@@ -1,0 +1,351 @@
+role cdp.ebgcfe.roles::Access
+
+ {
+//
+//extends role cdp.ds.roles::Access
+			//,cdp.log.roles::Access
+ 
+		catalog schema "_SYS_BIC": SELECT , EXECUTE;
+		catalog schema "_SYS_BI": SELECT;
+		catalog schema "EBGCFE":  EXECUTE; //, CREATE ANY;
+		//sql object cdp.ebgcfe.data:EBGCFE_T.UI_COST_TAPE_ORI_ACTIVATE_T : SELECT ,INSERT ;
+//		SELECT 'analytic privilege: '||"PACKAGE_ID"||':'||"OBJECT_NAME"||'.'||"OBJECT_SUFFIX"||';'
+//			FROM "_SYS_REPO"."ACTIVE_OBJECT" 
+//			WHERE ("OBJECT_SUFFIX" = 'analyticprivilege')
+//			AND "PACKAGE_ID" LIKE 'cdp.ebgcfe%'
+        catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.PM_UI_GR_MTM_S" :SELECT ;
+		catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.PM_UI_GR_MTM_E" :SELECT ;
+		catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.PM_UI_SALES_REPORT_S" :SELECT ;
+		catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.PM_UI_SALES_REPORT_E" :SELECT ;
+        
+        catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_RATIO_CODE_BATCH_E" :SELECT ;
+        catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_RATIO_CODE_BATCH_S" :SELECT ;
+        
+        catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTOFC_ADDER_E" :SELECT ;
+        catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTOFC_ADDER_S" :SELECT ;
+        
+        catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_DEL_BATCH" :SELECT ;
+        
+        catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTO_COSTBOM_S" :SELECT ;
+        
+        catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PARTIAL_CAL_S" :SELECT ;
+        catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PARTIAL_CAL_E" :SELECT ;
+        
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_T" :SELECT ;
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_DEL" :SELECT ;
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_UPD" :SELECT ;
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_S" :SELECT ;
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_E" :SELECT ;
+       
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_WEIGHT_TABLE_T" :SELECT ;
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_WEIGHT_TABLE_T_E" :SELECT ;
+       
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COUNTRY_DUTY_TABLE_T" :SELECT ;
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COUNTRY_DUTY_TABLE_T_E" :SELECT ;
+       
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MATERIAL_MARGIN_S" :SELECT ;
+       
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MTM_S" :SELECT ;
+       
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTOFC_ADDER_S" :SELECT ;
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTOFC_ADDER_E" :SELECT ;     
+         
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_BS_PART_NO_S" :SELECT ; //ZHAODAN1 2016/8/24
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_BS_PART_NO_E" :SELECT ;//ZHAODAN1 2016/8/24
+       
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CRYAD_PH_S" :SELECT ;//ZHAODAN1 2017/2/6
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CRYAD_PH_E" :SELECT ;//ZHAODAN1 2017/2/6
+       
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FRT_PH_S" :SELECT ;//ZHAODAN1 2017/2/6
+       catalog sql object "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FRT_PH_E" :SELECT ;//ZHAODAN1 2017/2/6           
+
+ 		analytic privilege: cdp.ebgcfe.models.ui_machine_type:AP_UI_MACHINE_TYPE.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_dummy_part:AP_UI_DUMMYPART.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_economic_adder:AP_UI_ECONOMIC_ADDER.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_adder_conf:AP_UI_ADDER_CONF.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_ondemand_refresh:AP_UI_ONDEMAND.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_manual_bom:AP_UI_MANUAL_BOM.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_sos:AP_UI_SOS.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_sos:AP_UI_SOS_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.common:AP_COMMON.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_where_used:AP_PRT_WHERE_USED.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.biz_fcsbbmap:AP_BIZ_FCSBBMAP.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cost_elem:AP_UI_COST_ELEM.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_item:AP_UI_ITEM.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_prodfamily:AP_UI_PRODFAMILY.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_sbbcategory:AP_UI_SBBCategory.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_region:AP_UI_REGION.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_region:AP_UI_REGION_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ds:AP_UI_CONTROL_POINT.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cost_bake:AP_UI_COST_BAKE.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cycle:AP_UI_CYCLE.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_exchange_rate:AP_EXCHANGE_RATE.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cost_tape_ori:AP_UI_COST_TAPE_ORI.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cost_tape_ori:AP_UI_COST_TAPE_ORI_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cost_tape:AP_UI_COST_TAPE.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cost_tape:AP_UI_COST_TAPE_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_group_cost:AP_UI_GROUP_COST.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_group_cost:AP_UI_GROUP_COST_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xmva:AP_UI_XMVA.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xmva:AP_UI_XMVA_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xifrt:AP_UI_XIFRT.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xifrt:AP_UI_XIFRT_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_plant:AP_UI_PLANT.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_plant:AP_UI_PLANT_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xoutfr:AP_UI_XOUTFR.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xoutfr:AP_UI_XOUTFR_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_wwvar:AP_UI_WWVAR.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_wwvar:AP_UI_WWVAR_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xatt:AP_UI_XATT.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xatt:AP_UI_XATT_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xattc:AP_UI_XATTC.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_xattc:AP_UI_XATTC_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_flexible_adder:AP_UI_FLEXIBLE_ADDER.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_flexible_adder:AP_UI_FLEXIBLE_ADDER_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_seocostbom:AP_SEOCOSTBOM.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cto_costbom:AP_UI_CTO_COSTBOM.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_froce_item_type:AP_UI_FROCE_ITEM_TYPE.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.biz_cost_model_list:AP_BIZ_COST_MODEL_LIST.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.biz_cost_model_list:AP_BIZ_COST_MODEL_LIST_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_material_margin:AP_RPT_MATERIAL_MARGIN.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_material_margin:AP_RPT_MATERIAL_MARGIN_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_bom_missing_total:AP_RPT_BOMMISSINGTOTAL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_bom_missing_total:AP_RPT_BOMMISSINGTOTAL_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_outlook:AP_RPT_OUTLOOK.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_outlook:AP_RPT_OUTLOOK_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_ctc:AP_RPT_CTC.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_ctc:AP_RPT_CTC_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_cost_type_comparison:AP_RPT_COSTTYPECOMPARISON.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_cost_type_comparison:AP_RPT_COSTTYPECOMPARISON_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_ctc_new_material:AP_RPT_CTC_NEW_MATERIAL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.rpt_key_sbb_error:AP_RPT_KEYSBB_ERROR.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cost_calcu_formu:AP_UI_COST_CALCU_FORMU.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_cost_calcu_formu:AP_UI_COST_CALCU_FORMU_DDL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UPLOAD.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_ITEM.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_PRODFAMILY.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_XMVA.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_XOUTFR.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_WWVAR.analyticprivilege; 
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_XIFRT.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_XATTC.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_XATT.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_MANUAL_BOM_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_FLEXIBLE_ADDER.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_SBBCATEGORY_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_MACHINETYPE_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_ADDER_CONF.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_DUMMYPART_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_FORCEITEMTYPE_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_SOS_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_COST_CALCU_FORMU_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_COST_ELEM_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_COST_TAPE_ORI_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_EXCHANGE_RATE_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_GROUP_COST_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_REGION_ERR_DETAIL.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.models.ui_country_salesorg_mapping:AP_COUNTRY_SALESORG_MAPPING.analyticprivilege;
+		analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_COUNTRY_SALESORG_MAPPING_ERR_DETAIL.analyticprivilege;
+        analytic privilege: cdp.ebgcfe.models.ui_item_type:AP_UI_ITEM_TYPE.analyticprivilege;
+        analytic privilege: cdp.ebgcfe.models.ui_real_dummy_mapping:AP_REAL_DUMMY_MAPPING.analyticprivilege;
+        analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_REAL_DUMMY_MAPPING_ERR_DETAIL.analyticprivilege;
+//ADDED BY CHENWH3 20150810 START
+		 analytic privilege: cdp.ebgcfe.models.ui_additional_cost:AP_UI_ADDITIONAL_COST.analyticprivilege;
+		 analytic privilege: cdp.ebgcfe.models.ui_additional_cost:AP_UI_ADDITIONAL_COST_CREATE.analyticprivilege;
+		 analytic privilege: cdp.ebgcfe.models.ui_additional_cost:AP_UI_ADDITIONAL_COST_SEARCH.analyticprivilege;
+		 analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_ADDITIONAL_COST_ERR_DETAIL.analyticprivilege;
+		 analytic privilege: cdp.ebgcfe.models.ui_ratio_code:AP_UI_C_RATIO_CODE.analyticprivilege;
+		 analytic privilege: cdp.ebgcfe.models.ui_ratio_code:AP_UI_S_RATIO_CODE.analyticprivilege;
+		 analytic privilege: cdp.ebgcfe.models.ui_ratio_code:AP_UI_RATIO_CODE.analyticprivilege;
+		 analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_RATIO_CODE_ERR_DETAIL.analyticprivilege;
+//ADDED BY CHENWH3 20150810 END
+
+//ADDED BY Justin 20150811 START
+	 analytic privilege: cdp.ebgcfe.models.ui_warr_pca_uplift:AP_UI_WARR_PCA_UPLIFT_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.ui_warr_pca_uplift:AP_UI_WARR_PCA_UPLIFT.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_WARR_PCA_UPLIFT_ERR_DETAIL.analyticprivilege;
+//ADDED BY Justin 20150811 END
+
+//ADDED BY Justin 20150812 START
+	 analytic privilege: cdp.ebgcfe.models.ui_cost_tape_ori:AP_UI_COST_TAPE_ORI_UP_LOG.analyticprivilege;
+//ADDED BY Justin 20150812 END
+
+//ADDED BY Justin 20150814 START
+	 analytic privilege: cdp.ebgcfe.models.ui_sbb_cost_bom:AP_UI_SBB_COSTBOM_SBB.analyticprivilege;
+//ADDED BY Justin 20150814 END
+
+//ADDED BY Justin 20150817 START
+	 analytic privilege: cdp.ebgcfe.models.rpt_where_used:AP_RPT_WHERE_USED_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.rpt_where_used:AP_RPT_WHERE_USED.analyticprivilege;
+//ADDED BY Justin 20150817 END
+
+//ADDED BY Justin 20150817 START
+	 analytic privilege: cdp.ebgcfe.models.rpt_cost_flag:AP_RPT_COST_FLAG_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.rpt_cost_flag:AP_RPT_COST_FLAG.analyticprivilege;
+//ADDED BY Justin 20150817 END
+
+//ADDED BY Justin 20150818 START
+	 analytic privilege: cdp.ebgcfe.models.ui_stdcost_daily:AP_UI_STDCOST_DAILY_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.ui_stdcost_daily:AP_UI_STDCOST_DAILY.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_STDCOST_DAILY_ERR_DETAIL.analyticprivilege;
+//ADDED BY Justin 20150818 END
+
+//ADDED BY Justin 20150917 START
+	 analytic privilege: cdp.ebgcfe.models.ui_stdcost_monthly:AP_UI_STDCOST_MONTHLY_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.ui_stdcost_monthly:AP_UI_STDCOST_MONTHLY.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_STDCOST_MONTHLY_ERR_DETAIL.analyticprivilege;
+//ADDED BY Justin 20150917 END
+
+//ADDED BY Justin 20150824 START
+	 analytic privilege: cdp.ebgcfe.models.rpt_stdcost_daily:AP_RPT_STDCOST_DAILY_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.rpt_stdcost_daily:AP_RPT_STDCOST_DAILY.analyticprivilege;
+//ADDED BY Justin 20150824 END
+
+//ADDED BY leon 20150828 START
+	 analytic privilege: cdp.ebgcfe.models.rpt_stdcost_monthly:AP_RPT_STDCOST_MONTHLY_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.rpt_stdcost_monthly:AP_RPT_STDCOST_MONTHLY.analyticprivilege;
+//ADDED BY leon 20150828 END
+
+
+        
+//ADDED BY Justin 20150828 START
+	 analytic privilege: cdp.ebgcfe.models.rpt_newly_parts:AP_RPT_NEWLY_PARTS_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.rpt_newly_parts:AP_RPT_NEWLY_PARTS.analyticprivilege;
+//ADDED BY Justin 20150828 END
+
+//ADDED BY fanfangxing 20150830 START
+	 analytic privilege: cdp.ebgcfe.models.ui_cfe_ecc_plantmapping:AP_UI_CFE_ECC_PLANTMAPPING_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.ui_cfe_ecc_plantmapping:AP_UI_CFE_ECC_PLANTMAPPING.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_CFE_ECC_PLANTMAPPINT_ERR_DETAIL.analyticprivilege;
+//ADDED BY fanfangxing 20150830 END
+//ADDED BY CHENWH3 20150831
+	analytic privilege: cdp.ebgcfe.models.ui_forecast_cost_publish:AP_UI_FORECAST_COST_PUBLISH.analyticprivilege;
+//ADDED BY CHENWH3 20150831
+
+//ADDED BY leon 20150901 START
+	 analytic privilege: cdp.ebgcfe.models.ui_cto_cv_vk_cost:AP_UI_CTO_CV_VK_COST_DDL.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.models.ui_cto_cv_vk_cost:AP_UI_CTO_CV_VK_COST.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_CTO_CV_VK_COST_ERR_DETAIL.analyticprivilege;
+//ADDED BY leon 20150901 END
+        
+//ADDED BY Billy Qiao 20150906 START
+	analytic privilege: cdp.ebgcfe.models.ui_service_cost:AP_UI_SERVICE_COST_DDL.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.models.ui_service_cost:AP_UI_SERVICE_COST.analyticprivilege;
+	 analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_SERVICE_COST_ERR_DETAIL.analyticprivilege;
+//ADDED BY Billy Qiao 20150906 END
+
+//ADDED BY Justin 20150915 START
+	analytic privilege: cdp.ebgcfe.models.ui_cost_flag:AP_UI_COST_FLAG.analyticprivilege;
+//ADDED BY Justin 20150915 END
+
+//ADDED BY Justin 20150916 START
+	analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_COST_FLAG_ERR_DETAIL.analyticprivilege;
+//ADDED BY Justin 20150916 END
+//ADDED BY ZHAODAN1 20150930 START
+analytic privilege: cdp.ebgcfe.models.ui_upload:AP_UI_UPLOAD_ERR_DETAIL.analyticprivilege;
+//ADDED BY Justin 20150930 END
+
+//ADDED BY Justin 20151010 START
+	analytic privilege: cdp.ebgcfe.models.ui_pm_bs_part:AP_UI_PM_BS_PART_DDL.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.models.ui_pm_bs_part:AP_UI_PM_BS_PART.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_PM_BS_PART_ERR_DETAIL.analyticprivilege;
+//ADDED BY Justin 20151010  END
+        
+//ADDED BY bianzh1 20151012 START
+	analytic privilege: cdp.ebgcfe.models.ui_pm_bom:AP_UI_PM_BOM_DDL.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.models.ui_pm_bom:AP_UI_PM_BOM.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_PM_BOM_ERR_DETAIL.analyticprivilege;
+//ADDED BY bianzh1 20151012  END
+
+//ADD BY ZHANGCH 20151014 START 
+     analytic privilege: cdp.pcdw.models.to_pwt:AP_TO_PWT.analyticprivilege;
+     //analytic privilege: cdp.pcdw.models.to_bw:AP_TO_BW.analyticprivilege;      
+ //ADD BY ZHANGCH 20151014 END
+
+//ADD BY Liss 20151021 START 
+     analytic privilege: cdp.ebgcfe.models.rpt_sales_office:AP_RPT_SALES_OFFICE_DDL.analyticprivilege;
+     analytic privilege: cdp.ebgcfe.models.rpt_sales_office:AP_RPT_SALES_OFFICE.analyticprivilege;
+ //ADD BY Liss 20151021 END
+ 	
+ //ADDED BY bianzh1 20160115 START
+	analytic privilege: cdp.ebgcfe.models.ui_ctofc_flag:AP_UI_CTOFC_FLAG.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_CTOFC_FLAG_ERR_DETAIL.analyticprivilege;
+//ADDED BY bianzh1 20160115  END	
+ //ADDED BY zhaodan1 20160115 START
+	analytic privilege: cdp.ebgcfe.models.ui_mt_eol:AP_UIMT_EOL.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_MT_EOL_ERR_DETAIL.analyticprivilege;
+//ADDED BY zhaodan1 20160115  END	
+//add by chenwh3 20160307 start
+  	 analytic privilege: cdp.ebgcfe.models.ui_time_fence:AP_UI_TIME_FENCE_DDL.analyticprivilege;
+     analytic privilege: cdp.ebgcfe.models.ui_time_fence:AP_UI_TIME_FENCE_INFO.analyticprivilege;
+ //add by chenwh3 20160307 end
+ 
+ //add by bianzh1 20160309 start
+  	 analytic privilege: cdp.ebgcfe.models.ui_pm_sales_report:AP_UI_PM_SALES_REPORT.analyticprivilege;
+     analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_PM_SALES_REPORT_ERR_DETAIL.analyticprivilege;
+ //add by bianzh1 20160309 end
+ 
+  //add by zhaodan1 20160310 start
+  	 analytic privilege: cdp.ebgcfe.models.ui_pm_gr_mtm:AP_PM_UI_GR_MTM.analyticprivilege;
+     analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_PM_GR_MTM_ERR_DETAIL.analyticprivilege;
+ //add by zhaodan1 20160310 end
+ 
+  //add by zhangxj 20160314 start
+  	 analytic privilege: cdp.pcdw.models.to_bw:AP_EXP_CFE_MTM_BW.analyticprivilege;
+  	 analytic privilege: cdp.pcdw.models.to_lbp:AP_EXP_CFE_TO_LBP.analyticprivilege;
+  	 analytic privilege: cdp.pcdw.models.to_price_tool:AP_EXP_CFE_TO_PRICE_TOOL.analyticprivilege;
+  	 analytic privilege: cdp.pcdw.models.to_psat:AP_EXP_CFE_TO_PSAT.analyticprivilege;
+ //add by zhangxj 20160314 end 
+ 
+  //add by zhengyq 20160322 start
+  	 analytic privilege: cdp.ebgcfe.models.ui_mtm_cc_report:AP_CV_MTM_DDL_CC.analyticprivilege;
+     analytic privilege: cdp.ebgcfe.models.ui_mtm_cc_report:AP_CV_MTM_CC_INFO.analyticprivilege;
+ //add by zhengyq 20160322 end 
+ // add by zhaodan1 20160322 start
+  	 analytic privilege: cdp.ebgcfe.models.ui_pm_rpt_forecast:AP_PM_RPT_FORECAST.analyticprivilege;
+ //add by zhaodan1 20160322 end
+ //ADD BY CHENWH3 20160510 START
+ 	 analytic privilege: cdp.ebgcfe.models.ui_inventory_report:AP_UI_INVENTORY_REPORT_DDL.analyticprivilege;
+     analytic privilege: cdp.ebgcfe.models.ui_inventory_report:AP_UI_INVENTORY_REPORT_INFO.analyticprivilege;
+ //ADD BY CHENWH3 20160510 END
+ 	
+ //add by bianzh1 20160525 start
+  	 analytic privilege: cdp.ebgcfe.models.ui_partial_cal:AP_UI_PARTIAL_CAL.analyticprivilege;
+     analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_ONDEMAND_CAL_LIST_ERR_DETAIL.analyticprivilege;
+ //add by bianzh1 20160525 end
+ //add by cuiyue3 20160531 start
+     analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_XOUTFR_RATE_ERR_DETAIL.analyticprivilege;
+     analytic privilege: cdp.ebgcfe.models.ui_xoutfr_rate:AP_UI_XOUTFR_RATE.analyticprivilege;
+     analytic privilege: cdp.ebgcfe.models.ui_xoutfr_rate:AP_UI_XOUTFR_RATE_DDL.analyticprivilege;
+ //add by cuiyue3 20160531 end
+ 
+ //add by zhaodan1 20160531 start
+	analytic privilege: cdp.ebgcfe.models.rpt_mtm:AP_RPT_MTM.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.models.ui_sellable_country:AP_UI_SELLABLE_COUNTRY.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.models.ui_xoutfr_weight:AP_UI_XOUTFR_WEIGHT.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_XOUTFR_WEIGHT_ERR_DETAIL.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.models.ui_ctofc_adder:AP_UI_CTOFC_ADDER.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.models.ui_ctofc_adder:AP_UI_CTOFC_ADDER_DDL.analyticprivilege;
+//add by zhaodan1 20160531 end
+
+//add by zhangzj6 20160816 start
+	analytic privilege: cdp.ebgcfe.models.rpt_volume_report:AP_RPT_VOLUME_REPORT.analyticprivilege;
+//add by zhangzj6 20160816 end
+
+//add by zhaodan1 20160816 start
+	analytic privilege: cdp.ebgcfe.models.ui_pm_bs_part_no:AP_UI_PM_BS_PART_NO.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_PM_BS_PART_NO_ERR_DETAIL.analyticprivilege;
+//add by zhaodan1 20160816 end
+
+//add by zhaodan1 20170206 start
+	analytic privilege: cdp.ebgcfe.models.ui_cryad_ph:AP_UI_CRYAD_PH_DDL.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.models.ui_cryad_ph:AP_UI_CRYAD_PH.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_CRYAD_PH_ERR_DETAIL.analyticprivilege;
+//add by zhaodan1 20170206 end
+
+//add by bianzh1 20170208 start
+	analytic privilege: cdp.ebgcfe.models.ui_frt_ph:AP_UI_FRT_PH.analyticprivilege;
+	analytic privilege: cdp.ebgcfe.service.upload.models:AP_UI_FRT_PH_ERR_DETAIL.analyticprivilege;
+//add by bianzh1 20170208 end
+
+}

@@ -1,0 +1,168 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pmbspart" (
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int	,
+	
+	IN PRODUCT_GROUP NVARCHAR(10),
+	IN OEM_NAME NVARCHAR(40),
+	IN BS_PART NVARCHAR(40),
+	IN COMMODITY NVARCHAR(20),
+	IN V_PART_DESC NVARCHAR(200)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      : ui_warr_pca_uplift              --函数名
+*function  : upload数据至表ui_warr_pca_uplift并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Justin               --作者
+*CreateDate    : 2015-08-10       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_pmbspart';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_PM_BS_PART';
+		validate int;
+		PRODUCT_GROUP NVARCHAR(10) :='EBG';
+		PART_DESC NVARCHAR(20);
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pmbspart_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:PRODUCT_GROUP,:OEM_NAME,:BS_PART,:COMMODITY,:PART_DESC);
+     END;     
+     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pmbspart_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:PRODUCT_GROUP,:OEM_NAME,:BS_PART,:COMMODITY,:PART_DESC);
+    END; 
+    --exception 
+        
+
+
+	--procedure begin
+
+	business_code := :SEQ;
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	
+	--validate OEM_NAME
+	select  count(1) into validate from "EBGCFE".conf_parameters where pdomain='PRICE_MASK' and pname='OEM_NAME' and PVALUE = :OEM_NAME;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pmbspart_err"
+			('"OEM_NAME"::'||:OEM_NAME||' is illegal',:business_name,:SEQ,:position,
+			 :PRODUCT_GROUP,:OEM_NAME,:BS_PART,:COMMODITY,:PART_DESC);
+	RETURN;
+	END IF ;
+	
+	--validate BS_PART
+	select  count(1) into validate from "EBGCFE".UI_ITEM Where ITEM_TYPE in ('COMPONENT','OPTION')  AND ITEM =:BS_PART;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pmbspart_err"
+			('"BS_PART"::'||:BS_PART||' is illegal',:business_name,:SEQ,:position,
+			 :PRODUCT_GROUP,:OEM_NAME,:BS_PART,:COMMODITY,:PART_DESC);
+	RETURN;
+	END IF ;
+	
+	--UI_ITEM里面把ITEM等于BS_PART的ITEM_DESC
+ 		validate := 0;
+ 		SELECT count(ITEM_DESC) INTO validate FROM EBGCFE.UI_ITEM WHERE ITEM = :BS_PART;
+ 		if validate >= 1 then
+ 			SELECT  top 1 ITEM_DESC INTO PART_DESC FROM EBGCFE.UI_ITEM WHERE ITEM = :BS_PART;
+ 		end if;
+ 	
+	--validate COMMODITY
+	
+	select  count(1) into validate from "EBGCFE".conf_parameters where pdomain='UI_COST_TAPE_ORI' and pname='COMMODITY' and PVALUE= :COMMODITY;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pmbspart_err"
+			('"COMMODITY"::'||:COMMODITY||' is illegal',:business_name,:SEQ,:position,
+			 :PRODUCT_GROUP,:OEM_NAME,:BS_PART,:COMMODITY,:PART_DESC);
+	RETURN;
+	END IF;
+
+	
+	--validate Unique key
+		select count(1) into validate from "EBGCFE"."UI_PM_BS_PART" 
+		where PRODUCT_GROUP = :PRODUCT_GROUP AND OEM_NAME = :OEM_NAME AND
+		BS_PART = :BS_PART ;
+		
+		if validate>0 then
+			update "EBGCFE"."UI_PM_BS_PART" set
+		    	COMMODITY = :COMMODITY,
+		    	PART_DESC = :PART_DESC,
+		    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+		    	SYS_LAST_MODIFIED_BY = session_user,
+		    	ACTION = 'update'
+		    where
+		    	OEM_NAME = :OEM_NAME
+		    	AND BS_PART = :BS_PART; 
+		
+			--update操作需要写入日志
+			insert into "EBGCFE"."UI_PM_BS_PART_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				PRODUCT_GROUP,OEM_NAME,BS_PART,COMMODITY,PART_DESC,
+		 	SYS_LAST_MODIFIED_BY,
+		 	SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+				(:currentUser,
+				'update',
+				:create_time,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:PRODUCT_GROUP,:OEM_NAME,:BS_PART,:COMMODITY,:PART_DESC,
+				:currentUser,
+				:create_time);
+			
+		ELSEIF validate=0 THEN
+			--INSERT INTO UI_PM_BS_PART  
+			  insert into "EBGCFE"."UI_PM_BS_PART"
+			            (CYCLE,PRODUCT_GROUP,OEM_NAME,BS_PART,COMMODITY,PART_DESC,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION)  
+			  	values ('CURRENT','EBG',:OEM_NAME,:BS_PART,:COMMODITY,:PART_DESC,CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER,'insert');
+	        
+			--insert into log     
+			INSERT into  "EBGCFE"."UI_PM_BS_PART_LOG"
+				(
+				"PRODUCT_GROUP",
+				"OEM_NAME",
+				"BS_PART",
+				"COMMODITY",
+				"PART_DESC",
+				SYS_LAST_MODIFIED_DATE,
+			    AT_ACTION,
+			    SYS_LAST_MODIFIED_BY,
+			    AT_MODIFIED_ON,
+			    AT_MILLIS    	
+				)
+				
+			 VALUES(	
+				'EBG',
+				:OEM_NAME,
+				:BS_PART,
+				:COMMODITY,
+				:PART_DESC,
+				:create_time,
+			    'insert',
+			    session_user,
+			    CURRENT_TIMESTAMP,
+			    TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+		END IF;
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+	
+	
+END;

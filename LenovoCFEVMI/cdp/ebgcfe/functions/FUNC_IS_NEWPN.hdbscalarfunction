@@ -1,0 +1,59 @@
+FUNCTION "EBGCFE"."cdp.ebgcfe.functions::FUNC_IS_NEWPN" ( 
+	IN p_in_part_number  VARCHAR
+)  
+	RETURNS result VARCHAR(1)
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+/************************************************************************
+*name       : FUNC_IS_NEWPN               
+*function   : Checks if the given part number is new (10 digits)
+*input      ：p_in_part_number : Part Number
+*output     : result : 'Y' - Yes / 'N' - No
+*author     : Eric Zhou
+*CreateDate : 2014-11-12
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+AS
+	v_right VARCHAR(1);
+	v_count INTEGER := 0;
+	v_length INTEGER := 0;
+	v_flag INTEGER := 0;
+	v_tmp VARCHAR(3000);
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+	result := 'N';
+END;
+/*
+result := CASE WHEN ifnull(regexp_instr(p_in_part_number, '^[[:digit:]]+$'), 1) = 0 
+                         AND length(p_in_part_number) = 10
+               THEN 'Y'
+             ELSE 'N' END;
+*/        
+		 v_tmp := :p_in_part_number;     
+         v_length := LENGTH(:p_in_part_number);
+         if :v_tmp = null or LENGTH(:v_tmp) = 0
+         then v_flag := 1;
+         else
+         	while 1=1 DO         	         		
+         		v_right := RIGHT(:v_tmp,1);
+         		if ASCII(:v_right)>=48 and ASCII(:v_right)<=57
+         		then
+         			v_count := v_count+1;
+         			if LENGTH(:v_tmp) = 1
+         			then break;
+         			end if;
+         			v_tmp := LEFT(:v_tmp,LENGTH(:v_tmp)-1);         			
+         		else break;
+         		end if;
+         	END while;
+         end if;
+         if v_count = v_length
+         then
+         	v_flag := 1;
+         end if;
+         
+         result := CASE WHEN v_flag = 0 AND length(:p_in_part_number) = 10
+               		    THEN 'Y'
+                        ELSE 'N' END;        	
+END;

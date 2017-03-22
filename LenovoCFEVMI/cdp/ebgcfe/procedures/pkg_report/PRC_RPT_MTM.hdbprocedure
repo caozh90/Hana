@@ -1,0 +1,283 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_MTM" ( 
+  IN P_IN_CYCLE            VARCHAR(40),
+  IN P_IN_CYCLE_MONTH      VARCHAR(40),
+  IN P_IN_DELTACYCLE       VARCHAR(40),
+  IN P_IN_DELTACYCLE_MONTH VARCHAR(40),
+  OUT p_out_exitcode       NUMBER,
+  OUT p_out_exitmess       VARCHAR(2000)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+    /************************************************************************
+    *name       : PRC_RPT_MTM       
+    *function   : 
+    *input      ：P_IN_CYCLE, P_IN_CYCLE_MONTH,  P_IN_DELTACYCLE, P_IN_DELTACYCLE_MONTH
+    *output     : p_out_exitcode : error code 
+    *author     : 
+    *CreateDate : 2016-10-15
+    *UpdateDate :       
+    *************************************************************************/
+      v_pkg_name        VARCHAR(30)  := 'PKG_REPORT';
+      v_prc_name        VARCHAR(50)  := 'PRC_RPT_MTM';
+      v_full_name       VARCHAR(100) := :v_pkg_name || '.' || :v_prc_name;  
+      logidi            INTEGER := 0;
+      v_cycle_mon       VARCHAR(10);
+      v_delta_mon       VARCHAR(10); 
+      v_cycle_fcst      VARCHAR(10);
+      v_subprc_name     VARCHAR(30);
+      v_subprc_exitcode INTEGER;
+      V_SQL_EXE         VARCHAR(50000) := '';
+      v_report_name     VARCHAR(300)   := 'RPT_MTM';
+BEGIN    
+
+	DECLARE V_T_MID_RPT_MATERIALMARGIN_MTM_CYCLE 		"EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN";
+	DECLARE V_T_MID_RPT_MATERIALMARGIN_MTM_DELTACYCLE 	"EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN";
+	DECLARE V_T_MID_RPT_MATERIALMARGIN_CTO_CYCLE 		"EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN";
+	DECLARE V_T_MID_RPT_MATERIALMARGIN_CTO_DELTACYCLE 	"EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN";
+	DECLARE V_T_MID_RPT_MATERIALMARGIN_SWR_CYCLE 		"EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN";
+	DECLARE V_T_MID_RPT_MATERIALMARGIN_SWR_DELTACYCLE 	"EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.MID_RPT_MATERIALMARGIN";
+	
+	DECLARE V_BIZ_COST_MODEL_LIST                	    "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.T_BIZ_COST_MODEL_LIST";
+	
+	DECLARE V_COUNTER  INTEGER;
+    DECLARE i INTEGER;
+	
+	DECLARE CURSOR c_cursor FOR
+	    SELECT pvalue, ptype FROM conf_parameters
+	     WHERE pdomain = 'PERFORMANCE_TUNING'
+	       AND pname   = 'LOOP_BY_ITEMTYPE'
+	    ORDER BY ptype;
+	
+    DECLARE exp_procedure CONDITION for SQL_ERROR_CODE 10001;  
+    DECLARE EXIT HANDLER FOR exp_procedure
+    BEGIN
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidi,
+											        I_EVENT_NAME => :v_full_name,
+											        I_MODULE     => 'EBGCFE',
+											        I_MESSAGE    => 'ERROR',
+											        I_DETAIL     => :p_out_exitmess );                                                  
+    END;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN         
+        p_out_exitcode:=::SQL_ERROR_CODE;
+        p_out_exitmess := to_char(::SQL_ERROR_CODE) || ':' || 
+		                  substr(::SQL_ERROR_MESSAGE, 1, 500);       
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+	                                                I_LOGSID     => :logidi,
+		                                            I_EVENT_NAME => :v_full_name, 
+		                                            I_MODULE     => 'EBGCFE',
+		                                            I_MESSAGE    => 'ERROR', 
+		                                            I_DETAIL     => :p_out_exitmess); 
+		                                                             
+    END;   
+    
+    --process logic  
+    p_out_exitcode := -1;
+    p_out_exitmess := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  
+		                                        
+    EXEC 'TRUNCATE TABLE rpt_mtm';  
+		                                        
+	--Call COST_MODEL_LIST process for cycle
+	CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_ONDEMAND_LIST"(:p_in_cycle,:p_in_deltacycle, v_report_name, v_subprc_exitcode,:V_BIZ_COST_MODEL_LIST);
+    IF v_subprc_exitcode <> 0 THEN
+        p_out_exitmess := 'ERROR OCCUR IN PRC_RPT_ONDEMAND_LIST(CALL CYCLE)';
+        SIGNAL exp_procedure;
+    END IF;	
+    
+    FOR cur_row AS c_cursor
+    DO
+        SELECT COUNT(0) INTO V_COUNTER
+          FROM :V_BIZ_COST_MODEL_LIST
+         WHERE ITEM_TYPE = cur_row.ptype;
+          
+	    FOR i IN 1..CEIL(v_counter/cur_row.pvalue)
+	    DO
+	        TAB_LOOP_MODEL_LIST = 
+	              SELECT * 
+	                FROM :V_BIZ_COST_MODEL_LIST
+	               WHERE ITEM_TYPE = cur_row.ptype
+	                 AND SEQ_ID    > (I-1)*cur_row.pvalue
+	                 AND SEQ_ID    <= I*cur_row.pvalue;
+    
+		    IF cur_row.ptype <> 'CTO'
+		    THEN
+			    --Call mtm process for cycle
+				CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_MATERIALMARGIN_BYCYCLE_MTM"('CYCLE', :p_in_cycle,:TAB_LOOP_MODEL_LIST, v_subprc_exitcode,:V_T_MID_RPT_MATERIALMARGIN_MTM_CYCLE);
+			    IF v_subprc_exitcode <> 0 THEN
+			        p_out_exitmess := 'ERROR OCCUR IN PRC_RPT_MATERIALMARGIN_BYCYCLE_MTM(CALL CYCLE)';
+			        SIGNAL exp_procedure;
+			    END IF;
+			    
+			    --Call mtm process for deltacycle
+				CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_MATERIALMARGIN_BYCYCLE_MTM"('DELTACYCLE', :p_in_deltacycle,:TAB_LOOP_MODEL_LIST, v_subprc_exitcode,:V_T_MID_RPT_MATERIALMARGIN_MTM_DELTACYCLE);
+			    IF v_subprc_exitcode <> 0 THEN
+			        p_out_exitmess := 'ERROR OCCUR IN PRC_RPT_MATERIALMARGIN_BYCYCLE_MTM(CALL DELTACYCLE)';
+			        SIGNAL exp_procedure;
+			    END IF; 
+			    
+			    V_T_MID_RPT_MATERIALMARGIN_CTO_CYCLE = 
+			      SELECT '' AS PRODUCT_GROUP, '' AS CYCLE, '' AS CYCLE_TYPE, '' AS BRAND,
+			             '' AS FAMILY, '' AS CTO, '' AS ASSEMBLY, '' AS EOL_STATUS,
+			             '' AS ASSEMBLY_DESC, 0 AS QTY, '' AS COMPONENT, '' AS COMP_DESC,
+			             '' AS PLANT, '' AS SUBGEO, '' AS COUNTRY, 0 AS M1, 0 AS M2, 0 AS M3,
+			             0 AS M4, 0 AS M5, 0 AS M6, 0 AS M7, 0 AS M8, 0 AS M9, 0 AS M10,
+			             0 AS M11, 0 AS M12, 0 AS M13, 0 AS M14, 0 AS M15, 0 AS M16, 0 AS M17,
+			             0 AS M18
+			        FROM DUMMy
+			       LIMIT 0;
+			       
+			    V_T_MID_RPT_MATERIALMARGIN_CTO_DELTACYCLE = 
+			      SELECT '' AS PRODUCT_GROUP, '' AS CYCLE, '' AS CYCLE_TYPE, '' AS BRAND,
+			             '' AS FAMILY, '' AS CTO, '' AS ASSEMBLY, '' AS EOL_STATUS,
+			             '' AS ASSEMBLY_DESC, 0 AS QTY, '' AS COMPONENT, '' AS COMP_DESC,
+			             '' AS PLANT, '' AS SUBGEO, '' AS COUNTRY, 0 AS M1, 0 AS M2, 0 AS M3,
+			             0 AS M4, 0 AS M5, 0 AS M6, 0 AS M7, 0 AS M8, 0 AS M9, 0 AS M10,
+			             0 AS M11, 0 AS M12, 0 AS M13, 0 AS M14, 0 AS M15, 0 AS M16, 0 AS M17,
+			             0 AS M18
+			        FROM DUMMy
+			       LIMIT 0;
+            ELSE			       
+			    --Call cto process for cycle
+			    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_MATERIALMARGIN_BYCYCLE_CTO"('CYCLE', :p_in_cycle,:TAB_LOOP_MODEL_LIST, v_subprc_exitcode, :V_T_MID_RPT_MATERIALMARGIN_CTO_CYCLE);
+			    IF v_subprc_exitcode <> 0 THEN
+			        p_out_exitmess := 'ERROR OCCUR IN PRC_RPT_MATERIALMARGIN_BYCYCLE_CTO(CALL CYCLE)';
+			        SIGNAL exp_procedure;
+			    END IF;
+			
+			    --Call cto process for deltacycle
+				CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_MATERIALMARGIN_BYCYCLE_CTO"('DELTACYCLE', :p_in_deltacycle,:TAB_LOOP_MODEL_LIST, v_subprc_exitcode,:V_T_MID_RPT_MATERIALMARGIN_CTO_DELTACYCLE);
+			    IF v_subprc_exitcode <> 0 THEN
+			        p_out_exitmess := 'ERROR OCCUR IN PRC_RPT_MATERIALMARGIN_BYCYCLE_CTO(CALL DELTACYCLE)';
+			        SIGNAL exp_procedure;
+			    END IF;
+			    
+			    V_T_MID_RPT_MATERIALMARGIN_MTM_CYCLE = 
+			      SELECT '' AS PRODUCT_GROUP, '' AS CYCLE, '' AS CYCLE_TYPE, '' AS BRAND,
+			             '' AS FAMILY, '' AS CTO, '' AS ASSEMBLY, '' AS EOL_STATUS,
+			             '' AS ASSEMBLY_DESC, 0 AS QTY, '' AS COMPONENT, '' AS COMP_DESC,
+			             '' AS PLANT, '' AS SUBGEO, '' AS COUNTRY, 0 AS M1, 0 AS M2, 0 AS M3,
+			             0 AS M4, 0 AS M5, 0 AS M6, 0 AS M7, 0 AS M8, 0 AS M9, 0 AS M10,
+			             0 AS M11, 0 AS M12, 0 AS M13, 0 AS M14, 0 AS M15, 0 AS M16, 0 AS M17,
+			             0 AS M18
+			        FROM DUMMy
+			       LIMIT 0; 
+			       
+			    V_T_MID_RPT_MATERIALMARGIN_MTM_DELTACYCLE = 
+			      SELECT '' AS PRODUCT_GROUP, '' AS CYCLE, '' AS CYCLE_TYPE, '' AS BRAND,
+			             '' AS FAMILY, '' AS CTO, '' AS ASSEMBLY, '' AS EOL_STATUS,
+			             '' AS ASSEMBLY_DESC, 0 AS QTY, '' AS COMPONENT, '' AS COMP_DESC,
+			             '' AS PLANT, '' AS SUBGEO, '' AS COUNTRY, 0 AS M1, 0 AS M2, 0 AS M3,
+			             0 AS M4, 0 AS M5, 0 AS M6, 0 AS M7, 0 AS M8, 0 AS M9, 0 AS M10,
+			             0 AS M11, 0 AS M12, 0 AS M13, 0 AS M14, 0 AS M15, 0 AS M16, 0 AS M17,
+			             0 AS M18
+			        FROM DUMMy
+			       LIMIT 0;
+		    END IF;
+
+    
+		    --Call swr process for cycle
+		    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_MATERIALMARGIN_BYCYCLE_SWR"('CYCLE', :p_in_cycle,:TAB_LOOP_MODEL_LIST, v_subprc_exitcode,:V_T_MID_RPT_MATERIALMARGIN_SWR_CYCLE);
+		    IF v_subprc_exitcode <> 0 THEN
+		        p_out_exitmess := 'ERROR OCCUR IN PRC_RPT_MATERIALMARGIN_BYCYCLE_SWR(CALL CYCLE)';
+		        SIGNAL exp_procedure;
+		    END IF;
+		    
+		    --Call swr process for deltacycle
+			CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_MATERIALMARGIN_BYCYCLE_SWR"('DELTACYCLE', :p_in_deltacycle,:TAB_LOOP_MODEL_LIST, v_subprc_exitcode,:V_T_MID_RPT_MATERIALMARGIN_SWR_DELTACYCLE);
+		    IF v_subprc_exitcode <> 0 THEN
+		        p_out_exitmess := 'ERROR OCCUR IN PRC_RPT_MATERIALMARGIN_BYCYCLE_SWR(CALL DELTACYCLE)';
+		        SIGNAL exp_procedure;
+		    END IF;
+		
+			V_T_MID_RPT_MTM_CYCLE =
+			SELECT a.product_group, a.cycle, a.cycle_type, a.brand, a.family, a.cto, a.assembly,
+                   a.eol_status, MAX(a.assembly_desc) AS assembly_desc, SUM(a.qty) AS qty, 
+                   a.component, MAX(a.comp_desc) AS comp_desc, a.plant, a.subgeo, a.country, 
+                   SUM(MAP(:P_IN_CYCLE_MONTH,b.m1,a.m1,b.m2,a.m2,b.m3,a.m3,b.m4,a.m4,b.m5,a.m5,b.m6,a.m6,b.m7,
+                       a.m7,b.m8,a.m8,b.m9,a.m9,b.m10,a.m10,b.m11,a.m11,b.m12,a.m12,b.m13,a.m13,b.m14,a.m14,
+                       b.m15,a.m15,b.m16,a.m16,b.m17,a.m17,b.m18,a.m18,0)) mon
+		      FROM (
+			        SELECT * FROM :V_T_MID_RPT_MATERIALMARGIN_CTO_CYCLE
+			        UNION ALL
+			        SELECT * FROM :V_T_MID_RPT_MATERIALMARGIN_MTM_CYCLE
+			        UNION ALL
+			        SELECT * FROM :V_T_MID_RPT_MATERIALMARGIN_SWR_CYCLE
+			       ) a, ui_cycle b
+             WHERE a.cycle = b.cycle
+			GROUP BY a.product_group, a.cycle, a.cycle_type, a.brand, a.family, a.cto, a.assembly,
+                     a.eol_status, a.component, a.plant, a.subgeo,
+                     a.country
+		    WITH HINT(NO_INLINE);
+		    
+			V_T_MID_RPT_MTM_DELTACYCLE =
+			SELECT a.product_group, a.cycle, a.cycle_type, a.brand, a.family, a.cto, a.assembly,
+                   a.eol_status, MAX(a.assembly_desc) AS assembly_desc, SUM(a.qty) AS qty, 
+                   a.component, MAX(a.comp_desc) AS comp_desc, a.plant, a.subgeo, a.country, 
+                   SUM(MAP(:P_IN_DELTACYCLE_MONTH,b.m1,a.m1,b.m2,a.m2,b.m3,a.m3,b.m4,a.m4,b.m5,a.m5,b.m6,a.m6,b.m7,
+                       a.m7,b.m8,a.m8,b.m9,a.m9,b.m10,a.m10,b.m11,a.m11,b.m12,a.m12,b.m13,a.m13,b.m14,a.m14,
+                       b.m15,a.m15,b.m16,a.m16,b.m17,a.m17,b.m18,a.m18,0)) mon
+		      FROM (
+			        SELECT * FROM :V_T_MID_RPT_MATERIALMARGIN_CTO_DELTACYCLE
+			        UNION ALL
+			        SELECT * FROM :V_T_MID_RPT_MATERIALMARGIN_MTM_DELTACYCLE
+			        UNION ALL
+			        SELECT * FROM :V_T_MID_RPT_MATERIALMARGIN_SWR_DELTACYCLE
+			       ) a, ui_cycle b
+             WHERE a.cycle=b.cycle
+			GROUP BY a.product_group, a.cycle, a.cycle_type, a.brand, a.family, a.cto, a.assembly,
+                     a.eol_status, a.component, a.plant, a.subgeo,
+                     a.country
+		    WITH HINT(NO_INLINE);
+	
+			INSERT INTO RPT_MTM
+			(product_group, cyclea,cycleb,montha,monthb, brand, family, cto, assembly,
+		             eol_status, assembly_desc, qty, component, comp_desc, plant, subgeo,
+		             country,a_m1, b_m1, deltacost, status)
+				SELECT IFNULL(t1.product_group, t2.product_group) AS product_group,
+			       :P_IN_CYCLE			 	 	                  AS cyclea,
+			       :P_IN_DELTACYCLE				        	  AS cycleb,
+			       :P_IN_CYCLE_MONTH				  		      AS montha,
+			       :P_IN_DELTACYCLE_MONTH      		          AS monthb,
+			       IFNULL(t1.brand, t2.brand)                 AS brand,
+		           IFNULL(t1.family, t2.family)               AS family,
+		           IFNULL(t1.cto, t2.cto)                     AS cto,
+		           IFNULL(t1.assembly, t2.assembly)           AS assembly,
+		           IFNULL(t1.eol_status, t2.eol_status)       AS eol_status,
+		           IFNULL(t1.assembly_desc, t2.assembly_desc) AS assembly_desc,
+		           IFNULL(t1.qty, t2.qty)                     AS qty,
+		           IFNULL(t1.component, t2.component)         AS component,
+		           IFNULL(t1.comp_desc, t2.comp_desc)         AS comp_desc,
+		           IFNULL(t1.plant, t2.plant)                 AS plant,
+		           IFNULL(t1.subgeo, t2.subgeo)               AS subgeo,
+		           IFNULL(t1.country, t2.country)             AS country,
+		           t1.mon  									  AS a_m1,
+			       t2.mon  									  AS b_m1,
+			       IFNULL(t1.mon, 0) - IFNULL(t2.mon, 0)	  AS DELTACOST,
+			       'ACTIVE' AS status
+			    FROM :V_T_MID_RPT_MTM_CYCLE t1
+		             FULL JOIN
+		             :V_T_MID_RPT_MTM_DELTACYCLE t2
+		           ON t1.product_group = t2.product_group
+		          AND t1.cto           = t2.cto
+		          AND t1.assembly      = t2.assembly
+		          AND t1.component     = t2.component
+		          AND t1.plant         = t2.plant
+		          AND t1.subgeo        = t2.subgeo
+		          AND t1.country       = t2.country;
+    	END FOR;
+    END FOR;
+
+    --end modifed 
+    P_OUT_EXITCODE := 0;
+    p_out_exitmess := 'SUCCESSFUL';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+END;

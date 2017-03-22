@@ -1,0 +1,154 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::deleteUiFlexibleAdder" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FLEXIBLE_ADDER_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+	   aI_DETAIL NVARCHAR(300) :='';
+	   alogide INTEGER :=0;
+	   v_product_group NVARCHAR(10);
+	   v_family NVARCHAR(100); 
+	   v_subgeo NVARCHAR(20); 
+	   v_tba_type NVARCHAR(10);
+	   v_brand NVARCHAR(40);
+	   v_plant NVARCHAR(50);
+	   v_adder_name  NVARCHAR(40);
+	   v_assembly  NVARCHAR(40);
+	   v_resourceExists BIGINT;
+	   privilegeExists  NVARCHAR(300)  ;  	   
+	   
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+ 
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xattc::deleteUiXattc error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::deleteUiXattc'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+     
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_flexible_adder::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF; 
+       
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::deleteUiXattc'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+ 
+select PRODUCT_GROUP,FAMILY,SUBGEO,TBA_TYPE,BRAND,PLANT,ADDER_NAME,ASSEMBLY into v_product_group,v_family,v_subgeo,v_tba_type
+		,v_brand,v_plant,v_adder_name,v_assembly from :newInfo; 
+	 
+-- delete record from table	  	
+delete from "EBGCFE"."UI_FLEXIBLE_ADDER" where PRODUCT_GROUP = :v_product_group and SUBGEO = :v_subgeo AND
+		TBA_TYPE = :v_tba_type AND FAMILY = :v_family
+		and BRAND = :v_brand and PLANT = :v_plant
+		and ADDER_NAME = :v_adder_name and ASSEMBLY = :v_assembly; 
+if ::rowcount < 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;*/
+	       SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';
+	 
+end if;		
+	
+--insert log table
+insert into "EBGCFE"."UI_FLEXIBLE_ADDER_LOG"(
+	 "PRODUCT_GROUP",
+	 "FAMILY",
+	 "TBA_TYPE",
+	 "BRAND",
+	 "PLANT",
+	 "SUBGEO",
+	 "ADDER_NAME",
+	 "ASSEMBLY",
+	 "M1",
+	 "M2",
+	 "M3",
+	 "M4",
+	 "M5",
+	 "M6",
+	 "M7",
+	 "M8",
+	 "M9",
+	 "M10",
+	 "M11",
+	 "M12",
+	 "M13",
+	 "M14",
+	 "M15",
+	 "M16",
+	 "M17",
+	 "M18",
+	 "ACTION",
+	 "SYS_CREATED_DATE",
+	 "SYS_CREATED_BY",
+	 "AT_MODIFIED_ON",
+	 "AT_MILLIS"
+	 )SELECT 
+	 		a."PRODUCT_GROUP",
+	 		a."FAMILY",
+	 		a."TBA_TYPE",
+	 		a."BRAND",
+	 		a."PLANT",
+	 		a."SUBGEO",
+	 		a."ADDER_NAME",
+	 		a."ASSEMBLY",
+	 		a."M1",
+	 		a."M2",
+	 		a."M3",
+	 		a."M4",
+	 		a."M5",
+	 		a."M6",
+	 		a."M7",
+	 		a."M8",
+	 		a."M9",
+	 		a."M10",
+	 		a."M11",
+		 	a."M12",
+		 	a."M13",
+	 		a."M14",
+	 		a."M15",
+	 		a."M16",
+	 		a."M17",
+		 	a."M18",
+	 		'update',
+	 		CURRENT_TIMESTAMP,
+	 		SESSION_USER,
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :newInfo a;
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::deleteUiXattc successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::deleteUiXattc'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);    	
+END;

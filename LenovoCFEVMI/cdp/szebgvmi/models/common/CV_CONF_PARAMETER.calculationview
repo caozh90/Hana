@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_CONF_PARAMETER" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_CONF_PARAMETER"/>
+  <localVariables>
+    <variable id="P_PTYPE" parameter="true">
+      <descriptions defaultDescription="P_PTYPE"/>
+      <variableProperties datatype="VARCHAR" defaultValue="''" length="64" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="CONF_PARAMETER" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SZEBGVMI" columnObjectName="CONF_PARAMETER"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="PTYPE">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$P_PTYPE$$"/>
+        </viewAttribute>
+        <viewAttribute id="PVALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CONF_PARAMETER">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PTYPE" source="PTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PVALUE" source="PVALUE"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="PVALUE" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PVALUE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PVALUE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="20" y="210"/>
+        <rectangleSize height="64" width="181"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

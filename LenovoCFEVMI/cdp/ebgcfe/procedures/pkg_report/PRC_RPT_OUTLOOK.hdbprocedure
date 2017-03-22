@@ -1,0 +1,686 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_OUTLOOK" ( 
+  IN V_CYCLE VARCHAR(40),
+  OUT p_out_exitcode    NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_RPT_OUTLOOK       
+*function   : Outlook Report
+*input      ：v_cycle : cycle 
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-02-04
+*UpdateDate :  Frankie 2015-11-03     --函数更改信息（包括作者、时间、更改内容等）
+               zhangxj 2015-12-19
+*************************************************************************/		
+	AS
+	  v_user_id          varchar(64)  := SESSION_USER;
+      v_product_group    varchar(10)  := 'EBG';
+      v_pkg_name         VARCHAR(30)  := 'PKG_REPORT';
+      v_prc_name         VARCHAR(50)  := 'PRC_RPT_OUTLOOK';
+      v_full_name        VARCHAR(100) := :v_pkg_name || '.' || :v_prc_name;	
+      logidi             INTEGER      := 0;
+      v_mon              VARCHAR(3);
+      v_default_mtm_cost NUMBER;
+      v_default_vk_cost  NUMBER;
+      v_zero_cost        INTEGER      := 0;
+      v_srv_plant        VARCHAR(20)  := 'WW';
+      v_withdraw_date_addmonths  INTEGER;  
+     v_annc_date_addmonths      INTEGER;     
+BEGIN
+  -- exception
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+      BEGIN      
+        p_out_exitcode:=::SQL_ERROR_CODE;          
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE                       => 'PROC_ERROR',
+		                                            I_LOGSID                     => :logidi,
+													I_EVENT_NAME                 => :v_full_name,
+													I_MODULE                     => 'EBGCFE',
+	  	                                            I_MESSAGE=>'ERROR', I_DETAIL => to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) 
+													);    
+      END;   
+      
+    -- process logic  
+      p_out_exitcode := -1;
+    --p_out_exitmessage := 'Failed';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  
+    
+    DELETE FROM rpt_outlook;
+	
+    SELECT substring(M1,1,3) INTO v_mon FROM UI_CYCLE WHERE CYCLE = :v_cycle AND product_group = :v_product_group;
+    
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().default_mtm_cost INTO v_default_mtm_cost FROM dummy;
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().default_vk_cost INTO v_default_vk_cost FROM dummy;
+    
+    SELECT pvalue INTO v_withdraw_date_addmonths
+      FROM conf_parameters
+     WHERE pdomain = 'RPT_OUTLOOK'
+      AND pname   = 'WITHDRAW_DATE_ADDMONTHS';  
+     
+    SELECT pvalue INTO v_annc_date_addmonths
+     FROM conf_parameters
+    WHERE pdomain = 'RPT_OUTLOOK'
+      AND pname   = 'ANNC_DATE_ADDMONTHS';       
+     
+    cost_type = (SELECT 'BMC' AS cost_type FROM dummy UNION ALL  SELECT 'TMC' AS cost_type FROM dummy );
+  
+  IF :v_cycle = 'CURRENT' THEN
+      --Generate MTM outlook report
+      INSERT INTO rpt_outlook (CYCLE,PRODUCT_GROUP,BRAND,FAMILY,ASSEMBLY,COST_TYPE,PLANT,SUBGEO,COUNTRY,DESCRIPTION,
+      M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+      LM1,LM2,LM3,LM4,LM5,LM6,LM7,LM8,LM9,LM10,LM11,LM12,LM13,LM14,LM15,LM16,LM17,LM18, Q1,Q2,Q3,Q4,Q5,Q6,
+      EOL_STATUS,CURRENCY,CTO,FC,
+      STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY)
+      SELECT DISTINCT a.cycle, a.product_group, a.model_brand AS brand, a.model_family AS family, a.model AS assembly,
+      CASE WHEN a.children='LEVEL4_ALL_COST' THEN 'BMC'
+           WHEN a.children='LEVEL6_ALL_COST' THEN 'TMC'
+       End as cost_type,a.plant, a.subgeo, a.country, b.item_desc,
+      a.M1,a.M2,a.M3,a.M4,a.M5,a.M6,a.M7,a.M8,a.M9,a.M10,a.M11,a.M12,a.M13,a.M14,a.M15,a.M16,a.M17,a.M18,
+      a.LM1,a.LM2,a.LM3,a.LM4,a.LM5,a.LM6,a.LM7,a.LM8,a.LM9,a.LM10,a.LM11,a.LM12,a.LM13,a.LM14,a.LM15,a.LM16,a.LM17,a.LM18,
+      CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M1+a.M2+a.M3)/3
+           WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M1+a.M2)/2
+           WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  a.M1                END AS Q1,
+      CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M4+a.M5+a.M6)/3
+           WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M3+a.M4+a.M5)/3
+           WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M2+a.M3+a.M4)/3  END AS Q2,
+      CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M7+a.M8+a.M9)/3
+           WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M6+a.M7+a.M8)/3
+           WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M5+a.M6+a.M7)/3  END AS Q3,
+      CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M10+a.M11+a.M12)/3
+           WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M9+a.M10+a.M11)/3
+           WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M8+a.M9+a.M10)/3 END AS Q4,
+      CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M13+a.M14+a.M15)/3
+           WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M12+a.M13+a.M14)/3
+           WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M11+a.M12+a.M13)/3 END AS Q5,
+      CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M16+a.M17+a.M18)/3
+           WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M15+a.M16+a.M17)/3
+           WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M14+a.M15+a.M16)/3 END AS Q6,  
+      b.EOL_STATUS,'USD','N/A', 'N/A',                                                                          
+      b.STATUS,CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_user_id
+      FROM biz_costadder_mtm a, ui_item b
+      WHERE a.model = b.item       
+        AND a.product_group = b.product_group
+        AND a.product_group = :v_product_group
+        AND a.cycle         = :v_cycle
+        AND a.cycle         = b.cycle
+        AND a.children      IN ('LEVEL4_ALL_COST','LEVEL6_ALL_COST')
+        AND b.eol_status NOT IN ('EOL','TEMP');
+      
+      --Generate CTO FC_MT outlook report
+    --get status='OL' fc - cto
+    get_ol_fc = SELECT cycle,product_group,matnr,idnrk,varcond,quantity 
+	              FROM (SELECT f.cycle,f.product_group,f.matnr,f.idnrk,f.varcond,f.quantity,
+				               IFNULL(c.announce_date,ADD_MONTHS(CURRENT_DATE,-1)) AS announce_date,
+				               IFNULL(c.withdraw_date,ADD_MONTHS(CURRENT_DATE,1)) AS withdraw_date
+			              FROM biz_fcsbbmap f LEFT JOIN ui_ctofc_flag c
+				            ON (f.matnr = c.cto AND (f.fc = c.fc OR f.fc = c.fc||'_'||c.cto))
+			             WHERE f.cycle         = :v_cycle
+			               AND f.product_group = :v_product_group)
+	             WHERE  CASE WHEN  IFNULL(withdraw_date,TO_DATE('99991231','YYYYMMDD')) > CURRENT_DATE 
+	                                       THEN  IFNULL(withdraw_date,TO_DATE('99991231','YYYYMMDD'))
+	                                       ELSE ADD_MONTHS(withdraw_date,v_withdraw_date_addmonths) 
+	                             END >  CURRENT_DATE
+	                     AND  ADD_MONTHS(IFNULL(announce_date,CURRENT_DATE),v_annc_date_addmonths) < CURRENT_DATE;
+	                     
+	               
+                   
+    --get sbb_type,include idnrk is null              
+    sbb_type = SELECT DISTINCT f.matnr,f.idnrk,f.varcond,f.quantity,i.item_desc,i.eol_status
+                 FROM :get_ol_fc f LEFT JOIN ui_item i 
+                   ON f.idnrk           = i.item
+                  AND f.cycle           = i.cycle
+                  AND f.product_group   = i.product_group
+                  AND i.eol_status      NOT IN ('EOL','TEMP');
+    --get cto attribute          
+    cto_info = SELECT DISTINCT c.item as model,c.brand,c.asp_prd_family as family,c.cycle,c.product_group,c.plant,c.subgeo,c.country,'BMC' AS cost_type
+                 FROM biz_cost_model_list c 
+                WHERE c.eol_status    NOT IN('EOL','TEMP')
+                  AND c.bom_plant     <> 'NO_BOM'
+                  AND c.item_type     = 'CTO'
+                  AND c.product_group = :v_product_group
+                  AND c.cycle         = :v_cycle
+               UNION ALL 
+			   SELECT DISTINCT c.item as model,c.brand,c.asp_prd_family as family,c.cycle,c.product_group,c.plant,c.subgeo,c.country,'TMC' AS cost_type
+                 FROM biz_cost_model_list c 
+                WHERE c.eol_status    NOT IN('EOL','TEMP')
+                  AND c.bom_plant     <> 'NO_BOM'
+                  AND c.item_type     = 'CTO'
+                  AND c.product_group = :v_product_group
+                  AND c.cycle         = :v_cycle ;  
+                   
+    extend_sbb = SELECT c.cycle,c.product_group,s.matnr AS model,c.plant,c.subgeo,c.country,c.cost_type,
+                        s.idnrk,s.varcond,s.quantity,c.brand,c.family,s.item_desc,s.eol_status
+                  FROM :cto_info c, :sbb_type s
+                 WHERE c.model = s.matnr;
+     
+	INSERT INTO rpt_outlook
+	      (cycle,product_group,brand,family,assembly,cost_type,plant,subgeo,country,description, eol_status,currency,
+	       cto,fc,status,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by,quantity) 
+	  SELECT e.cycle,e.product_group,IFNULL(e.brand,'N/A'),IFNULL(e.family,'N/A'),
+	  		 (CASE WHEN e.idnrk IS NULL OR length(e.idnrk)=0 THEN 'N/A' ELSE e.idnrk END ) AS assembly,
+             e.cost_type,
+             (CASE WHEN e.idnrk IS NULL OR length(e.idnrk)=0 THEN 'N/A' ELSE e.plant END ) AS plant,
+             (CASE WHEN e.idnrk IS NULL OR length(e.idnrk)=0 THEN 'N/A' ELSE e.subgeo END) AS subgeo,
+             (CASE WHEN e.idnrk IS NULL OR length(e.idnrk)=0 THEN 'N/A' ELSE e.country END ) AS country,  
+             e.item_desc,e.eol_status,'USD',e.model AS cto,SUBSTR_AFTER(e.varcond,'X_') AS fc,
+             NULL AS status ,CURRENT_TIMESTAMP AS sys_created_date,v_full_name AS sys_created_by,
+             CURRENT_TIMESTAMP AS sys_last_modified_date,v_user_id AS sys_last_modified_by,e.quantity
+    FROM :extend_sbb e;
+        
+    UPDATE rpt_outlook m
+       SET (m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,
+            lm1,lm2,lm3,lm4,lm5,lm6,lm7,lm8,lm9,lm10,lm11,lm12,lm13,lm14,lm15,lm16,lm17,lm18,
+            q1,q2,q3,q4,q5,q6)  =  (c.m1*m.quantity,c.m2*m.quantity,c.m3*m.quantity,c.m4*m.quantity,c.m5*m.quantity,
+            c.m6*m.quantity,c.m7*m.quantity,c.m8*m.quantity,c.m9*m.quantity,c.m10*m.quantity,c.m11*m.quantity,c.m12*m.quantity,
+            c.m13*m.quantity,c.m14*m.quantity,c.m15*m.quantity,c.m16*m.quantity,c.m17*m.quantity,c.m18*m.quantity,
+            c.lm1*m.quantity,c.lm2*m.quantity,c.lm3*m.quantity,c.lm4*m.quantity,c.lm5*m.quantity,c.lm6*m.quantity,
+            c.lm7*m.quantity,c.lm8*m.quantity,c.lm9*m.quantity,c.lm10*m.quantity,c.lm11*m.quantity,c.lm12*m.quantity,
+            c.lm13*m.quantity,c.lm14*m.quantity,c.lm15*m.quantity,c.lm16*m.quantity,c.lm17*m.quantity,c.lm18*m.quantity,
+            CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M1+c.M2+c.M3)/3)*m.quantity
+        		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M1+c.M2)/2)*m.quantity
+       		     WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  c.M1*m.quantity  END ,
+    	    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M4+c.M5+c.M6)/3)*m.quantity
+        		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M3+c.M4+c.M5)/3)*m.quantity
+         		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M2+c.M3+c.M4)/3)*m.quantity  END,
+    	 	CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M7+c.M8+c.M9)/3)*m.quantity
+         		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M6+c.M7+c.M8)/3)*m.quantity
+         		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M5+c.M6+c.M7)/3)*m.quantity  END ,
+    		CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M10+c.M11+c.M12)/3)*m.quantity
+         		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M9+c.M10+c.M11)/3)*m.quantity
+        		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M8+c.M9+c.M10)/3)*m.quantity END ,
+    	    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M13+c.M14+c.M15)/3)*m.quantity
+                 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M12+c.M13+c.M14)/3)*m.quantity
+         		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M11+c.M12+c.M13)/3)*m.quantity END ,
+    	    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M16+c.M17+c.M18)/3)*m.quantity
+        		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M15+c.M16+c.M17)/3)*m.quantity
+         		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M14+c.M15+c.M16)/3)*m.quantity END  
+            )
+    FROM biz_costadder_cto c
+    WHERE c.model         = m.cto
+      AND c.father        = m.assembly
+      AND c.cycle         = m.cycle 
+      AND c.product_group = m.product_group
+      AND MAP(c.children,'LEVEL4_ALL_COST','BMC','LEVEL6_ALL_COST','TMC') = m.cost_type
+      AND c.plant         = m.plant
+      AND c.country       = m.country 
+      AND c.cycle         = :v_cycle
+      AND c.product_group = :v_product_group
+      AND c.children IN  ('LEVEL4_ALL_COST','LEVEL6_ALL_COST');
+              
+    --generate BMC/TMC service_cost outlook report
+    INSERT INTO rpt_outlook (CYCLE,PRODUCT_GROUP,BRAND,FAMILY,ASSEMBLY,COST_TYPE,PLANT,SUBGEO,COUNTRY,DESCRIPTION,
+    M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+    LM1,LM2,LM3,LM4,LM5,LM6,LM7,LM8,LM9,LM10,LM11,LM12,LM13,LM14,LM15,LM16,LM17,LM18, Q1,Q2,Q3,Q4,Q5,Q6,
+    EOL_STATUS,CURRENCY,CTO,FC,
+    STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY)
+    SELECT i.cycle,i.product_group,IFNULL(i.brand,'N/A'),IFNULL(i.asp_prd_family,'N/A') AS family,s.model AS assembly, c.cost_type,
+           v_srv_plant AS plant,s.subgeo,s.country,i.item_desc,s.m1,s.m2,s.m3,s.m4,s.m5,s.m6,s.m7,s.m8,s.m9,
+           s.m10,s.m11,s.m12,s.m13,s.m14,s.m15,s.m16,s.m17,s.m18,s.m1,s.m2,s.m3,s.m4,s.m5,s.m6,s.m7,s.m8,s.m9,
+           s.m10,s.m11,s.m12,s.m13,s.m14,s.m15,s.m16,s.m17,s.m18,
+           CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M1+s.M2+s.M3)/3
+            	WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M1+s.M2)/2
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  s.M1                END AS Q1,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M4+s.M5+s.M6)/3
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M3+s.M4+s.M5)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M2+s.M3+s.M4)/3  END AS Q2,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M7+s.M8+s.M9)/3
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M6+s.M7+s.M8)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M5+s.M6+s.M7)/3  END AS Q3,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M10+s.M11+s.M12)/3
+        		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M9+s.M10+s.M11)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M8+s.M9+s.M10)/3 END AS Q4,
+   		   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M13+s.M14+s.M15)/3
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M12+s.M13+s.M14)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M11+s.M12+s.M13)/3 END AS Q5,
+           CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M16+s.M17+s.M18)/3
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M15+s.M16+s.M17)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M14+s.M15+s.M16)/3 END AS Q6,  
+           i.EOL_STATUS,'USD','N/A','N/A', NULL AS STATUS,CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_user_id
+      FROM ui_servicecost s,
+           ui_item i,
+           :cost_type c 
+     WHERE s.model         = i.item 
+       AND s.cycle         = i.cycle
+       AND s.product_group = i.product_group
+       AND i.eol_status    NOT IN ('EOL','TEMP'); 
+	
+	--cv cost basic
+    cv_cost_tab =
+	SELECT i.cycle,i.product_group,t.matnr,t.idnrk,t.varcond,t.quantity,i.asp_prd_family,i.brand,s.item_desc,s.eol_status,
+	       v.sales_org,v.m1,v.m2,v.m3,v.m4,v.m5,v.m6,v.m7,v.m8,v.m9,v.m10,v.m11,v.m12,v.m13,v.m14,v.m15,v.m16,v.m17,v.m18
+      FROM ui_cto_cv_vk_cost v,
+           ui_item i,--get brand,family..
+           ui_item s,--get assembly and desc
+           :get_ol_fc t
+     WHERE v.variant                = t.varcond
+       AND SUBSTR(i.prod_h,1,11)    = v.ph_1||v.ph_2||v.ph_3||v.ph_4
+       AND i.item_type              = 'CTO'
+       AND i.item                   = t.matnr
+       AND t.idnrk                  = s.item
+       AND s.item_type              = 'SBB'
+       AND t.cycle                  = i.cycle
+       AND t.product_group          = i.product_group
+       AND t.cycle                  = s.cycle
+       AND t.product_group          = s.product_group
+       AND t.cycle                  = v.cycle
+       AND t.product_group          = v.product_group
+       AND t.cycle                  = v_cycle
+       AND s.eol_status    NOT IN ('EOL','TEMP');
+       
+    --generate BMC/TMC cv_cost outlook report   
+	INSERT INTO rpt_outlook (CYCLE,PRODUCT_GROUP,BRAND,FAMILY,ASSEMBLY,COST_TYPE,PLANT,SUBGEO,COUNTRY,DESCRIPTION,
+    M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+    LM1,LM2,LM3,LM4,LM5,LM6,LM7,LM8,LM9,LM10,LM11,LM12,LM13,LM14,LM15,LM16,LM17,LM18, Q1,Q2,Q3,Q4,Q5,Q6,
+    EOL_STATUS,CURRENCY,CTO,FC,
+    STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,QUANTITY)
+	SELECT a.cycle,a.product_group,IFNULL(a.brand,'N/A'),IFNULL(a.asp_prd_family,'N/A'),a.idnrk,c.cost_type,v_srv_plant,r.subgeo,r.country,a.item_desc,
+	       a.m1*a.quantity,a.m2*a.quantity,a.m3*a.quantity,a.m4*a.quantity,a.m5*a.quantity,a.m6*a.quantity,
+	       a.m7*a.quantity,a.m8*a.quantity,a.m9*a.quantity,a.m10*a.quantity,a.m11*a.quantity,a.m12*a.quantity,
+	       a.m13*a.quantity,a.m14*a.quantity,a.m15*a.quantity,a.m16*a.quantity,a.m17*a.quantity,a.m18*a.quantity,
+	       a.m1*a.quantity,a.m2*a.quantity,a.m3*a.quantity,a.m4*a.quantity,a.m5*a.quantity,a.m6*a.quantity,
+	       a.m7*a.quantity,a.m8*a.quantity,a.m9*a.quantity,a.m10*a.quantity,a.m11*a.quantity,a.m12*a.quantity,
+	       a.m13*a.quantity,a.m14*a.quantity,a.m15*a.quantity,a.m16*a.quantity,a.m17*a.quantity,a.m18*a.quantity,
+           CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m1+a.m2+a.m3)/3)*a.quantity
+            	WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m1+a.m2)/2)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN   a.m1*a.quantity               END AS Q1,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m4+a.m5+a.m6)/3)*a.quantity
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m3+a.m4+a.m5)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m2+a.m3+a.m4)/3)*a.quantity  END AS Q2,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m7+a.m8+a.m9)/3)*a.quantity
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m6+a.m7+a.m8)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m5+a.m6+a.m7)/3)*a.quantity  END AS Q3,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m10+a.m11+a.m12)/3)*a.quantity
+        		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m9+a.m10+a.m11)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m8+a.m9+a.m10)/3)*a.quantity  END AS Q4,
+   		   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m13+a.m14+a.m15)/3)*a.quantity
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m12+a.m13+a.m14)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m11+a.m12+a.m13)/3)*a.quantity END AS Q5,
+           CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m16+a.m17+a.m18)/3)*a.quantity
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m15+a.m16+a.m17)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m14+a.m15+a.m16)/3)*a.quantity END AS Q6,  
+           a.eol_status,'USD',a.matnr,SUBSTR_AFTER(a.varcond,'X_'), NULL AS STATUS,CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_user_id,a.quantity     
+	  FROM :cv_cost_tab a,
+           ui_country_salesorg_mapping m, 
+           ui_region r,
+           :cost_type c 
+     WHERE a.sales_org     = m.sales_org
+       AND m.country       = r.country
+       AND a.cycle         = m.cycle 
+       AND a.product_group = m.product_group
+       AND r.is_legacy     = 'Y'
+       AND NOT EXISTS (SELECT NULL FROM rpt_outlook o
+                        WHERE a.matnr                      = o.cto
+                          AND a.idnrk                      = o.assembly
+                          AND a.brand                      = o.brand
+                          AND a.asp_prd_family             = o.family
+                          AND r.subgeo                     = o.subgeo
+                          AND r.country                    = o.plant
+                          AND c.cost_type                  = o.cost_type
+                          AND SUBSTR_AFTER(a.varcond,'X_') = o.fc
+                          AND o.plant                      = v_srv_plant) ;
+       
+                                  
+  ELSE  -- for history data
+    --Generate MTM history outlook report
+    INSERT INTO rpt_outlook (CYCLE,PRODUCT_GROUP,BRAND,FAMILY,ASSEMBLY,COST_TYPE,PLANT,SUBGEO,COUNTRY,DESCRIPTION,
+    M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+    LM1,LM2,LM3,LM4,LM5,LM6,LM7,LM8,LM9,LM10,LM11,LM12,LM13,LM14,LM15,LM16,LM17,LM18, Q1,Q2,Q3,Q4,Q5,Q6,
+    EOL_STATUS,CURRENCY,CTO,FC,
+    STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY)
+    SELECT distinct a.cycle, a.product_group, a.model_brand as brand, a.model_family as family, a.model as assembly,
+    Case when children='LEVEL4_ALL_COST' then 'BMC'
+         when children='LEVEL6_ALL_COST' then 'TMC'
+    end as cost_type, a.plant, a.subgeo, a.country, b.item_desc,
+    a.M1,a.M2,a.M3,a.M4,a.M5,a.M6,a.M7,a.M8,a.M9,a.M10,a.M11,a.M12,a.M13,a.M14,a.M15,a.M16,a.M17,a.M18,
+    a.LM1,a.LM2,a.LM3,a.LM4,a.LM5,a.LM6,a.LM7,a.LM8,a.LM9,a.LM10,a.LM11,a.LM12,a.LM13,a.LM14,a.LM15,a.LM16,a.LM17,a.LM18,
+    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M1+a.M2+a.M3)/3
+         WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M1+a.M2)/2
+         WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  a.M1                END AS Q1,
+    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M4+a.M5+a.M6)/3
+         WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M3+a.M4+a.M5)/3
+         WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M2+a.M3+a.M4)/3  END AS Q2,
+    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M7+a.M8+a.M9)/3
+         WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M6+a.M7+a.M8)/3
+         WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M5+a.M6+a.M7)/3  END AS Q3,
+    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M10+a.M11+a.M12)/3
+         WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M9+a.M10+a.M11)/3
+         WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M8+a.M9+a.M10)/3 END AS Q4,
+    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M13+a.M14+a.M15)/3
+         WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M12+a.M13+a.M14)/3
+         WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M11+a.M12+a.M13)/3 END AS Q5,
+    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (a.M16+a.M17+a.M18)/3
+         WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (a.M15+a.M16+a.M17)/3
+         WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (a.M14+a.M15+a.M16)/3 END AS Q6,      
+    b.EOL_STATUS,'USD','N/A','N/A',
+    a.STATUS,CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_user_id
+    FROM biz_costadder_mtm_his a, ui_item_his b
+    WHERE a.model              = b.item       
+      AND a.product_group      = b.product_group
+      AND a.cycle              =  b.cycle
+      AND a.cycle_productgroup = b.cycle_productgroup
+      AND a.product_group      = :v_product_group
+      AND a.cycle              = :v_cycle
+      AND b.cycle_productgroup = :v_cycle||:v_product_group
+      AND a.children     IN ('LEVEL4_ALL_COST','LEVEL6_ALL_COST')
+      AND b.eol_status    NOT IN ('EOL','TEMP');
+    
+    --Generate CTO FC_MT outlook report
+    --get status='OL' fc - cto
+    get_ol_fc = SELECT cycle,product_group,matnr,idnrk,varcond,quantity 
+	              FROM (SELECT f.cycle,f.product_group,f.matnr,f.idnrk,f.varcond,f.quantity,
+				               IFNULL(c.announce_date,ADD_MONTHS(CURRENT_DATE,-1)) AS announce_date,
+				               IFNULL(c.withdraw_date,ADD_MONTHS(CURRENT_DATE,1)) AS withdraw_date
+			              FROM biz_fcsbbmap_his f LEFT JOIN ui_ctofc_flag c
+				            ON (f.matnr = c.cto AND (f.fc = c.fc OR f.fc = c.fc||'_'||c.cto))
+			             WHERE f.cycle              = :v_cycle
+			               AND f.product_group      = :v_product_group
+			               AND f.cycle_productgroup = :v_cycle||:v_product_group)
+	             WHERE  CASE WHEN  IFNULL(withdraw_date,TO_DATE('99991231','YYYYMMDD')) > CURRENT_DATE 
+	                                       THEN  IFNULL(withdraw_date,TO_DATE('99991231','YYYYMMDD'))
+	                                       ELSE ADD_MONTHS(withdraw_date,v_withdraw_date_addmonths) 
+	                             END >  CURRENT_DATE
+	                     AND  ADD_MONTHS(IFNULL(announce_date,CURRENT_DATE),v_annc_date_addmonths) < CURRENT_DATE;
+	                     
+    --get sbb_type,include idnrk is null              
+    sbb_type = SELECT DISTINCT f.matnr,f.idnrk,f.varcond,f.quantity,i.item_desc,i.eol_status
+                 FROM :get_ol_fc f LEFT JOIN ui_item_his i 
+                   ON f.idnrk              = i.item
+                  AND f.cycle              = i.cycle
+                  AND f.product_group      = i.product_group
+                  AND i.eol_status    NOT IN ('EOL','TEMP');
+
+    --get cto attribute          
+    cto_info = SELECT DISTINCT c.item as model,c.brand,c.asp_prd_family as family,c.cycle,c.product_group,c.plant,c.subgeo,c.country,'BMC' AS cost_type
+                 FROM biz_cost_model_list_his c 
+                WHERE c.eol_status    NOT IN ('EOL','TEMP')
+                  AND c.bom_plant         <> 'NO_BOM'
+                  AND c.item_type          = 'CTO'
+                  AND c.product_group      = :v_product_group
+                  AND c.cycle              = :v_cycle
+                  AND c.cycle_productgroup = :v_cycle||:v_product_group
+               UNION ALL 
+			   SELECT DISTINCT c.item as model,c.brand,c.asp_prd_family as family,c.cycle,c.product_group,c.plant,c.subgeo,c.country,'TMC' AS cost_type
+                 FROM biz_cost_model_list_his c 
+                WHERE c.eol_status    NOT IN ('EOL','TEMP')
+                  AND c.bom_plant         <> 'NO_BOM'
+                  AND c.item_type          = 'CTO'
+                  AND c.product_group      = :v_product_group
+                  AND c.cycle              = :v_cycle 
+                  AND c.cycle_productgroup = :v_cycle||:v_product_group;  
+                   
+    extend_sbb = SELECT c.cycle,c.product_group,s.matnr AS model,c.plant,c.subgeo,c.country,c.cost_type,
+                        s.idnrk,s.varcond,s.quantity,c.brand,c.family,s.item_desc,s.eol_status
+                  FROM :cto_info c, :sbb_type s
+                 WHERE c.model = s.matnr;
+     
+	INSERT INTO rpt_outlook
+	      (cycle,product_group,brand,family,assembly,cost_type,plant,subgeo,country,description, eol_status,currency,
+	       cto,fc,status,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by,quantity) 
+	  SELECT e.cycle,e.product_group,e.brand,e.family,e.idnrk,e.cost_type,e.plant,e.subgeo,e.country,e.item_desc,e.eol_status,
+	         'USD',e.model AS cto,SUBSTR_AFTER(e.varcond,'X_') AS fc,NULL AS status ,CURRENT_TIMESTAMP AS sys_created_date,
+	         v_full_name AS sys_created_by,CURRENT_TIMESTAMP AS sys_last_modified_date,v_user_id AS sys_last_modified_by,e.quantity
+    FROM :extend_sbb e;
+        
+    UPDATE rpt_outlook m
+       SET (m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,
+            lm1,lm2,lm3,lm4,lm5,lm6,lm7,lm8,lm9,lm10,lm11,lm12,lm13,lm14,lm15,lm16,lm17,lm18,
+            q1,q2,q3,q4,q5,q6)  =  (c.m1*m.quantity,c.m2*m.quantity,c.m3*m.quantity,c.m4*m.quantity,c.m5*m.quantity,
+            c.m6*m.quantity,c.m7*m.quantity,c.m8*m.quantity,c.m9*m.quantity,c.m10*m.quantity,c.m11*m.quantity,c.m12*m.quantity,
+            c.m13*m.quantity,c.m14*m.quantity,c.m15*m.quantity,c.m16*m.quantity,c.m17*m.quantity,c.m18*m.quantity,
+            c.lm1*m.quantity,c.lm2*m.quantity,c.lm3*m.quantity,c.lm4*m.quantity,c.lm5*m.quantity,c.lm6*m.quantity,
+            c.lm7*m.quantity,c.lm8*m.quantity,c.lm9*m.quantity,c.lm10*m.quantity,c.lm11*m.quantity,c.lm12*m.quantity,
+            c.lm13*m.quantity,c.lm14*m.quantity,c.lm15*m.quantity,c.lm16*m.quantity,c.lm17*m.quantity,c.lm18*m.quantity,
+            CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M1+c.M2+c.M3)/3)*m.quantity
+        		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M1+c.M2)/2)*m.quantity
+       		     WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  c.M1*m.quantity  END ,
+    	    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M4+c.M5+c.M6)/3)*m.quantity
+        		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M3+c.M4+c.M5)/3)*m.quantity
+         		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M2+c.M3+c.M4)/3)*m.quantity  END,
+    	 	CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M7+c.M8+c.M9)/3)*m.quantity
+         		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M6+c.M7+c.M8)/3)*m.quantity
+         		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M5+c.M6+c.M7)/3)*m.quantity  END ,
+    		CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M10+c.M11+c.M12)/3)*m.quantity
+         		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M9+c.M10+c.M11)/3)*m.quantity
+        		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M8+c.M9+c.M10)/3)*m.quantity END ,
+    	    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M13+c.M14+c.M15)/3)*m.quantity
+                 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M12+c.M13+c.M14)/3)*m.quantity
+         		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M11+c.M12+c.M13)/3)*m.quantity END ,
+    	    CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((c.M16+c.M17+c.M18)/3)*m.quantity
+        		 WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((c.M15+c.M16+c.M17)/3)*m.quantity
+         		 WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((c.M14+c.M15+c.M16)/3)*m.quantity END  
+            )
+    FROM biz_costadder_cto_his c
+    WHERE c.model              = m.cto
+      AND c.father             = m.assembly
+      AND c.cycle              = m.cycle 
+      AND c.product_group      = m.product_group 
+      AND MAP(c.children,'LEVEL4_ALL_COST','BMC','LEVEL6_ALL_COST','TMC') = m.cost_type
+      AND c.plant              = m.plant
+      AND c.country            = m.country 
+      AND c.cycle              = :v_cycle
+      AND c.product_group      = :v_product_group
+      and c.cycle_productgroup = :v_cycle||:v_product_group
+      AND c.children IN  ('LEVEL4_ALL_COST','LEVEL6_ALL_COST');
+
+
+    --generate service_cost outlook report
+    INSERT INTO rpt_outlook (CYCLE,PRODUCT_GROUP,BRAND,FAMILY,ASSEMBLY,COST_TYPE,PLANT,SUBGEO,COUNTRY,DESCRIPTION,
+    M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+    LM1,LM2,LM3,LM4,LM5,LM6,LM7,LM8,LM9,LM10,LM11,LM12,LM13,LM14,LM15,LM16,LM17,LM18, Q1,Q2,Q3,Q4,Q5,Q6,
+    EOL_STATUS,CURRENCY,CTO,FC,
+    STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY)
+    SELECT i.cycle,i.product_group,IFNULL(i.brand,'N/A'),IFNULL(i.asp_prd_family,'N/A') AS family,s.model AS assembly,c.cost_type,
+           v_srv_plant AS plant,s.subgeo,s.country,i.item_desc,s.m1,s.m2,s.m3,s.m4,s.m5,s.m6,s.m7,s.m8,s.m9,
+           s.m10,s.m11,s.m12,s.m13,s.m14,s.m15,s.m16,s.m17,s.m18,s.m1,s.m2,s.m3,s.m4,s.m5,s.m6,s.m7,s.m8,s.m9,
+           s.m10,s.m11,s.m12,s.m13,s.m14,s.m15,s.m16,s.m17,s.m18,
+           CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M1+s.M2+s.M3)/3
+            	WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M1+s.M2)/2
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  s.M1                END AS Q1,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M4+s.M5+s.M6)/3
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M3+s.M4+s.M5)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M2+s.M3+s.M4)/3  END AS Q2,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M7+s.M8+s.M9)/3
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M6+s.M7+s.M8)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M5+s.M6+s.M7)/3  END AS Q3,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M10+s.M11+s.M12)/3
+        		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M9+s.M10+s.M11)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M8+s.M9+s.M10)/3 END AS Q4,
+   		   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M13+s.M14+s.M15)/3
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M12+s.M13+s.M14)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M11+s.M12+s.M13)/3 END AS Q5,
+           CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  (s.M16+s.M17+s.M18)/3
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  (s.M15+s.M16+s.M17)/3
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  (s.M14+s.M15+s.M16)/3 END AS Q6,  
+           i.EOL_STATUS,'USD','N/A','N/A', NULL AS STATUS,CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_user_id
+      FROM ui_servicecost_his s,
+           ui_item_his i ,
+           :cost_type c
+     WHERE s.model              = i.item 
+       AND s.cycle              = i.cycle
+       AND s.product_group      = i.product_group
+       AND s.cycle_productgroup = i.cycle_productgroup
+       AND i.eol_status    NOT IN ('EOL','TEMP'); 
+           
+    cv_cost_tab =
+	SELECT i.cycle,i.product_group,t.matnr,t.idnrk,t.varcond,t.quantity,i.asp_prd_family,i.brand,s.item_desc,s.eol_status,
+	       v.sales_org,v.m1,v.m2,v.m3,v.m4,v.m5,v.m6,v.m7,v.m8,v.m9,v.m10,v.m11,v.m12,v.m13,v.m14,v.m15,v.m16,v.m17,v.m18
+      FROM ui_cto_cv_vk_cost_his v,
+           ui_item_his i,--get brand,family..
+           ui_item_his s,--get assembly and desc
+           :get_ol_fc t
+     WHERE v.variant                = t.varcond
+       AND SUBSTR(i.prod_h,1,11)    = v.ph_1||v.ph_2||v.ph_3||v.ph_4
+       AND i.item_type              = 'CTO'
+       AND i.item                   = t.matnr
+       AND t.idnrk                  = s.item
+       AND s.item_type              = 'SBB'
+       AND t.cycle                  = i.cycle
+       AND t.product_group          = i.product_group
+       AND t.cycle||t.product_group = i.cycle_productgroup
+       AND t.cycle                  = s.cycle
+       AND t.product_group          = s.product_group
+       AND t.cycle||t.product_group = s.cycle_productgroup
+       AND t.cycle                  = v.cycle
+       AND t.product_group          = v.product_group
+       AND t.cycle||t.product_group = v.cycle_productgroup
+       AND t.cycle                  = v_cycle
+       AND s.eol_status    NOT IN ('EOL','TEMP');
+       
+    --generate BMC/TMC cv_cost outlook report   
+	INSERT INTO rpt_outlook (CYCLE,PRODUCT_GROUP,BRAND,FAMILY,ASSEMBLY,COST_TYPE,PLANT,SUBGEO,COUNTRY,DESCRIPTION,
+    M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+    LM1,LM2,LM3,LM4,LM5,LM6,LM7,LM8,LM9,LM10,LM11,LM12,LM13,LM14,LM15,LM16,LM17,LM18, Q1,Q2,Q3,Q4,Q5,Q6,
+    EOL_STATUS,CURRENCY,CTO,FC,
+    STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,QUANTITY)
+	SELECT a.cycle,a.product_group,IFNULL(a.brand,'N/A'),IFNULL(a.asp_prd_family,'N/A'),a.idnrk,c.cost_type,v_srv_plant,r.subgeo,r.country,a.item_desc,
+	       a.m1*a.quantity,a.m2*a.quantity,a.m3*a.quantity,a.m4*a.quantity,a.m5*a.quantity,a.m6*a.quantity,
+	       a.m7*a.quantity,a.m8*a.quantity,a.m9*a.quantity,a.m10*a.quantity,a.m11*a.quantity,a.m12*a.quantity,
+	       a.m13*a.quantity,a.m14*a.quantity,a.m15*a.quantity,a.m16*a.quantity,a.m17*a.quantity,a.m18*a.quantity,
+	       a.m1*a.quantity,a.m2*a.quantity,a.m3*a.quantity,a.m4*a.quantity,a.m5*a.quantity,a.m6*a.quantity,
+	       a.m7*a.quantity,a.m8*a.quantity,a.m9*a.quantity,a.m10*a.quantity,a.m11*a.quantity,a.m12*a.quantity,
+	       a.m13*a.quantity,a.m14*a.quantity,a.m15*a.quantity,a.m16*a.quantity,a.m17*a.quantity,a.m18*a.quantity,
+           CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m1+a.m2+a.m3)/3)*a.quantity
+            	WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m1+a.m2)/2)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN   a.m1*a.quantity               END AS Q1,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m4+a.m5+a.m6)/3)*a.quantity
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m3+a.m4+a.m5)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m2+a.m3+a.m4)/3)*a.quantity  END AS Q2,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m7+a.m8+a.m9)/3)*a.quantity
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m6+a.m7+a.m8)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m5+a.m6+a.m7)/3)*a.quantity  END AS Q3,
+    	   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m10+a.m11+a.m12)/3)*a.quantity
+        		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m9+a.m10+a.m11)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m8+a.m9+a.m10)/3)*a.quantity  END AS Q4,
+   		   CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m13+a.m14+a.m15)/3)*a.quantity
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m12+a.m13+a.m14)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m11+a.m12+a.m13)/3)*a.quantity END AS Q5,
+           CASE WHEN :v_mon = 'JAN' OR :v_mon = 'APR' OR :v_mon = 'JUL' OR :v_mon = 'OCT' THEN  ((a.m16+a.m17+a.m18)/3)*a.quantity
+         		WHEN :v_mon = 'FEB' OR :v_mon = 'MAY' OR :v_mon = 'AUG' OR :v_mon = 'NOV' THEN  ((a.m15+a.m16+a.m17)/3)*a.quantity
+         		WHEN :v_mon = 'MAR' OR :v_mon = 'JUN' OR :v_mon = 'SEP' OR :v_mon = 'DEC' THEN  ((a.m14+a.m15+a.m16)/3)*a.quantity END AS Q6,  
+           a.eol_status,'USD',a.matnr,SUBSTR_AFTER(a.varcond,'X_'), NULL AS STATUS,CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_user_id,a.quantity
+	  FROM :cv_cost_tab a,
+           ui_country_salesorg_mapping_his m, 
+           ui_region r,
+           :cost_type c 
+     WHERE a.sales_org              = m.sales_org
+       AND m.country                = r.country
+       AND a.cycle                  = m.cycle 
+       AND a.product_group          = m.product_group
+       AND a.cycle||a.product_group = m.cycle_productgroup
+       AND r.is_legacy              = 'Y'
+       AND NOT EXISTS (SELECT NULL FROM rpt_outlook o
+                        WHERE a.matnr                      = o.cto
+                          AND a.idnrk                      = o.assembly
+                          AND a.brand                      = o.brand
+                          AND a.asp_prd_family             = o.family
+                          AND r.subgeo                     = o.subgeo
+                          AND r.country                    = o.plant
+                          AND c.cost_type                  = o.cost_type
+                          AND SUBSTR_AFTER(a.varcond,'X_') = o.fc
+                          AND o.plant                      = v_srv_plant);                  
+
+      
+  END IF;
+
+    --update default mtm cost     
+    UPDATE rpt_outlook r
+    SET (m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,
+         lm1,lm2,lm3,lm4,lm5,lm6,lm7,lm8,lm9,lm10,lm11,lm12,lm13,lm14,lm15,lm16,lm17,lm18,
+         q1,q2,q3,q4,q5,q6) = (SELECT v_default_mtm_cost,v_default_mtm_cost,
+         v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,
+         v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,
+         v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,
+         v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,
+         v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,
+         v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,
+         v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost,v_default_mtm_cost FROM dummy)
+    WHERE r.cto='N/A'
+      AND r.m1 is null;
+
+    EXEC 'commit';   
+    
+    --update dummy part m1=0 
+    UPDATE rpt_outlook r
+    SET (m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,
+         lm1,lm2,lm3,lm4,lm5,lm6,lm7,lm8,lm9,lm10,lm11,lm12,lm13,lm14,lm15,lm16,lm17,lm18,
+         q1,q2,q3,q4,q5,q6)
+         = 
+        (v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,
+         v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,
+         v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,
+         v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,
+         v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,
+         v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost,v_zero_cost)
+    WHERE r.cto<>'N/A'
+      AND r.m1 IS NULL
+	  AND LEFT(r.assembly,1)  ='X'
+      AND RIGHT(r.assembly,4) = r.fc;
+	  
+    
+    --update default vk(0)cost where cost_flag=Y or N
+ 
+    UPDATE rpt_outlook r
+    SET (m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,
+         lm1,lm2,lm3,lm4,lm5,lm6,lm7,lm8,lm9,lm10,lm11,lm12,lm13,lm14,lm15,lm16,lm17,lm18,
+         q1,q2,q3,q4,q5,q6)
+         = 
+        (MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost))
+    FROM  ui_costflag u 
+    WHERE r.cto<>'N/A'
+      AND r.m1 IS NULL
+      AND SUBSTR_AFTER(u.vk,'X_') = r.fc;
+
+    EXEC 'commit'; 
+
+    UPDATE rpt_outlook r
+    SET (m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,
+         lm1,lm2,lm3,lm4,lm5,lm6,lm7,lm8,lm9,lm10,lm11,lm12,lm13,lm14,lm15,lm16,lm17,lm18,
+         q1,q2,q3,q4,q5,q6) = 
+		(MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),
+		 MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost),MAP(u.cost_flag,'Y',v_default_vk_cost,'N',v_zero_cost)		
+		 ) 
+	    FROM ui_costflag u
+    	WHERE r.cto<>'N/A'
+   	  	  AND r.m1 IS NULL 
+          AND SUBSTRING(r.description,LOCATE(r.description,' ')+1,
+      		LOCATE(SUBSTR_AFTER(r.description,LEFT(r.description,LOCATE(r.description,' '))),' ')-1 ) = u.sbb_type;
+    ------------- add by zhangxj on 2016-04-11,start-----------
+    UPDATE rpt_outlook a
+             SET geo=(SELECT GEO FROM  (SELECT DISTINCT geo,subgeo FROM ui_region) b
+                                WHERE a.subgeo=b.subgeo)
+    WHERE EXISTS ( SELECT 1 FROM  (SELECT DISTINCT geo,subgeo FROM ui_region) b
+                                     WHERE a.subgeo = b.subgeo
+                                 );
+   -----------------------end---------------------------------------------
+    p_out_exitcode := 0;
+  --p_out_exitmessage := 'SUCCESSFUL';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');   
+END;

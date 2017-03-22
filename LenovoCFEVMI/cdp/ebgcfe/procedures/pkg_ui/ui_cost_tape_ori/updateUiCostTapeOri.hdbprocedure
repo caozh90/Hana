@@ -1,0 +1,318 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape_ori::updateUiCostTapeOri" (
+	    IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_TAPE_ORI"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_TAPE_ORI"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	--SQL SECURITY DEFINER
+	SQL SECURITY DEFINER  
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+	
+/************************************************************************
+*name      :                     updateUiCostTapeOri
+*function    :               
+*input     ：               
+*output     :                
+*author     :                     shangqian
+*CreateDate    :                  2014.12.12
+*UpdateDate  :        
+*************************************************************************/
+		   aProduct_group NVARCHAR(10);
+           aPart_number NVARCHAR(40);
+           aMfg_plant NVARCHAR(20); 
+           aCost_elem NVARCHAR(20);
+           aM1  DECIMAL;
+           aM2  DECIMAL;
+           aM3  DECIMAL;
+           aM4  DECIMAL;
+           aM5  DECIMAL;
+           aM6  DECIMAL;
+           aM7  DECIMAL;
+           aM8  DECIMAL;
+           aM9  DECIMAL;
+           aM10  DECIMAL;
+           aM11  DECIMAL;
+           aM12  DECIMAL;
+           aM13  DECIMAL;
+           aM14  DECIMAL;
+           aM15  DECIMAL;
+           aM16  DECIMAL;
+           aM17  DECIMAL;
+           aM18  DECIMAL;
+           aDescription NVARCHAR(200) :='';
+           
+           resourceExists BIGINT;
+		   alogide INTEGER :=0;
+		   aI_DETAIL NVARCHAR(300) :='';
+		   privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000; 
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui::updateUiCostTapeOri error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiCostTapeOri'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+  
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+     
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_cost_tape_ori::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;  
+    
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiCostTapeOri'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+ select
+    M1,
+    M2,
+    M3,
+    M4,
+    M5,
+    M6,
+    M7,
+    M8, 
+    M9,
+    M10,
+    M11,
+    M12,
+    M13,
+    M14, 
+    M15,
+    M16,
+    M17,
+    M18      
+  into  	
+	aM1,
+    aM2,
+    aM3,
+    aM4,
+    aM5,
+    aM6,
+    aM7,
+    aM8, 
+    aM9,
+    aM10,
+    aM11,
+    aM12,
+    aM13,
+    aM14, 
+    aM15,
+    aM16,
+    aM17,
+    aM18	
+  from :newInfo;
+ 
+ 
+ select
+    PRODUCT_GROUP,	
+    PART_NUMBER,
+    MFG_PLANT,
+    COST_ELEM
+  into  	
+ 	aProduct_group,
+ 	aPart_number,
+ 	aMfg_plant,
+ 	aCost_elem
+  from :oldInfo;
+  
+  	SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_COST_TAPE_ORI" A    
+     WHERE A.PRODUCT_GROUP = :aProduct_group
+          AND A.PART_NUMBER = :aPart_number 
+          AND A.MFG_PLANT = :aMfg_plant
+          AND A.COST_ELEM = :aCost_elem
+          AND A.M1 = :aM1
+          AND A.M2 = :aM2 
+          AND A.M3 = :aM3
+          AND A.M4 = :aM4
+          AND A.M5 = :aM5
+          AND A.M6 = :aM6 
+          AND A.M7 = :aM7
+          AND A.M8 = :aM8 
+          AND A.M9 = :aM9
+          AND A.M10 = :aM10 
+          AND A.M11 = :aM11
+          AND A.M12 = :aM12
+          AND A.M13 = :aM13
+          AND A.M14 = :aM14 
+          AND A.M15 = :aM15
+          AND A.M16 = :aM16 
+          AND A.M17 = :aM17
+          AND A.M18 = :aM18;
+   
+    if  :resourceExists > 0 
+    then
+	   /*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;*/
+	    return;--SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before'; 
+    end if;
+    
+    /*2015-02-13 add description change according to lenovo requirement*/ 
+    select ITEM_DESC into aDescription from "EBGCFE"."UI_ITEM" where item = :aPart_number;
+    
+    update "EBGCFE"."UI_COST_TAPE_ORI"  set
+    	M1 = :aM1,
+    	M2 = :aM2,
+    	M3 = :aM3,
+    	M4 = :aM4,
+    	M5 = :aM5,
+    	M6 = :aM6,
+    	M7 = :aM7,
+    	M8 = :aM8,
+    	M9 = :aM9,
+    	M10 = :aM10,
+    	M11 = :aM11,
+    	M12 = :aM12,
+    	M13 = :aM13,
+    	M14 = :aM14,
+    	M15 = :aM15,
+    	M16 = :aM16,
+    	M17 = :aM17,
+    	M18 = :aM18,
+    	STATUS = 'INACTIVE',
+    	DESCRIPTION = :aDescription,
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user
+    where
+    		  PART_NUMBER = :aPart_number
+          AND MFG_PLANT = :aMfg_plant
+          AND COST_ELEM = :aCost_elem
+    	  AND PRODUCT_GROUP = :aProduct_group;
+
+/*put operation to log table*/
+    insert into  "EBGCFE"."UI_COST_TAPE_ORI_LOG"(
+            "CYCLE",
+            "PRODUCT_GROUP",
+            "PART_NUMBER",
+            "MFG_PLANT",
+            "COST_ELEM",
+            "PG",
+            "SPEC",
+            "COMMODITY",
+            "DESCRIPTION",
+            "CURRENCY_NAME",
+            "M1",
+            "M2",
+            "M3",
+            "M4",
+            "M5",
+            "M6",
+            "M7",
+            "M8",
+            "M9",
+            "M10",
+            "M11",
+            "M12",
+            "M13",
+            "M14",
+            "M15",
+            "M16",
+            "M17",
+            "M18",
+            "NEW_PART_NUMBER",
+            "OWNER_COSTTAPE",
+            "LAST_MODIFIED_DATE_COSTTAPE",
+            "CREATED_DATE_COSTTAPE",
+            "COMPANY_CONFIDENTIAL",
+            "LANDED",
+            "COST_PERIODS",
+            "ACTION",
+            "STATUS",
+            "SYS_CREATED_DATE",
+            "SYS_CREATED_BY",
+            "SYS_LAST_MODIFIED_DATE",
+            "SYS_LAST_MODIFIED_BY",
+            "CHANGE_ID",
+            "CHANGE_ACTION",
+            "AT_MODIFIED_BY",
+            "AT_ACTION",
+            "AT_MODIFIED_ON",
+            "AT_MILLIS"             
+    )   
+    select "CYCLE",
+			"PRODUCT_GROUP",
+			"PART_NUMBER",
+			"MFG_PLANT",
+			"COST_ELEM",
+			"PG",
+			"SPEC",
+			"COMMODITY",
+			"DESCRIPTION",
+			"CURRENCY_NAME",
+			"M1",
+			"M2",
+			"M3",
+			"M4",
+			"M5",
+			"M6",
+			"M7",
+			"M8",
+			"M9",
+			"M10",
+			"M11",
+			"M12",
+			"M13",
+            "M14",
+            "M15",
+            "M16",
+            "M17",
+            "M18",
+			"NEW_PART_NUMBER",
+			"OWNER_COSTTAPE",
+			"LAST_MODIFIED_DATE_COSTTAPE",
+			"CREATED_DATE_COSTTAPE",
+			"COMPANY_CONFIDENTIAL",
+			"LANDED",
+			"COST_PERIODS",
+			"ACTION",
+			"STATUS",
+			"SYS_CREATED_DATE",
+			"SYS_CREATED_BY",
+			"SYS_LAST_MODIFIED_DATE",
+			"SYS_LAST_MODIFIED_BY",
+			"CHANGE_ID",
+			"CHANGE_ACTION",
+			SESSION_USER,
+			'UPDATE',
+			CURRENT_DATE,
+			TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))			
+	from "EBGCFE"."UI_COST_TAPE_ORI" a
+	where exists(select 1 from :newInfo b where a."PRODUCT_GROUP"=b."PRODUCT_GROUP" 
+          and a."PART_NUMBER"=b."PART_NUMBER" and a."MFG_PLANT"=b."MFG_PLANT" and a."COST_ELEM"=b."COST_ELEM");  	
+        	    	
+/*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui::updateUiCostTapeOri ('||:aPart_number||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiCostTapeOri'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

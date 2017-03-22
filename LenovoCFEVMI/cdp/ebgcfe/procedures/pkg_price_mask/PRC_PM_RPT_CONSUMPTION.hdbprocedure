@@ -1,0 +1,161 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_price_mask::PRC_PM_RPT_CONSUMPTION"(
+  IN  P_IN_PRODUCT_GROUP   VARCHAR(20),
+  IN  P_IN_TIME_FENCE      VARCHAR(40),
+  IN  P_IN_PROFIT_CENTER   VARCHAR(40),
+  IN  P_IN_OEM_NAME        VARCHAR(40),
+  OUT P_OUT_EXITCODE       INTEGER,
+  OUT P_OUT_EXITMESSAGE    VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA  
+/************************************************************************
+*name       : PRC_GET_PM_BOM      
+*function   : Get price mask's BOM from Z_PCDW_BOM table
+*input      ：   p_product_group : product group
+*output     : p_exit_code : error code / p_exit_message : error message
+*author     : Binbin Zhou
+*CreateDate : 2015-10-28
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+    -- data
+    DECLARE v_pkg_name          VARCHAR(30) := 'PKG_PRICE_MASK';
+    DECLARE v_prc_name          VARCHAR(30) := 'PRC_PM_RPT_CONSUMPTION';
+    DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+    DECLARE logidi              INTEGER     := 0;
+    
+    -- exception 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN
+        p_out_exitcode    := ::SQL_ERROR_CODE;
+        p_out_exitmessage := ::SQL_ERROR_MESSAGE;
+                          
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+	                                                I_LOGSID     => :logidi,
+		                                            I_EVENT_NAME => :v_full_name, 
+		                                            I_MODULE     => 'EBGCFE',
+		                                            I_MESSAGE    => 'ERROR', 
+		                                            I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || 
+		                                                            substr(::SQL_ERROR_MESSAGE, 1, 500) ); 
+		                                                            
+		RESIGNAL; 
+    END;   
+    
+    -- process logic
+    p_out_exitcode    := -1;
+    p_out_exitmessage := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');
+		                                        
+    DELETE FROM pm_rpt_consumption
+    WHERE product_group = :p_in_product_group
+      AND time_fence    = :p_in_time_fence
+      AND profit_center = :p_in_profit_center
+      AND oem_name      = :p_in_oem_name;
+    
+    tab_gr_mtm   = SELECT t1.product_group, t1.time_fence, t1.profit_center, t1.oem_name,
+                          t1.mtm_no, t2.item_desc, t2.bs_part, t2.part_desc, t1.gr_qty, t2.part_qty, 
+                          SUM(t1.gr_qty*t2.part_qty) OVER(PARTITION BY t1.product_group, t1.time_fence, 
+                               t1.profit_center, t1.oem_name, t2.bs_part ORDER BY t1.mtm_no)
+                          AS part_qty_amount
+                     FROM (SELECT product_group, time_fence, profit_center, oem_name, 
+                                  mtm_no, SUM(gr_qty) AS gr_qty
+                             FROM pm_ui_gr_mtm
+                            WHERE product_group = :p_in_product_group
+                              AND time_fence    = :p_in_time_fence
+                              AND profit_center = :p_in_profit_center
+                              AND oem_name      = :p_in_oem_name
+                           GROUP BY product_group, time_fence, profit_center, oem_name, 
+                                    mtm_no) t1,
+                          pm_ui_bs_bom      t2
+                    WHERE t1.product_group = t2.product_group
+                      AND t1.mtm_no        = t2.item;    
+                      
+    tab_inv      = SELECT product_group, time_fence, profit_center, oem_name, parts,
+                          available_qty, available_total_income, available_total_cost,
+                          available_unit_mask, 
+                          --Modify by Zhoubinbin, Bug-fix overflow in numeric calculation
+                          MAP(available_qty, 0, 0, available_total_income/available_qty) AS sales_price,
+                          MAP(available_qty, 0, 0, available_total_cost/available_qty) AS cost_price
+                     FROM pm_rpt_inventory
+                    WHERE product_group = :p_in_product_group
+                      AND time_fence    = :p_in_time_fence
+                      AND profit_center = :p_in_profit_center
+                      AND oem_name      = :p_in_oem_name;
+                      
+    INSERT INTO pm_rpt_consumption
+        (product_group, profit_center, time_fence, oem_name, mtm_no, mtm_desc, mtm_gr_qty, 
+         parts_no, parts_desc, usage, parts_standard_qty, parts_consumed_qty, parts_short_qty, 
+         sales_price, cost_price, unit_price_mask, parts_total_mask)
+    SELECT t1.product_group, t1.profit_center, t1.time_fence, t1.oem_name,
+           t1.mtm_no, t1.item_desc, t1.gr_qty AS mtm_gr_qty, t1.bs_part, t1.part_desc, 
+           t1.part_qty AS usage, t1.gr_qty*t1.part_qty AS parts_standard_qty, 
+           CASE WHEN IFNULL(t2.available_qty, 0) - t1.part_qty_amount >= 0 
+                  THEN t1.gr_qty*t1.part_qty
+                WHEN IFNULL(t2.available_qty, 0) - t1.part_qty_amount < 0 AND 
+                     IFNULL(t2.available_qty, 0) - (t1.part_qty_amount - t1.gr_qty*t1.part_qty) > 0
+                  THEN IFNULL(t2.available_qty, 0) - (t1.part_qty_amount - t1.gr_qty*t1.part_qty)
+                ELSE 0 END AS parts_consumed_qty,
+            CASE WHEN IFNULL(t2.available_qty, 0) - t1.part_qty_amount >= 0 
+                  THEN 0
+                WHEN IFNULL(t2.available_qty, 0) - t1.part_qty_amount < 0 AND 
+                     IFNULL(t2.available_qty, 0) - (t1.part_qty_amount - t1.gr_qty*t1.part_qty) > 0
+                  THEN t1.part_qty_amount - IFNULL(t2.available_qty, 0)
+                ELSE t1.gr_qty*t1.part_qty END AS parts_short_qty,
+            t2.sales_price, t2.cost_price, t2.sales_price - t2.cost_price AS unit_price_mask,
+            t1.part_qty*(t2.sales_price - t2.cost_price) AS parts_total_mask
+      FROM :tab_gr_mtm t1 LEFT JOIN :tab_inv t2
+        ON t1.bs_part = t2.parts;
+     
+    UPDATE pm_rpt_consumption t1
+       SET t1.unit_mtm_price_mask = 
+           (SELECT SUM(t2.parts_total_mask) FROM pm_rpt_consumption t2
+             WHERE t1.product_group = t2.product_group
+               AND t1.time_fence    = t2.time_fence
+               AND t1.profit_center = t2.profit_center
+               AND t1.oem_name      = t2.oem_name
+               AND t1.mtm_no        = t2.mtm_no)
+     WHERE t1.product_group = :p_in_product_group
+       AND t1.time_fence    = :p_in_time_fence
+       AND t1.profit_center = :p_in_profit_center
+       AND t1.oem_name      = :p_in_oem_name;
+       
+    UPDATE pm_rpt_consumption
+       SET total_parts_consumed_mask = parts_consumed_qty*unit_price_mask, 
+           total_mtm_price_mask      = mtm_gr_qty*unit_mtm_price_mask
+     WHERE product_group = :p_in_product_group
+       AND time_fence    = :p_in_time_fence
+       AND profit_center = :p_in_profit_center
+       AND oem_name      = :p_in_oem_name;
+       
+    UPDATE pm_rpt_consumption
+       SET mask_percentage = MAP(total_mtm_price_mask, 0, 0, total_parts_consumed_mask/total_mtm_price_mask)
+     WHERE product_group = :p_in_product_group
+       AND time_fence    = :p_in_time_fence
+       AND profit_center = :p_in_profit_center
+       AND oem_name      = :p_in_oem_name;
+       
+    UPDATE pm_rpt_consumption t1
+       SET t1.function_type = t2.function_type
+      FROM pm_ui_time_fence t2
+     WHERE t1.product_group = t2.product_group
+       AND t1.time_fence    = t2.time_fence
+       AND t1.profit_center = t2.profit_center
+       AND t1.oem_name      = t2.oem_name
+       AND t1.product_group = :p_in_product_group
+       AND t1.time_fence    = :p_in_time_fence
+       AND t1.profit_center = :p_in_profit_center
+       AND t1.oem_name      = :p_in_oem_name; 
+      
+    p_out_exitcode    := 0;
+    p_out_exitmessage := 'SUCCESSFUL';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+	                                            I_EVENT_NAME => :v_full_name,
+	                                            I_MODULE     => 'EBGCFE');  	
+END;

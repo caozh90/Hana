@@ -1,0 +1,184 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::SP_ZMATMAST_IDOC_PCDW_MBEW" (
+IN PI_MATNR VARCHAR(100),
+IN PI_BWKEY VARCHAR(100),
+IN PI_BKLAS VARCHAR(100),
+IN PI_MTORG VARCHAR(100),  --add on 2012.8.30  for brp prj
+IN PI_STPRS DECIMAL,
+IN PI_PVPRS12 DECIMAL,
+IN PI_PEINH DECIMAL,
+IN PI_VERPR DECIMAL,
+IN PI_KALN1 DECIMAL,
+IN PI_WAERS VARCHAR(100),
+IN PI_FLAG  VARCHAR(100),
+IN PI_IDOCNUM DECIMAL,
+IN PI_IDOCTIME VARCHAR(100),
+IN PI_SYS_CREATED_BY VARCHAR(100),
+IN PI_SYS_LAST_MODIFIED_BY VARCHAR(100),
+IN PI_OWNPR VARCHAR(1)
+)  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	AS
+  /***********************************************************************/
+  /* PROCEDURE          ?SP_ZMATMAST_IDOC_PCDW_MBEW
+  /* DESCRIPTION        ?INSERT IDOC DATA TO ECC_MBEW TABLE
+  /* PARAMETERS         ?PI_MATNR, PI_BWKEY, PI_BKLAS
+  /* SOURCE             ?IDOC
+  /* TARGET TABLE       ?ECC_MBEW
+  /* VERSION            ?V1.0
+  /***********************************************************************/
+
+  V_IDOCTIME TIMESTAMP;
+  vMsg	 	 VARCHAR(1024);
+  vCode	     int;
+  n	 	 	 INT;
+BEGIN
+	-- exception
+    --定义异常
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+	  vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+        VALUES   (CURRENT_TIMESTAMP,
+                  'SP_ZMATMAST_IDOC_PCDW_MBEW',
+                  'ERROR',
+                  :vCode,
+                  :vMsg,
+                  '',
+                  '',
+                  '',
+                  'END');
+    	--exec 'commit';     --2017.02.08 PI issue by baying deleted                
+    	
+    	INSERT INTO Ecc_Mbew_Err
+	      (matnr,
+	       bwkey,
+	       bklas,
+	       stprs,
+	       pvprs12,
+	       peinh,
+	       verpr,
+	       kaln1,
+	       flag,
+	       idocnum,
+	       idoctime,
+	       sys_created_date,
+	       sys_created_by,
+	       waers,
+	       mtorg,
+	       z_errmsg,
+	       ownpr)
+	    VALUES
+	      (:PI_MATNR,
+	       :PI_BWKEY,
+	       :PI_BKLAS,
+	       :PI_STPRS,
+	       :PI_PVPRS12,
+	       :PI_PEINH,
+	       :PI_VERPR,
+	       :PI_KALN1,
+	       :PI_FLAG,
+	       :PI_IDOCNUM,
+	       :PI_IDOCTIME,
+	       CURRENT_TIMESTAMP,
+	       :PI_SYS_CREATED_BY,
+	       :PI_WAERS,
+	       :PI_MTORG,    
+	       :vMsg,
+	       :PI_OWNPR);
+	    --EXEC 'COMMIT';  --2017.02.08 PI issue by baying deleted  
+    END;
+	-- exception
+
+	V_IDOCTIME := TO_TIMESTAMP(PI_IDOCTIME);
+
+  	IF :PI_MATNR IS NOT NULL THEN
+	
+		SELECT count(1) into n from ecc_mbew      
+		WHERE matnr = :PI_MATNR
+       	AND bwkey = :PI_BWKEY
+       	AND (idoctime < :V_IDOCTIME OR
+           (idoctime = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR
+           idoctime IS NULL);
+	 	
+	 	if n>0 then
+	 	UPDATE ecc_mbew
+	       SET bklas                  = :PI_BKLAS,
+	           stprs                  = :PI_STPRS,
+	           pvprs12                = :PI_PVPRS12,
+	           peinh                  = :PI_PEINH,
+	           verpr                  = :PI_VERPR,
+	           kaln1                  = :PI_KALN1,
+	           flag                   = :PI_FLAG,
+	           idocnum                = :PI_IDOCNUM,
+	           idoctime               = :V_IDOCTIME,
+	           sys_last_modified_date =  CURRENT_TIMESTAMP,
+	           sys_last_modified_by   = :PI_SYS_LAST_MODIFIED_BY,
+	           waers                  = :PI_WAERS,
+	           mtorg                  = :PI_MTORG,  --add on 2012.8.30  for brp prj
+	           ownpr                  = :PI_OWNPR					  
+	     WHERE matnr = :PI_MATNR
+	       AND bwkey = :PI_BWKEY
+	       AND (idoctime < :V_IDOCTIME OR
+	           (idoctime = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR
+	           idoctime IS NULL);
+	   --exec 'commit';   --2017.02.08 PI issue by baying deleted  
+      
+	   ELSEIF n=0 then
+	   	SELECT count(1) into n from ecc_mbew      
+		WHERE matnr = :PI_MATNR
+       	AND bwkey = :PI_BWKEY;
+       	
+       	if n=0 then
+       		INSERT INTO ecc_mbew
+	        (matnr,
+	         bwkey,
+	         bklas,
+	         stprs,
+	         pvprs12,
+	         peinh,
+	         verpr,
+	         kaln1,
+	         flag,
+	         idocnum,
+	         idoctime,
+	         sys_created_date,
+	         sys_created_by,
+	         waers,
+	         mtorg,
+	         ownpr)    
+	      VALUES
+	        (:PI_MATNR,
+	         :PI_BWKEY,
+	         :PI_BKLAS,
+	         :PI_STPRS,
+	         :PI_PVPRS12,
+	         :PI_PEINH,
+	         :PI_VERPR,
+	         :PI_KALN1,
+	         :PI_FLAG,
+	         :PI_IDOCNUM,
+	         :V_IDOCTIME,
+	         CURRENT_TIMESTAMP,
+	         :PI_SYS_CREATED_BY,
+	         :PI_WAERS,
+	         :PI_MTORG,
+	         :PI_OWNPR);   
+       	end if;
+	   	
+	 		--EXEC 'COMMIT';   --2017.02.08 PI issue by baying deleted  
+	 	END IF;  
+	 END IF;
+END;

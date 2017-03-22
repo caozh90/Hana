@@ -1,0 +1,261 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::updateUiFlexibleAdder" ( 
+		 IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FLEXIBLE_ADDER_T",
+		 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FLEXIBLE_ADDER_T",
+		 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+	   aI_DETAIL NVARCHAR(300) :=''; 
+	   alogide INTEGER :=0;
+	   v_product_group NVARCHAR(10);
+	   v_family NVARCHAR(100); 
+	   v_subgeo NVARCHAR(20);
+	   v_tba_type NVARCHAR(10);
+	   v_brand NVARCHAR(40);
+	   v_plant NVARCHAR(50);
+	   v_adder_name  NVARCHAR(40);
+	   v_assembly  NVARCHAR(40);
+	   resourceExists BIGINT;	   
+	   aM1 DECIMAL(15,4);
+	   aM2 DECIMAL(15,4);
+	   aM3 DECIMAL(15,4);
+	   aM4 DECIMAL(15,4);
+	   aM5 DECIMAL(15,4);
+	   aM6 DECIMAL(15,4);
+	   aM7 DECIMAL(15,4);
+	   aM8 DECIMAL(15,4);
+	   aM9 DECIMAL(15,4);
+	   aM10 DECIMAL(15,4);
+	   aM11 DECIMAL(15,4);
+	   aM12 DECIMAL(15,4);
+	   aM13 DECIMAL(15,4);
+	   aM14 DECIMAL(15,4);
+	   aM15 DECIMAL(15,4);
+	   aM16 DECIMAL(15,4);
+	   aM17 DECIMAL(15,4);
+	   aM18 DECIMAL(15,4);	
+	   privilegeExists  NVARCHAR(300)  ;  		   
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::updateUiFlexibleAdder error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::updateUiFlexibleAdder'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_flexible_adder::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+    
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::updateUiXattc'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+ 
+ select
+    M1,
+    M2,
+    M3,
+    M4,
+    M5,
+    M6,
+    M7,
+    M8, 
+    M9,
+    M10,
+    M11,
+    M12,
+    M13,
+    M14, 
+    M15,
+    M16,
+    M17,
+    M18      
+  into  	
+	aM1,
+    aM2,
+    aM3,
+    aM4,
+    aM5,
+    aM6,
+    aM7,
+    aM8, 
+    aM9,
+    aM10,
+    aM11,
+    aM12,
+    aM13,
+    aM14, 
+    aM15,
+    aM16,
+    aM17,
+    aM18	
+  from :newInfo;
+ 
+ 
+ select
+    FAMILY,
+	PRODUCT_GROUP,
+	SUBGEO,
+	TBA_TYPE,
+	BRAND,
+	PLANT,
+	ADDER_NAME,
+	ASSEMBLY
+  into  	
+ 	v_family,
+ 	v_product_group,
+ 	v_subgeo,
+ 	v_tba_type,
+ 	v_brand,
+	v_plant,
+	v_adder_name,
+	v_assembly
+  from :oldInfo;
+     	
+SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_FLEXIBLE_ADDER" A    
+     WHERE A.PRODUCT_GROUP = :v_product_group
+          AND A.FAMILY = :v_family 
+          AND A.SUBGEO = :v_subgeo
+          AND A.TBA_TYPE = :v_tba_type
+          AND A.BRAND = :v_brand 
+          AND A.PLANT = :v_plant
+          AND A.ADDER_NAME = :v_adder_name
+          AND A.ASSEMBLY = :v_assembly
+          AND A.M1 = :aM1
+          AND A.M2 = :aM2 
+          AND A.M3 = :aM3
+          AND A.M4 = :aM4
+          AND A.M5 = :aM5
+          AND A.M6 = :aM6 
+          AND A.M7 = :aM7
+          AND A.M8 = :aM8 
+          AND A.M9 = :aM9
+          AND A.M10 = :aM10 
+          AND A.M11 = :aM11
+          AND A.M12 = :aM12
+          AND A.M13 = :aM13
+          AND A.M14 = :aM14 
+          AND A.M15 = :aM15
+          AND A.M16 = :aM16 
+          AND A.M17 = :aM17
+          AND A.M18 = :aM18;
+   
+    if  :resourceExists > 0 
+    then
+	   /* errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;*/
+	   return;--SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before';
+	    
+    end if;
+--update into UI_FLEXIBLE_ADDER table
+update "EBGCFE"."UI_FLEXIBLE_ADDER" a set (a.M1,a.M2,a.M3,a.M4,a.M5,a.M6,a.M7,a.M8,a.M9,a.M10,a.M11,a.M12,a.M13,a.M14,a.M15,a.M16,a.M17,a.M18,
+				a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY) = 
+				(b.M1,b.M2,b.M3,b.M4,b.M5,b.M6,b.M7,b.M8,b.M9,b.M10,b.M11,b.M12,b.M13,b.M14,b.M15,b.M16,b.M17,b.M18,CURRENT_TIMESTAMP,SESSION_USER)
+		FROM :newInfo b where a.BRAND = :v_brand and a.FAMILY = :v_family and 
+								a.TBA_TYPE = :v_tba_type and a.PLANT = :v_plant and A.SUBGEO = :v_subgeo
+								and a.ADDER_NAME = :v_adder_name and a.ASSEMBLY = :v_assembly;
+--insert log table
+insert into "EBGCFE"."UI_FLEXIBLE_ADDER_LOG"(
+	 "PRODUCT_GROUP",
+	 "FAMILY",
+	 "TBA_TYPE",
+	 "BRAND",
+	 "PLANT",
+	 "SUBGEO",
+	 "ADDER_NAME",
+	 "ASSEMBLY",
+	 "M1",
+	 "M2",
+	 "M3",
+	 "M4",
+	 "M5",
+	 "M6",
+	 "M7",
+	 "M8",
+	 "M9",
+	 "M10",
+	 "M11",
+	 "M12",
+	 "M13",
+	 "M14",
+	 "M15",
+	 "M16",
+	 "M17",
+	 "M18",
+	 "ACTION",
+	 "SYS_CREATED_DATE",
+	 "SYS_CREATED_BY",
+	 "AT_MODIFIED_ON",
+	 "AT_MILLIS"
+	 )SELECT 
+	 		a."PRODUCT_GROUP",
+	 		a."FAMILY",
+	 		a."TBA_TYPE",
+	 		a."BRAND",
+	 		a."PLANT",
+	 		a."SUBGEO",
+	 		a."ADDER_NAME",
+	 		a."ASSEMBLY",
+	 		a."M1",
+	 		a."M2",
+	 		a."M3",
+	 		a."M4",
+	 		a."M5",
+	 		a."M6",
+	 		a."M7",
+	 		a."M8",
+	 		a."M9",
+	 		a."M10",
+	 		a."M11",
+		 	a."M12",
+		 	a."M13",
+	 		a."M14",
+	 		a."M15",
+	 		a."M16",
+	 		a."M17",
+		 	a."M18",
+	 		'update',
+	 		CURRENT_TIMESTAMP,
+	 		SESSION_USER,
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a;
+
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::updateUiFlexibleAdder successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_flexible_adder::updateUiFlexibleAdder'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

@@ -1,0 +1,49 @@
+FUNCTION "SZEBGVMI"."cdp.szebgvmi.functions.pkg_excess_pull::FUNC_GET_PRIORITY" (IN loc VARCHAR) 
+    RETURNS table(result decimal)
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY INVOKER 
+    /************************************************************************
+    *name      : FUNC_GET_PRIORITY              --函数名
+    *function  :               --函数功能
+    *input     ：  loc  --输入参数
+    *output     :result --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141204                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/      
+    
+    
+    AS
+      v_loc DECIMAL;
+      v_pri   DECIMAL;
+      v_result DECIMAL;
+BEGIN
+     BEGIN
+
+        DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 339 --invalid number(null)
+        BEGIN
+
+               v_result := 999;
+        END;
+        
+        v_loc:=to_decimal(:loc);  
+        
+        BEGIN
+            DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --No data found 
+            BEGIN
+               v_pri := 999;
+            END;
+         
+            SELECT priority
+              INTO v_pri
+              FROM "SZEBGVMI".loc_priority
+             WHERE LOCATION = v_loc;
+         
+       
+       END;
+        v_result:= :v_pri; 
+   END;
+   return select v_result as result from dummy;
+
+END;

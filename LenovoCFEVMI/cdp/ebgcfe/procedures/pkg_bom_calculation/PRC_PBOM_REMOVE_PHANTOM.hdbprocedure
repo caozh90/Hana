@@ -1,0 +1,239 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_PBOM_REMOVE_PHANTOM" ( 
+    IN  p_change_id     VARCHAR(100),
+    IN  p_product_group VARCHAR(20),
+    OUT p_out_exitcode  INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA  
+/************************************************************************
+*name       : PRC_PBOM_REMOVE_PHANTOM 
+*function   : Plant BOM Remove Phantom
+*input      ：-
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-01-06
+*UpdateDate : 2015-07-30 by Frankie      --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+		v_rownum            NUMBER(1);
+        v_maxrownum         NUMBER DEFAULT 1000;
+		v_prc_name          VARCHAR(30)  := 'PRC_PBOM_REMOVE_PHANTOM';
+	    v_g_pkg_name        VARCHAR(30)  := 'PKG_BOM_CALCULATION';
+        v_full_name         VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+		v_debug  	        VARCHAR(20);
+		v_init_date         TIMESTAMP; 
+		v_logidi            INTEGER := 0;
+		v_logidj            INTEGER := 0;
+		v_logidk            INTEGER := 0;
+		v_logidl            INTEGER := 0;
+		v_count             INTEGER;
+    	v_row_id			INTEGER;
+    	i                   INTEGER := 0;
+		v_row_count         INTEGER;
+		v_is_null           INTEGER;	    	
+		v_level             INTEGER := 0;  -- BOM level, starts from 0	    	
+------------package parameter----------------------------		 	
+		v_time              DECIMAL(17,3);
+		v_step_counter      INTEGER       := 0;
+    	v_taking_time       DECIMAL(17,3);
+BEGIN
+ 
+  --	Exception 
+DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found
+BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                I_LOGSID     => :v_logidi,
+				                                I_EVENT_NAME => :v_full_name,
+				                                I_MODULE     => 'EBGCFE',
+				                                I_MESSAGE    => 'ERROR',
+				                                I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || ' (' ||
+				                                                substr(::SQL_ERROR_MESSAGE, 1, 500) || ')');                                
+END;
+DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                I_LOGSID     => :v_logidi,
+				                                I_EVENT_NAME => :v_full_name,
+				                                I_MODULE     => 'EBGCFE',
+				                                I_MESSAGE    => 'ERROR',
+				                                I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || ' (' ||
+				                                                substr(::SQL_ERROR_MESSAGE, 1, 500) || ')'); 
+END;
+
+  --	Process Logic
+	p_out_exitcode := -1;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+	                                            I_LOGSID     => :v_logidi,
+				                                I_EVENT_NAME => :v_full_name,
+				                                I_MODULE     => 'EBGCFE'); 
+				                                
+	SELECT SESSION_CONTEXT('v_step_counter_bom_calculation') into v_step_counter FROM DUMMY;
+	   
+	INSERT INTO CAL_RUNTIME(PKG_NAME,PROC_NAME,START_T,PRD_GROUP)
+	SELECT v_g_pkg_name,v_prc_name,CURRENT_DATE, p_product_group from dummy;
+	        
+	DELETE FROM MID_phantom_part WHERE product_group = :p_product_group;
+	DELETE FROM MID_ecc_sbom WHERE product_group = :p_product_group;
+	
+	select "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy;
+	IF v_debug = 'T' 
+	THEN
+	   v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+	END IF;
+	
+	INSERT INTO MID_phantom_part
+	   (product_group, model, father, children, item_desc, plant, oem, brand,
+	    asp_prd_family, country, lvl, qtyper, altgrup, altpri, altpercent, 
+	    path, costflag, item_type_m, item_type_f, item_type_c, mtart_f, mtart_c,
+	    schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c,
+	    bom_plant, sbom_plant, cost_plant, bom_lvl, is_leaf, status, rid)
+	SELECT product_group, model, father, children, item_desc, plant, oem, brand,
+	       asp_prd_family, country, lvl, qtyper, altgrup, altpri, altpercent, 
+	       path, costflag, item_type_m, item_type_f, item_type_c, mtart_f,
+	       mtart_c, schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c,
+	       stawn_c, bom_plant, sbom_plant, cost_plant, bom_lvl, is_leaf, status, 
+	       "$rowid$"
+	  FROM MID_eccplant_bom t1
+	 WHERE (sobsl_f = '50' OR sobsl_c = '50')
+	   AND product_group = :p_product_group;
+	             
+	DELETE FROM MID_ECCPLANT_BOM T1 ---------------------slow
+	 WHERE PRODUCT_GROUP = :p_product_group
+	   AND (sobsl_f = '50' OR sobsl_c = '50');            
+
+    IF v_debug = 'T' 
+    THEN
+        v_step_counter := v_step_counter + 1;
+        v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - v_time;
+        
+        IF :v_taking_time < 0 THEN v_taking_time := :v_taking_time + 86400.000; END IF;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                    I_LOGSID     => :v_logidj,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+								                    I_MESSAGE    => 'step '||to_char(:v_step_counter)||': ' ||to_char(:v_taking_time) || ' sec'); 
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+
+    INSERT INTO MID_ecc_sbom(product_group, rid)
+    SELECT product_group, "$rowid$"
+      FROM MID_phantom_part
+     WHERE (sobsl_f <> '50' OR sobsl_f IS NULL)
+       AND sobsl_c = '50'
+       AND product_group = :p_product_group;
+    
+    rowid_tab = SELECT rid, "$rowid$" as row_id FROM mid_ecc_sbom t
+                 WHERE product_group = :p_product_group;
+
+    --first level nodes
+    v_level := 0;
+    level_tab = SELECT b.product_group, b.model, b.father, b.children, b.item_desc, b.plant, 
+                       b.oem, b.brand, b.asp_prd_family, b.country, NULL AS lvl, b.qtyper, 
+                       NULL AS stlnr, '-'||b.father as altgrup, b.altpri, b.altpercent,
+                       '/'||b.father AS path, b.costflag, b.item_type_m, b.item_type_f, b.item_type_c, 
+                       b.mtart_f, b.mtart_c, b.schgt_c, b.beskz_f, b.beskz_c, b.sobsl_f, 
+                       b.sobsl_c, b.ekgrp_c, b.mfrgr_c, b.stawn_c, b.bom_plant, b.sbom_plant, 
+                       b.cost_plant, b.bom_lvl, 0 AS is_leaf, b.status
+				  FROM :rowid_tab a 
+				       INNER JOIN mid_phantom_part b 
+				       ON a.rid = b."$rowid$";   
+    v_row_count := 0;	
+    
+    level_agg_tab = SELECT * FROM :level_tab WHERE (sobsl_c <> '50' OR sobsl_c IS NULL);
+    
+    SELECT COUNT(*) INTO v_row_count FROM :level_tab a
+     WHERE EXISTS(SELECT 1 FROM mid_phantom_part b
+	               WHERE a.children  = b.father 
+	                 AND a.bom_plant = b.bom_plant 
+	                 AND a.model     = b.model 
+	                 AND a.bom_lvl   = b.bom_lvl
+	                 AND a.product_group = b.product_group);
+
+    -- recursive logic to explore all bom levels
+    WHILE :v_row_count > 0 DO			
+    
+	  level_tab = SELECT b.product_group, b.model, a.father, b.children, b.item_desc, b.plant, 
+	                     b.oem, b.brand, a.asp_prd_family, a.country, NULL AS lvl,
+                         a.qtyper * b.qtyper AS qtyper, NULL AS stlnr, b.altgrup||'-'||b.father AS altgrup,
+                         b.altpri, a.altpercent * b.altpercent /100 AS altpercent, a.path || '/'||b.father AS path, 
+                         b.costflag, b.item_type_m, a.item_type_f, b.item_type_c, a.mtart_f, 
+                         b.mtart_c, b.schgt_c, a.beskz_f, b.beskz_c, a.sobsl_f, b.sobsl_c, b.ekgrp_c, 
+                         b.mfrgr_c, b.stawn_c, b.bom_plant, b.sbom_plant, b.cost_plant, b.bom_lvl, 
+                         NULL AS is_leaf, b.status                  
+	                FROM :level_tab a, mid_phantom_part b
+	               WHERE a.children  = b.father 
+	                 --Modified by Zhoubinbin 20160831, bundle-sbb qty double in FLEX plant, should join plant column not bom_plant
+	                 --AND a.bom_plant = b.bom_plant
+	                 AND a.plant     = b.plant
+	                 AND a.model     = b.model 
+	                 AND a.bom_lvl   = b.bom_lvl
+	                 AND a.product_group = b.product_group
+	                 AND locate(a.path, b.children) = 0; 
+	
+	  --only keep leaf nodes in level_agg_tab, i.e. delete nodes where children nodes exist
+	  level_agg_tab = SELECT * FROM :level_agg_tab 
+	                  UNION ALL 
+	                  SELECT * FROM :level_tab 
+	                   WHERE (sobsl_c <> '50' OR sobsl_c IS NULL);
+
+	  v_level := :v_level + 1;	
+	  
+	  SELECT COUNT(*) INTO v_row_count FROM :level_tab a
+	   WHERE EXISTS(SELECT 1 FROM mid_phantom_part b
+	                 WHERE a.children  = b.father 
+	                   AND a.bom_plant = b.bom_plant 
+	                   AND a.model     = b.model 
+	                   AND a.bom_lvl   = b.bom_lvl
+	                   AND a.product_group = b.product_group);	
+	 		             
+    END WHILE;
+
+	    INSERT INTO mid_eccplant_bom 
+	        (product_group, model, father, children, item_desc,plant,oem, brand,
+	         asp_prd_family, country,lvl, qtyper,stlnr, altgrup, altpri, altpercent, 
+	         path,costflag,item_type_m,item_type_f, item_type_c, mtart_f, mtart_c,
+	         schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c,
+	         bom_plant, sbom_plant, cost_plant, bom_lvl, is_leaf, status) 
+	    SELECT product_group, model, father, children, item_desc,plant,oem, brand,
+	           asp_prd_family, country,lvl, qtyper,stlnr, altgrup, altpri, altpercent, 
+	           path,costflag,item_type_m,item_type_f, item_type_c, mtart_f, mtart_c,
+	           schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c,
+	           bom_plant, sbom_plant, cost_plant, bom_lvl, is_leaf, status 
+	      FROM :level_agg_tab; 				      
+
+  IF v_debug = 'T'  
+  THEN
+      v_step_counter := v_step_counter + 1;
+      v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - v_time;
+        
+      IF :v_taking_time < 0 THEN v_taking_time := :v_taking_time + 86400.000; END IF;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                  I_LOGSID     => :v_logidi,
+                                                  I_EVENT_NAME => :v_full_name,
+                                                  I_MODULE     => 'EBGCFE',
+                                                  I_MESSAGE    => 'step '||to_char(:v_step_counter)||': ' ||
+				    			                                    to_char(:v_taking_time) || ' sec'); 
+      v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+  END IF;
+
+  p_out_exitcode := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                              I_LOGSID     => :v_logidi,
+	  									      I_EVENT_NAME => :v_full_name,
+	  									      I_MODULE     => 'EBGCFE');
+	  									      
+  UPDATE CAL_RUNTIME x 
+     SET end_t=current_timestamp
+   WHERE x.pkg_name  =v_g_pkg_name 
+     AND x.proc_name =v_prc_name 
+     AND end_t is null 
+     AND prd_group   =p_product_group;	  									      
+	  									      
+  exec 'SET ''v_step_counter_bom_calculation'' = '''||v_step_counter||'''';          
+      
+END;
+

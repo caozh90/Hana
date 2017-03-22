@@ -1,0 +1,13 @@
+PROCEDURE "SZEBGVMI"."cdp.wf.sz::PRC_SPECIAL_PULL_PREPROCESS" (
+	IN iv_id            VARCHAR(10),
+      IN pull_type           VARCHAR(30),
+      OUT on_exitcode      NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+BEGIN
+	CALL "cdp.szebgvmi.procedures.pkg_special_pull_process::PRC_SPECIAL_PULL_PREPROCESS"(:iv_id,:pull_type,on_exitcode);
+END;

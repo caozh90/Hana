@@ -1,0 +1,12 @@
+PROCEDURE "SZEBGVMI"."cdp.wf.sz::PRC_MATERIAL_MASTER" (
+	in p_in_application_id  VARCHAR2(50),
+      out p_out_exitcode      NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+BEGIN
+	CALL "cdp.szebgvmi.procedures.pkg_pcdw_to_vmi::PRC_MATERIAL_MASTER"(:p_in_application_id,p_out_exitcode);
+END;

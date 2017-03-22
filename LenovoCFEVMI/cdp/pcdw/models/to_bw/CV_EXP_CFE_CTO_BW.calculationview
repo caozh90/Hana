@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_EXP_CFE_CTO_BW" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="reportingEnabled" calculationScenarioType="SCRIPT_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="false">
+  <descriptions defaultDescription="CV_EXP_CFE_CTO_BW"/>
+  <defaultSchema schemaName="PCDW"/>
+  <localVariables/>
+  <variableMappings/>
+  <informationModelLayout relativeWidthScenario="27"/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="VARIANT" length="26"/>
+        <viewAttribute datatype="NVARCHAR" id="SALES_ORG" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="SALES_OFFICE" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="PRODUCTHIER_1" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="PRODUCTHIER_2" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="PRODUCTHIER_3" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="PRODUCTHIER_4" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="COST_TYPE" length="20"/>
+        <viewAttribute datatype="DECIMAL" id="COST_USD" length="12" scale="2"/>
+        <viewAttribute datatype="DECIMAL" id="COST_LOCAL" length="15" scale="2"/>
+        <viewAttribute datatype="NVARCHAR" id="CURRENCY_LOCAL" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="PRICE_UNIT" length="20"/>
+        <viewAttribute datatype="DATE" id="FROM_DATE"/>
+        <viewAttribute datatype="DATE" id="TO_DATE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = 
+ 	 SELECT 
+ 	 		m.variant,
+ 	 		m.sales_org,
+ 	 		m.sales_office,
+ 	 		m.producthier_1,
+ 	 		m.producthier_2,
+ 	 		m.producthier_3,
+ 	 		m.producthier_4,
+ 	 		m.cost_type,
+ 	 		m.m1 as cost_usd,
+ 	 		m.m1*e.m1 AS cost_local,
+ 	 		e.currency_name as currency_local,
+ 	 		m.price_unit,
+			TO_DATE(TO_CHAR(m.sys_created_date,'YYYYMMDD'),'YYYYMMDD') AS from_date,
+	 		TO_DATE('99991231','YYYYMMDD') AS to_date
+		FROM pcdw.exp_cto_salesoffice_pre m,
+		     pcdw.exp_cfe_exchange_rate_lastcycle e,
+		     (SELECT  DISTINCT sales_org,currency,SUBSTR(cycle,1,6) AS cycle FROM ebgcfe.ui_country_salesorg_mapping_his) h
+		WHERE m.cost_type         IN('TOTL','BOML')
+		  AND m.sales_org         = h.sales_org
+		  AND m.cycle             =  h.cycle
+		  AND m.product_group     = e.product_group
+		  AND h.currency          = e.currency_name;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="VARIANT" order="1">
+        <descriptions defaultDescription="VARIANT"/>
+        <keyMapping columnObjectName="Script_View" columnName="VARIANT"/>
+      </attribute>
+      <attribute id="SALES_ORG" order="2">
+        <descriptions defaultDescription="SALES_ORG"/>
+        <keyMapping columnObjectName="Script_View" columnName="SALES_ORG"/>
+      </attribute>
+      <attribute id="SALES_OFFICE" order="3">
+        <descriptions defaultDescription="SALES_OFFICE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SALES_OFFICE"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_1" order="4">
+        <descriptions defaultDescription="PRODUCTHIER_1"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTHIER_1"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_2" order="5">
+        <descriptions defaultDescription="PRODUCTHIER_2"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTHIER_2"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_3" order="6">
+        <descriptions defaultDescription="PRODUCTHIER_3"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTHIER_3"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_4" order="7">
+        <descriptions defaultDescription="PRODUCTHIER_4"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTHIER_4"/>
+      </attribute>
+      <attribute id="COST_TYPE" order="8">
+        <descriptions defaultDescription="COST_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="COST_TYPE"/>
+      </attribute>
+      <attribute id="CURRENCY_LOCAL" order="11">
+        <descriptions defaultDescription="CURRENCY_LOCAL"/>
+        <keyMapping columnObjectName="Script_View" columnName="CURRENCY_LOCAL"/>
+      </attribute>
+      <attribute id="PRICE_UNIT" order="12">
+        <descriptions defaultDescription="PRICE_UNIT"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRICE_UNIT"/>
+      </attribute>
+      <attribute id="FROM_DATE" order="13">
+        <descriptions defaultDescription="FROM_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="FROM_DATE"/>
+      </attribute>
+      <attribute id="TO_DATE" order="14">
+        <descriptions defaultDescription="TO_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="TO_DATE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="COST_USD" order="9" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="COST_USD"/>
+        <measureMapping columnObjectName="Script_View" columnName="COST_USD"/>
+      </measure>
+      <measure id="COST_LOCAL" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="COST_LOCAL"/>
+        <measureMapping columnObjectName="Script_View" columnName="COST_LOCAL"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

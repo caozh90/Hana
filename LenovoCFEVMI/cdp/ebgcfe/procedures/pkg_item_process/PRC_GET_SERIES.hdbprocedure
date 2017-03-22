@@ -1,0 +1,385 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_item_process::PRC_GET_SERIES" (
+  IN  p_in_lastrundate   TIMESTAMP,
+  OUT p_out_exitcode     INTEGER
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    --READS SQL DATA
+/************************************************************************
+*name       : PRC_GET_SERIES            
+*function   : GET Series
+*input      ：p_in_lastrundate : last run timestamp
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-02-09
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/      
+    AS
+BEGIN
+  -- DATA
+  DECLARE    v_g_pkg_name        VARCHAR(30) := 'PKG_ITEM_PROCESS';   
+  DECLARE    v_prc_name          VARCHAR(50) := 'PRC_GET_SERIES';
+  DECLARE    v_prc_full_name     VARCHAR(100) := :v_g_pkg_name || '.' || :v_prc_name;
+  DECLARE    v_last_runtime      TIMESTAMP;
+  DECLARE    v_machinetype       VARCHAR(50);
+  DECLARE    logidi              INTEGER := 0;  
+  DECLARE    logidj              INTEGER := 0;    
+  DECLARE    logidk              INTEGER := 0;     
+  DECLARE    logidl              INTEGER := 0;  
+  DECLARE    logidm              INTEGER := 0;    
+  DECLARE    logidn              INTEGER := 0;     
+  DECLARE    logido              INTEGER := 0;  
+  DECLARE    logidp              INTEGER := 0;    
+  DECLARE    logidq              INTEGER := 0;         
+  DECLARE    v_count             INTEGER;
+  DECLARE    v_g_cto_type        VARCHAR(10) := 'CTO';
+  DECLARE    v_g_mtm_type        VARCHAR(10) := 'MTM';
+  DECLARE    v_g_option_type     VARCHAR(10) := 'OPTION';
+  DECLARE    v_g_visual_type     VARCHAR(10) := 'VISUAL';
+DECLARE    v_g_bundle_type     VARCHAR(10) := 'BUNDLE';
+  DECLARE    v_g_group_ebg       VARCHAR(10) := 'EBG';  
+  DECLARE    v_g_action_update   VARCHAR(10) := 'UPDATE';
+  DECLARE    v_g_action_insert   VARCHAR(10) := 'INSERT';
+  DECLARE    v_g_status_active   VARCHAR(10) := 'ACTIVE';
+  DECLARE    v_g_status_inactive VARCHAR(10) := 'INACTIVE';
+
+  
+  -- EXCEPTION
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+    --ROLLBACK;    --commented by leonard
+         /* UPDATE   conf_sync_lastrun    --originally commented out
+             SET   ENDDATE = SYSDATE, returncode = -1
+           WHERE   pkgname = v_g_pkg_name AND progname = v_prc_name;
+
+          COMMIT;*/    
+    p_out_exitcode := ::SQL_ERROR_CODE;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+                                    I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                                    I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );                     
+   --   COMMIT;  --commented by leonard
+  END;   
+  
+  -- PROCESS LOGIC  
+  p_out_exitcode := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_prc_full_name,I_MODULE=>'EBGCFE');     
+  -- 1) Clear MID tables
+  DELETE FROM mid_itemmachinetype;
+  DELETE FROM mid_pcdwprodhrchy;
+
+  v_last_runtime := :p_in_lastrundate;
+
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidj, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step 1....' || TO_CHAR(CURRENT_TIMESTAMP));  
+                
+  -- 2) Insert into MID_PCDWPRODHRCHY using newly updated items in PCDW_PRODHRCHY since program last run date
+  INSERT INTO mid_pcdwprodhrchy (spras,
+                                       prodh,
+                                       stufe,
+                                       vtext)
+         SELECT spras,
+                prodh,
+                stufe,
+                vtext
+           FROM (SELECT prodh,
+                        spras,
+                        vtext,
+                        stufe,
+                        ROW_NUMBER ()
+                           OVER (PARTITION BY prodh ORDER BY spras DESC)
+                           seq
+                   FROM z_pcdw_prodhrchy
+                  WHERE sys_last_modified_date > :v_last_runtime)
+          WHERE seq = 1;
+
+   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidk, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step 2....' || TO_CHAR(CURRENT_TIMESTAMP));  
+                
+   -- 3) Update UI_ITEM ( GROUP_TEXT, BRAND_TEXT, SERIES, ECC_PROD_FAMILY, SUBSERIES) using MID_PCDWPRODHRCHY
+      UPDATE mid_item a
+         SET group_text =
+                (SELECT vtext
+                   FROM mid_pcdwprodhrchy
+                  WHERE stufe = 1                          --AND SPRAS = 'E'
+                                 AND SUBSTR (a.prod_h, 1, 1) = prodh)
+       WHERE     EXISTS
+                    (SELECT 1
+                       FROM mid_pcdwprodhrchy
+                      WHERE stufe = 1                      --AND SPRAS = 'E'
+                                     AND SUBSTR (a.prod_h, 1, 1) = prodh)
+             AND item_type =
+                    ANY (:v_g_cto_type,
+                         :v_g_mtm_type,
+                         :v_g_option_type,
+                         :v_g_visual_type,
+:v_g_BUNDLE_type );  --updated for EBG
+                
+      UPDATE mid_item a
+         SET brand_text =
+                (SELECT vtext
+                   FROM mid_pcdwprodhrchy
+                 WHERE stufe = 2                        --AND SPRAS = 'E'
+                                 AND SUBSTR (a.prod_h, 1, 4) = prodh)
+       WHERE     EXISTS
+                    (SELECT 1
+                       FROM mid_pcdwprodhrchy
+                      WHERE stufe = 2                     --AND SPRAS = 'E'
+                                     AND SUBSTR (a.prod_h, 1, 4) = prodh)
+             AND item_type IN
+                    (:v_g_cto_type,
+                     :v_g_mtm_type,
+                     :v_g_option_type,
+                     :v_g_visual_type,
+                     :v_g_bundle_type);  --pkg_cons.output_type_3po);
+
+      UPDATE mid_item a
+         SET series =
+                (SELECT vtext
+                   FROM mid_pcdwprodhrchy
+                  WHERE stufe = 3                         --AND SPRAS = 'E'
+                                 AND SUBSTR (a.prod_h, 1, 7) = prodh)
+       WHERE     EXISTS
+                    (SELECT 1
+                       FROM mid_pcdwprodhrchy
+                      WHERE stufe = 3                    --AND SPRAS = 'E'
+                                     AND SUBSTR (a.prod_h, 1, 7) = prodh)
+             AND item_type IN
+                    (:v_g_cto_type,
+                     :v_g_mtm_type,
+                     :v_g_option_type,
+                     :v_g_visual_type,
+                     :v_g_bundle_type);  --pkg_cons.output_type_3po);
+
+      UPDATE mid_item a
+         SET subseries =
+                (SELECT vtext
+                   FROM mid_pcdwprodhrchy
+                  WHERE stufe = 4                          --AND SPRAS = 'E'
+                                 AND SUBSTR (a.prod_h, 1, 11) = prodh)
+       WHERE     EXISTS
+                    (SELECT 1
+                       FROM mid_pcdwprodhrchy
+                      WHERE stufe = 4                     --AND SPRAS = 'E'
+                                     AND SUBSTR (a.prod_h, 1, 11) = prodh)
+             AND item_type IN
+                    (:v_g_cto_type,
+                     :v_g_mtm_type,
+                     :v_g_option_type,
+                     :v_g_visual_type,
+                     :v_g_bundle_type);  --pkg_cons.output_type_3po);
+                     
+      UPDATE mid_item
+         SET ecc_prod_family = subseries
+       WHERE     product_group = :v_g_group_ebg   
+             AND ecc_prod_family IS NULL
+             AND subseries IS NOT NULL;
+             
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidl, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step 3....' || TO_CHAR(CURRENT_TIMESTAMP));             
+             
+  -- 4) Insert into MID_ITEMMACHINETYPE using newly updated items in UI_ITEM             
+  INSERT INTO mid_itemmachinetype (group_text,
+                                         brand_text,
+                                         series,
+                                         subseries,
+                                         product_group,
+                                         brand,
+                                         machine_type,
+                                         prod_h,
+                                         asp_prd_family)
+         SELECT DISTINCT group_text,
+                         brand_text,
+                         series,
+                         subseries,
+                         product_group,
+                         brand,
+                         machine_type,
+                         prod_h,
+                         asp_prd_family
+           FROM mid_item
+          WHERE     sys_last_modified_date > :v_last_runtime
+                AND item_type IN
+                       (:v_g_cto_type,
+                        :v_g_mtm_type,
+                        :v_g_option_type,
+                        :v_g_visual_type,
+                        :v_g_bundle_type
+                        )    --pkg_cons.output_type_3po)
+                AND prod_h IS NOT NULL
+                AND asp_prd_family IS NOT NULL;
+
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidm, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step 4....' || TO_CHAR(CURRENT_TIMESTAMP));  
+  
+  -- 5) Delete repeated data in MID_ITEMMACHINETYPE           
+  DELETE FROM mid_itemmachinetype a
+            WHERE EXISTS
+                     (SELECT NULL
+                        FROM (  SELECT product_group, prod_h, asp_prd_family
+                                  FROM mid_itemmachinetype
+                              GROUP BY product_group, prod_h, asp_prd_family
+                                HAVING COUNT (*) > 1) b
+                       WHERE     a.product_group = b.product_group
+                             AND a.prod_h = b.prod_h
+                             AND a.asp_prd_family = b.asp_prd_family
+                             AND a.group_text IS NULL);             
+   --   COMMIT;  
+  DELETE FROM mid_itemmachinetype a
+            WHERE EXISTS
+                     (SELECT NULL
+                        FROM (  SELECT product_group,
+                                       prod_h,
+                                       asp_prd_family,
+                                       MAX ("$rowid$") maxrowid
+                                  FROM mid_itemmachinetype
+                              GROUP BY product_group, prod_h, asp_prd_family) b
+                       WHERE     a.product_group = b.product_group
+                             AND a.prod_h = b.prod_h
+                             AND a.asp_prd_family = b.asp_prd_family
+                             AND a."$rowid$" < maxrowid);
+   --   COMMIT;  
+  DELETE FROM mid_itemmachinetype
+            WHERE     machine_type IS NOT NULL
+                  AND INSTR (SUBSTR (prod_h, 12, 4), machine_type) = 0;
+   --   COMMIT;    
+                              
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidn, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step 5....' || TO_CHAR(CURRENT_TIMESTAMP));                      
+    
+  -- 6) Record current data of BIZ_HRCHY_PF into log table BIZ_HRCHY_PF_LOG
+  INSERT INTO biz_hrchy_pf_log (prod_h,
+                                     group_text,
+                                      brand_text,
+                                      machinetype,
+                                      product_group,
+                                      brand,
+                                      series,
+                                      subseries,
+                                      prod_family,
+                                      action,
+                                      status,
+                                      sys_created_date,
+                                      sys_created_by,
+                                      sys_last_modified_date,
+                                      sys_last_modified_by,
+                                      at_modified_by,
+                                      at_action,
+                                      at_modified_on,
+                                      at_millis,
+                                      prodh_brand,
+                                      series_code)
+         SELECT prod_h,
+                group_text,
+                brand_text,
+                machinetype,
+                product_group,
+                brand,
+                series,
+                subseries,
+                prod_family,
+                action,
+                status,
+                sys_created_date,
+                sys_created_by,
+                sys_last_modified_date,
+                sys_last_modified_by,
+                :v_prc_full_name,
+                'UPDATE',
+                CURRENT_TIMESTAMP,   
+                TO_NUMBER (TO_CHAR (CURRENT_TIMESTAMP, 'ff3')),    
+                prodh_brand,
+                series_code
+           FROM biz_hrchy_pf a
+          WHERE EXISTS
+                   (SELECT NULL
+                      FROM mid_itemmachinetype b
+                     WHERE     a.prod_h = b.prod_h
+                           AND a.product_group = b.product_group);  
+                
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logido, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step 6....' || TO_CHAR(CURRENT_TIMESTAMP));  
+                
+  -- 7) Update table BIZ_HRCHY_PF using MID_ITEMMACHINETYPE
+  itemmachinetype_tab1 =  SELECT * FROM mid_itemmachinetype
+                                   WHERE brand in (select distinct brand from conf_parameters where pdomain='BrandSetting')
+                                         AND machine_type IS NOT NULL;
+   UPDATE biz_hrchy_pf a SET                 
+           a.brand = b.brand,  
+            a.series = b.series,
+            a.subseries = b.subseries,
+            a.prodh_brand = b.brand_text,
+            a.group_text = b.group_text,
+            a.brand_text = b.brand_text,
+            a.action = :v_g_action_update,   --'UPDATE'
+            a.sys_last_modified_date = CURRENT_TIMESTAMP,
+            a.sys_last_modified_by = :v_prc_full_name
+  FROM :itemmachinetype_tab1 b
+  WHERE a.prod_h = b.prod_h
+                  AND a.product_group = b.product_group
+                  AND a.prod_family = b.asp_prd_family
+                  AND a.machinetype = b.machine_type;
+                        
+  INSERT INTO biz_hrchy_pf (machinetype,
+                     product_group,
+                     brand,
+                     series,
+                     subseries,
+                     prod_family,
+                     prodh_brand,
+                     series_code,
+                     group_text,
+                     brand_text,
+                     prod_h,
+                     action,
+                     status,
+                     sys_created_date,
+                     sys_created_by,
+                     sys_last_modified_date,
+                     sys_last_modified_by)
+           SELECT b.machine_type,
+                     b.product_group,
+                     b.brand,
+                     b.series,
+                     b.subseries,
+                     b.asp_prd_family,
+                     b.brand_text,
+                     SUBSTR (b.prod_h, 1, 7),
+                     b.group_text,
+                     b.brand_text,
+                     b.prod_h,
+                     :v_g_action_insert,
+                     :v_g_status_active,
+                     CURRENT_TIMESTAMP,
+                     :v_prc_full_name,
+                     CURRENT_TIMESTAMP,
+                     :v_prc_full_name
+           FROM :itemmachinetype_tab1 b            
+           WHERE NOT EXISTS (SELECT 1
+                      FROM biz_hrchy_pf a
+                      WHERE a.prod_h = b.prod_h
+                       AND a.product_group = b.product_group
+                       AND a.prod_family = b.asp_prd_family
+                       AND a.machinetype = b.machine_type);
+                                                  
+                         
+  
+       
+ 
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidp, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step 7....' || TO_CHAR(CURRENT_TIMESTAMP));  
+                
+
+  p_out_exitcode := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_prc_full_name,I_MODULE=>'EBGCFE');     
+
+END;

@@ -1,0 +1,209 @@
+namespace cdp.szebgvmi.data;
+
+@Schema: 'SZEBGVMI'
+context SZEBGVMI_T {
+
+		type HttpError {
+	        HTTP_STATUS_CODE: Integer;
+	        ERROR_MESSAGE: String(100);
+	        DETAIL: String(100);
+   		};
+   		
+   		type UI_ITEM_FULL_BOX_T{
+   		    ITEM : String(40);
+   		    ITEMDESC : String(200);
+   		    VENDORID : String(40);
+   		    VENDORNAME : String(200);
+   		    BOX_SIZE : Integer;
+   		};
+   		
+   		type UI_CONTROL_CYCLE_T{
+   			ITEM : String(40);
+   			LOGICAL_PLANT : String(40);
+   			PHYSICAL_PLANT : String(40);
+   			WAREHOUSE_NUMBER : String(40);
+   			STORAGE_LOCATION : String(40);
+   			STORAGE_TYPE : String(40);
+   			STORAGE_BIN : String(40);
+   		};
+
+        type UI_LINE_FLOOR_MAPPING_T{
+        	DS_LINE : String(200);
+        	PHYSICAL_PLANT : String(40);
+        	FLOOR : String(20); 
+        };
+        
+        type UI_MANUAL_PULL_T{
+	 		 PULL_HEADER_ID : String(20);
+			 PULL_LINE_ID : String(20);
+			 MATNR : String(18);
+			 MATNR_DESCR : String(40);
+			 SRC_WERKS : String(4);
+			 SRC_STORAGE_LOC : String(40);
+			 SRC_STORAGE_TYPE : String(40);
+			 SRC_STORAGE_BIN : String(40);
+			 PULL_TYPE : String(40);
+			 DEST_STORAGE_LOC : String(40);
+			 DEST_STORAGE_TYPE : String(40);
+			 DEST_STORAGE_BIN : String(40);
+			 INVENTORY_TYPE : String(40);
+			 LINE_SUPPLIERID : String(40);
+			 PULL_QTY : Decimal(13,3) ;
+			 FULL_BOX_QTY : Decimal(13,3);
+			 UNRESERVED_QTY : Decimal(13,3);
+			 HEAD_SUPPLIERID : String(10);
+			 REMARK : String(250);
+			 STATUS : String(40);
+			 DELIVERY_DATE : UTCTimestamp;
+			 PRODUCTION_LINE : String(40);
+			 PHYSICAL_PLANT : String(40);
+			 MO_TYPE : String(20);
+			 SYS_TIMESTAMP : UTCTimestamp; 
+			 SYS_CREATED_DATE : UTCTimestamp;
+			 SYS_CREATED_BY : String(70);
+			 SYS_LAST_MODIFIED_BY : String(70);
+			 SYS_LAST_MODIFIED_DATE : UTCTimestamp;
+			 SYS_AUTH_ID : String(25);
+			 SYS_SOURCE : String(425);
+
+        	
+        
+        };
+        type UI_CHANGE_SL_T{
+        		MATNR : String(18);
+        		MATNR_DESCR : String(40);
+        		MO_NUM : String(12);
+        		STORAGE_LOC : String(40);
+        		LINE_NUM : Integer;
+        		STATUS : String(40);
+        		REMARK : String(40);
+        		SYS_CREATED_DATE : UTCTimestamp;
+        		SYS_CREATED_BY : String(64);
+        		SYS_LAST_MODIFIED_DATE : UTCTimestamp;
+        		SYS_LAST_MODIFIED_BY : String(64);
+        };
+        
+        
+        type UI_LOIFAILEDGR_T{
+        		TPL_RECEIPT_ID	: String(20);
+	 			TPL_RECEIPT_LINE_ID: String(20);
+	 			TPL_ID			: String(60);
+	 		 	MATNR			: String(20);
+				MATNR_DESCR		: String(255);
+				PO_NUMBER		: String(10);
+				PO_LINE_ID		: String(10);
+				HOLD_TYPE		: String(1);
+				HOLD_QTY		: Decimal(13,3);
+				WHS_NO			: String(3);
+				INVOICE_NUMBER	: String(16);
+				WERKS			: String(4);
+				LIFNR			: String(10);
+				QTY				: Decimal(13,3);
+        };
+        
+        
+        type UI_SOIFAILEDGR_T{
+        		TPL_RECEIPT_ID	: String(20);
+	 			TPL_RECEIPT_LINE_ID: String(20);
+	 			TPL_ID			: String(60);
+	 		 	MATNR			: String(20);
+				MATNR_DESCR		: String(255);
+				HOLD_TYPE		: String(1);
+				HOLD_QTY		: Decimal(13,3);
+				WHS_NO			: String(3);	
+				DEST_STORAGE_LOCATION : String(40);	
+				WERKS			: String(4);
+				LIFNR			: String(10);
+				QTY				: Decimal(13,3);
+        };
+       
+       
+        type UI_MOBOM_LOCATION_T{
+   		    ITEM : String(40);
+   		    LOGICAL_PLANT : String(200);
+   		    STORAGE_LOCATION : String(40);
+   		};
+        
+        type BALANCE_DISPATCH_T{
+        	PULL_HEADER_ID: String(20);
+        	PULL_LINE_ID: String(20);
+        };
+        
+        type DISPATCH_LIST_T{
+			PULL_HEADER_ID: String(20);
+			PULL_LINE_ID:  String(20);
+			SA_NUMBER:  String(10);
+			LIFNR:  String(40);		
+			MATNR:  String(18);  
+			WERKS:  String(4); 
+			SA_LINE_ID: String(10); //add by zhaodan1 20150821
+        };
+        
+        type CONFIRM_DISPATCH_T
+        {
+       		PULL_HEADER_ID: String(20);
+        	WERKS: String(10);
+			DEST_STORAGE_TYPE: String(40);
+			DEST_STORAGE_LOC: String(40);
+			DEST_STORAGE_BIN: String(40);
+			TPL_ID: String(60);
+        };     
+        
+        
+        type CONFIRM_BALANCE_DISPATCH_T
+        { 
+        	PULL_HEADER_ID: String(20);
+        	WERKS: String(10);
+			DEST_STORAGE_TYPE: String(40);
+			DEST_STORAGE_LOC: String(40);
+			DEST_STORAGE_BIN: String(40);
+			TPL_ID: String(60);
+        };      
+        
+        type CONFIRM_LINE_TO_EXCESS_DISPATCHES_T
+        { 
+        	PULL_HEADER_ID: String(20);
+        	WERKS: String(10);
+			DEST_STORAGE_TYPE: String(40);
+			DEST_STORAGE_LOC: String(40);
+			DEST_STORAGE_BIN: String(40);
+        };       
+        
+        
+        type CLEAR_DIFF_T{
+        	PULL_HEADER_ID: String(20);
+        	PULL_LINE_ID: String(20);
+        	WERKS:		String(4);
+        };
+  	    type PULL_LINE_T{
+        	PULL_HEADER_ID: String(20);
+        	PULL_LINE_ID: String(20);
+        };
+  	 	type SPECIAL_DISPATCH_T{
+        	PULL_HEADER_ID: String(20);
+        	PULL_LINE_ID: String(20);
+        };
+        type UI_ASN_PULL_T{
+	 		 DEST_STORAGE_TYPE : String(40);
+			 DEST_STORAGE_BIN : String(40);
+			 DEST_STORAGE_LOC : String(40);
+			 WERKS : String(4);
+			 PHYSICAL_PLANT : String(40);
+			 PRODUCTION_LINE : String(40);
+			 DELIVERY_DATE : UTCTimestamp;
+			 MATNR : String(18);
+			 NOTES : String(200);
+        };
+        type UI_ASN_STATUS_T{
+             SCENARIO_ID : Decimal(11,0);
+             PRODUCTIONORDID : String(80);
+			 LINENUM : String(8);
+			 SITEID : String(40);
+			 ITEM : String(40);
+//			 ITEMDESC : String(40);
+//			 QTYPER : Decimal(15,4);
+//			 LGORT : String(4);
+ 			 STATUS : String(40);
+//			 CREATION_DATE : UTCTimestamp;
+        };
+};

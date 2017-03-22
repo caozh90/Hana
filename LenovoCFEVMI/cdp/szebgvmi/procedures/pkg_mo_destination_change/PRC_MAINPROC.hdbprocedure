@@ -1,0 +1,71 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_mo_destination_change::PRC_MAINPROC" ( 
+    IN iv_id VARCHAR(10), OUT on_exitcode DECIMAL
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "SZEBGVMI"
+    --READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_MAINPROC              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141203                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+
+    AS
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_MO_DESTINATION_CHANGE';    
+      v_logic_proc_name   VARCHAR2 (40) := 'PRC_MAINPROC';
+      logidi integer:=0;
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         
+          on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+
+      IF (iv_id = 'BYPASS')
+      THEN
+         on_exitcode := 0;
+         RETURN;
+      END IF;
+
+      
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');    
+      
+      on_exitcode := -1;
+      
+      CALL "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_mo_destination_change::PRC_MO_DESTINATION_CHANGE"(iv_id, on_exitcode);
+      CALL "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_mo_destination_change::PRC_MO_DEST_CHANGE_TRANSFER"(iv_id, on_exitcode);
+      
+      on_exitcode := 0;
+
+      IF on_exitcode = 0
+      THEN
+         CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!'); 
+         --COMMIT;
+      ELSE
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!');  
+         --COMMIT;
+      END IF;
+
+END;

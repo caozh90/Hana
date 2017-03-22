@@ -1,0 +1,81 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.failed_pull_resubmission::deleteFailedPullResubmission" (
+	IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.PULL_LINE_T",
+	OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+		PULL_HEADER_ID	NVARCHAR(20);
+	 	PULL_LINE_ID	NVARCHAR(20);
+		alogide INTEGER :=0; 
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.szebgvmi.procedures.pkg_ui.failed_pull_resubmission::deleteFailedPullResubmission error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.failed_pull_resubmission::deleteFailedPullResubmission'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		:aI_DETAIL detail from dummy;
+    END;  
+ -----LOGIC START-------
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'failedpullresubmission::deleteable' , privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		:privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ 	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.failed_pull_resubmission::deleteFailedPullResubmission'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+   	select
+	 	PULL_HEADER_ID,
+	 	PULL_LINE_ID
+	into  	
+		 	PULL_HEADER_ID,
+		 	PULL_LINE_ID
+	  from :newInfo; 
+	 -------LOG-----
+	 INSERT INTO PULL_LINE_LOG
+	 SELECT *,session_user,'delete',current_timestamp
+	 FROM PULL_LINE
+	 WHERE PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :PULL_LINE_ID
+	 	AND PULL_TYPE IN ('MANUAL', 'NORMAL', 'EXCESS', 'SHIPPING', 'SHIPPING_GROUP')
+	 	AND ECC_STATUS = 'PULL_ERROR' AND STATUS != 'REJECT' AND STATUS != 'MANUAL_HIDDEN';
+	 
+	  --delete操作
+	 DELETE  FROM PULL_LINE
+	 WHERE PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :PULL_LINE_ID
+	 	 	AND PULL_TYPE IN ('MANUAL', 'NORMAL', 'EXCESS', 'SHIPPING', 'SHIPPING_GROUP')
+	 	AND ECC_STATUS = 'PULL_ERROR' AND STATUS != 'REJECT' AND STATUS != 'MANUAL_HIDDEN';
+   	
+   	/*END*/
+ 	aI_DETAIL := 'cdp.szebgvmi.procedures.pkg_ui.failed_pull_resubmission::deleteFailedPullResubmission() successfully executed. ';
+ 	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.failed_pull_resubmission::deleteFailedPullResubmission'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	 
+ 
+END;

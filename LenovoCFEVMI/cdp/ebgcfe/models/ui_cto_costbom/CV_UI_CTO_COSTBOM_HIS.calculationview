@@ -1,0 +1,605 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.2" id="CV_UI_CTO_COSTBOM_HIS" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_CTO_COSTBOM_CHILDREN"/>
+  <localVariables>
+    <variable id="V_MODEL" parameter="true">
+      <descriptions defaultDescription="V_MODEL"/>
+      <variableProperties datatype="NVARCHAR" length="120" mandatory="false" scale="0">
+        <valueDomain type="AttributeValue">
+          <externalLikeStructureName>&quot;EBGCFE&quot;.BIZ_CBOM_MTMSBB</externalLikeStructureName>
+          <externalLikeElementName>MODEL</externalLikeElementName>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="V_PLANT" parameter="true">
+      <descriptions defaultDescription="V_PLANT"/>
+      <variableProperties datatype="NVARCHAR" length="20" mandatory="false" scale="0">
+        <valueDomain type="AttributeValue">
+          <externalLikeStructureName>&quot;EBGCFE&quot;.BIZ_CBOM_MTMSBB</externalLikeStructureName>
+          <externalLikeElementName>PLANT</externalLikeElementName>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="V_COUNTRY" parameter="true">
+      <descriptions defaultDescription="V_COUNTRY"/>
+      <variableProperties datatype="NVARCHAR" length="20" mandatory="false" scale="0">
+        <valueDomain type="AttributeValue">
+          <externalLikeStructureName>&quot;EBGCFE&quot;.BIZ_CBOM_MTMSBB</externalLikeStructureName>
+          <externalLikeElementName>COUNTRY</externalLikeElementName>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="V_SBB" parameter="true">
+      <descriptions defaultDescription="V_SBB"/>
+      <variableProperties datatype="NVARCHAR" length="120" mandatory="false" scale="0">
+        <valueDomain type="AttributeValue">
+          <externalLikeStructureName>&quot;EBGCFE&quot;.BIZ_CBOM_MTMSBB</externalLikeStructureName>
+          <externalLikeElementName>MODEL</externalLikeElementName>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_CTOSBB_HIS_UNION">
+      <targetVariable name="V_MODEL" resourceUri="/cdp.ebgcfe.models.ui_cto_costbom/calculationviews/CV_CTOSBB_HIS_UNION"/>
+      <localVariable>#V_MODEL</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_CTOSBB_HIS_UNION">
+      <targetVariable name="V_PLANT" resourceUri="/cdp.ebgcfe.models.ui_cto_costbom/calculationviews/CV_CTOSBB_HIS_UNION"/>
+      <localVariable>#V_PLANT</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_CTOSBB_HIS_UNION">
+      <targetVariable name="V_COUNTRY" resourceUri="/cdp.ebgcfe.models.ui_cto_costbom/calculationviews/CV_CTOSBB_HIS_UNION"/>
+      <localVariable>#V_COUNTRY</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SBB_UNION">
+      <targetVariable name="V_SBB" resourceUri="/cdp.ebgcfe.models.ui_cto_costbom/calculationviews/CV_SBB_UNION"/>
+      <localVariable>#V_SBB</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SBB_UNION">
+      <targetVariable name="V_PLANT" resourceUri="/cdp.ebgcfe.models.ui_cto_costbom/calculationviews/CV_SBB_UNION"/>
+      <localVariable>#V_PLANT</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SBB_UNION">
+      <targetVariable name="V_COUNTRY" resourceUri="/cdp.ebgcfe.models.ui_cto_costbom/calculationviews/CV_SBB_UNION"/>
+      <localVariable>#V_COUNTRY</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_CTOSBB_HIS_UNION" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/cdp.ebgcfe.models.ui_cto_costbom/calculationviews/CV_CTOSBB_HIS_UNION</resourceUri>
+    </DataSource>
+    <DataSource id="BIZ_COSTADDER_CTO_HIS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="BIZ_COSTADDER_CTO_HIS"/>
+    </DataSource>
+    <DataSource id="CV_SBB_UNION" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/cdp.ebgcfe.models.ui_cto_costbom/calculationviews/CV_SBB_UNION</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="MODEL"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="SUBGEO"/>
+        <viewAttribute id="COUNTRY"/>
+        <viewAttribute id="FATHER"/>
+        <viewAttribute id="CHILDREN"/>
+        <viewAttribute id="BRAND"/>
+        <viewAttribute id="ASP_PRD_FAMILY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_CTOSBB_HIS_UNION">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PRD_FAMILY" source="ASP_PRD_FAMILY"/>
+      </input>
+      <input node="#BIZ_COSTADDER_CTO_HIS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+      </input>
+      <joinAttribute name="CYCLE"/>
+      <joinAttribute name="PRODUCT_GROUP"/>
+      <joinAttribute name="MODEL"/>
+      <joinAttribute name="PLANT"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="MODEL"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="SUBGEO"/>
+        <viewAttribute id="COUNTRY"/>
+        <viewAttribute id="FATHER"/>
+        <viewAttribute id="CHILDREN"/>
+        <viewAttribute id="BRAND"/>
+        <viewAttribute id="ASP_PRD_FAMILY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PRD_FAMILY" source="ASP_PRD_FAMILY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="FATHER"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="COST_PLANT"/>
+        <viewAttribute id="QTYPER"/>
+        <viewAttribute id="ALTGRUP"/>
+        <viewAttribute id="ALTPRI"/>
+        <viewAttribute id="ALTPERCENT"/>
+        <viewAttribute id="M1"/>
+        <viewAttribute id="M2"/>
+        <viewAttribute id="M3"/>
+        <viewAttribute id="M4"/>
+        <viewAttribute id="M5"/>
+        <viewAttribute id="M6"/>
+        <viewAttribute id="M7"/>
+        <viewAttribute id="M8"/>
+        <viewAttribute id="M9"/>
+        <viewAttribute id="M10"/>
+        <viewAttribute id="M11"/>
+        <viewAttribute id="M12"/>
+        <viewAttribute id="LM1"/>
+        <viewAttribute id="LM2"/>
+        <viewAttribute id="LM3"/>
+        <viewAttribute id="LM4"/>
+        <viewAttribute id="LM5"/>
+        <viewAttribute id="LM6"/>
+        <viewAttribute id="LM7"/>
+        <viewAttribute id="LM8"/>
+        <viewAttribute id="LM9"/>
+        <viewAttribute id="LM10"/>
+        <viewAttribute id="LM11"/>
+        <viewAttribute id="LM12"/>
+        <viewAttribute id="WEIGHTED_AVERAGE"/>
+        <viewAttribute id="LATTEST_PROCUR"/>
+        <viewAttribute id="CHILDREN"/>
+        <viewAttribute id="M13"/>
+        <viewAttribute id="M14"/>
+        <viewAttribute id="M15"/>
+        <viewAttribute id="M16"/>
+        <viewAttribute id="M17"/>
+        <viewAttribute id="M18"/>
+        <viewAttribute id="LM13"/>
+        <viewAttribute id="LM14"/>
+        <viewAttribute id="LM15"/>
+        <viewAttribute id="LM16"/>
+        <viewAttribute id="LM17"/>
+        <viewAttribute id="LM18"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="ITEM_TYPE_C"/>
+        <viewAttribute id="ITEM_TYPE_M"/>
+        <viewAttribute id="MODEL"/>
+        <viewAttribute id="SUBGEO"/>
+        <viewAttribute id="COUNTRY"/>
+        <viewAttribute id="BRAND"/>
+        <viewAttribute id="ASP_PRD_FAMILY"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="INTEGER" id="LVL">
+          <formula>2</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="COST_LVL" length="20">
+          <formula>'0'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="COST_GEO_LVL" length="40">
+          <formula>'SUBGEO'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="cost_geo_value" length="40">
+          <formula>&quot;SUBGEO&quot;</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="cost_type" length="40">
+          <formula>'COMP-COST'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="action" length="20">
+          <formula>'INSERT'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="status" length="40">
+          <formula>'ACTIVE'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="PATH" length="200">
+          <formula>'/'+&quot;MODEL&quot;+ '/' +&quot;FATHER&quot;+ '/' +&quot;CHILDREN&quot;</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="cost_name" length="30">
+          <formula>IF(&quot;ITEM_TYPE_C&quot;='SOFTWARE','SOFTWARE ROYALTY','COMP-COST')</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CV_SBB_UNION">
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COST_PLANT" source="COST_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTGRUP" source="ALTGRUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPRI" source="ALTPRI"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPERCENT" source="ALTPERCENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M1" source="M1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M2" source="M2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M3" source="M3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M4" source="M4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M5" source="M5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M6" source="M6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M7" source="M7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M8" source="M8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M9" source="M9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M10" source="M10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M11" source="M11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M12" source="M12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM1" source="LM1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM2" source="LM2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM3" source="LM3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM4" source="LM4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM5" source="LM5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM6" source="LM6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM7" source="LM7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM8" source="LM8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM9" source="LM9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM10" source="LM10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM11" source="LM11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM12" source="LM12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEIGHTED_AVERAGE" source="WEIGHTED_AVERAGE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LATTEST_PROCUR" source="LATTEST_PROCUR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M13" source="M13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M14" source="M14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M15" source="M15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M16" source="M16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M17" source="M17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M18" source="M18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM13" source="LM13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM14" source="LM14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM15" source="LM15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM16" source="LM16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM17" source="LM17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM18" source="LM18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_C" source="ITEM_TYPE_C"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_M" source="ITEM_TYPE_M"/>
+      </input>
+      <input node="#Aggregation_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PRD_FAMILY" source="ASP_PRD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="CHILDREN"/>
+      </input>
+      <joinAttribute name="CYCLE"/>
+      <joinAttribute name="PRODUCT_GROUP"/>
+      <joinAttribute name="PLANT"/>
+      <joinAttribute name="FATHER"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_1">
+    <attributes>
+      <attribute id="FATHER" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FATHER"/>
+        <keyMapping columnObjectName="Join_1" columnName="FATHER"/>
+      </attribute>
+      <attribute id="ITEM_DESC" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_DESC"/>
+        <keyMapping columnObjectName="Join_1" columnName="ITEM_DESC"/>
+      </attribute>
+      <attribute id="COST_PLANT" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COST_PLANT"/>
+        <keyMapping columnObjectName="Join_1" columnName="COST_PLANT"/>
+      </attribute>
+      <attribute id="QTYPER" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QTYPER"/>
+        <keyMapping columnObjectName="Join_1" columnName="QTYPER"/>
+      </attribute>
+      <attribute id="ALTGRUP" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ALTGRUP"/>
+        <keyMapping columnObjectName="Join_1" columnName="ALTGRUP"/>
+      </attribute>
+      <attribute id="ALTPRI" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ALTPRI"/>
+        <keyMapping columnObjectName="Join_1" columnName="ALTPRI"/>
+      </attribute>
+      <attribute id="ALTPERCENT" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ALTPERCENT"/>
+        <keyMapping columnObjectName="Join_1" columnName="ALTPERCENT"/>
+      </attribute>
+      <attribute id="M1" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M1"/>
+        <keyMapping columnObjectName="Join_1" columnName="M1"/>
+      </attribute>
+      <attribute id="M2" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M2"/>
+        <keyMapping columnObjectName="Join_1" columnName="M2"/>
+      </attribute>
+      <attribute id="M3" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M3"/>
+        <keyMapping columnObjectName="Join_1" columnName="M3"/>
+      </attribute>
+      <attribute id="M4" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M4"/>
+        <keyMapping columnObjectName="Join_1" columnName="M4"/>
+      </attribute>
+      <attribute id="M5" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M5"/>
+        <keyMapping columnObjectName="Join_1" columnName="M5"/>
+      </attribute>
+      <attribute id="M6" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M6"/>
+        <keyMapping columnObjectName="Join_1" columnName="M6"/>
+      </attribute>
+      <attribute id="M7" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M7"/>
+        <keyMapping columnObjectName="Join_1" columnName="M7"/>
+      </attribute>
+      <attribute id="M8" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M8"/>
+        <keyMapping columnObjectName="Join_1" columnName="M8"/>
+      </attribute>
+      <attribute id="M9" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M9"/>
+        <keyMapping columnObjectName="Join_1" columnName="M9"/>
+      </attribute>
+      <attribute id="M10" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M10"/>
+        <keyMapping columnObjectName="Join_1" columnName="M10"/>
+      </attribute>
+      <attribute id="M11" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M11"/>
+        <keyMapping columnObjectName="Join_1" columnName="M11"/>
+      </attribute>
+      <attribute id="M12" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M12"/>
+        <keyMapping columnObjectName="Join_1" columnName="M12"/>
+      </attribute>
+      <attribute id="LM1" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM1"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM1"/>
+      </attribute>
+      <attribute id="LM2" order="21" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM2"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM2"/>
+      </attribute>
+      <attribute id="LM3" order="22" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM3"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM3"/>
+      </attribute>
+      <attribute id="LM4" order="23" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM4"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM4"/>
+      </attribute>
+      <attribute id="LM5" order="24" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM5"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM5"/>
+      </attribute>
+      <attribute id="LM6" order="25" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM6"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM6"/>
+      </attribute>
+      <attribute id="LM7" order="26" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM7"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM7"/>
+      </attribute>
+      <attribute id="LM8" order="27" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM8"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM8"/>
+      </attribute>
+      <attribute id="LM9" order="28" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM9"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM9"/>
+      </attribute>
+      <attribute id="LM10" order="29" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM10"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM10"/>
+      </attribute>
+      <attribute id="LM11" order="30" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM11"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM11"/>
+      </attribute>
+      <attribute id="LM12" order="31" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM12"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM12"/>
+      </attribute>
+      <attribute id="WEIGHTED_AVERAGE" order="32" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEIGHTED_AVERAGE"/>
+        <keyMapping columnObjectName="Join_1" columnName="WEIGHTED_AVERAGE"/>
+      </attribute>
+      <attribute id="LATTEST_PROCUR" order="33" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LATTEST_PROCUR"/>
+        <keyMapping columnObjectName="Join_1" columnName="LATTEST_PROCUR"/>
+      </attribute>
+      <attribute id="CHILDREN" order="34" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CHILDREN"/>
+        <keyMapping columnObjectName="Join_1" columnName="CHILDREN"/>
+      </attribute>
+      <attribute id="M13" order="35" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M13"/>
+        <keyMapping columnObjectName="Join_1" columnName="M13"/>
+      </attribute>
+      <attribute id="M14" order="36" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M14"/>
+        <keyMapping columnObjectName="Join_1" columnName="M14"/>
+      </attribute>
+      <attribute id="M15" order="37" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M15"/>
+        <keyMapping columnObjectName="Join_1" columnName="M15"/>
+      </attribute>
+      <attribute id="M16" order="38" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M16"/>
+        <keyMapping columnObjectName="Join_1" columnName="M16"/>
+      </attribute>
+      <attribute id="M17" order="39" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M17"/>
+        <keyMapping columnObjectName="Join_1" columnName="M17"/>
+      </attribute>
+      <attribute id="M18" order="40" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M18"/>
+        <keyMapping columnObjectName="Join_1" columnName="M18"/>
+      </attribute>
+      <attribute id="LM13" order="41" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM13"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM13"/>
+      </attribute>
+      <attribute id="LM14" order="42" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM14"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM14"/>
+      </attribute>
+      <attribute id="LM15" order="43" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM15"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM15"/>
+      </attribute>
+      <attribute id="LM16" order="44" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM16"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM16"/>
+      </attribute>
+      <attribute id="LM17" order="45" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM17"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM17"/>
+      </attribute>
+      <attribute id="LM18" order="46" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LM18"/>
+        <keyMapping columnObjectName="Join_1" columnName="LM18"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="47" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Join_1" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="CYCLE" order="48" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Join_1" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="PLANT" order="49" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLANT"/>
+        <keyMapping columnObjectName="Join_1" columnName="PLANT"/>
+      </attribute>
+      <attribute id="ITEM_TYPE_C" order="50" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_TYPE_C"/>
+        <keyMapping columnObjectName="Join_1" columnName="ITEM_TYPE_C"/>
+      </attribute>
+      <attribute id="ITEM_TYPE_M" order="51" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_TYPE_M"/>
+        <keyMapping columnObjectName="Join_1" columnName="ITEM_TYPE_M"/>
+      </attribute>
+      <attribute id="MODEL" order="52" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODEL"/>
+        <keyMapping columnObjectName="Join_1" columnName="MODEL"/>
+      </attribute>
+      <attribute id="SUBGEO" order="53" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUBGEO"/>
+        <keyMapping columnObjectName="Join_1" columnName="SUBGEO"/>
+      </attribute>
+      <attribute id="COUNTRY" order="54" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COUNTRY"/>
+        <keyMapping columnObjectName="Join_1" columnName="COUNTRY"/>
+      </attribute>
+      <attribute id="LVL" order="55" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LVL"/>
+        <keyMapping columnObjectName="Join_1" columnName="LVL"/>
+      </attribute>
+      <attribute id="COST_LVL" order="56" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COST_LVL"/>
+        <keyMapping columnObjectName="Join_1" columnName="COST_LVL"/>
+      </attribute>
+      <attribute id="COST_GEO_LVL" order="57" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COST_GEO_LVL"/>
+        <keyMapping columnObjectName="Join_1" columnName="COST_GEO_LVL"/>
+      </attribute>
+      <attribute id="cost_geo_value" order="58" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="cost_geo_value"/>
+        <keyMapping columnObjectName="Join_1" columnName="cost_geo_value"/>
+      </attribute>
+      <attribute id="cost_type" order="59" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="cost_type"/>
+        <keyMapping columnObjectName="Join_1" columnName="cost_type"/>
+      </attribute>
+      <attribute id="action" order="60" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="action"/>
+        <keyMapping columnObjectName="Join_1" columnName="action"/>
+      </attribute>
+      <attribute id="status" order="61" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="status"/>
+        <keyMapping columnObjectName="Join_1" columnName="status"/>
+      </attribute>
+      <attribute id="PATH" order="62" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PATH"/>
+        <keyMapping columnObjectName="Join_1" columnName="PATH"/>
+      </attribute>
+      <attribute id="cost_name" order="63" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="cost_name"/>
+        <keyMapping columnObjectName="Join_1" columnName="cost_name"/>
+      </attribute>
+      <attribute id="BRAND" order="64" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="BRAND"/>
+        <keyMapping columnObjectName="Join_1" columnName="BRAND"/>
+      </attribute>
+      <attribute id="ASP_PRD_FAMILY" order="65" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ASP_PRD_FAMILY"/>
+        <keyMapping columnObjectName="Join_1" columnName="ASP_PRD_FAMILY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="160" y="-50"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="10" y="430"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="10" y="340"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="10" y="230"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

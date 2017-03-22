@@ -1,0 +1,35 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_urgent_mo_maintence::ui_urgent_mo_pull_run" ( ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      : ui_urgent_mo_pull_run              --函数名
+*function  : 更改ui_urgent_mo_pull中的status              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-12       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.invoke';
+		proc_name varchar(100) :='ui_urgent_mo_pull_run';
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+BEGIN
+		--开始，日志
+		CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+
+		update "SZEBGVMI"."UI_URGENT_MO_PULL" 
+		set status ='RUNNING',
+		SYS_LAST_MODIFIED_BY = session_user,
+		SYS_LAST_MODIFIED_DATE = current_timestamp		
+ 	 	where status='READY';
+		--结束，日志
+		CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+
+END;

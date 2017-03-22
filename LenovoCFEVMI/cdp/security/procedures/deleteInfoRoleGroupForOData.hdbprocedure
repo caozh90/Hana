@@ -1,0 +1,42 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteInfoRoleGroupForOData" (
+	IN newInfo "SECURITY"."cdp.security.data::userManagement.InfoRoleGroupT"
+	,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+    aROLEGROUP_NAME NVARCHAR(200);
+    aMODULE_NAME NVARCHAR(200);
+    aID NVARCHAR(200);
+BEGIN
+
+/***************************** 
+	create delete info role group
+	
+
+	example:
+	
+
+)
+ *****************************/
+      
+/* 
+ select NAME 
+     ,MODULE_NAME
+  into 
+ 	aROLEGROUP_NAME
+    ,aMODULE_NAME
+  from :newInfo;
+*/
+
+select ID into aID from :newInfo;
+
+select ROLEGROUP_NAME into aROLEGROUP_NAME from "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP"
+	where ROLEGROUP_ID = :aID;
+  
+CALL "SECURITY"."cdp.security.procedures::deleteInfoRoleGroup" (
+	aROLEGROUP_NAME
+   -- ,aMODULE_NAME
+	,errorInfo             ); 
+	
+END;

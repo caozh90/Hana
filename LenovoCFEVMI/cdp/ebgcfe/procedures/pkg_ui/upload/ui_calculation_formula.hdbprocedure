@@ -1,0 +1,323 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula" (
+IN  PRODUCT_GROUP varchar(10),
+IN 	BRAND varchar(40),
+IN	PRODFAMILY varchar(120),
+IN  CATEGORY varchar(10),
+IN	PLANT varchar(20),
+IN	SUBGEO varchar(20),
+IN 	LEVEL1_TBAS varchar(200),
+IN 	LEVEL2_TBAS varchar(200),
+IN 	LEVEL3_TBAS varchar(200),
+IN 	LEVEL4_TBAS varchar(200),
+IN 	LEVEL5_TBAS varchar(200),
+IN 	LEVEL6_TBAS varchar(200),
+IN	 	table_name varchar(200),
+IN	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER,
+IN CYCLE varchar(20)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_calculation_formula              --函数名
+*function  : upload数据至表ui_calc_formu并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Eric               --作者
+*CreateDate    : 2015-01-20       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_calculation_formula';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate int;
+		var_oper VARCHAR(10);
+		privilegeExists  NVARCHAR(300)  ;
+	   v_level1_tbas NVARCHAR(200) := replace(:LEVEL1_TBAS,',',';'); 
+       v_level2_tbas NVARCHAR(200) := replace(:LEVEL2_TBAS,',',';'); 
+       v_level3_tbas NVARCHAR(200) := replace(:LEVEL3_TBAS,',',';'); 
+       v_level4_tbas NVARCHAR(200) := replace(:LEVEL4_TBAS,',',';'); 
+       v_level5_tbas NVARCHAR(200) := replace(:LEVEL5_TBAS,',',';'); 
+       v_level6_tbas NVARCHAR(200) := replace(:LEVEL6_TBAS,',',';'); 
+       v_level_temp NVARCHAR(200);
+       
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+		:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE,:CYCLE);
+     	
+    END; 
+    --exception 
+	
+
+	--procedure begin
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     	
+	select  count(1) into validate from UI_PRODFAMILY where BRAND = :BRAND; 
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+		:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"BRAND"::'||:BRAND||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	select  count(1) into validate from UI_PRODFAMILY where BRAND = :BRAND and PROD_FAMILY = :PRODFAMILY; 
+	IF :PRODFAMILY = 'ALL' THEN
+		validate := 1;
+	END IF;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+		:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"PRODFAMILY"::'||:PRODFAMILY||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	select  count(1) into validate from 
+		conf_parameters where pdomain='UI_COST_CALCU_FORMU' and pname='CATEGORY' and Pvalue = :CATEGORY; 
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+		:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"CATEGORY"::'||:CATEGORY||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	select  count(1) into validate from ui_plant where PLANT = :PLANT;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+		:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"PLANT"::'||:PLANT||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	select  count(1) into validate from ui_region where subgeo = :SUBGEO;
+	IF :SUBGEO = 'ALL' THEN
+		validate := 1;
+	END IF;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+		:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"SUBGEO"::'||:SUBGEO||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	
+	   	--1
+    while(:v_level1_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level1_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level1_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+		:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"LEVEL1_TBAS"::'||:LEVEL1_TBAS||' is illegal',:CYCLE);
+		
+	        return;
+	    end if;
+    	v_level1_tbas := SUBSTR_AFTER(:v_level1_tbas,';');
+    end while;
+    --2
+    while(:v_level2_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level2_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level2_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+				:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"LEVEL2_TBAS"::'||:LEVEL2_TBAS||' is illegal',:CYCLE);
+			
+	        return;
+	    end if;
+    	v_level2_tbas := SUBSTR_AFTER(:v_level2_tbas,';');
+    end while;
+    --3
+    while(:v_level3_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level3_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level3_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+				:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"LEVEL3_TBAS"::'||:LEVEL3_TBAS||' is illegal',:CYCLE);
+			
+	        return;
+	    end if;
+    	v_level3_tbas := SUBSTR_AFTER(:v_level3_tbas,';');
+    end while;
+    --4
+    while(:v_level4_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level4_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level4_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+				:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"LEVEL4_TBAS"::'||:LEVEL4_TBAS||' is illegal',:CYCLE);
+			
+	        return;
+	    end if;
+    	v_level4_tbas := SUBSTR_AFTER(:v_level4_tbas,';');
+    end while;
+    --5
+    while(:v_level5_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level5_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level5_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+				:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"LEVEL5_TBAS"::'||:LEVEL5_TBAS||' is illegal',:CYCLE);
+			
+	        return;
+	    end if;
+    	v_level5_tbas := SUBSTR_AFTER(:v_level5_tbas,';');
+    end while;
+    --6
+    while(:v_level6_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level6_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level6_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_calculation_formula_err"(
+			:PRODUCT_GROUP,:BRAND,:PRODFAMILY,:CATEGORY,:PLANT,:SUBGEO,
+			:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+				:LEVEL5_TBAS,:LEVEL6_TBAS,:table_name,:business_name,:business_code,:position,'"LEVEL6_TBAS"::'||:LEVEL6_TBAS||' is illegal',:CYCLE);
+			
+	        return;
+	    end if;
+    	v_level6_tbas := SUBSTR_AFTER(:v_level6_tbas,';');
+    end while;
+	
+	
+	
+	SELECT top 1 count(1) into validate from "EBGCFE"."UI_COST_CALCU_FORMU" where PRODUCT_GROUP = :PRODUCT_GROUP and 
+		PRODFAMILY = :PRODFAMILY and CATEGORY = :CATEGORY and BRAND = :BRAND AND 
+		PLANT = :PLANT AND SUBGEO = :SUBGEO ;
+				
+	if validate = 0
+	then
+		    insert into "EBGCFE"."UI_COST_CALCU_FORMU"(CYCLE,
+									PRODFAMILY,
+									PRODUCT_GROUP,
+									BRAND,
+									PLANT,
+									CATEGORY,
+									SUBGEO,
+									LEVEL1_TBAS,
+									LEVEL2_TBAS,
+									LEVEL3_TBAS,
+									LEVEL4_TBAS,
+									LEVEL5_TBAS,
+									LEVEL6_TBAS,
+		 		SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+									) 
+	values ('CURRENT',:PRODFAMILY,:PRODUCT_GROUP,:BRAND,
+				:PLANT,:CATEGORY,:SUBGEO,
+				replace(:LEVEL1_TBAS,',',';'),replace(:LEVEL2_TBAS,',',';'),
+				replace(:LEVEL3_TBAS,',',';'),replace(:LEVEL4_TBAS,',',';'),
+			 	replace(:LEVEL5_TBAS,',',';'),replace(:LEVEL6_TBAS,',',';'),
+ 				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+  		var_oper := 'create';
+  	else
+  		update "EBGCFE"."UI_COST_CALCU_FORMU"  set (LEVEL1_TBAS,LEVEL2_TBAS,LEVEL3_TBAS,
+				LEVEL4_TBAS,LEVEL5_TBAS,LEVEL6_TBAS,
+				SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY) = 
+				(replace(:LEVEL1_TBAS,',',';'),replace(:LEVEL2_TBAS,',',';'),
+				replace(:LEVEL3_TBAS,',',';'),replace(:LEVEL4_TBAS,',',';'),
+			 	replace(:LEVEL5_TBAS,',',';'),replace(:LEVEL6_TBAS,',',';'),
+				 :create_time,
+			 	 :currentUser)
+		 where PRODUCT_GROUP = :PRODUCT_GROUP and BRAND = :BRAND and PRODFAMILY = :PRODFAMILY 
+					and CATEGORY = :CATEGORY and PLANT = :PLANT and SUBGEO = :SUBGEO;  
+        var_oper := 'update';
+  	end if;
+
+insert into "EBGCFE"."UI_COST_CALCU_FORMU_LOG"(
+									PRODFAMILY,
+									PRODUCT_GROUP,
+									BRAND,
+									PLANT,
+									CATEGORY,
+									SUBGEO,
+									LEVEL1_TBAS,
+									LEVEL2_TBAS,
+									LEVEL3_TBAS,
+									LEVEL4_TBAS,
+									LEVEL5_TBAS,
+									LEVEL6_TBAS,
+							 		SYS_CREATED_BY,
+							 		SYS_CREATED_DATE,
+							 		SYS_LAST_MODIFIED_BY,
+									SYS_LAST_MODIFIED_DATE,
+									ACTION,
+									AT_MODIFIED_ON,
+    								AT_MILLIS 
+									)
+	values (:PRODFAMILY,:PRODUCT_GROUP,:BRAND,
+				:PLANT,:CATEGORY,:SUBGEO,
+				:LEVEL1_TBAS,:LEVEL2_TBAS,:LEVEL3_TBAS,:LEVEL4_TBAS,
+		:LEVEL5_TBAS,:LEVEL6_TBAS,
+					 	 :currentUser,
+					 	 :create_time,
+					 	 :currentUser,
+					 	 :create_time,
+	 	:var_oper,current_timestamp,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+			
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+	
+	
+	
+END;

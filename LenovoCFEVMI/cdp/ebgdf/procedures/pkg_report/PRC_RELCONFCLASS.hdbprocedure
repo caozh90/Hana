@@ -1,0 +1,281 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_report::PRC_RELCONFCLASS" (OUT P_OUT_EXITCODE  INTEGER)
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGDF AS
+	
+begin
+
+  -- data
+  DECLARE   V_PKG_NAME        VARCHAR(100) := 'PKG_REPORT';    
+  DECLARE   V_PRC_NAME        VARCHAR(100) := 'PRC_RELCONFCLASS';
+  DECLARE   V_FUNC_FULL_NAME  VARCHAR(100) := :V_PKG_NAME || '.' || :V_PRC_NAME;  
+  DECLARE   logidi            INTEGER := 0;
+  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+            P_OUT_EXITCODE := -1;  
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+          (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+          I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'EBGDF',
+          I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+                                        substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+        RESIGNAL;     
+    END;  
+    
+  -- process logic
+  P_OUT_EXITCODE := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF'); 
+
+  --EXECUTE IMMEDIATE 'truncate table RPT_pegging';
+  DELETE FROM "EBGDF".RPT_pegging;  
+  
+ /* --x_ww_withdraw_date
+  tab_pcdw_itemsitemaster_7 = select right(v1.ITEM,7) item,v1.SITEID,v1.MAKTX,v1.ITEMCLASS,v1.ZUCOD,v.x_ww_withdraw_date
+                  from (select item,max(t.x_ww_withdraw_date) x_ww_withdraw_date
+                         from (select item ,ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd')) x_ww_withdraw_date
+                              from "PCDW".pcdw_itemsitemaster
+                               where length(item) = 7) t
+                         group by item) v,
+                          (select ITEM,SITEID,MAKTX,ITEMCLASS,ZUCOD,x_ww_withdraw_date from "PCDW".pcdw_itemsitemaster where length(item) = 7 )v1
+                         where right(v.item,7) = v1.item
+              union all
+              select right(v1.ITEM,7) item,v1.SITEID,v1.MAKTX,v1.ITEMCLASS,v1.ZUCOD,v.x_ww_withdraw_date
+                  from (select item,max(t.x_ww_withdraw_date) x_ww_withdraw_date
+                         from (select item ,ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd')) x_ww_withdraw_date
+                              from "PCDW".pcdw_itemsitemaster
+                               where length(item) > 7) t
+                         group by item) v,
+                          (select ITEM,SITEID,MAKTX,ITEMCLASS,ZUCOD,x_ww_withdraw_date from "PCDW".pcdw_itemsitemaster where length(item) > 7 )v1
+                         where right(v.item,7) = right(v1.item,7)
+               and right(v1.item,7) not in (select v1.ITEM
+                                from (select item,max(t.x_ww_withdraw_date) x_ww_withdraw_date
+                                   from (select item ,ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd')) x_ww_withdraw_date
+                                        from "PCDW".pcdw_itemsitemaster
+                                         where length(item) = 7) t
+                                   group by item) v,
+                                    (select ITEM,SITEID,MAKTX,ITEMCLASS,ZUCOD,x_ww_withdraw_date from "PCDW".pcdw_itemsitemaster where length(item) = 7 )v1
+                                   where right(v.item,7) = v1.item);
+  
+  tab_pcdw_itemsitemaster_10 = select right(v1.ITEM,10) item,v1.SITEID,v1.MAKTX,v1.ITEMCLASS,v1.ZUCOD,v.x_ww_withdraw_date
+                  from (select item,max(t.x_ww_withdraw_date) x_ww_withdraw_date
+                         from (select item ,ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd')) x_ww_withdraw_date
+                              from "PCDW".pcdw_itemsitemaster
+                               where length(item) = 10 and (left(item,1) = '7' or left(item,1) = 'S')) t
+                         group by item) v,
+                          (select ITEM,SITEID,MAKTX,ITEMCLASS,ZUCOD,x_ww_withdraw_date from "PCDW".pcdw_itemsitemaster where length(item) = 10 )v1
+                         where right(v.item,10) = v1.item
+              \*union all
+              select right(v1.ITEM,10) item,v1.SITEID,v1.MAKTX,v1.ITEMCLASS,v1.ZUCOD,v.x_ww_withdraw_date
+                  from (select item,max(t.x_ww_withdraw_date) x_ww_withdraw_date
+                         from (select item ,ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd')) x_ww_withdraw_date
+                              from "PCDW".pcdw_itemsitemaster
+                               where length(item) > 10 and substring(item,10) <> '0') t
+                         group by item) v,
+                          (select ITEM,SITEID,MAKTX,ITEMCLASS,ZUCOD,x_ww_withdraw_date from "PCDW".pcdw_itemsitemaster where length(item) > 10 )v1
+                         where right(v.item,10) = right(v1.item,10)
+               and right(v1.item,10) not in (select v1.ITEM
+                                from (select item,max(t.x_ww_withdraw_date) x_ww_withdraw_date
+                                   from (select item ,ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd')) x_ww_withdraw_date
+                                        from "PCDW".pcdw_itemsitemaster
+                                         where length(item) = 10 and substring(item,10) <> '0' ) t
+                                   group by item) v,
+                                    (select ITEM,SITEID,MAKTX,ITEMCLASS,ZUCOD,x_ww_withdraw_date from "PCDW".pcdw_itemsitemaster where length(item) = 10 )v1
+                                   where right(v.item,10) = v1.item)*\;
+  
+  tab_pcdw_itemsitemaster = select * from :tab_pcdw_itemsitemaster_7 union all select * from :tab_pcdw_itemsitemaster_10;*/
+  
+  tab_pcdw_itemsitemaster = SELECT item, siteid, maktx, zucod, itemclass, x_ww_withdraw_date, ori_item
+                FROM (SELECT item, siteid, maktx, zucod, itemclass,
+                              ifnull(MAX(x_ww_withdraw_date) over(PARTITION BY item), to_date('2050/12/30', 'yyyy/mm/dd')) AS x_ww_withdraw_date,
+                              row_number() over(PARTITION BY item, siteid ORDER BY priority) AS priority, ori_item
+                         FROM (SELECT item, siteid, maktx, zucod, itemclass,x_ww_withdraw_date, 1 AS priority, item AS ori_item
+                                  FROM "PCDW".pcdw_itemsitemaster
+                                 WHERE length(item) = 7
+                                UNION ALL
+                                SELECT RIGHT(item, 7) AS item, siteid, maktx, zucod, itemclass, x_ww_withdraw_date, 2 AS priority,
+                                       item AS ori_item
+                                  FROM "PCDW".pcdw_itemsitemaster
+                                 WHERE length(item) > 7
+                                UNION ALL
+                                SELECT item AS item, siteid, maktx, zucod, itemclass,x_ww_withdraw_date, 1 AS priority,
+                                       item AS ori_item
+                                  FROM "PCDW".pcdw_itemsitemaster
+                                 WHERE length(item) = 10 AND LEFT(item, 1) IN('7', 'S')
+                                UNION ALL
+                                SELECT item, siteid, maktx, zucod, itemclass,x_ww_withdraw_date, 2 AS priority, ori_item
+                                  FROM (SELECT RIGHT(item, 10) AS item, siteid, maktx,itemclass, zucod, x_ww_withdraw_date,
+                                               item AS ori_item  
+                                           FROM "PCDW".pcdw_itemsitemaster
+                                          WHERE length(item) > 10)
+                                 WHERE LEFT(item, 1) IN('7', 'S'))
+                        WHERE itemclass = 'MTM'
+                              AND (siteid IN ('L070', 'U470', 'X470') OR (siteid = 'H001' AND zucod LIKE 'H%'))
+                              AND (zucod <> 'HPBD' OR zucod IS NULL OR zucod = ''))
+               WHERE priority = 1;
+
+  --insert into RPT_pegging
+  --item of pcdw_itemsitemaster
+  --union all
+  --seo of pcdw_bundle_bom
+ /* insert into ebgdf.RPT_pegging (MTM,sbb,sbb_abcd,sbb_abcd_1,sbb_abcd_2,sbb_abcd_3,sbb_abcd_4,sbb_abcd_5)
+  select distinct t.item MTM,right(t.sbb,7),t1.ABCD,t1.ABCD_1,t1.ABCD_2,t1.ABCD_3,t1.ABCD_4,t1.ABCD_5
+    from (select distinct a.item item,b.sbb
+    			 from (select distinct vv.item ,vv.itemclass,vv.x_ww_withdraw_date,vv.siteid,vv.ZUCOD
+		   			     from ( --item of pcdw_itemsitemaster
+		   			     		select item,itemclass,ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd')) x_ww_withdraw_date,siteid,ZUCOD
+						  		  from :tab_pcdw_itemsitemaster
+						  		 where itemclass = 'MTM' 
+						  		   and ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd'))>=add_months(CURRENT_TIMESTAMP,1) 
+						  		   and ((siteid in ('L070','U470','X470') ) or(siteid = 'H001' and ZUCOD like 'H%')) and (ZUCOD <> 'HPBD' or ZUCOD is null or zucod = '')
+						        union all
+					            --seo of pcdw_bundle_bom
+					            select t1.seo item,itemclass,ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd')) x_ww_withdraw_date,siteid,ZUCOD
+					              from (select item item ,itemclass,x_ww_withdraw_date,siteid,ZUCOD
+								  		  from :tab_pcdw_itemsitemaster
+								  		 where itemclass = 'MTM' 
+								  		   and ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd'))>=add_months(CURRENT_TIMESTAMP,1)
+								  		   and ((siteid in ('L070','U470','X470')) or (siteid = 'H001'))and (ZUCOD = 'HPBD' or ZUCOD is null or zucod = '')) t,
+								       pcdw.pcdw_bundle_bom t1
+								 where t.item = t1.bundle) vv
+						 where vv.itemclass = 'MTM' 
+						  		   and ifnull(vv.x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd'))>=add_months(CURRENT_TIMESTAMP,1) 
+						  		   and ((vv.siteid in ('L070','U470','X470') ) or(vv.siteid = 'H001' and vv.ZUCOD like 'H%')) and (vv.ZUCOD <> 'HPBD' or vv.ZUCOD is null or vv.zucod = '')
+						       ) a,
+    			 	  pcdw.pcdw_seo_bom b
+    	   where a.item = b.seo) t,
+    	   (select mfi_ffi_fc,ABCD,ABCD_1,ABCD_2,ABCD_3,ABCD_4,ABCD_5 from ebgdf.RPT_PN_CLASS a where ABCD = (select max(abcd) from ebgdf.RPT_PN_CLASS b  where a.mfi_ffi_fc = b.mfi_ffi_fc group by mfi_ffi_fc)) t1
+    where right(t.sbb,7) = t1.mfi_ffi_fc;*/
+insert into ebgdf.RPT_pegging (MTM,sbb,sbb_abcd,
+sbb_abcd_1,sbb_abcd_2,sbb_abcd_3,sbb_abcd_4,sbb_abcd_5)
+SELECT DISTINCT item.item AS mtm, item.sbb, rpt.abcd, rpt.abcd_1, rpt.abcd_2,
+                rpt.abcd_3, rpt.abcd_4, rpt.abcd_5
+  FROM (SELECT DISTINCT t1.item, 
+                        CASE WHEN left(right(t2.sbb, 10), 1) IN('7', 'S')
+                               THEN right(t2.sbb, 10)
+                             ELSE right(t2.sbb, 7) END AS sbb
+           FROM (SELECT item, ori_item
+                    FROM :tab_pcdw_itemsitemaster
+                   WHERE x_ww_withdraw_date >= add_months(current_timestamp, 1)
+                  UNION
+                  SELECT CASE WHEN left(right(b.seo, 10), 1) IN('7', 'S') AND length(b.seo) >= 10
+                                THEN right(b.seo, 10)
+                              ELSE right(b.seo, 7) END AS item, b.seo AS ori_item
+                    FROM :tab_pcdw_itemsitemaster a, pcdw.pcdw_bundle_bom b
+                   WHERE a.x_ww_withdraw_date >=add_months(current_timestamp, 1)
+                         AND a.ori_item = b.bundle) t1, pcdw.pcdw_seo_bom t2
+          WHERE t1.ori_item = t2.seo) item,
+       (SELECT mfi_ffi_fc, abcd, abcd_1, abcd_2, abcd_3, abcd_4, abcd_5
+           FROM ebgdf.rpt_pn_class a
+          WHERE abcd = (SELECT MAX(abcd)
+                          FROM ebgdf.rpt_pn_class b
+                         WHERE a.mfi_ffi_fc = b.mfi_ffi_fc
+                         GROUP BY mfi_ffi_fc)) rpt
+ WHERE item.sbb = rpt.mfi_ffi_fc;
+  
+  --update mtm_abcd
+  update ebgdf.rpt_pegging t
+     set t.mtm_abcd = a.max_abcd
+   from (select mtm,max(sbb_abcd) max_abcd from ebgdf.rpt_pegging t group by mtm ) a
+  where a.mtm = t.mtm; 
+  
+  update ebgdf.rpt_pegging t
+     set t.mtm_abcd = a.max_class
+  	from (select t.mtm,case when t1.max_class >= t.mtm_abcd then t1.max_class
+  						 when t1.max_class < t.mtm_abcd then t.mtm_abcd end as max_class
+  		    from ebgdf.ui_max_class t1,
+  		         ebgdf.rpt_pegging t
+  	       where left(t.mtm,4) = t1.mt) a
+  	where a.mtm = t.mtm;
+  
+  --update ABCD_T
+  update ebgdf.RPT_pegging t
+     set t.ABCD_T = ifnull(t1.ABCD_T,'NOT FOUND')
+    from ebgdf.ui_MFI_PPN t1
+   where t1.sbb = t.sbb;
+  
+  --update SBB_DES
+  update ebgdf.RPT_pegging t
+     set t.SBB_DES = replace(t1.maktx,',',' ')
+    from (select item,MAKTX from :tab_pcdw_itemsitemaster where itemclass = 'SBB') t1
+   where t.sbb = t1.item;
+  
+  --EXECUTE IMMEDIATE 'truncate table rpt_relconfclass';
+  DELETE FROM ebgdf.rpt_relconfclass;
+
+  --INSERT INTO rpt_relconfclass 
+  --item of pcdw_itemsitemaster
+  INSERT INTO ebgdf.rpt_relconfclass (MTM, MACH_T,lod)
+	   select distinct a.item MTM,left(a.item,4) MACH_T,a.x_ww_withdraw_date
+	     from  ( select item,x_ww_withdraw_date
+				  		  from :tab_pcdw_itemsitemaster 
+				  		 where itemclass = 'MTM' 
+				  		   and ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd'))<add_months(CURRENT_TIMESTAMP,1) 
+				  		   and ((siteid in ('L070','U470','X470') ) or(siteid = 'H001' and ZUCOD like 'H%')) and (ZUCOD <> 'HPBD' or ZUCOD is null or zucod = '' )) a;
+  
+  --seo of pcdw_bundle_bom
+  INSERT INTO ebgdf.rpt_relconfclass (MTM, MACH_T,lod)
+    select v.mtm,v.MACH_T,max(v.x_ww_withdraw_date)
+	  from (select distinct t1.seo MTM,left(t1.seo,4) MACH_T,t.x_ww_withdraw_date ,t.itemclass,t.siteid,t.ZUCOD
+              from (select item ,itemclass,siteid,ZUCOD,ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd')) x_ww_withdraw_date
+			  		  from :tab_pcdw_itemsitemaster
+			  		 where itemclass = 'MTM' 
+			  		   and ifnull(x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd'))<add_months(CURRENT_TIMESTAMP,1) 
+			  		   and ((siteid in ('L070','U470','X470')) or (siteid = 'H001'))and (ZUCOD = 'HPBD' or ZUCOD is null or zucod = '')) t,
+			       pcdw.pcdw_bundle_bom t1
+			 where t.item = t1.bundle) v
+	 where v.itemclass = 'MTM' 
+	   and ifnull(v.x_ww_withdraw_date,to_date('2050/12/30','yyyy/mm/dd'))<add_months(CURRENT_TIMESTAMP,1) 
+	   and ((v.siteid in ('L070','U470','X470')) or (v.siteid = 'H001'))and (v.ZUCOD = 'HPBD' or v.ZUCOD is null or v.zucod = '')
+	   and not exists (select MTM from ebgdf.rpt_relconfclass)
+	 group by v.mtm,v.MACH_T;
+  
+  --data of RPT_pegging
+  insert into ebgdf.rpt_relconfclass(MTM,mach_t,lod,abcd,abcd_1,abcd_2,abcd_3,abcd_4,abcd_5)
+     select distinct t1.mtm,left(t1.mtm,4),t2.X_WW_WITHDRAW_DATE,t1.mtm_abcd,t1.mtm_abcd,t1.mtm_abcd,t1.mtm_abcd,t1.mtm_abcd,t1.mtm_abcd
+       from ebgdf.RPT_pegging t1,
+       	    (select item , X_WW_WITHDRAW_DATE from :tab_pcdw_itemsitemaster) t2
+      where t1.mtm = t2.item;
+  
+  --update ABCD-ABCD_5 = 'D' LOD < CURRENT_MONTH+1
+  update ebgdf.rpt_relconfclass t
+     set t.ABCD='D',t.ABCD_1='D',t.ABCD_2='D',t.ABCD_3='D',t.ABCD_4='D',t.ABCD_5='D'
+   where t.lod<add_months(CURRENT_TIMESTAMP,1);
+  
+  --update ABCD-ABCD_5 = 'D' LOD > CURRENT_MONTH+1
+  update ebgdf.rpt_relconfclass t
+     set t.ABCD=a.ABCD,t.ABCD_1=a.ABCD_1,t.ABCD_2=a.ABCD_2,t.ABCD_3=a.ABCD_3,t.ABCD_4=a.ABCD_4,t.ABCD_5=a.ABCD_5
+    from (select mtm,CASE WHEN t.LOD > add_months(CURRENT_TIMESTAMP,1) THEN t.abcd ELSE 'D' END AS ABCD,
+		             CASE WHEN t.LOD > add_months(CURRENT_TIMESTAMP,2) THEN t.abcd_1 ELSE 'D' END AS ABCD_1,
+		             CASE WHEN t.LOD > add_months(CURRENT_TIMESTAMP,3) THEN t.abcd_2 ELSE 'D' END AS ABCD_2,
+		             CASE WHEN t.LOD > add_months(CURRENT_TIMESTAMP,4) THEN t.abcd_3 ELSE 'D' END AS ABCD_3,
+		             CASE WHEN t.LOD > add_months(CURRENT_TIMESTAMP,5) THEN t.abcd_4 ELSE 'D' END AS ABCD_4,
+		             CASE WHEN t.LOD >= add_months(CURRENT_TIMESTAMP,6) THEN t.abcd_5 ELSE 'D' END AS ABCD_5
+	        from ebgdf.rpt_relconfclass t) a
+   where t.mtm = a.mtm
+     and t.lod>=add_months(CURRENT_TIMESTAMP,1);
+  
+  --update biz_line,x_name,project
+  update ebgdf.rpt_relconfclass t
+      set t.biz_line = replace(t1.biz_line,',',' '),
+      	  t.x_name = replace(t1.x_name,',',' '),
+      	  t.project = replace(t1.project,',',' ')
+     from ebgdf.UI_MT_ATTRIBUTES t1
+    where t.mach_t = t1.mt;
+  
+  update ebgdf.rpt_relconfclass t
+     set t.cycle_id = year(current_date)||'_'||substring(current_date,6,2)||'_1';
+
+  
+  P_OUT_EXITCODE := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF');  
+  
+
+ P_OUT_EXITCODE := 0;
+
+  
+END;

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_INFO_ROLEGROUP" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true" hierarchiesSQLEnabled="false" translationRelevant="true">
+  <descriptions defaultDescription="CV_INFO_ROLEGROUP"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLEGROUP_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="REAL_ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="COMMENT" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="IS_SYSROLEGROUP" length="5"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+
+ BEGIN 
+  /* view name
+--0.1 managementCenter
+--0.2 costBake
+--0.3 newCycle
+
+*/
+ 
+ 	 var_out = 
+ SELECT  'Other Roles' as ROLEGROUP_NAME,'' AS REAL_ROLE_NAME ,'Other Roles in EBGDF' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'User Managerment' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000001' AS REAL_ROLE_NAME ,'User Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'LOG' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000002' AS REAL_ROLE_NAME ,'Log Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+UNION SELECT  'DS Workflow Configuration' as ROLEGROUP_NAME,'DS Workflow Configuration' AS REAL_ROLE_NAME ,'DS Workflow Configuration' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'DS Job Configuration' as ROLEGROUP_NAME,'DS Job Configuration' AS REAL_ROLE_NAME ,'DS Job Configuration' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'DS Job Monitor&amp;Resubmission' as ROLEGROUP_NAME,'DS Job Monitor&amp;Resubmission' AS REAL_ROLE_NAME ,'DS Job Monitor&amp;Resubmission' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+/*MFI_PPN
+--1.1 step_1_mfi_ppn
+--1.2 costBake
+--1.3 newCycle
+*/
+--*******************Add by Leon 20150813 start***************
+--Step_1_User Input_MFI_PPN
+UNION SELECT  'ui_step_1_mfi_ppn' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000001' AS REAL_ROLE_NAME ,'ui_mfi_ppn Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--Step_2_Report_Interlock
+UNION SELECT  'ui_step_2_report_interlock' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000002' AS REAL_ROLE_NAME ,'ui_report_interlock Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--Step_3_Report_pn_class
+UNION SELECT  'ui_step_3_pn_class' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000003' AS REAL_ROLE_NAME ,'ui_pn_class Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--Step_4.1_Report_Pegging Report
+UNION SELECT  'ui_step_4_1_pegging' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000004' AS REAL_ROLE_NAME ,'ui_pegging Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--Step_4.2_Report_Rel_Config_Class
+UNION SELECT  'ui_step_4_2_rel_config_class' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000005' AS REAL_ROLE_NAME ,'ui_rel_config_class Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--Step_4.3_Report_Lead Time
+UNION SELECT  'ui_step_4_3_lead_time' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000006' AS REAL_ROLE_NAME ,'ui_lead_time Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--OPTION_Forecast
+UNION SELECT  'ui_option_forecast' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000007' AS REAL_ROLE_NAME ,'ui_forecast_mid Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--OPTION_ClassPercent
+UNION SELECT  'ui_class_percent' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000008' AS REAL_ROLE_NAME ,'ui_class_percent Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--OPTION_MaxClass
+UNION SELECT  'ui_max_class' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000009' AS REAL_ROLE_NAME ,'ui_max_class Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--OPTION_Attributes
+UNION SELECT  'ui_attributes' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000010' AS REAL_ROLE_NAME ,'ui_attributes Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--UI_LTVALUE
+UNION SELECT  'ui_ltvalue' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1001000011' AS REAL_ROLE_NAME ,'ui_ltvalue Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Leon 20150811 end***************
+
+;
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="ROLEGROUP_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLEGROUP_NAME"/>
+      </attribute>
+      <attribute id="REAL_ROLE_NAME" order="2">
+        <descriptions defaultDescription="DISPALY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="REAL_ROLE_NAME"/>
+      </attribute>
+      <attribute id="COMMENT" order="3">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="COMMENT"/>
+      </attribute>
+      <attribute id="IS_SYSROLEGROUP" order="4">
+        <descriptions defaultDescription="IS_SYS_ROLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="IS_SYSROLEGROUP"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

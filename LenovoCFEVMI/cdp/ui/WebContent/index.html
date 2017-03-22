@@ -1,0 +1,86 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+		<title>Lenovo</title>
+		<!-- data-sap-ui-appCacheBuster="./" -->
+		<script src="/sap/ui5/1/resources/sap-ui-core.js"
+				id="sap-ui-bootstrap"
+				data-sap-ui-libs="sap.ui.commons, sap.ui.ux3,sap.ui.table, sap.m"
+				data-sap-ui-xx-bindingSyntax="complex"
+				data-sap-ui-resourceroots='{ "lenovo": "./" }'
+				data-sap-ui-theme="sap_bluecrystal"
+				data-sap-ui-language="en">
+		</script>
+		
+		<link type="text/css" rel="stylesheet" href="resource/library.css" />
+	</head>
+	<body class="sapUiBody">
+		<div id="content" class="lenovo">
+			
+		</div>
+		<div id="popLoading" class="caseCover" style="display:none;">
+		</div>
+		<div id="casePourpre" style="display:none;">
+		  <div id="load">
+		    <p>Loading</p>
+		  </div>
+		  <div id="vague">
+		    <div id="vague1"></div>
+		    <div id="vague2"></div>
+		    <div id="vague3"></div>
+		    <div id="vague4"></div>
+		    <div id="vague5"></div>
+		    <div id="vague6"></div>
+		  </div>
+		</div>
+	</body>
+	<script type="text/javascript">			
+		window.onload = function(){
+			jQuery.sap.registerModulePath("lenovo.Component", "./Component");
+			jQuery.sap.require("lenovo.Component");
+			var a;
+			$.ajax({
+				url: "/sap/hana/xs/formLogin/checkSession.xsjs",
+				type:"get",
+				async: false,
+				dataType: "JSON",
+				success: function(resp){
+					a = resp.login;
+					localStorage.USERNAME = resp.username;
+				}
+			});
+			if(!a) {
+			 	var s = encodeURIComponent(location.pathname+location.search+location.hash);
+			 	location.replace(location.origin + "/sap/hana/xs/formLogin/login.html?" + "x-sap-origin-location=" + s);
+			}
+			new sap.ui.core.ComponentContainer({
+				name: "lenovo"
+			}).placeAt("content");	
+			
+			$('#content').ready(function(){
+				$("#popLoading").show();
+				$("#casePourpre").show();
+				setTimeout(function(){
+					$("#popLoading").fadeOut(1000);
+					$("#casePourpre").fadeOut(1000);
+				},3000);
+			});
+			
+			//resize navigation bar
+			window.onresize = adjust;  
+			adjust();  
+			
+		}
+		function adjust(obj){
+			var oTree = sap.ui.getCore().byId("navigation");
+			if(oTree != undefined && oTree != null)
+			{
+				var viewHeight = document.documentElement.clientHeight || window.innerHeight;
+				var treeHeight = (viewHeight - 48).toString()+"px";
+				oTree.setHeight(treeHeight);
+			}
+		}
+	</script>
+</html>

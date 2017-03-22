@@ -1,0 +1,55 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createMapAllForOData" ( 
+	IN newInfo "SECURITY"."cdp.security.data::userManagement.MapAllT",
+	OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aID 	NVARCHAR(10);
+    aRoleGROUP_ID BIGINT;	--//rolegroup id	
+    aRole_ID BIGINT;  	--//role id
+    aModule_ID  BIGINT;
+    aUser_ID BIGINT;
+    aUserGroup_ID BIGINT;
+    --aArray BIGINT array;
+    --acount BIGINT;
+    --i      BIGINT; 
+    mapExists BIGINT;
+   -- aMODULE_NAME NVARCHAR(256);   
+BEGIN
+/************************************************************************************************************ 
+	Write your procedure logic 
+1.如果给user添加role,直接创建一个新的row. 
+     
+2.如果给user_group添加role，则需要找到这个user_group下所有的user，并为每一个user生成一个row.
+ *************************************************************************************************************/   
+
+    select 
+	--MODULE_NAME, 	--//userid /usergroup id	
+    ROLEGROUP_ID,
+    ROLE_ID,
+    USER_ID,
+    GROUP_ID
+  into 
+ 	--aModule_NAME,  --//module id
+ 	aRoleGROUP_ID,
+	aRole_ID,
+	aUser_ID,
+	aUserGroup_ID
+  from :newInfo;
+  
+  
+
+	 CALL "SECURITY"."cdp.security.procedures::createMapAll" ( 
+		--aMODULE_NAME,  
+    	aRoleGROUP_ID,	
+    	aRole_ID,  
+    	aUserGroup_ID,  
+    	aUser_ID,
+	 errorInfo);
+  
+END;

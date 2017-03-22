@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_GETROLEGROUPROLENOTIN" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_GETROLEGROUPROLENOTIN"/>
+  <localVariables>
+    <variable id="IN_USER_ID" parameter="true">
+      <descriptions defaultDescription="IN_USER_ID"/>
+      <variableProperties datatype="BIGINT" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="IN_GROUP_ID" parameter="true">
+      <descriptions defaultDescription="IN_GROUP_ID"/>
+      <variableProperties datatype="BIGINT" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="cdp.security.data::userManagement.MAP_ALL" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+    </DataSource>
+    <DataSource id="cdp.security.data::userManagement.INFO_ROLEGROUP" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLEGROUP"/>
+    </DataSource>
+    <DataSource id="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"/>
+    </DataSource>
+    <DataSource id="cdp.security.data::userManagement.INFO_ROLES" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLES"/>
+    </DataSource>
+    <DataSource id="Projection_4$$$$cdp.security.data::userManagement.MAP_ALL$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+    </DataSource>
+    <DataSource id="Projection_5$$$$cdp.security.data::userManagement.INFO_ROLEGROUP$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLEGROUP"/>
+    </DataSource>
+    <DataSource id="Join_4$$$$cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"/>
+    </DataSource>
+    <DataSource id="Join_6$$$$cdp.security.data::userManagement.INFO_ROLES$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLES"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="USER_ID"/>
+        <viewAttribute id="GROUP_ID"/>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#cdp.security.data::userManagement.MAP_ALL">
+        <mapping xsi:type="Calculation:AttributeMapping" target="USER_ID" source="USER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GROUP_ID" source="GROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <filter>&quot;USER_ID&quot;=$$IN_USER_ID$$ and &quot;GROUP_ID&quot; =$$IN_GROUP_ID$$ and &quot;ROLEGROUP_ID&quot; !=0</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#cdp.security.data::userManagement.INFO_ROLEGROUP">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <filter>&quot;ROLEGROUP_NAME&quot; !='Other Roles'</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID_A"/>
+        <viewAttribute id="ROLEGROUP_ID_B"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID_A" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID_B" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID_A" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <joinAttribute name="ROLEGROUP_ID_A"/>
+      <joinAttribute name="MODULE_ID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_3">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID_A"/>
+        <viewAttribute id="ROLEGROUP_ID_B"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID_A" source="ROLEGROUP_ID_A"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID_B" source="ROLEGROUP_ID_B"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <filter>isNull(&quot;ROLEGROUP_ID_B&quot;)</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID_A"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID_A" source="ROLEGROUP_ID_A"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <input node="#cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID_A" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <joinAttribute name="ROLEGROUP_ID_A"/>
+      <joinAttribute name="MODULE_ID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_3" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="ROLEGROUP_COMMENT"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="ROLE_NAME"/>
+        <viewAttribute id="ROLE_COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="DISPLAY_ROLE_NAME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID_A"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <input node="#cdp.security.data::userManagement.INFO_ROLES">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_NAME" source="ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPLAY_ROLE_NAME" source="DISPLAY_ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <joinAttribute name="ROLE_ID"/>
+      <joinAttribute name="MODULE_ID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_4">
+      <viewAttributes>
+        <viewAttribute id="GROUP_ID"/>
+        <viewAttribute id="USER_ID"/>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_4$$$$cdp.security.data::userManagement.MAP_ALL$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="GROUP_ID" source="GROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="USER_ID" source="USER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <filter>&quot;GROUP_ID&quot; =$$IN_GROUP_ID$$ and&quot;USER_ID&quot; =$$IN_USER_ID$$ and &quot;ROLEGROUP_ID&quot; =0</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_5">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_5$$$$cdp.security.data::userManagement.INFO_ROLEGROUP$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <filter>&quot;ROLEGROUP_NAME&quot; ='Other Roles'</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_4" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_5">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <input node="#Join_4$$$$cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <joinAttribute name="ROLEGROUP_ID"/>
+      <joinAttribute name="MODULE_ID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_5" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="ROLE_ID_A"/>
+        <viewAttribute id="ROLE_ID_B"/>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_4">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID_A" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <input node="#Projection_4">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID_B" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID_A" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <joinAttribute name="ROLE_ID_A"/>
+      <joinAttribute name="MODULE_ID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_6">
+      <viewAttributes>
+        <viewAttribute id="ROLE_ID_A"/>
+        <viewAttribute id="ROLE_ID_B"/>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_5">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID_A" source="ROLE_ID_A"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID_B" source="ROLE_ID_B"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <filter>isNull(&quot;ROLE_ID_B&quot;)</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_6" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="ROLEGROUP_COMMENT"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="ROLE_NAME"/>
+        <viewAttribute id="ROLE_COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="DISPLAY_ROLE_NAME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_6">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID_A"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <input node="#Join_6$$$$cdp.security.data::userManagement.INFO_ROLES$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_NAME" source="ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPLAY_ROLE_NAME" source="DISPLAY_ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+      </input>
+      <joinAttribute name="ROLE_ID"/>
+      <joinAttribute name="MODULE_ID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="ROLEGROUP_COMMENT"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="ROLE_NAME"/>
+        <viewAttribute id="ROLE_COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="DISPLAY_ROLE_NAME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Join_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_COMMENT" source="ROLEGROUP_COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_NAME" source="ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_COMMENT" source="ROLE_COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPLAY_ROLE_NAME" source="DISPLAY_ROLE_NAME"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Join_6">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_COMMENT" source="ROLEGROUP_COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_NAME" source="ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_COMMENT" source="ROLE_COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPLAY_ROLE_NAME" source="DISPLAY_ROLE_NAME"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="ROLEGROUP_COMMENT"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="ROLE_NAME"/>
+        <viewAttribute id="ROLE_COMMENT"/>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="DISPLAY_ROLE_NAME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Union_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_COMMENT" source="ROLEGROUP_COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_NAME" source="ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_COMMENT" source="ROLE_COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPLAY_ROLE_NAME" source="DISPLAY_ROLE_NAME"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="ROLEGROUP_ID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLEGROUP_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLEGROUP_ID"/>
+      </attribute>
+      <attribute id="ROLEGROUP_NAME" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLEGROUP_NAME"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLEGROUP_NAME"/>
+      </attribute>
+      <attribute id="ROLEGROUP_COMMENT" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLEGROUP_COMMENT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLEGROUP_COMMENT"/>
+      </attribute>
+      <attribute id="ROLE_ID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLE_ID"/>
+      </attribute>
+      <attribute id="ROLE_NAME" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="ROLE_COMMENT" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_COMMENT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLE_COMMENT"/>
+      </attribute>
+      <attribute id="MODULE_ID" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MODULE_ID"/>
+      </attribute>
+      <attribute id="DISPLAY_ROLE_NAME" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DISPLAY_ROLE_NAME"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="253" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="743"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="743"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="647"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="551"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="455"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="359"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="484" y="647"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_5" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="743"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="647"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_5" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="551"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_6" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="455"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_6" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="359"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="253" y="243"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="253" y="165"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

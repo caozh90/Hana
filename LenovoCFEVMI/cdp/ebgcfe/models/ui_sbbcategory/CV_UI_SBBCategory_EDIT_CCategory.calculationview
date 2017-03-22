@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_UI_SBBCategory_EDIT_CCategory" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_UI_SBBCategory_EDIT_CCategory"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="CONF_PARAMETERS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="CONF_PARAMETERS"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="PDOMAIN">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="UI_SBBCATEGORY"/>
+        </viewAttribute>
+        <viewAttribute id="PNAME">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="COST_CATEGORY"/>
+        </viewAttribute>
+        <viewAttribute id="PVALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CONF_PARAMETERS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PDOMAIN" source="PDOMAIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PNAME" source="PNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PVALUE" source="PVALUE"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="PVALUE" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PVALUE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PVALUE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="200"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

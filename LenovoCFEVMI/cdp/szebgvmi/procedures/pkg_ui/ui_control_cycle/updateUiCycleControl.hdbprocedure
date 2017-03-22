@@ -1,0 +1,135 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_control_cycle::updateUiCycleControl" ( 
+		IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_CONTROL_CYCLE_T"
+		,IN oldInfo  "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_CONTROL_CYCLE_T"
+		,OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aItem NVARCHAR(40);
+		aLogicPlant NVARCHAR(40);
+		aPhysicPlant NVARCHAR(40);
+		aWareHouseNumber NVARCHAR(40);
+		aStorageLocation NVARCHAR(40);
+		aStorageType NVARCHAR(40);
+		aStorageBin NVARCHAR(40);
+		
+		resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.szebgvmi.procedures::updateUiCycleControl error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures::updateUiCycleControl'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'controlcycle::editable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.szebgvmi.procedures::updateUiCycleControl'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+   	
+select 
+    WAREHOUSE_NUMBER,
+    STORAGE_LOCATION,
+    STORAGE_TYPE,
+    STORAGE_BIN
+  into 
+	aWareHouseNumber,
+	aStorageLocation,
+	aStorageType,
+	aStorageBin
+  from :newInfo;
+  
+ select
+	ITEM,	
+    LOGICAL_PLANT,
+    PHYSICAL_PLANT   
+  into  	
+ 	aItem,
+ 	aLogicPlant,
+	aPhysicPlant
+  from :oldInfo; 
+  
+  SELECT top 1 count(1) into resourceExists FROM "SZEBGVMI"."UI_CONTROL_CYCLE" A    
+     WHERE A.ITEM = :aItem
+     	  AND A.LOGICAL_PLANT = :aLogicPlant 
+          AND A.PHYSICAL_PLANT = :aPhysicPlant
+          AND A.WAREHOUSE_NUMBER = :aWareHouseNumber 
+          AND A.STORAGE_LOCATION = :aStorageLocation
+          AND A.STORAGE_TYPE = :aStorageType 
+          AND A.STORAGE_BIN  = :aStorageBin;
+   
+    if  :resourceExists > 0 
+    then
+	    errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;
+    end if;
+    
+  update "SZEBGVMI"."UI_CONTROL_CYCLE"
+  	set   --WAREHOUSE_NUMBER = :aWareHouseNumber,
+  	      STORAGE_LOCATION = :aStorageLocation,
+  	      STORAGE_TYPE = :aStorageType,
+  	      STORAGE_BIN  = :aStorageBin,
+  	      SYS_LAST_MODIFIED_BY = SESSION_USER,
+          SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+  	where  ITEM = :aItem
+  	 and LOGICAL_PLANT = :aLogicPlant
+  	 and PHYSICAL_PLANT = :aPhysicPlant;
+  	 
+  	insert into "SZEBGVMI"."UI_CONTROL_CYCLE_LOG"
+  	(ITEM, LOGICAL_PLANT, PHYSICAL_PLANT, WAREHOUSE_NUMBER, STORAGE_LOCATION, STORAGE_TYPE, STORAGE_BIN,SYS_SOURCE,
+  	AT_MODIFIED_BY,
+	AT_ACTION,
+	AT_MODIFIED_TIME
+  	)
+  	values
+  	(
+  	:aItem, :aLogicPlant, :aPhysicPlant, :aWareHouseNumber, :aStorageLocation, :aStorageType, :aStorageBin,'UI',
+  	 SESSION_USER,
+     'update',
+     CURRENT_DATE
+  	);
+  	 
+/*END*/
+ 	    aI_DETAIL := 'cdp.szebgvmi.procedures::updateUiCycleControl ('||:aItem||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures::updateUiCycleControl'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	 	      	   	  
+END;

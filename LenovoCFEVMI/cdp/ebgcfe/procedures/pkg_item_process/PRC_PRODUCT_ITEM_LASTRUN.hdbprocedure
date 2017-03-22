@@ -1,0 +1,675 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_item_process::PRC_PRODUCT_ITEM_LASTRUN" (
+  IN  p_in_lastrundate   TIMESTAMP,
+  OUT p_out_exitcode     INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_PRODUCT_ITEM_LASTRUN            
+*function   : Product Item Last Run
+*input      ：p_in_lastrundate : last run timestamp
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-02-10
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+  -- DATA
+  DECLARE    v_g_pkg_name        VARCHAR(30) := 'PKG_ITEM_PROCESS';   
+  DECLARE    v_prc_name          VARCHAR(50) := 'PRC_PRODUCT_ITEM_LASTRUN';
+  DECLARE    v_prc_full_name     VARCHAR(100) := :v_g_pkg_name || '.' || :v_prc_name;
+  DECLARE    logidi              INTEGER := 0;  
+  DECLARE    v_g_action_insert   VARCHAR(10) := 'INSERT';
+     
+  -- EXCEPTION
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+    --ROLLBACK;    
+     /* -- originally commented out
+     UPDATE   conf_sync_lastrun
+        SET   ENDDATE = SYSDATE, returncode = -1
+      WHERE   pkgname = v_g_pkg_name AND progname = v_prc_name;
+
+     COMMIT;*/    
+    p_out_exitcode := ::SQL_ERROR_CODE;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+									I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+									I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) ); 
+	--COMMIT;    							   
+  END;    
+  
+  -- PROCESS LOGIC  
+  p_out_exitcode := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:v_prc_full_name,I_MODULE=>'EBGCFE');     
+  --COMMIT;   
+
+  DELETE FROM mid_item;
+  DELETE FROM mid_item_list;
+
+  -- add by lidm1 PBI000000019858 to fix item attribute user wrong plat issue
+  INSERT INTO mid_item_list (item)
+     SELECT item
+       FROM z_pcdw_item zp
+      WHERE zp.sys_last_modified_date >= :p_in_lastrundate;
+
+  ---- Insert item master data from Z_PCDW_ITEM into MID_ITEM. 
+  -- Priority: [LENGTH (svprodh) >= 7] > [LENGTH (NVL (svprodh, '0')) < 7]; Plant type priority: PLANT > DC > HUB_PLANT
+  -- Priority means: if item master is found in higher priority step, it should not be duplicated in lower priority step
+  INSERT INTO mid_item (product_group,
+                          ecc_prod_family,
+                          asp_prd_family,
+                          machine_type,
+                          trmodel,
+                          item,
+                          item_desc,
+                          prod_h,
+                          item_type,
+                          sys_last_modified_date,
+                          sys_last_modified_by,
+                          geo,
+                          subgeo,
+                          country,
+                          commodity_code,
+                          hy_family,
+                          stdpd,
+                          beskz,
+                          schgt,
+                          mtart,
+                          action,
+                          eol_status,
+                          bismt,
+                          svprodh,
+                          ccprodh,
+                          brgew,
+                          gewei,
+                          custommodelflag,
+                          basewarranty,
+                          ZLCOD,
+                          ZUCOD,
+                          strgr,
+                          issbb,
+                          zeinr,
+                          priority,
+                          x_entity_type,
+                          x_cofcat,
+                          x_specmoddesg,
+                          x_ww_annc_date,
+                          x_ww_withdraw_date,
+                          x_cofsubcat)
+     SELECT DISTINCT conf1.product_group,
+                     zp.prodfamily AS ecc_prod_family,
+                     zp.prodfamily AS asp_prd_family,
+                     SUBSTR (zp.prodh, 12, 4) AS machine_type,
+                     SUBSTR (zp.prodh, 18, 1) AS trmodel,
+                     zp.item,
+                     REPLACE (zp.maktx, ',', ' '),
+                     zp.prodh,
+                     NULL AS item_type,
+                     CURRENT_TIMESTAMP,   
+                     :v_prc_full_name,
+                     zp.em_geo,
+                     zp.em_subgeo,
+                     zp.em_country,
+                     zp.stawn,
+                     zp.extwg,
+                     zp.stdpd,
+                     zp.beskz,
+                     zp.schgt,
+                     zp.mtart,
+                     :v_g_action_insert,
+                     'OL' AS eol_status,
+                     zp.bismt,
+                     zp.svprodh,
+                     zp.ccprodh,
+                     zp.brgew,
+                     zp.gewei,
+                     zp.custommodelflag,
+                     zp.basewarranty,
+                     zp.ZLCOD,
+                     zp.ZUCOD,
+                     zp.strgr,
+                     zp.issbb,
+                     upper(zp.zeinr),
+                     conf1.priority,
+                     zp.x_entity_type,
+                     zp.x_cofcat,
+                     zp.x_specmoddesg,
+                     zp.x_ww_annc_date,
+                     zp.x_ww_withdraw_date,
+                     zp.x_cofsubcat
+       FROM z_pcdw_item zp, conf_plant_bugrp_mapping conf1
+      WHERE     zp.siteid = conf1.plant
+            AND conf1.plant_type = 'PLANT'
+            AND (   zp.prodh IS NOT NULL
+                 OR LENGTH (zp.svprodh) >= 7
+                 OR zp.ccprodh IS NOT NULL)
+            AND EXISTS
+                   (SELECT 1
+                      FROM mid_item_list ls
+                     WHERE ls.item = zp.item);
+
+  --COMMIT;    
+
+  INSERT INTO mid_item (product_group,
+                          ecc_prod_family,
+                          asp_prd_family,
+                          machine_type,
+                          trmodel,
+                          item,
+                          item_desc,
+                          prod_h,
+                          item_type,
+                          sys_last_modified_date,
+                          sys_last_modified_by,
+                          geo,
+                          subgeo,
+                          country,
+                          commodity_code,
+                          hy_family,
+                          stdpd,
+                          beskz,
+                          schgt,
+                          mtart,
+                          action,
+                          eol_status,
+                          bismt,
+                          svprodh,
+                          ccprodh,
+                          brgew,
+                          gewei,
+                          custommodelflag,
+                          basewarranty,
+                          ZLCOD,
+                          ZUCOD,
+                          strgr,
+                          issbb,
+                          zeinr,
+                          priority,
+                          x_entity_type,
+                          x_cofcat,
+                          x_specmoddesg,
+                          x_ww_annc_date,
+                          x_ww_withdraw_date,
+                          x_cofsubcat)
+     SELECT DISTINCT conf1.product_group,
+                     zp.prodfamily AS ecc_prod_family,
+                     zp.prodfamily AS asp_prd_family,
+                     SUBSTR (zp.prodh, 12, 4) AS machine_type,
+                     SUBSTR (zp.prodh, 18, 1) AS trmodel,
+                     zp.item,
+                     REPLACE (zp.maktx, ',', ' '),
+                     zp.prodh,
+                     NULL AS item_type,
+                     CURRENT_TIMESTAMP,   
+                     :v_prc_full_name,
+                     zp.em_geo,
+                     zp.em_subgeo,
+                     zp.em_country,
+                     zp.stawn,
+                     zp.extwg,
+                     zp.stdpd,
+                     zp.beskz,
+                     zp.schgt,
+                     zp.mtart,
+                     :v_g_action_insert,
+                     'OL' AS eol_status,
+                     zp.bismt,
+                     zp.svprodh,
+                     zp.ccprodh,
+                     zp.brgew,
+                     zp.gewei,
+                     zp.custommodelflag,
+                     zp.basewarranty,
+                     zp.ZLCOD,
+                     zp.ZUCOD,
+                     zp.strgr,
+                     zp.issbb,
+                     upper(zp.zeinr),
+                     conf1.priority,
+                     zp.x_entity_type,
+                     zp.x_cofcat,
+                     zp.x_specmoddesg,
+                     zp.x_ww_annc_date,
+                     zp.x_ww_withdraw_date,
+                     zp.x_cofsubcat
+       FROM z_pcdw_item zp, conf_plant_bugrp_mapping conf1
+      WHERE     zp.siteid = conf1.plant
+            AND conf1.plant_type = 'DC'
+            AND (   zp.prodh IS NOT NULL
+                 OR LENGTH (zp.svprodh) >= 7
+                 OR zp.ccprodh IS NOT NULL)
+            AND EXISTS
+                   (SELECT 1
+                      FROM mid_item_list ls
+                     WHERE ls.item = zp.item)
+            AND NOT EXISTS
+                   (SELECT NULL
+                      FROM mid_item a
+                     WHERE zp.item = a.item);
+
+  --COMMIT;     
+
+  ----plant='hub_plant'date  insert  into  z_mid_item
+  INSERT INTO mid_item (product_group,
+                          ecc_prod_family,
+                          asp_prd_family,
+                          machine_type,
+                          trmodel,
+                          item,
+                          item_desc,
+                          prod_h,
+                          item_type,
+                          sys_last_modified_date,
+                          sys_last_modified_by,
+                          geo,
+                          subgeo,
+                          country,
+                          commodity_code,
+                          hy_family,
+                          stdpd,
+                          beskz,
+                          schgt,
+                          mtart,
+                          action,
+                          eol_status,
+                          bismt,
+                          svprodh,
+                          ccprodh,
+                          brgew,
+                          gewei,
+                          custommodelflag,
+                          basewarranty,
+                          ZLCOD,
+                          ZUCOD,
+                          strgr,
+                          issbb,
+                          zeinr,
+                          priority,
+                          x_entity_type,
+                          x_cofcat,
+                          x_specmoddesg,
+                          x_ww_annc_date,
+                          x_ww_withdraw_date,
+                          x_cofsubcat)
+     SELECT DISTINCT 
+                     conf1.product_group,
+                     zp.prodfamily AS ecc_prod_family,
+                     zp.prodfamily AS asp_prd_family,
+                     SUBSTR (zp.prodh, 12, 4) AS machine_type,
+                     SUBSTR (zp.prodh, 18, 1) AS trmodel,
+                     zp.item,
+                     REPLACE (zp.maktx, ',', ' '),
+                     zp.prodh,
+                     NULL AS item_type,
+                     CURRENT_TIMESTAMP,   
+                     :v_prc_full_name,
+                     zp.em_geo,
+                     zp.em_subgeo,
+                     zp.em_country,
+                     zp.stawn,
+                     zp.extwg,
+                     zp.stdpd,
+                     zp.beskz,
+                     zp.schgt,
+                     zp.mtart,
+                     :v_g_action_insert,
+                     'OL' AS eol_status,
+                     zp.bismt,
+                     zp.svprodh,
+                     zp.ccprodh,
+                     zp.brgew,
+                     zp.gewei,
+                     zp.custommodelflag,
+                     zp.basewarranty,
+                     zp.ZLCOD,
+                     zp.ZUCOD,
+                     zp.strgr,
+                     zp.issbb,
+                     upper(zp.zeinr),
+                     conf1.priority,
+                     zp.x_entity_type,
+                     zp.x_cofcat,
+                     zp.x_specmoddesg,
+                     zp.x_ww_annc_date,
+                     zp.x_ww_withdraw_date,
+                     zp.x_cofsubcat
+       FROM z_pcdw_item zp, conf_plant_bugrp_mapping conf1
+      WHERE     zp.siteid = conf1.plant
+            AND 
+                conf1.plant_type = 'HUB_PLANT'
+            AND (   zp.prodh IS NOT NULL
+                 OR LENGTH (zp.svprodh) >= 7
+                 OR zp.ccprodh IS NOT NULL)
+            AND EXISTS
+                   (SELECT 1
+                      FROM mid_item_list ls
+                     WHERE ls.item = zp.item)
+            AND NOT EXISTS
+                   (SELECT NULL
+                      FROM mid_item a
+                     WHERE zp.item = a.item);
+
+  --COMMIT;     
+
+  INSERT INTO mid_item (product_group,
+                          ecc_prod_family,
+                          asp_prd_family,
+                          machine_type,
+                          trmodel,
+                          item,
+                          item_desc,
+                          prod_h,
+                          item_type,
+                          sys_last_modified_date,
+                          sys_last_modified_by,
+                          geo,
+                          subgeo,
+                          country,
+                          commodity_code,
+                          hy_family,
+                          stdpd,
+                          beskz,
+                          schgt,
+                          mtart,
+                          action,
+                          eol_status,
+                          bismt,
+                          svprodh,
+                          ccprodh,
+                          brgew,
+                          gewei,
+                          custommodelflag,
+                          basewarranty,
+                          ZLCOD,
+                          ZUCOD,                        
+                          strgr,
+                          issbb,
+                          zeinr,
+                          priority,
+                          x_entity_type,
+                          x_cofcat,
+                          x_specmoddesg,
+                          x_ww_annc_date,
+                          x_ww_withdraw_date,
+                          x_cofsubcat)
+     SELECT DISTINCT conf1.product_group,
+                     zp.prodfamily AS ecc_prod_family,
+                     zp.prodfamily AS asp_prd_family,
+                     SUBSTR (zp.prodh, 12, 4) AS machine_type,
+                     SUBSTR (zp.prodh, 18, 1) AS trmodel,
+                     zp.item,
+                     REPLACE (zp.maktx, ',', ' '),
+                     zp.prodh,
+                     NULL AS item_type,
+                     CURRENT_TIMESTAMP,   
+                     :v_prc_full_name,
+                     zp.em_geo,
+                     zp.em_subgeo,
+                     zp.em_country,
+                     zp.stawn,
+                     zp.extwg,
+                     zp.stdpd,
+                     zp.beskz,
+                     zp.schgt,
+                     zp.mtart,
+                     :v_g_action_insert,
+                     'OL' AS eol_status,
+                     zp.bismt,
+                     zp.svprodh,
+                     zp.ccprodh,
+                     zp.brgew,
+                     zp.gewei,
+                     zp.custommodelflag,
+                     zp.basewarranty,
+                     zp.ZLCOD,
+                     zp.ZUCOD,
+                     zp.strgr,
+                     zp.issbb,
+                     upper(zp.zeinr),
+                     conf1.priority,
+                     zp.x_entity_type,
+                     zp.x_cofcat,
+                     zp.x_specmoddesg,
+                     zp.x_ww_annc_date,
+                     zp.x_ww_withdraw_date,
+                     zp.x_cofsubcat
+       FROM z_pcdw_item zp, conf_plant_bugrp_mapping conf1
+      WHERE     zp.siteid = conf1.plant
+            AND conf1.plant_type = 'PLANT'
+            AND zp.prodh IS NULL            
+            AND LENGTH (IFNULL (zp.svprodh, '0')) < 7    
+            AND zp.ccprodh IS NULL
+            AND EXISTS
+                   (SELECT 1
+                      FROM mid_item_list ls
+                     WHERE ls.item = zp.item)
+            AND NOT EXISTS
+                   (SELECT NULL
+                      FROM mid_item a
+                     WHERE zp.item = a.item);
+
+  --COMMIT;     
+
+  INSERT INTO mid_item (product_group,
+                          ecc_prod_family,
+                          asp_prd_family,
+                          machine_type,
+                          trmodel,
+                          item,
+                          item_desc,
+                          prod_h,
+                          item_type,
+                          sys_last_modified_date,
+                          sys_last_modified_by,
+                          geo,
+                          subgeo,
+                          country,
+                          commodity_code,
+                          hy_family,
+                          stdpd,
+                          beskz,
+                          schgt,
+                          mtart,
+                          action,
+                          eol_status,
+                          bismt,
+                          svprodh,
+                          ccprodh,
+                          brgew,
+                          gewei,
+                          custommodelflag,
+                          basewarranty,
+                          ZLCOD,
+                          ZUCOD,
+                          strgr,
+                          issbb,
+                          zeinr,
+                          priority,
+                          x_entity_type,
+                          x_cofcat,
+                          x_specmoddesg,
+                          x_ww_annc_date,
+                          x_ww_withdraw_date,
+                          x_cofsubcat)
+     SELECT DISTINCT conf1.product_group,
+                     zp.prodfamily AS ecc_prod_family,
+                     zp.prodfamily AS asp_prd_family,
+                     SUBSTR (zp.prodh, 12, 4) AS machine_type,
+                     SUBSTR (zp.prodh, 18, 1) AS trmodel,
+                     zp.item,
+                     REPLACE (zp.maktx, ',', ' '),
+                     zp.prodh,
+                     NULL AS item_type,
+                     CURRENT_TIMESTAMP,   
+                     :v_prc_full_name,
+                     zp.em_geo,
+                     zp.em_subgeo,
+                     zp.em_country,
+                     zp.stawn,
+                     zp.extwg,
+                     zp.stdpd,
+                     zp.beskz,
+                     zp.schgt,
+                     zp.mtart,
+                     :v_g_action_insert,
+                     'OL' AS eol_status,
+                     zp.bismt,
+                     zp.svprodh,
+                     zp.ccprodh,
+                     zp.brgew,
+                     zp.gewei,
+                     zp.custommodelflag,
+                     zp.basewarranty,
+                     zp.ZLCOD,
+                     zp.ZUCOD,
+                     zp.strgr,
+                     zp.issbb,
+                     upper(zp.zeinr),
+                     conf1.priority,
+                     zp.x_entity_type,
+                     zp.x_cofcat,
+                     zp.x_specmoddesg,
+                     zp.x_ww_annc_date,
+                     zp.x_ww_withdraw_date,
+                     zp.x_cofsubcat
+       FROM z_pcdw_item zp, conf_plant_bugrp_mapping conf1
+      WHERE     zp.siteid = conf1.plant
+            AND conf1.plant_type = 'DC'
+            AND zp.prodh IS NULL
+            AND LENGTH (IFNULL (zp.svprodh, '0')) < 7    
+            AND zp.ccprodh IS NULL
+            AND EXISTS
+                   (SELECT 1
+                      FROM mid_item_list ls
+                     WHERE ls.item = zp.item)
+            AND NOT EXISTS
+                   (SELECT NULL
+                      FROM mid_item a
+                     WHERE zp.item = a.item);
+
+  --COMMIT;     
+
+  ---  prodh  and  SVPRODH  is  null date  insert  into  z_mid_item
+  INSERT INTO mid_item (product_group,
+                          ecc_prod_family,
+                          asp_prd_family,
+                          machine_type,
+                          trmodel,
+                          item,
+                          item_desc,
+                          prod_h,
+                          item_type,
+                          sys_last_modified_date,
+                          sys_last_modified_by,
+                          geo,
+                          subgeo,
+                          country,
+                          commodity_code,
+                          hy_family,
+                          stdpd,
+                          beskz,
+                          schgt,
+                          mtart,
+                          action,
+                          eol_status,
+                          bismt,
+                          svprodh,
+                          ccprodh,
+                          brgew,
+                          gewei,
+                          custommodelflag,
+                          basewarranty,
+                          ZLCOD,
+                          ZUCOD,
+                          strgr,
+                          issbb,
+                          zeinr,
+                          priority,
+                          x_entity_type,
+                          x_cofcat,
+                          x_specmoddesg,
+                          x_ww_annc_date,
+                          x_ww_withdraw_date,
+                          x_cofsubcat)
+     SELECT DISTINCT 
+                     conf1.product_group,
+                     zp.prodfamily AS ecc_prod_family,
+                     zp.prodfamily AS asp_prd_family,
+                     SUBSTR (zp.prodh, 12, 4) AS machine_type,
+                     SUBSTR (zp.prodh, 18, 1) AS trmodel,
+                     zp.item,
+                     REPLACE (zp.maktx, ',', ' '),
+                     zp.prodh,
+                     NULL AS item_type,
+                     CURRENT_TIMESTAMP,   
+                     :v_prc_full_name,
+                     zp.em_geo,
+                     zp.em_subgeo,
+                     zp.em_country,
+                     zp.stawn,
+                     zp.extwg,
+                     zp.stdpd,
+                     zp.beskz,
+                     zp.schgt,
+                     zp.mtart,
+                     :v_g_action_insert,
+                     'OL' AS eol_status,
+                     zp.bismt,
+                     zp.svprodh,
+                     zp.ccprodh,
+                     zp.brgew,
+                     zp.gewei,
+                     zp.custommodelflag,
+                     zp.basewarranty,
+                     zp.ZLCOD,
+                     zp.ZUCOD,
+                     zp.strgr,
+                     zp.issbb,
+                     upper(zp.zeinr),
+                     conf1.priority,
+                     zp.x_entity_type,
+                     zp.x_cofcat,
+                     zp.x_specmoddesg,
+                     zp.x_ww_annc_date,
+                     zp.x_ww_withdraw_date,
+                     zp.x_cofsubcat
+       FROM z_pcdw_item zp, conf_plant_bugrp_mapping conf1
+      WHERE     zp.siteid = conf1.plant
+            AND conf1.plant_type = 'HUB_PLANT'
+            AND zp.prodh IS NULL
+            AND LENGTH (IFNULL (zp.svprodh, '0')) < 7    
+            AND zp.ccprodh IS NULL
+            AND EXISTS
+                   (SELECT 1
+                      FROM mid_item_list ls
+                     WHERE ls.item = zp.item)
+            AND NOT EXISTS
+                   (SELECT NULL
+                      FROM mid_item a
+                     WHERE zp.item = a.item);
+    
+    
+    delete from mid_item a
+    where a.priority not in
+    (select min(b.priority) from mid_item b where a.item=b.item); -- added by FangYuan
+
+	UPDATE mid_item
+	   SET machine_type = NULL
+	 WHERE machine_type = ''; 
+	 
+
+  --COMMIT;     
+  p_out_exitcode := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_prc_full_name,I_MODULE=>'EBGCFE');   
+  --COMMIT;    --commented by leonard
+   /*     UPDATE   conf_sync_lastrun c1
+     SET   lastrundate = startdate, returncode = 0, ENDDATE = SYSDATE
+   WHERE   pkgname = v_g_pkg_name AND progname = v_prc_name;
+
+  COMMIT;*/
+END;

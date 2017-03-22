@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cube:cube xmlns:Cube="http://www.sap.com/ndb/BiModelCube.ecore" schemaVersion="1.5" id="AN_MO_CUTBACK_MATERIAL_RETURN" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled">
+  <descriptions defaultDescription="AN_MO_CUTBACK_MATERIAL_RETURN"/>
+  <localVariables/>
+  <privateMeasureGroup id="MeasureGroup">
+    <attributes>
+      <attribute id="DEST_STORAGE_BIN" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_BIN"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="DEST_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_LOC" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_LOC"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="DEST_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_TYPE" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_TYPE"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="DEST_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="PART_NUMBER" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PART_NUMBER"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="MATNR"/>
+      </attribute>
+      <attribute id="MO_ID" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MO_ID"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="PRODUCTIONORDID"/>
+      </attribute>
+      <attribute id="PULL_HEADER_ID" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_HEADER_ID"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="PULL_HEADER_ID"/>
+      </attribute>
+      <attribute id="PULL_LINE_ID" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_LINE_ID"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="PULL_LINE_ID"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_BIN" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SRC_STORAGE_BIN"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="SRC_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_LOC" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SRC_STORAGE_LOC"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="SRC_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_TYPE" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SRC_STORAGE_TYPE"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="SRC_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="STATUS" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="STATUS"/>
+      </attribute>
+      <attribute id="SYS_TIMESTAMP" hidden="true" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="SYS_TIMESTAMP"/>
+      </attribute>
+      <attribute id="LOGICAL_PLANT" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOGICAL_PLANT"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="WERKS"/>
+      </attribute>
+      <attribute id="REASON_CODE" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="REASON_CODE"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="REASON_CODE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="RETURN_DATE" hidden="false" order="13" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="RETURN_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;SYS_TIMESTAMP&quot;,1)) +'-' + lpad(string(component(&quot;SYS_TIMESTAMP&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;SYS_TIMESTAMP&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="RETURN_TIME" hidden="false" order="14" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="RETURN_TIME"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>lpad(string(component(&quot;SYS_TIMESTAMP&quot;,4)) ,2,'0') +':' + lpad(string(component(&quot;SYS_TIMESTAMP&quot;,5)) ,2,'0')+':'+lpad(string(component(&quot;SYS_TIMESTAMP&quot;,6)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies>
+        <tableProxy centralTable="true">
+          <table schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL"/>
+        </tableProxy>
+      </tableProxies>
+      <joins/>
+      <layout>
+        <shapes>
+          <shape modelObjectName="EXCESS_PULL" modelObjectNameSpace="MXEBGVMI" modelObjectType="catalog">
+            <upperLeftCorner x="70" y="30"/>
+          </shape>
+        </shapes>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="MATNR_CUTBACK_QTY" order="17" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MATNR_CUTBACK_QTY"/>
+        <measureMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="MATNR_CUTBACK_QTY"/>
+      </measure>
+      <measure id="PULL_QTY" order="18" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="PULL_QTY"/>
+        <measureMapping schemaName="MXEBGVMI" columnObjectName="EXCESS_PULL" columnName="PULL_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <sharedDimensions/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="MEASURE_GROUP" modelObjectType="repository">
+          <upperLeftCorner x="300" y="200"/>
+        </shape>
+        <shape modelObjectName="LogicalView" modelObjectNameSpace="MeasureGroup" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateMeasureGroup>
+</Cube:cube>

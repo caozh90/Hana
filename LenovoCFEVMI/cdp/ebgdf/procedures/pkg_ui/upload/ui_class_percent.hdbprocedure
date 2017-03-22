@@ -1,0 +1,113 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_class_percent"( 
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int	, 
+	IN ABCD_T varchar(30),
+	IN A DECIMAL(4,2),
+	IN B DECIMAL(4,2),
+	IN C DECIMAL(4,2)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/***************************** 
+*name        :    ui_class_percent
+*function    :               
+*input       :    
+*output      :              
+*author      :    bianzh1
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2015.09.11
+ *****************************/
+	AS
+	path varchar(100):='cdp.egbdf.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_class_percent';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	table_name varchar(1000) := 'UI_CLASS_PERCENT';
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_class_percent_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:ABCD_T,:A,:B,:C);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_class_percent_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:ABCD_T,:A,:B,:C);
+    END; 
+       
+	--procedure begin
+
+	business_code := :SEQ;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_UTCTIMESTAMP INTO create_time FROM DUMMY;
+
+	
+	--validate key
+	select count(1) into n from "EBGDF"."UI_CLASS_PERCENT" 
+	where ABCD_T = :ABCD_T; 
+
+	if n>0 then
+
+	ELSEIF n=0 THEN
+		INSERT INTO "EBGDF"."UI_CLASS_PERCENT"( ABCD_T,
+											   A,
+											   B,
+											   C,
+											   CREATE_TS,
+											   CREATE_USERID,
+											   LAST_UPDATE_TS,
+											   LAST_UPDATE_USERID )
+	 	VALUES( :ABCD_T,
+				:A,
+				:B,
+				:C,
+			    :create_time,
+			    :currentUser,
+			    :create_time,
+			    :currentUser );
+
+	 	--insert操作需要写入日志
+		insert into "EBGDF"."UI_CLASS_PERCENT_LOG"(
+											ABCD_T,
+											A,
+											B,
+											C,
+											CREATE_TS,
+										    CREATE_USERID,
+										    LAST_UPDATE_TS,
+										    LAST_UPDATE_USERID,
+											AT_MODIFIED_BY,
+											AT_ACTION,
+											AT_MODIFIED_ON,
+											AT_MILLIS
+	 ) VALUES(
+	        :ABCD_T,
+			:A,
+			:B,
+			:C,
+		    :create_time,
+		    :currentUser,
+		    :create_time,
+		    :currentUser,
+	 		:create_time,
+	 		'create',
+	 		:create_time,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3'))); 			 	
+	END IF;
+		
+		call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+END;

@@ -1,0 +1,140 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xattc::updateUiXattc" (
+		 IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XATTC_T",
+		 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XATTC_T",
+		 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA
+/************************************************************************
+*name      :                     updateUiXattc
+*function    :               
+*input     ：               newInfo
+*output     :    errorInfo            
+*author     :                     Eric Zhou
+*CreateDate    :                  2014.12.18
+*UpdateDate  :        
+*************************************************************************/ 	
+	AS
+	   aI_DETAIL NVARCHAR(1000) :='';
+	   alogide INTEGER :=0;
+	   resourceExists BIGINT;
+	   privilegeExists  NVARCHAR(300)  ; 
+	   
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xattc::updateUiXattc error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::updateUiXattc'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_xattc::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+    
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::updateUiXattc'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+SELECT COUNT(*) into resourceExists FROM :oldInfo a,:newInfo b where a.M1 = b.M1 and a.M2 = b.M2 and a.M3 = b.M3 and a.M4 = b.M4
+			and a.M5 = b.M5 and a.M6 = b.M6 and a.M7 = b.M7 and a.M8 = b.M8
+			and a.M9 = b.M9 and a.M10 = b.M10 and a.M11 = b.M11 and a.M12 = b.M12;
+if resourceExists > 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;	     		
+	     	return;*/
+	     	
+           -- SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before';
+           return;
+end if;			
+--update into UI_GROUP_COST table
+update "EBGCFE"."UI_XATTC" a set (a.M1,a.M2,a.M3,a.M4,a.M5,a.M6,a.M7,a.M8,a.M9,a.M10,a.M11,a.M12,
+				a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY) = 
+				(b.M1,b.M2,b.M3,b.M4,b.M5,b.M6,b.M7,b.M8,b.M9,b.M10,b.M11,b.M12,CURRENT_TIMESTAMP,SESSION_USER)
+		FROM :newInfo b where a.PRODUCT_GROUP = b.PRODUCT_GROUP and a.BRAND = b.BRAND and a.FAMILY = b.FAMILY and 
+								a.TBA_TYPE = b.TBA_TYPE and a.PLANT = b.PLANT and A.SUBGEO = b.SUBGEO;
+--insert log table
+insert into "EBGCFE"."UI_XATTC_LOG"(
+	 "PRODUCT_GROUP",
+	 "FAMILY",
+	 "TBA_TYPE",
+	 "BRAND",
+	 "SUBGEO",
+	 "M1",
+	 "M2",
+	 "M3",
+	 "M4",
+	 "M5",
+	 "M6",
+	 "M7",
+	 "M8",
+	 "M9",
+	 "M10",
+	 "M11",
+	 "M12",
+	 "PLANT",
+	 "ACTION",
+	 "SYS_CREATED_DATE",
+	 "SYS_CREATED_BY",
+	 "AT_MODIFIED_ON",
+	 "AT_MILLIS"
+	 )SELECT 
+	 		a."PRODUCT_GROUP",
+	 		a."FAMILY",
+	 		a."TBA_TYPE",
+	 		a."BRAND",
+	 		a."SUBGEO",
+	 		a."M1",
+	 		a."M2",
+	 		a."M3",
+	 		a."M4",
+	 		a."M5",
+	 		a."M6",
+	 		a."M7",
+	 		a."M8",
+	 		a."M9",
+	 		a."M10",
+	 		a."M11",
+		 	a."M12",
+	 		a."PLANT",
+	 		'update',
+	 		CURRENT_TIMESTAMP,
+	 		SESSION_USER,
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a;
+
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::updateUiXattc successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xattc::updateUiXattc'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_UI_STDCOST_MONTHLY" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_UI_STDCOST_DAILY"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="UI_STDCOST_MONTHLY" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_STDCOST_MONTHLY"/>
+    </DataSource>
+    <DataSource id="UI_STDCOST_MONTHLY_HIS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_STDCOST_MONTHLY_HIS"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="STDCOST"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#UI_STDCOST_MONTHLY">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STDCOST" source="STDCOST"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="STDCOST"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#UI_STDCOST_MONTHLY_HIS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STDCOST" source="STDCOST"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="STDCOST"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STDCOST" source="STDCOST"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STDCOST" source="STDCOST"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Union_1">
+    <attributes>
+      <attribute id="CYCLE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Union_1" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Union_1" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="ITEM" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping columnObjectName="Union_1" columnName="ITEM"/>
+      </attribute>
+      <attribute id="PLANT" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLANT"/>
+        <keyMapping columnObjectName="Union_1" columnName="PLANT"/>
+      </attribute>
+      <attribute id="STDCOST" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STDCOST"/>
+        <keyMapping columnObjectName="Union_1" columnName="STDCOST"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE_RAW" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE_RAW"/>
+        <keyMapping columnObjectName="Union_1" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Union_1" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="SYS_LAST_MODIFIED_DATE" hidden="false" order="1" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_LAST_MODIFIED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="99" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="281"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="281"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,280 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bom" ( 
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int	,
+	IN CYCLE NVARCHAR(40),
+	IN PRODUCT_GROUP NVARCHAR(10),
+	IN OEM_NAME NVARCHAR(40),
+	IN ITEM NVARCHAR(20),
+	IN BS_PART NVARCHAR(20),
+	IN PART_QTY DECIMAL(15,4)
+
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      ui_pm_bom
+*function    :      upload data  
+*input       ：              error_message&business_name etc
+*output      :                
+*author      :      leon Bian
+*CreateDate  :      2015.10.10
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_pm_bom';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	table_name varchar(1000) := 'UI_PM_BOM';
+	validate int;
+	PRODUCT_GROUP NVARCHAR(10) :='EBG';
+	ITEM_DESC varchar(200);
+	ITEM_TYPE varchar(40);
+	COMMODITY varchar(40);
+	PART_DESC varchar(200);
+BEGIN
+	--exception     
+--    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+--    DECLARE EXIT HANDLER FOR no_data_found   
+--     BEGIN      
+--     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bom_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+--			:CYCLE,:PRODUCT_GROUP,:OEM_NAME,:ITEM,:BS_PART,:PART_QTY);
+--     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bom_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:CYCLE,:PRODUCT_GROUP,:OEM_NAME,:ITEM,:BS_PART,:PART_QTY);
+    END; 
+       
+	--procedure begin
+
+	business_code := :SEQ;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	--validate CYCLE
+	IF :CYCLE <> 'CURRENT' THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bom_err"
+			('CYCLE MUST BE "CURRENT"',:business_name,:SEQ,:position,
+			 :CYCLE,:PRODUCT_GROUP,:OEM_NAME,:ITEM,:BS_PART,:PART_QTY);
+			 	 --ERR_LOG
+	RETURN;
+	END IF ;
+	
+	--validate PRODUCT_GROUP
+	IF :PRODUCT_GROUP <> 'EBG' THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bom_err"
+			('PRODUCT_GROUP MUST BE "EBG"',:business_name,:SEQ,:position,
+			 :CYCLE,:PRODUCT_GROUP,:OEM_NAME,:ITEM,:BS_PART,:PART_QTY);
+			 	 --ERR_LOG
+	RETURN;
+	END IF ;
+	
+	--OEM_NAME
+	select count(1) into validate FROM conf_parameters WHERE PVALUE = :OEM_NAME AND pdomain = 'PRICE_MASK' and pname = 'OEM_NAME'; 
+	IF :validate = 0 THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bom_err"
+			('"OEM_NAME"::'||:OEM_NAME||' is illegal',:business_name,:SEQ,:position,
+			 :CYCLE,:PRODUCT_GROUP,:OEM_NAME,:ITEM,:BS_PART,:PART_QTY);
+			 	 --ERR_LOG
+	RETURN;
+	END IF ;
+	
+	--ITEM
+	select count(1) into validate FROM UI_ITEM WHERE ITEM = :ITEM AND EOL_STATUS = 'OL'; 
+	IF :validate = 0 THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bom_err"
+			('"ITEM"::'||:ITEM||' is illegal',:business_name,:SEQ,:position,
+			 :CYCLE,:PRODUCT_GROUP,:OEM_NAME,:ITEM,:BS_PART,:PART_QTY);
+			 	 --ERR_LOG
+	RETURN;
+	END IF ;
+	
+	--B/S Part
+	select count(1) into validate FROM UI_ITEM WHERE ITEM = :BS_PART AND ITEM_TYPE in ('COMPONENT','OPTION');
+	IF :validate = 0 THEN
+		 call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bom_err"
+			('"BS_PART"::'||:BS_PART||' is illegal',:business_name,:SEQ,:position,
+			 :CYCLE,:PRODUCT_GROUP,:OEM_NAME,:ITEM,:BS_PART,:PART_QTY);
+			 	 --ERR_LOG
+	RETURN;
+	END IF ; 
+
+
+	--validate key
+	select count(1) into n from "EBGCFE"."UI_PM_BOM" 
+	where PRODUCT_GROUP = :PRODUCT_GROUP 
+	AND OEM_NAME = :OEM_NAME
+	AND ITEM = :ITEM
+	AND BS_PART = :BS_PART; 
+	
+	SELECT
+	(select ITEM_DESC from UI_ITEM WHERE ITEM = :ITEM AND PRODUCT_GROUP = :PRODUCT_GROUP),--ITEM_DESC
+	(select ITEM_TYPE from UI_ITEM WHERE ITEM = :ITEM AND PRODUCT_GROUP = :PRODUCT_GROUP),--ITEM_TYPE
+	(select COMMODITY from UI_PM_BS_PART WHERE BS_PART = :BS_PART AND PRODUCT_GROUP = :PRODUCT_GROUP and OEM_NAME = :OEM_NAME),--COMMODITY
+	(select ITEM_DESC from UI_ITEM WHERE ITEM = :BS_PART AND PRODUCT_GROUP = :PRODUCT_GROUP)--PART_DESC,
+	INTO ITEM_DESC,ITEM_TYPE,COMMODITY,PART_DESC
+	FROM DUMMY;	
+		   
+	if n>0 then
+		update "EBGCFE"."UI_PM_BOM" 
+		set	PART_QTY = :PART_QTY,
+			SYS_LAST_MODIFIED_BY = :currentUser,
+			SYS_LAST_MODIFIED_DATE =:create_time,
+			ACTION = 'update'
+		where PRODUCT_GROUP = :PRODUCT_GROUP 
+		AND OEM_NAME = :OEM_NAME
+		AND ITEM = :ITEM
+		AND BS_PART = :BS_PART; 
+	
+		--update操作需要写入日志
+		insert into "EBGCFE"."UI_PM_BOM_LOG"(
+							CYCLE,
+							PRODUCT_GROUP,
+							OEM_NAME,
+							ITEM,
+							ITEM_DESC,
+							ITEM_TYPE,
+							BS_PART,
+							COMMODITY,
+							PART_DESC,
+							PART_QTY,
+							ACTION,
+							STATUS,
+							CHANGE_ID,
+							CHANGE_ACTION,
+							SYS_CREATED_DATE,
+							SYS_CREATED_BY,
+							SYS_LAST_MODIFIED_DATE,
+							SYS_LAST_MODIFIED_BY,
+							AT_MODIFIED_BY,
+							AT_ACTION,
+							AT_MODIFIED_ON,
+							AT_MILLIS)
+		VALUES ( 
+			'CURRENT',
+		    'EBG',
+		    :OEM_NAME,
+			:ITEM,
+			:ITEM_DESC,
+			:ITEM_TYPE,
+			:BS_PART,
+			:COMMODITY,
+			:PART_DESC,
+			:PART_QTY,
+			'',--ACTION
+		    '',--STATUS
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+			SESSION_USER,
+	 		'update',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))); 	
+	ELSEIF n=0 THEN
+		INSERT INTO "EBGCFE"."UI_PM_BOM"(
+		 					CYCLE,
+							PRODUCT_GROUP,
+							OEM_NAME,
+							ITEM,
+							ITEM_DESC,
+							ITEM_TYPE,
+							BS_PART,
+							COMMODITY,
+							PART_DESC,
+							PART_QTY,
+							ACTION,
+							STATUS,
+							CHANGE_ID,
+							CHANGE_ACTION,
+							SYS_CREATED_DATE,
+							SYS_CREATED_BY,
+							SYS_LAST_MODIFIED_DATE,
+							SYS_LAST_MODIFIED_BY)
+			
+	 	VALUES(
+		 	   'CURRENT',
+			   :PRODUCT_GROUP,
+			   :OEM_NAME,
+			   :ITEM,
+			   :ITEM_DESC,
+			   :ITEM_TYPE,
+			   :BS_PART,
+			   :COMMODITY,
+			   :PART_DESC,
+			   :PART_QTY,
+			   'insert',--ACTION
+			   '',--STATUS
+			   '',--CHANGE_ID
+			   '',--CHANGE_ACTION
+			   CURRENT_TIMESTAMP,
+			   SESSION_USER,
+			   CURRENT_TIMESTAMP,
+			   SESSION_USER
+			   );
+	 	
+	 	--insert操作需要写入日志
+		insert into "EBGCFE"."UI_PM_BOM_LOG"(
+							CYCLE,
+							PRODUCT_GROUP,
+							OEM_NAME,
+							ITEM,
+							ITEM_DESC,
+							ITEM_TYPE,
+							BS_PART,
+							COMMODITY,
+							PART_DESC,
+							PART_QTY,
+							ACTION,
+							STATUS,
+							CHANGE_ID,
+							CHANGE_ACTION,
+							SYS_CREATED_DATE,
+							SYS_CREATED_BY,
+							SYS_LAST_MODIFIED_DATE,
+							SYS_LAST_MODIFIED_BY,
+							AT_MODIFIED_BY,
+							AT_ACTION,
+							AT_MODIFIED_ON,
+							AT_MILLIS)
+		VALUES ( 
+			'CURRENT',
+		    'EBG',
+		    :OEM_NAME,
+			:ITEM,
+			:ITEM_DESC,
+			:ITEM_TYPE,
+			:BS_PART,
+			:COMMODITY,
+			:PART_DESC,
+			:PART_QTY,
+			'',--ACTION
+		    '',--STATUS
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+			SESSION_USER,
+	 		'insert',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))); 	 			 	
+	END IF;
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+END;

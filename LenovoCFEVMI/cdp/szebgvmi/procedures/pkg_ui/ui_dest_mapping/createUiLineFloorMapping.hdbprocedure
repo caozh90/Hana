@@ -1,0 +1,118 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_dest_mapping::createUiLineFloorMapping" ( 
+		IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_LINE_FLOOR_MAPPING_T",
+		OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aDsLine NVARCHAR(200);
+		aPhysicPlant NVARCHAR(40);
+		aFloor NVARCHAR(20);
+		validate1 int:=1;
+		SYS_AUTH_ID nvarchar(50); -- add by Gavin
+		
+		resourceExists BIGINT;		
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.szebgvmi.procedures::createUiLineFloorMapping error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures::createUiLineFloorMapping'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'destinationmapping::createable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.szebgvmi.procedures::createUiLineFloorMapping'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+  
+  select 
+	DS_LINE,	
+    PHYSICAL_PLANT,
+    FLOOR
+  into 
+ 	aDsLine,
+ 	aPhysicPlant,
+	aFloor
+  from :newInfo;
+  
+  SELECT top 1 count(1) into resourceExists FROM "SZEBGVMI"."UI_LINE_FLOOR_MAPPING" A    
+     WHERE A.DS_LINE = :aDsLine
+          AND A.PHYSICAL_PLANT = :aPhysicPlant
+          AND A.FLOOR = :aFloor;
+   
+    if  :resourceExists > 0 
+    then
+	    errorInfo = select 400 as http_status_code, 
+	     		'the record exsits' error_message, 
+	     		'the record exsits' DETAIL from dummy;
+	     		
+	     	return;
+    end if;
+  
+  --PHYSICAL_PLANT，验证在表SITEMASTER中存在
+  select count(1) into validate1 from SZEBGVMI.CONF_SITEMASTER where PHYSICALPLANT = :aPhysicPlant ;
+  if validate1 <=0 then
+  		   errorInfo = select 400 as http_status_code, 
+	     		'"PHYSICAL_PLANT"::'||:aPhysicPlant||' is illegal' error_message, 
+	     		'the record exsits' DETAIL from dummy;
+	       return;
+  end if;
+   
+  --SYS_AUTH_ID:根据PHYSICAL_PLANT的值，在CONF_SITEMASTER中取到SITEID的值
+  select SITEID into SYS_AUTH_ID from SZEBGVMI.CONF_SITEMASTER where PHYSICALPLANT = :aPhysicPlant ;--add by Gavin
+   
+    
+  insert into "SZEBGVMI"."UI_LINE_FLOOR_MAPPING"
+  	(DS_LINE, PHYSICAL_PLANT, FLOOR,SYS_SOURCE,SYS_AUTH_ID,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE)
+  	values(:aDsLine, :aPhysicPlant, :aFloor,'UI',:SYS_AUTH_ID,
+  	SESSION_USER ,CURRENT_TIMESTAMP,SESSION_USER ,CURRENT_TIMESTAMP);
+  --insert log	
+  insert into "SZEBGVMI"."UI_LINE_FLOOR_MAPPING_LOG"
+  	(DS_LINE, PHYSICAL_PLANT, FLOOR,SYS_SOURCE,SYS_AUTH_ID,
+	 AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME)
+  	values(:aDsLine, :aPhysicPlant, :aFloor,'UI',:SYS_AUTH_ID,
+  	SESSION_USER ,'create',CURRENT_TIMESTAMP);
+  	
+  	    /*END*/
+ 	    aI_DETAIL := 'cdp.szebgvmi.procedures::createUiLineFloorMapping ('||:aDsLine||' ,) successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures::createUiLineFloorMapping'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	 	
+END;

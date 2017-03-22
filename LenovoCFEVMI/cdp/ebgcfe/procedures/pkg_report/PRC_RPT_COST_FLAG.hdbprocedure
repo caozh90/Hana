@@ -1,0 +1,261 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_COST_FLAG" (
+	IN p_in_cycle VARCHAR(40),
+	OUT p_out_exitcode  INTEGER,
+    OUT p_out_exitmess  VARCHAR(500) 
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS
+		v_g_pkg_name        VARCHAR(30)  := 'PKG_REPORT'; 
+		v_prc_name          VARCHAR(30)  := 'PRC_RPT_COST_FLAG';
+     	v_full_name         VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+       	logidi              INTEGER := 0;
+       	v_sql				VARCHAR(2000);
+       	v_tab_item 			TABLE(item VARCHAR(40)); 
+       	
+       	
+    
+BEGIN
+/***************************** 
+-- Author:      Jetbrains
+-- Create date: 2015-09-20
+-- Description: rpt_cost_flag 
+-- Modify [1]:  Jetbrains,20151105, update logic
+ *****************************/
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := SUBSTR(::SQL_ERROR_MESSAGE, 1, 500 );  
+ 	 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+ 	 	                                            I_LOGSID      => :logidi,
+ 	 	                                            I_EVENT_NAME  => :v_full_name,
+ 	 	                                            I_MODULE      => 'EBGCFE',
+		                                            I_MESSAGE     => 'ERROR',
+		                                            I_DETAIL      => TO_CHAR(::SQL_ERROR_CODE) || ':' ||
+                                                                     SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );                                   
+    END;
+    
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                 I_LOGSID     => :logidi,
+		                                         I_EVENT_NAME => :v_full_name,
+		                                         I_MODULE     => 'EBGCFE'); 
+		                                         
+	/*
+	clear all mid table
+	*/
+		
+	DELETE FROM mid_rpt_costflag;
+	DELETE FROM rpt_cost_flag WHERE cycle = p_in_cycle;
+	
+	exec 'commit';  
+
+	IF p_in_cycle ='CURRENT' THEN
+		--by sbb_type, vk='N/A'
+		INSERT INTO mid_rpt_costflag(cycle,product_group,vk,sbb,sbb_desc,sbb_type,cost_flag,sys_created_date,sys_created_by)
+		SELECT DISTINCT p_in_cycle,f.product_group,f.vk,i.item AS sbb, i.item_desc AS sbb_desc,f.sbb_type,f.cost_flag,CURRENT_TIMESTAMP AS sys_created_date,
+			v_full_name AS sys_created_by  FROM ui_item i,ui_costflag f 
+		WHERE f.sbb_type = SUBSTRING(i.item_desc,LOCATE(i.item_desc,' ')+1,LOCATE(SUBSTR_AFTER(i.item_desc,LEFT(i.item_desc,LOCATE(i.item_desc,' '))),' ')-1 )
+		  AND f.product_group = i.product_group
+	 	  AND f.sbb_type <> 'N/A'
+	 	  AND f.vk='N/A'
+	  	  AND i.item_type = 'SBB'
+	  	  AND i.cycle = p_in_cycle
+	  	  AND EXISTS (SELECT * FROM biz_fcsbbmap m WHERE m.idnrk = i.item);
+	 	
+			
+		update_vk = SELECT DISTINCT m.*,f.varcond,f.atnam FROM mid_rpt_costflag m,biz_fcsbbmap f
+		WHERE f.idnrk = m.sbb;
+		
+		DELETE FROM mid_rpt_costflag;
+		
+		INSERT INTO mid_rpt_costflag(cycle,product_group,vk,c,sbb,sbb_desc,sbb_type,cost_flag,sys_created_date,sys_created_by)
+		SELECT cycle,product_group,varcond,atnam,sbb,sbb_desc,sbb_type,cost_flag,sys_created_date,sys_created_by FROM :update_vk;
+		
+		EXEC 'commit';
+		
+		--by vk,sbb_type='N/A'
+		UPDATE mid_rpt_costflag m
+		set m.cost_flag = (SELECT f.cost_flag FROM ui_costflag f 
+					WHERE f.vk = m.vk
+					AND f.vk <> 'N/A'
+					AND f.sbb_type ='N/A'
+ 					AND f.product_group = m.product_group )
+		WHERE EXISTS
+			(SELECT NULL FROM ui_costflag f WHERE f.vk = m.vk AND f.vk <> 'N/A' AND f.product_group = m.product_group );
+			
+		
+		INSERT INTO mid_rpt_costflag (cycle,product_group,vk,cost_flag,sys_created_date,sys_created_by)
+		SELECT p_in_cycle,product_group,vk,cost_flag,CURRENT_TIMESTAMP AS sys_created_date,v_full_name AS sys_created_by 
+		FROM ui_costflag f 
+		WHERE NOT EXISTS (
+		  SELECT NULL FROM mid_rpt_costflag m WHERE f.vk = m.vk AND f.product_group = m.product_group )
+		  AND f.vk <> 'N/A' 
+		  AND f.sbb_type ='N/A' ;
+	
+		extend_sbb = SELECT DISTINCT m.*,f.idnrk,f.atnam FROM mid_rpt_costflag m,biz_fcsbbmap f
+		WHERE f.varcond = m.vk AND m.sbb IS NULL AND m.c IS NULL;
+		
+		DELETE FROM mid_rpt_costflag m WHERE m.sbb IS NULL AND m.c IS NULL;
+		
+		INSERT INTO mid_rpt_costflag(cycle,product_group,vk,c,sbb,cost_flag,sys_created_date,sys_created_by)
+		SELECT cycle,product_group,vk,atnam AS c,idnrk AS sbb,cost_flag,CURRENT_TIMESTAMP,v_full_name AS sys_created_by 
+		FROM :extend_sbb;		
+		
+		--get data from biz_fcsbbmap where varcond not exists mid table 
+		
+		INSERT INTO mid_rpt_costflag(cycle,product_group,vk,c,sbb,sbb_type,sys_created_date,sys_created_by)
+		SELECT DISTINCT p_in_cycle,f.product_group, f.varcond AS vk,f.atnam AS c,f.idnrk AS sbb, NULL AS sbb_type,
+			CURRENT_TIMESTAMP AS sys_created_date,v_full_name AS sys_created_by  
+		FROM biz_fcsbbmap f
+		WHERE NOT EXISTS (SELECT NULL FROM mid_rpt_costflag m WHERE m.vk = f.varcond 
+					AND m.product_group = f.product_group
+					AND m.cycle = f.cycle
+					AND m.sbb = f.idnrk
+					AND m.c = f.atnam
+					AND f.cycle = p_in_cycle)
+		  AND f.cycle = p_in_cycle;
+		  
+		--update sbb_desc and sbb_type
+		
+		UPDATE mid_rpt_costflag m
+		SET (sbb_desc,sbb_type)=
+			(SELECT item_desc,SUBSTRING(i.item_desc,LOCATE(i.item_desc,' ')+1,LOCATE(SUBSTR_AFTER(i.item_desc,LEFT(i.item_desc,LOCATE(i.item_desc,' '))),' ')-1 )
+		 		FROM ui_item i WHERE i.item=m.sbb 
+		 		AND i.product_group=m.product_group
+		 		AND i.cycle=m.cycle
+		 		AND i.cycle=p_in_cycle
+		 		AND i.item_type='SBB')
+		 WHERE m.sbb_desc IS NULL
+		   AND m.sbb IS NOT NULL
+		   AND m.cycle=p_in_cycle
+		   AND EXISTS(SELECT * FROM ui_item i WHERE i.item=m.sbb AND i.item_type='SBB' AND i.cycle=m.cycle
+		   		AND i.product_group=m.product_group AND i.cycle=p_in_cycle );
+		
+		
+	ELSE
+		--by sbb_type, vk='N/A'
+		INSERT INTO mid_rpt_costflag(cycle,product_group,vk,sbb,sbb_desc,sbb_type,cost_flag,sys_created_date,sys_created_by)
+		SELECT DISTINCT p_in_cycle,f.product_group,f.vk,i.item AS sbb, i.item_desc AS sbb_desc,f.sbb_type,f.cost_flag,CURRENT_TIMESTAMP AS sys_created_date,
+			v_full_name AS sys_created_by  FROM ui_item_his i,ui_costflag f 
+		WHERE f.sbb_type = SUBSTRING(i.item_desc,LOCATE(i.item_desc,' ')+1,LOCATE(SUBSTR_AFTER(i.item_desc,LEFT(i.item_desc,LOCATE(i.item_desc,' '))),' ')-1 )
+		  AND f.product_group = i.product_group
+	 	  AND f.sbb_type <> 'N/A'
+	 	  AND f.vk='N/A'
+	  	  AND i.item_type = 'SBB'
+	  	  AND i.cycle = p_in_cycle
+	  	  AND EXISTS (SELECT * FROM biz_fcsbbmap m WHERE m.idnrk = i.item);
+	  	  
+		exec 'commit'; 
+		
+	
+		update_vk = SELECT DISTINCT m.*,f.varcond,f.atnam FROM mid_rpt_costflag m,biz_fcsbbmap_his f
+		WHERE f.idnrk = m.sbb
+		  AND f.cycle = p_in_cycle
+		  AND f.product_group = m.product_group;
+		
+		DELETE FROM mid_rpt_costflag;
+		
+		INSERT INTO mid_rpt_costflag(cycle,product_group,vk,c,sbb,sbb_desc,sbb_type,cost_flag,sys_created_date,sys_created_by)
+		SELECT cycle,product_group,varcond,atnam,sbb,sbb_desc,sbb_type,cost_flag,sys_created_date,sys_created_by FROM :update_vk;
+		
+		EXEC 'commit';
+		
+		--by vk,sbb_type='N/A'
+		UPDATE mid_rpt_costflag m
+		set m.cost_flag = (SELECT f.cost_flag FROM ui_costflag f 
+					WHERE f.vk = m.vk
+					AND f.vk <> 'N/A'
+					AND f.sbb_type ='N/A'
+					AND f.product_group = m.product_group)
+		WHERE EXISTS
+			(SELECT NULL FROM ui_costflag f WHERE f.vk = m.vk AND f.vk <> 'N/A'
+					AND f.sbb_type ='N/A' AND f.product_group = m.product_group);
+			
+		exec 'commit'; 
+		
+		INSERT INTO mid_rpt_costflag (cycle,product_group,vk,cost_flag,sys_created_date,sys_created_by)
+		SELECT p_in_cycle,product_group,vk,cost_flag,CURRENT_TIMESTAMP AS sys_created_date,v_full_name AS sys_created_by 
+		FROM ui_costflag f 
+		WHERE NOT EXISTS (
+		SELECT NULL FROM mid_rpt_costflag m WHERE f.vk = m.vk AND f.product_group = m.product_group )
+		  AND f.vk <> 'N/A'
+		  AND f.sbb_type ='N/A' ;
+		
+		exec 'commit'; 
+		
+		
+		extend_sbb = SELECT DISTINCT m.*,f.idnrk,f.atnam FROM mid_rpt_costflag m,biz_fcsbbmap_his f
+		WHERE f.varcond = m.vk 
+		  AND f.cycle = m.cycle 
+		  AND f.product_group = m.product_group 
+		  AND (m.sbb IS NULL OR m.c IS NULL)
+		  AND f.cycle = p_in_cycle;
+		
+		DELETE FROM mid_rpt_costflag m WHERE m.sbb IS NULL OR m.c IS NULL;
+		
+		INSERT INTO mid_rpt_costflag(cycle,product_group,vk,c,sbb,cost_flag,sys_created_date,sys_created_by)
+		SELECT cycle,product_group,vk,atnam AS c,idnrk AS sbb,cost_flag,CURRENT_TIMESTAMP,v_full_name AS sys_created_by 
+		FROM :extend_sbb;
+
+		
+		-- get data from biz_fcsbbmap where varcond not exists mid table 
+		
+		INSERT INTO mid_rpt_costflag(cycle,product_group,vk,c,sbb,sbb_type,sys_created_date,sys_created_by)
+		SELECT DISTINCT p_in_cycle,'EBG' AS product_group, f.varcond AS vk,f.atnam AS c,f.idnrk AS sbb, NULL AS sbb_type,
+			CURRENT_TIMESTAMP AS sys_created_date,v_full_name AS sys_created_by  
+		FROM biz_fcsbbmap_his f
+		WHERE NOT EXISTS (SELECT NULL FROM mid_rpt_costflag m WHERE m.vk = f.varcond 
+					AND m.product_group = f.product_group
+					AND m.cycle = f.cycle
+					AND m.sbb = f.idnrk
+					AND m.c = f.atnam
+					AND f.cycle = p_in_cycle)
+		  AND f.cycle = p_in_cycle;	
+		
+		
+	    -- update sbb_desc and sbb_type
+		
+		UPDATE mid_rpt_costflag m
+		SET (sbb_desc,sbb_type)=
+			(SELECT item_desc,SUBSTRING(i.item_desc,LOCATE(i.item_desc,' ')+1,LOCATE(SUBSTR_AFTER(i.item_desc,LEFT(i.item_desc,LOCATE(i.item_desc,' '))),' ')-1 )
+		 		FROM ui_item_his i WHERE i.item=m.sbb 
+		 		AND i.product_group=m.product_group
+		 		AND i.cycle=m.cycle
+		 		AND i.cycle=p_in_cycle
+		 		AND i.item_type='SBB')
+		 WHERE m.sbb_desc IS NULL
+		   AND m.sbb IS NOT NULL
+		   AND m.cycle=p_in_cycle
+		   AND EXISTS(SELECT * FROM ui_item_his i WHERE i.item=m.sbb AND i.item_type='SBB' AND  i.cycle=m.cycle
+		   		AND i.product_group=m.product_group AND i.cycle=p_in_cycle);	
+	END IF;
+	
+	--set cost_flag = 'UNDEFINED' when cost_flag is null
+	
+	UPDATE mid_rpt_costflag
+	SET cost_flag = 'UNDEFINED'
+	WHERE cost_flag  IS NULL;
+	
+	--insert into rpt_cost_flag
+	
+	
+	INSERT INTO rpt_cost_flag(cycle,product_group,vk,c,sbb,sbb_desc,sbb_type,cost_flag,sys_created_date,sys_created_by)
+	SELECT cycle,product_group,vk,c,sbb,sbb_desc,sbb_type,cost_flag,sys_created_date,sys_created_by 
+	FROM mid_rpt_costflag;		
+	
+	  
+	EXEC 'commit';   
+	       
+    p_out_exitcode := 0;
+    p_out_exitmess := 'SUCCESSFUL';
+     
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  		                                         
+END;
+		               

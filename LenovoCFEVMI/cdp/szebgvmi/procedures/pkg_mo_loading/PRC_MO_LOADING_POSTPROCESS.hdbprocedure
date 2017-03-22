@@ -1,0 +1,75 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_mo_loading::PRC_MO_LOADING_POSTPROCESS" 
+(IN iv_id VARCHAR(10), OUT on_exitcode  DECIMAL)
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA  
+
+    /************************************************************************
+    *name      : PRC_MO_LOADING_POSTPROCESS              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141203                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  	
+	
+	
+	AS
+    gv_logic_name    VARCHAR2 (40)  := 'PKG_MO_LOADING';    
+    v_logic_proc_name   VARCHAR(40) := 'PRC_MO_LOADING_POSTPROCESS';
+    logidi integer:=0;
+BEGIN
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+          --ROLLBACK;
+         
+           on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+
+      on_exitcode := -20099;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                             I_DETAIL=>iv_id||'Start!');    
+   
+       UPDATE PCDW.ECC_MO_CUTBACK mc
+         SET status = NULL
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_MO mo
+                 WHERE mo.productionordid = mc.productionordid
+                   AND mo.werks = mc.werks
+                   AND mc.mo_cutback_time > mo.mo_load_time)
+         AND mc.status = 'HOLD';
+
+      UPDATE PCDW.ECC_MO_CUTBACK mc
+         SET status = 'SYSTEM'
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_MO mo
+                 WHERE mo.productionordid = mc.productionordid
+                   AND mo.werks = mc.werks
+                   AND mo.mo_load_time > mc.mo_cutback_time)
+         AND (mc.status = 'HOLD' OR mc.status IS NULL)
+         AND NOT EXISTS (SELECT 'x'
+                           FROM mid_mo_line mid
+                          WHERE mid.productionordid = mc.productionordid);
+
+      on_exitcode := 0;
+                                
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!');                                
+
+END;

@@ -1,0 +1,135 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::updateUiAdderConf" ( 
+        IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_ADDER_CONF_T"
+        ,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_ADDER_CONF_T"
+        ,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "EBGCFE"
+    AS
+    /************************************************************************
+    *name      :                     updateUiAdderConf
+    *function    :               
+    *input     ：               
+    *output     :                
+    *author     :                     Fangyuan
+    *CreateDate    :                  2014.12.12
+    *UpdateDate  :        
+    *************************************************************************/  
+        aI_DETAIL NVARCHAR(300) :='';   
+        alogide INTEGER :=0; 
+        
+        resourceExists integer;
+        privilegeExists  NVARCHAR(300)  ;
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+        aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::updateUiAdderConf error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+        
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+             I_TYPE=>'PROC_ERROR'   
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::updateUiAdderConf'
+            ,I_MODULE=>'EBGCFE'
+            ,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+            ,I_DETAIL=>:aI_DETAIL
+        );  
+ 
+        errorInfo = select 400 as http_status_code, 
+            'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+            aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_adder_conf::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+        I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::updateUiAdderConf'
+       ,I_MODULE=>'EBGCFE'
+    ); 
+    
+    SELECT top 1 count(1) into resourceExists FROM 
+    :newInfo A ,:oldInfo B   
+     WHERE A.ADDER_DESC = b.ADDER_DESC
+          AND A.ASP_PROD_FAMILY = b.ASP_PROD_FAMILY; 
+          
+       
+    
+    if  :resourceExists > 0 
+    then
+    	return;
+      -- return;--SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before';
+        
+    end if;
+    
+   UPDATE UI_ADDER_CONF a SET(a.ADDER_DESC,a.ASP_PROD_FAMILY,a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY)=
+    (b.ADDER_DESC,b.ASP_PROD_FAMILY,CURRENT_TIMESTAMP,SESSION_USER)
+    from :newInfo b 
+    where A.ADDER_NAME=B.ADDER_NAME;
+
+    INSERT INTO UI_ADDER_CONF_LOG
+    (
+	"PRODUCT_GROUP",
+	"ADDER_NAME",
+	"TBA_TYPE",
+	"ADDER_DESC",
+	"ASP_PROD_FAMILY",
+	"FLEXIBLE",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"ACTION",
+	"STATUS",
+	"CHANGE_ID",
+	"CHANGE_ACTION",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+    )
+    SELECT
+    "PRODUCT_GROUP",
+    "ADDER_NAME",
+    "TBA_TYPE",
+    "ADDER_DESC",
+    "ASP_PROD_FAMILY",
+    "FLEXIBLE",
+    "SYS_CREATED_DATE",
+    "SYS_CREATED_BY",
+    "SYS_LAST_MODIFIED_DATE",
+    "SYS_LAST_MODIFIED_BY",
+    "ACTION",
+    "STATUS",
+    "CHANGE_ID",
+    "CHANGE_ACTION",
+     SESSION_USER,
+     'UPDATE',
+     CURRENT_DATE,
+     TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))    
+    FROM  UI_ADDER_CONF a
+    WHERE EXISTS
+    (SELECT 1 FROM :oldInfo b
+    where A.ADDER_NAME=B.ADDER_NAME
+    );  
+    
+        /*END*/
+        aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::updateUiAdderConf successfully created . ';
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+            I_TYPE=>'PROC_END'  
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::updateUiAdderConf'
+            ,I_MODULE=>'EBGCFE'
+            ,I_DETAIL=>:aI_DETAIL
+        );  
+END;

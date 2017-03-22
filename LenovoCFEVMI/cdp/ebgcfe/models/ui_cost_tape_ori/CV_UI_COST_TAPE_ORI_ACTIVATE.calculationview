@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_UI_COST_TAPE_ORI_ACTIVATE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_COST_TAPE_ORI_ACTIVATE"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="UI_COST_TAPE_ORI" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_COST_TAPE_ORI"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="PART_NUMBER"/>
+        <viewAttribute id="MFG_PLANT"/>
+        <viewAttribute id="COST_ELEM"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#UI_COST_TAPE_ORI">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PART_NUMBER" source="PART_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MFG_PLANT" source="MFG_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COST_ELEM" source="COST_ELEM"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="CYCLE" order="1" attributeHierarchyActive="false" displayAttribute="false" key="true">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="2" attributeHierarchyActive="false" displayAttribute="false" key="true">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="PART_NUMBER" order="3" attributeHierarchyActive="false" displayAttribute="false" key="true">
+        <descriptions defaultDescription="PART_NUMBER"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PART_NUMBER"/>
+      </attribute>
+      <attribute id="MFG_PLANT" order="4" attributeHierarchyActive="false" displayAttribute="false" key="true">
+        <descriptions defaultDescription="MFG_PLANT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MFG_PLANT"/>
+      </attribute>
+      <attribute id="COST_ELEM" order="5" attributeHierarchyActive="false" displayAttribute="false" key="true">
+        <descriptions defaultDescription="COST_ELEM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="COST_ELEM"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="210"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,133 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::updateUiForceItemType" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FROCE_ITEM_TYPE"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FROCE_ITEM_TYPE"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aProduct_group NVARCHAR(10);
+		aPart NVARCHAR(10);
+		aItem_type NVARCHAR(100); 
+	    aEol_status NVARCHAR(20);
+	    
+		resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::updateUiForceItemType error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::updateUiForceItemType'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_force_item_type::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::updateUiForceItemType'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+
+select
+    ITEM_TYPE,
+    EOL_STATUS    
+  into  	
+	aItem_type,
+	aEol_status	
+  from :newInfo;
+ 
+ 
+ select
+    PART,
+    PRODUCT_GROUP
+  into  	
+ 	aPart,
+ 	aProduct_group
+  from :oldInfo;
+  
+  	SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_FORCEITEMTYPE" A    
+     WHERE A.ITEM_TYPE = :aItem_type          
+          AND A.PART = :aPart
+          AND A.EOL_STATUS = :aEol_status
+          AND A.PRODUCT_GROUP = :aProduct_group;
+   
+    if  :resourceExists > 0 
+    then
+	   /*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;*/
+	    return;--SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before'; 
+    end if;
+     
+    update "EBGCFE"."UI_FORCEITEMTYPE" set
+    	ITEM_TYPE = :aItem_type,
+    	EOL_STATUS = :aEol_status,
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user
+    where
+    	PART = :aPart
+    	AND PRODUCT_GROUP = :aProduct_group;
+
+/*put operation to log table*/     	
+ insert into "EBGCFE"."UI_FORCEITEMTYPE_LOG"
+    (
+    	PRODUCT_GROUP,	
+	    PART,	
+    	ITEM_TYPE,
+    	EOL_STATUS,    	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    select 
+        a.PRODUCT_GROUP,	
+	    a.PART,	
+    	a.ITEM_TYPE,
+    	a.EOL_STATUS,
+    	current_date,    	
+    	'update',
+    	session_user,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    FROM :oldInfo a;  	  
+/*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::updateUiForceItemType ('||:aPart||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::updateUiForceItemType'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

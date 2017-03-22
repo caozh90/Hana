@@ -1,0 +1,23 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_purchase_proportion::clearBuffer" ( 
+IN	business_code	nvarchar(20)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+BEGIN
+	--exception     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	select ::SQL_ERROR_MESSAGE errMsg from dummy;
+    END; 
+    --exception 
+
+/**
+***	清空UI_PURCHASE_PROP_VMI_BUFFER表中的数据
+**/
+
+delete from "MXEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+where business_code =:business_code;
+
+END;

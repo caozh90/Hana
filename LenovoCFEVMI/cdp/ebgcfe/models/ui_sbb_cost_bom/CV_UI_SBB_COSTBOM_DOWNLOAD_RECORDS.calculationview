@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_SBB_COSTBOM_DOWNLOAD_RECORDS" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_UI_SBB_COSTBOM_DOWNLOAD_RECORDS"/>
+  <localVariables>
+    <variable id="IN_MODIFIED_BY" parameter="true">
+      <descriptions defaultDescription="IN_MODIFIED_BY"/>
+      <variableProperties datatype="VARCHAR" length="80" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+        <defaultRange/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="CYCLE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="ITEM" length="120"/>
+        <viewAttribute datatype="VARCHAR" id="PLANT" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="COUNTRY" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="MODIFIED_BY" length="100"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#IN_MODIFIED_BY</localVariable>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = SELECT DISTINCT * FROM &quot;EBGCFE&quot;.&quot;UI_SBB_DOWNLOAD&quot; WHERE MODIFIED_BY = :IN_MODIFIED_BY;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="CYCLE" order="1">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="ITEM" order="2">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping columnObjectName="Script_View" columnName="ITEM"/>
+      </attribute>
+      <attribute id="PLANT" order="3">
+        <descriptions defaultDescription="PLANT"/>
+        <keyMapping columnObjectName="Script_View" columnName="PLANT"/>
+      </attribute>
+      <attribute id="COUNTRY" order="4">
+        <descriptions defaultDescription="COUNTRY"/>
+        <keyMapping columnObjectName="Script_View" columnName="COUNTRY"/>
+      </attribute>
+      <attribute id="MODIFIED_BY" order="5">
+        <descriptions defaultDescription="MODIFIED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="MODIFIED_BY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

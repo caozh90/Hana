@@ -1,0 +1,458 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_FORMULA" (
+    IN  p_change_id     VARCHAR(100),
+    IN  p_product_group VARCHAR(20),
+    IN  p_user_id       VARCHAR(64),
+    OUT p_out_exitcode  INTEGER,
+    OUT p_out_exitmess  VARCHAR(500)   
+)  
+    LANGUAGE SQLSCRIPT 
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    --READS SQL DATA 
+/************************************************************************
+*name       : PRC_GET_FORMULA             
+*function   : Get Formula
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id 
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : Fangyuan
+*CreateDate : 2014-11-06
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	    
+AS    
+    v_change_id         VARCHAR(100) := p_change_id;
+    v_product_group     VARCHAR(20)  := p_product_group;
+    v_user_id           VARCHAR(64)  := p_user_id;
+               
+    v_lvl_string_temp   VARCHAR(500);
+    v_maxrows           DECIMAL DEFAULT 100000;
+    v_rownum            DECIMAL;
+    v_prc_name          VARCHAR(30)  := 'PRC_GET_FORMULA';        
+             
+    v_g_pkg_name        VARCHAR(20)  := 'PKG_BOM_CALCULATION';
+    v_full_name         VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+              
+    c_f_init_date       SECONDDATE := TO_SECONDDATE ('2000-01-01 01:01:01', 'yyyy-mm-dd hh:mi:ss');
+    v_debug             char(1);
+
+    v_out_exitcode      decimal;
+    v_init_date         TIMESTAMP;    
+    index_i,index_j,n_count INTEGER;
+    logida,logidb,logidi,logidj,logidk,logidl,logidm,logidn,logido,logidp,logidq INTEGER;
+        
+    v_time, v_taking_time DECIMAL(17,3);
+    v_step_counter        INTEGER;      
+    v_row_count         INTEGER;
+BEGIN
+    -- exception
+    DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found              
+    BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );  
+        logida:=0;      
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logida,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                    substr(::SQL_ERROR_MESSAGE , 1, 500) );
+    END;           
+     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   --others
+    BEGIN 
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );  
+        logidb:=0;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidb,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                    substr(::SQL_ERROR_MESSAGE , 1, 500) );
+    END; 
+
+    SELECT SESSION_CONTEXT('v_step_counter_bom_calculation') INTO v_step_counter FROM DUMMY;
+    
+    IF :v_step_counter IS NULL THEN v_step_counter := 0; END IF;
+    
+    p_out_exitcode := -1;
+    p_out_exitmess := 'FAILED';
+
+    logidi:=0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+                                                I_EVENT_NAME => :v_full_name,
+                                                I_MODULE     => 'EBGCFE'); --imodule need to be determined
+           
+    insert into CAL_RUNTIME(PKG_NAME,PROC_NAME,START_T,PRD_GROUP)
+    select :v_g_pkg_name,:v_prc_name,CURRENT_TIMESTAMP,v_product_group 
+     from DUMMY;
+              
+    DELETE FROM MID_formula             WHERE product_group = :v_product_group; 
+    DELETE FROM MID_ui_cost_calcu_formu WHERE product_group = :v_product_group; 
+       
+    select "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy;
+    IF  :v_debug= 'T'
+    THEN
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;       
+        
+    -- translate ui_cost_calcu_formu into flat cost type table
+    formula_tab = SELECT * FROM (SELECT * FROM
+        --LV1
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv1 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba1 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag1 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv2 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba2 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag2 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv3 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba3 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag3 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv4 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba4 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag4 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv5 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba5 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag5 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv6 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba6 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag6 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv7 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba7 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag7 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv8 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba8 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag8 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv9 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba9 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag9 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).lv10 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tba10 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL1_TBAS).tag10 AS TBA_TYPE, 1 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        --LV2
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv1 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba1 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag1 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv2 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba2 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag2 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv3 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba3 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag3 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv4 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba4 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag4 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv5 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba5 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag5 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv6 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba6 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag6 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv7 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba7 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag7 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv8 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba8 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag8 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv9 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba9 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag9 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).lv10 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tba10 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL2_TBAS).tag10 AS TBA_TYPE, 2 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        --LV3
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv1 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba1 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag1 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv2 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba2 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag2 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv3 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba3 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag3 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv4 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba4 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag4 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv5 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba5 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag5 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv6 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba6 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag6 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv7 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba7 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag7 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv8 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba8 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag8 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv9 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba9 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag9 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).lv10 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tba10 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL3_TBAS).tag10 AS TBA_TYPE, 3 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        --LV4
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv1 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba1 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag1 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv2 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba2 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag2 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv3 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba3 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag3 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv4 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba4 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag4 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv5 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba5 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag5 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv6 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba6 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag6 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv7 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba7 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag7 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv8 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba8 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag8 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv9 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba9 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag9 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).lv10 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tba10 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL4_TBAS).tag10 AS TBA_TYPE, 4 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        --LV5
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv1 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba1 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag1 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv2 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba2 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag2 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv3 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba3 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag3 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv4 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba4 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag4 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv5 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba5 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag5 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv6 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba6 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag6 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv7 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba7 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag7 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv8 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba8 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag8 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv9 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba9 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag9 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).lv10 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tba10 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL5_TBAS).tag10 AS TBA_TYPE, 5 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        --LV6
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv1 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba1 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag1 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv2 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba2 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag2 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv3 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba3 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag3 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv4 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba4 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag4 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv5 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba5 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag5 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv6 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba6 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag6 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv7 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba7 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag7 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv8 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba8 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag8 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv9 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba9 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag9 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        UNION ALL
+        (SELECT PRODUCT_GROUP,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,"EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).lv10 AS COST_NAME, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tba10 AS TBA, "EBGCFE"."cdp.ebgcfe.functions::FUNC_SPLIT_STR"(LEVEL6_TBAS).tag10 AS TBA_TYPE, 6 AS LV FROM "EBGCFE"."UI_COST_CALCU_FORMU" WHERE product_group = :p_product_group)
+        )
+        WHERE TBA_TYPE <> '0' AND TBA IS NOT NULL AND TBA <>'';
+       
+    INSERT INTO MID_UI_COST_CALCU_FORMU  
+        (PRODUCT_GROUP,MODEL,BRAND,PRODFAMILY,CATEGORY,PLANT,SUBGEO,COUNTRY,OUTPUT_TYPE,
+         TBA, TBA_TYPE,COST_LVL,MOT, COST_NAME)       
+    SELECT t1.PRODUCT_GROUP,t1.item,t1.BRAND, t1.ASP_PRD_FAMILY,t2.CATEGORY,t1.PLANT,
+           t1.SUBGEO,t1.COUNTRY,t1.OUTPUT_TYPE, t2.TBA, t2.TBA_TYPE,t2.lv as COST_LVL,
+           t1.MOT, COST_NAME        
+      FROM (SELECT a.*,
+                  CASE WHEN a.output_type IN ('CTO')THEN 'CTO'
+                       ELSE 'MTM' END AS category2
+             FROM MID_biz_toplayer_ch a
+            WHERE a.product_group = :v_product_group) t1,
+           (SELECT b.*,
+                   CASE WHEN b.category = 'MTM' THEN category ELSE 'CTO' END AS category2
+              FROM :formula_tab b
+             WHERE product_group = :v_product_group) t2
+     WHERE t1.brand     = t2.brand
+       AND t1.category2 = t2.category2
+       AND t1.plant     = t2.plant
+       AND t1.asp_prd_family = t2.prodfamily
+       AND t1.subgeo   = t2.subgeo;         
+        
+    INSERT INTO MID_UI_COST_CALCU_FORMU  
+        (product_group, model, brand, prodfamily, category, plant, subgeo, 
+         country, output_type, tba, tba_type, cost_lvl, mot, cost_name)
+    SELECT t1.product_group, t1.item, t1.brand, t1.asp_prd_family, t2.category, 
+           t1.plant, t1.subgeo, t1.country, t1.output_type,  t2.tba, t2.tba_type,
+           t2.lv as cost_lvl,t1.mot, t2.cost_name
+      FROM (SELECT a.*,
+                   CASE WHEN a.output_type IN ('CTO')THEN 'CTO'
+                        ELSE 'MTM' END AS category2
+               FROM MID_biz_toplayer_ch a
+              WHERE a.product_group = :v_product_group) t1,
+           (SELECT b.*,CASE WHEN b.category = 'MTM' THEN category 
+                            ELSE 'CTO' END AS category2
+              FROM :formula_tab b
+             WHERE product_group = :v_product_group) t2
+     WHERE t1.brand      = t2.brand 
+       AND t1.category2  = t2.category2
+       AND t1.plant      = t2.plant
+       AND t2.prodfamily = 'ALL'
+       AND t1.subgeo     = t2.subgeo
+       AND NOT EXISTS(SELECT 1 FROM mid_ui_cost_calcu_formu t3
+                       WHERE t3.product_group = t1.product_group
+                         AND t3.model         = t1.item
+                         AND t3.plant         = t1.plant
+                         AND t3.subgeo        = t1.subgeo
+                         AND t3.country       = t1.country);           
+
+       -- COMMIT;
+       
+    DELETE FROM mid_ui_cost_calcu_formu
+    WHERE product_group = :v_product_group
+      AND tba           = 'XSWR';  
+      
+    --Added by Zhoubinbin 20170110, for performance tuning
+    UPDATE MID_ui_cost_calcu_formu T1
+       SET T1.MT = T2.MACHINE_TYPE
+      FROM UI_ITEM                 T2
+     WHERE T1.product_group = :v_product_group
+       AND T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+       AND T1.MODEL         = T2.ITEM;    
+       
+    IF :v_debug= 'T'
+    THEN
+        v_step_counter := v_step_counter + 1;---1
+        v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+           
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+        
+        logidj:=0;            
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+            
+        --debug start
+        SELECT count(*) INTO v_row_count FROM MID_UI_COST_CALCU_FORMU;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                    I_LOGSID     => :logidj,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||:v_row_count || ' rows');               
+            --debug end
+    END IF;
+     
+    /*DELETE FROM mid_ui_cost_calcu_formu t1
+     WHERE EXISTS (SELECT 1 FROM mid_ui_cost_calcu_formu t2
+                    WHERE t2.plant       = t1.plant
+                      AND t2.brand       = t1.brand
+                      AND t2.PRODFAMILY  = t1.PRODFAMILY
+                      AND t2.country     = t1.country
+                      AND t2.category    = t1.category
+                      AND t2.plant      <> 'ALL'
+                      AND t2.PRODFAMILY <> 'ALL'
+                      AND t2.subgeo     <> 'ALL'
+                      AND t2.product_group = :v_product_group)
+      AND t1.plant      = 'ALL'
+      AND t1.PRODFAMILY = 'ALL'
+      AND t1.subgeo     = 'ALL'
+      AND t1.product_group = :v_product_group;    
+          
+
+    IF :v_debug= 'T'
+    THEN          
+        v_step_counter := v_step_counter + 1;---2
+        v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+        
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+        
+        logidk:=0;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                    I_LOGSID     => :logidk,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                    to_char(v_taking_time) || ' sec');             
+         v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+
+    DELETE FROM mid_ui_cost_calcu_formu t1
+     WHERE EXISTS (SELECT 1 FROM mid_ui_cost_calcu_formu t2
+                    WHERE t2.plant      = t1.plant
+                      AND t2.brand      = t1.brand
+                      AND t2.PRODFAMILY = t1.PRODFAMILY
+                      AND t2.country    = t1.country
+                      AND t2.category   = t1.category
+                      AND t2.plant     <> 'ALL'
+                      AND t2.product_group = :v_product_group)
+      AND t1.plant = 'ALL'
+      AND t1.product_group = :v_product_group;
+
+    IF :v_debug= 'T'
+    THEN          
+        v_step_counter := v_step_counter + 1;---3
+        v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+    
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+        logidl:=0;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                    I_LOGSID     => :logidl,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                    to_char(v_taking_time) || ' sec');             
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));           
+    END IF;
+
+    DELETE FROM mid_ui_cost_calcu_formu t1
+     WHERE EXISTS (SELECT 1 FROM mid_ui_cost_calcu_formu t2
+                    WHERE t2.plant      = t1.plant
+                      AND t2.brand      = t1.brand
+                      AND t2.PRODFAMILY = t1.PRODFAMILY
+                      AND t2.country    = t1.country
+                      AND t2.category   = t1.category
+                      AND t2.prodfamily <> 'ALL'
+                      AND t2.product_group = :v_product_group)
+      AND t1.prodfamily = 'ALL'
+      AND t1.product_group = :v_product_group;
+
+    DELETE FROM mid_ui_cost_calcu_formu t1
+     WHERE EXISTS (SELECT 1 FROM mid_ui_cost_calcu_formu t2
+                    WHERE t2.plant      = t1.plant
+                      AND t2.brand      = t1.brand
+                      AND t2.prodfamily = t1.prodfamily
+                      AND t2.country    = t1.country
+                      AND t2.category   = t1.category
+                      AND t2.subgeo    <> 'ALL'
+                      AND t2.product_group = :v_product_group)
+      AND t1.subgeo = 'ALL'
+      AND t1.product_group = :v_product_group;*/
+      
+    IF :v_debug= 'T'
+    THEN           
+        v_step_counter := v_step_counter + 1;---4
+        v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+        logidm:=0;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                    I_LOGSID     => :logidm,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                    to_char(v_taking_time) || ' sec');             
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+        
+    IF :v_debug= 'T'
+    THEN            
+        v_step_counter := v_step_counter + 1;---6
+        v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+           
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+        
+        logidn:=0;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO',I_LOGSID=>:logidn,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+                                                    I_MESSAGE=>'step '||to_char(v_step_counter)||': ' ||to_char(v_taking_time) || ' sec');
+                                                                 
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+     
+    IF :v_debug= 'T'
+    THEN            
+        v_step_counter := v_step_counter + 1;---8
+        v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+    
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+    
+        logidp:=0;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO',I_LOGSID=>:logidp,I_EVENT_NAME=>:v_full_name,
+                                                    I_MODULE=>'EBGCFE',I_MESSAGE=>'step '||to_char(v_step_counter)||': ' ||to_char(v_taking_time) || ' sec');
+                                                                 
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));            
+    END IF;
+
+    update CAL_RUNTIME x 
+       set end_t=current_timestamp
+     where x.pkg_name   = v_g_pkg_name 
+       and x.proc_name  = v_prc_name 
+       and end_t is null 
+       and prd_group    = v_product_group;
+
+    p_out_exitcode := 0;
+    p_out_exitmess := 'SUCCESSFUL';
+
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); --imodule need to be determined
+        
+    EXEC 'SET ''v_step_counter_bom_calculation'' ='''|| ifnull(:v_step_counter, 0)||'''' ;     --pkg_bom_calculation   v_step_counter
+                
+END;

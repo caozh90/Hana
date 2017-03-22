@@ -1,0 +1,13 @@
+PROCEDURE "MXEBGVMI"."cdp.wf.mx::PRC_SPECIAL_PULL_PREPROCESS" (
+	IN iv_id            VARCHAR(10),
+      IN pull_type           VARCHAR(30),
+      OUT on_exitcode      NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+	AS
+BEGIN
+	CALL "cdp.mxebgvmi.procedures.pkg_special_pull_process::PRC_SPECIAL_PULL_PREPROCESS"(:iv_id,:pull_type,on_exitcode);
+END;

@@ -1,0 +1,79 @@
+role cdp.utility.roles::AdminDev 
+extends role sap.hana.xs.admin.roles::HTTPDestAdministrator,
+             sap.hana.xs.admin.roles::HTTPDestViewer,
+             sap.hana.xs.admin.roles::JobAdministrator,
+             sap.hana.xs.admin.roles::JobViewer,
+             sap.hana.xs.admin.roles::SQLCCAdministrator,
+             sap.hana.xs.admin.roles::SQLCCViewer,
+             sap.hana.xs.debugger::Debugger,
+             sap.hana.xs.ide.roles::Developer,
+             sap.hana.xs.lm.roles::Administrator,
+            sap.hana.xs.admin.roles::RuntimeConfAdministrator,
+			sap.hana.xs.lm.roles::Transport
+           
+             {
+	
+package cdp: REPO.READ, REPO.EDIT_NATIVE_OBJECTS, REPO.ACTIVATE_NATIVE_OBJECTS, REPO.MAINTAIN_NATIVE_PACKAGES, REPO.ACTIVATE_IMPORTED_OBJECTS,REPO.EDIT_IMPORTED_OBJECTS , REPO.MAINTAIN_IMPORTED_PACKAGES;
+ 
+catalog schema "_SYS_BIC": SELECT , EXECUTE;
+catalog schema "_SYS_BI": SELECT;
+//catalog schema "SYS": SELECT;
+--catalog analytic privilege: "_SYS_BI_CP_ALL";
+	// schema privileges
+catalog schema "_SYS_BIC": SELECT, EXECUTE;
+--sql object cdp.test.leo::createrolegroup :EXECUTE;
+--sql object cdp.test.leo::droprolegroup :EXECUTE;
+//catalog schema "SYSTEM": EXECUTE;
+// sql object privileges
+// privileges on the same object may be split up in several lines
+catalog sql object "SYS"."REPOSITORY_REST": EXECUTE;
+catalog sql object "SYS_REPO"."GRANT_ACTIVATED_ROLE": EXECUTE;
+catalog sql object "SYS_REPO"."REVOKE_ACTIVATED_ROLE": EXECUTE;
+
+catalog sql object "SYSTEM"."cdp.utility.procedures::createUser":EXECUTE;
+sql object cdp.utility.procedures:createUser.hdbprocedure:EXECUTE;
+sql object cdp.security.procedures:createInfoUser.hdbprocedure:EXECUTE;
+
+catalog sql object "_SYS_BI"."BIMC_ALL_CUBES": SELECT; 
+catalog sql object "_SYS_BI"."BIMC_CONFIGURATION": SELECT; 
+catalog sql object "_SYS_BI"."BIMC_DIMENSIONS": SELECT; 
+catalog sql object "_SYS_BI"."BIMC_PROPERTIES": SELECT; 
+catalog sql object "_SYS_BI"."BIMC_VARIABLE": SELECT; 
+catalog sql object "_SYS_BI"."BIMC_VARIABLE_ASSIGNMENT": SELECT; 
+catalog sql object "_SYS_BI"."BIMC_VARIABLE_VALUE": SELECT;
+
+catalog sql object "_SYS_BI"."M_CONTENT_MAPPING": UPDATE, INSERT, DELETE; 
+catalog sql object "_SYS_BI"."M_FISCAL_CALENDAR": UPDATE, INSERT, DELETE; 
+catalog sql object "_SYS_BI"."M_IMPORT_SERVER_CONFIG": UPDATE, INSERT, DELETE; 
+catalog sql object "_SYS_BI"."M_REPLICATION_EXCEPTIONS": UPDATE, INSERT, DELETE; 
+catalog sql object "_SYS_BI"."M_SCHEMA_MAPPING": UPDATE, INSERT, DELETE; 
+catalog sql object "_SYS_BI"."M_TIME_DIMENSION": UPDATE, INSERT, DELETE; 
+catalog sql object "_SYS_BI"."M_TIME_DIMENSION_MONTH": UPDATE, INSERT, DELETE; 
+catalog sql object "_SYS_BI"."M_TIME_DIMENSION_WEEK": UPDATE, INSERT, DELETE; 
+catalog sql object "_SYS_BI"."M_TIME_DIMENSION_YEAR": UPDATE, INSERT, DELETE;
+catalog sql object "_SYS_BI"."M_USER_PERSONALIZATION": UPDATE, INSERT, DELETE;
+
+//catalog sql object ""
+// analytic privileges
+catalog analytic privilege: "_SYS_BI_CP_ALL";
+//analytic privilege: cdp.log.models:httpLogAP.analyticprivilege;
+
+
+system privilege :ROLE ADMIN;	
+system privilege :CREATE REMOTE SOURCE;
+system privilege :USER ADMIN;	
+system privilege :DATA ADMIN ;
+system privilege :SERVICE ADMIN;
+system privilege :SESSION ADMIN ;
+system privilege :MONITOR ADMIN ;
+system privilege :REPO.MODIFY_CHANGE;
+system privilege :REPO.MODIFY_OWN_CONTRIBUTION;
+system privilege :REPO.MODIFY_FOREIGN_CONTRIBUTION;
+
+catalog schema "DS_INFO": 	SELECT,CREATE ANY ,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+catalog schema "PCDW":  	SELECT,CREATE ANY,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+catalog schema "MXEBGVMI":  SELECT,EXECUTE;
+catalog schema "SZEBGVMI":  SELECT,CREATE ANY,DELETE,INSERT ,EXECUTE,UPDATE,ALTER;
+catalog schema "SECURITY": SELECT,CREATE ANY , EXECUTE,ALTER,DROP ,DELETE ,UPDATE,DEBUG,INSERT,DEBUG;	
+
+}

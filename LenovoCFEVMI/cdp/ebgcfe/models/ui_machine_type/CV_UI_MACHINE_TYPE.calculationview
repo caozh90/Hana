@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_UI_MACHINE_TYPE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_MACHINE_TYPE"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="UI_MACHINETYPE" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_MACHINETYPE"/>
+    </DataSource>
+    <DataSource id="UI_MACHINETYPE_HIS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_MACHINETYPE_HIS"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MACHINETYPE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="BRAND"/>
+        <viewAttribute id="PROD_FAMILY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="CYCLE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#UI_MACHINETYPE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MACHINETYPE" source="MACHINETYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROD_FAMILY" source="PROD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="BRAND"/>
+        <viewAttribute id="PROD_FAMILY"/>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="MACHINETYPE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#UI_MACHINETYPE_HIS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROD_FAMILY" source="PROD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MACHINETYPE" source="MACHINETYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <viewAttributes>
+        <viewAttribute id="MACHINETYPE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="BRAND"/>
+        <viewAttribute id="PROD_FAMILY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="CYCLE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MACHINETYPE" source="MACHINETYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROD_FAMILY" source="PROD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MACHINETYPE" source="MACHINETYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROD_FAMILY" source="PROD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Union_1">
+    <attributes>
+      <attribute id="MACHINETYPE" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MACHINETYPE"/>
+        <keyMapping columnObjectName="Union_1" columnName="MACHINETYPE"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Union_1" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="BRAND" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="BRAND"/>
+        <keyMapping columnObjectName="Union_1" columnName="BRAND"/>
+      </attribute>
+      <attribute id="PROD_FAMILY" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PROD_FAMILY"/>
+        <keyMapping columnObjectName="Union_1" columnName="PROD_FAMILY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE_RAW" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Union_1" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Union_1" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="CYCLE" key="true" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Union_1" columnName="CYCLE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="SYS_LAST_MODIFIED_DATE" hidden="false" order="8" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="30">
+          <formula>string(seconddate(&quot;SYS_LAST_MODIFIED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="80" y="90"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="0" y="313"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="155" y="313"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="80" y="190"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,137 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::deleteUiAdditionalCost" ( 
+    IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_ADDITIONAL_COST_T" ,
+    OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiAdditionalCost
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo            
+*author      :      leon Bian
+*CreateDate  :      2015.8.10
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	V_CYCLE NVARCHAR(40); 
+	V_PRODUCT_GROUP NVARCHAR(10); 
+	V_RATIO_CODE NVARCHAR(100); 
+	V_SUBGEO  NVARCHAR(20); 
+	V_COUNTRY NVARCHAR(20);   
+	V_TBA_TYPE NVARCHAR(40); 
+	privilegeExists  NVARCHAR(300)  ; 
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::deleteUiAdditionalCost error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::deleteUiAdditionalCost'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_additional_cost::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::deleteUiAdditionalCost'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+ 
+select CYCLE , PRODUCT_GROUP , RATIO_CODE , SUBGEO , COUNTRY , TBA_TYPE 
+ into V_CYCLE , V_PRODUCT_GROUP , V_RATIO_CODE , V_SUBGEO , V_COUNTRY , V_TBA_TYPE
+ from :oldInfo; 
+	 
+-- delete record from table	  	
+delete from "EBGCFE"."UI_ADDITIONAL_COST" 
+  where CYCLE = :V_CYCLE 
+  and PRODUCT_GROUP = :V_PRODUCT_GROUP 
+  AND RATIO_CODE = :V_RATIO_CODE 
+  AND SUBGEO = :V_SUBGEO
+  and COUNTRY = :V_COUNTRY
+  and TBA_TYPE = :V_TBA_TYPE; 
+  
+if ::rowcount < 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;*/
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';
+	 
+end if;		
+	
+--insert log table
+insert into "EBGCFE"."UI_ADDITIONAL_COST_LOG"(
+	"PRODUCT_GROUP",
+	"RATIO_CODE",
+	"SUBGEO",
+	"COUNTRY",
+	"TBA_TYPE",
+	"ADDITIONAL_COST",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"STATUS",
+	"CHANGE_ID",
+	"CHANGE_ACTION",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+	 )SELECT 
+	 		a."PRODUCT_GROUP",
+			a."RATIO_CODE",
+			a."SUBGEO",
+			a."COUNTRY",
+			a."TBA_TYPE",
+			a."ADDITIONAL_COST",
+			a."SYS_CREATED_DATE",
+			a."SYS_CREATED_BY",
+			a."SYS_LAST_MODIFIED_DATE",
+			a."SYS_LAST_MODIFIED_BY",
+			a."STATUS",
+			a."CHANGE_ID",
+			a."CHANGE_ACTION",
+	 		CURRENT_TIMESTAMP,
+	 		'delete',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a; 
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::deleteUiAdditionalCost successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::deleteUiAdditionalCost'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);    	
+END;

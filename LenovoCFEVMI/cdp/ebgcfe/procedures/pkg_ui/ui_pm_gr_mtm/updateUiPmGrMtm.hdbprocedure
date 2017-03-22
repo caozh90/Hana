@@ -1,0 +1,125 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::updateUiPmGrMtm" ( 
+         IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_GR_MTM_T",
+		 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_GR_MTM_T",
+		 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      updateUiPmGrMtm
+*function    :               
+*input       ：              newInfo&oldInfo
+*output      :      errorInfo            
+*author      :      zhaodan1
+*CreateDate  :      2016.3.9
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	resourceExists BIGINT;
+	privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::updateUiPmGrMtm error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::updateUiPmGrMtm'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    CALL "SECURITY"."cdp.security.procedures::checkPrivilege"('ui_pm_gr_mtm::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+	    errorInfo = select 400 as http_status_code, 
+	              'SQL ERROR CODE : 0' error_message, 
+	              privilegeExists detail from dummy;
+	    RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::updateUiPmGrMtm'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+   	
+SELECT COUNT(1) into resourceExists 
+FROM :oldInfo a,:newInfo b 
+WHERE a.OEM_NAME = b.OEM_NAME AND
+      a.TIME_FENCE = b.TIME_FENCE AND
+      a.FUNCTION_TYPE = b.FUNCTION_TYPE AND
+      a.PROFIT_CENTER = b.PROFIT_CENTER AND     
+      a.GR_DATE = b.GR_DATE AND
+      a.GR_QTY = b.GR_QTY;
+if resourceExists > 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;	     		
+	     	return;*/
+	 --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists'; 
+	 return;
+end if;		
+
+--update into PM_UI_GR_MTM table
+UPDATE "EBGCFE"."PM_UI_GR_MTM" a 
+   SET (  a.OEM_NAME,      a.TIME_FENCE,
+	      a.FUNCTION_TYPE, a.PROFIT_CENTER,	      
+	      a.GR_DATE,       a.GR_QTY,	     
+	      a.SYS_LAST_MODIFIED_DATE, a.SYS_LAST_MODIFIED_BY )
+	 = 
+		( b.OEM_NAME,      b.TIME_FENCE,
+	      b.FUNCTION_TYPE, b.PROFIT_CENTER,	      
+	      b.GR_DATE,       b.GR_QTY,	      
+		  CURRENT_TIMESTAMP,SESSION_USER)
+FROM "EBGCFE"."PM_UI_GR_MTM" a,:newInfo b 
+WHERE a.DUMMY_PK = b.DUMMY_PK ; 
+
+
+--insert log table
+INSERT INTO "EBGCFE"."PM_UI_GR_MTM_LOG"(
+		PRODUCT_GROUP,	TIME_FENCE,	FUNCTION_TYPE,		
+		PROFIT_CENTER,	GR_DATE,	OEM_NAME,
+		GR_QTY,
+		USER_ACTION,	
+		DUMMY_PK,		UPLOAD_ID,	
+		SYS_CREATED_BY,SYS_CREATED_DATE,
+		SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,
+		AT_ACTION,LOG_DATE
+	 )SELECT 
+		'EBG',				a.TIME_FENCE,	a.FUNCTION_TYPE,		
+		a.PROFIT_CENTER,	a.GR_DATE,	a.OEM_NAME,
+		a.GR_QTY,
+		'',					
+		a.DUMMY_PK,		'',
+		SESSION_USER,CURRENT_TIMESTAMP,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		'update',	CURRENT_TIMESTAMP 
+	  FROM :oldInfo a; 	
+
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::updateUiPmGrMtm successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::updateUiPmGrMtm'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

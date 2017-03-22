@@ -1,0 +1,289 @@
+PROCEDURE "SECURITY"."cdp.init.pcdw.procedures::upgradeRole" (
+OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError") 
+	LANGUAGE SQLSCRIPT
+	--SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS
+	aMODULE_NAME NVARCHAR(256):= 'PCDW'; 
+    aUSER_NAME NVARCHAR(256):='';
+	aMODULE_ID NVARCHAR(10) ;
+
+	alogidk INTEGER :=0;
+	
+	aModuleExists INTEGER :=0;
+	aUserExists INTEGER :=0;
+	aUSER_ID BIGINT;
+	
+	aI_DETAIL NVARCHAR(300) :='';
+BEGIN
+/***************************** 
+	CALL "SECURITY"."cdp.init.pcdw.procedures::initRole" (
+             'PCDW' 
+             ,'PCDW_ADMIN'
+             ,?) 
+	如果用户名为空，则不作删除动作
+	如果用户名不为空，但是不存在， 则退出
+	如果用户名存在，则，进行轻空动作，并且重新付权给管理员 。
+	
+ *****************************/
+ 
+     --exception     
+     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL := 'cdp.pcdw.init.procedures::initRole error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+    	,I_STATUS=>'ERROR'
+    	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.pcdw.init.procedures::initRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+ 
+
+
+--START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.pcdw.init.procedures::initRole"'
+	,I_MODULE=>:aMODULE_NAME); 
+ 
+ SELECT top 1 count(1) into aModuleExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" 
+WHERE "MODULE_NAME" = :aMODULE_NAME ;--GROUP BY "MODULE_NAME"; 
+	if :aModuleExists = 0 then
+		--如果存在同名的模型，则返回
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'WARN'
+    	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.pcdw.init.procedures::initRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000001'
+     	,I_DETAIL=>'cdp.pcdw.init.procedures::initRole error : module name ->' ||:aMODULE_NAME||' not exists .');
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : W000000001' error_message, 
+     		'cdp.pcdw.init.procedures::initRole error : module name ->' ||:aMODULE_NAME||' not exists .' detail from dummy;
+     		
+		return ; 
+	end if;
+	
+	SELECT "MODULE_ID" INTO aMODULE_ID FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" 
+	WHERE "MODULE_NAME" = :aMODULE_NAME;
+
+if 	:aUSER_NAME  != '' then
+	 SELECT top 1 count(1) into aUserExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_USER" A
+	 , "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" B
+WHERE "USER_NAME" = :aUSER_NAME 
+AND A."USER_ID" = B."USER_ID"
+AND B."MODULE_ID" = :aMODULE_ID;--GROUP BY "MODULE_NAME"; 
+	if :aUserExists = 0 then
+		--如果存在同名的模型，则返回
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'WARN'
+    	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.pcdw.init.procedures::initRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000002'
+     	,I_DETAIL=>'cdp.pcdw.init.procedures::initRole error : USER name ->' ||:aUSER_NAME||' not exists .');
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : W000000002' error_message, 
+     		'cdp.pcdw.init.procedures::initRole error : USER name ->' ||:aUSER_NAME||' not exists .' detail from dummy;
+     		
+		return ; 
+	end if;
+	
+---delete
+DELETE FROM "SECURITY"."cdp.security.data::userManagement.MAP_VIEW_ROLE" WHERE "MODULE_ID" = :aMODULE_ID ;
+DELETE FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" A WHERE "MODULE_ID" = :aMODULE_ID ;
+DELETE FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLES" B WHERE "MODULE_ID" = :aMODULE_ID ;
+DELETE FROM "SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" C  WHERE "MODULE_ID" = :aMODULE_ID;
+DELETE FROM "SECURITY"."cdp.security.data::userManagement.MAP_ALL" C  WHERE "MODULE_ID" = :aMODULE_ID;
+
+
+end if;
+
+--insert
+
+var_info_roles = SELECT "SECURITY"."cdp.security.data::infoRoleSeqId".NEXTVAL AS R_ID,A.MODULE_ID ,B.ROLE_NAME ,B.DISPLAY_ROLE_NAME ,B.COMMENT ,B.IS_SYSROLE
+FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" A
+,"_SYS_BIC"."cdp.init.pcdw.models/CV_INFO_ROLES" B
+WHERE A."MODULE_NAME" = :aMODULE_NAME
+AND B.ROLE_NAME NOT IN (
+SELECT ROLE_NAME FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLES"
+WHERE "MODULE_ID" = :aMODULE_ID
+)
+;
+
+insert into "SECURITY"."cdp.security.data::userManagement.INFO_ROLES"
+			("ID","ROLE_ID", "MODULE_ID","ROLE_NAME" ,"COMMENT","DISPLAY_ROLE_NAME","IS_SYSROLE" )
+SELECT "R_ID" ,
+	"R_ID" ,
+	 "MODULE_ID",	 
+	 "ROLE_NAME",
+	 "COMMENT",
+	 "DISPLAY_ROLE_NAME",	 
+	 "IS_SYSROLE" 
+FROM  :var_info_roles ;
+ 		
+var_info_rolegroup = SELECT A.MODULE_ID ,B.ROLEGROUP_NAME ,B.REAL_ROLE_NAME ,B.COMMENT ,B.IS_SYSROLEGROUP
+FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" A
+,"_SYS_BIC"."cdp.init.pcdw.models/CV_INFO_ROLEGROUP" B
+WHERE A."MODULE_NAME" = :aMODULE_NAME
+AND B.ROLEGROUP_NAME NOT IN (
+SELECT ROLEGROUP_NAME FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP"
+WHERE "MODULE_ID" = :aMODULE_ID
+)
+;
+ 
+   		
+insert into "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP"
+			("ROLEGROUP_ID", "MODULE_ID","ROLEGROUP_NAME" ,"COMMENT"
+			,"REAL_ROLE_NAME"  ,"IS_SYSROLEGROUP")
+			SELECT "SECURITY"."cdp.security.data::infoRoleGroupSeqId".NEXTVAL
+	 ,"MODULE_ID",	 
+	 "ROLEGROUP_NAME",
+	 "COMMENT",
+	 "REAL_ROLE_NAME",	 
+	 "IS_SYSROLEGROUP" 
+FROM  :var_info_rolegroup ;
+			
+
+var_map_rolegroup_role = SELECT A.MODULE_ID ,B.ROLE_NAME ,B.ROLEGROUP_NAME ,C.ROLE_ID,D.ROLEGROUP_ID
+FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" A
+,"_SYS_BIC"."cdp.init.pcdw.models/CV_MAP_ROLEGROUP_ROLE" B
+,"SECURITY"."cdp.security.data::userManagement.INFO_ROLES" C
+,"SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" D
+WHERE A."MODULE_NAME" = :aMODULE_NAME
+AND A."MODULE_ID" = C."MODULE_ID"
+AND B."ROLE_NAME" = C."ROLE_NAME"
+AND A."MODULE_ID" = D."MODULE_ID"
+AND B."ROLEGROUP_NAME" = D."ROLEGROUP_NAME"
+
+AND (B.ROLE_NAME ,B.ROLEGROUP_NAME) NOT IN (
+SELECT F.ROLE_NAME ,E.ROLEGROUP_NAME 
+FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" E
+,"SECURITY"."cdp.security.data::userManagement.INFO_ROLES" F
+,"SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" G
+WHERE E."MODULE_ID" = :aMODULE_ID
+AND E."MODULE_ID" =F."MODULE_ID"
+AND E."MODULE_ID" =G."MODULE_ID"
+AND E."ROLEGROUP_ID" =G."ROLEGROUP_ID"
+ AND F."ROLE_ID" =G."ROLE_ID"
+)
+;
+
+
+ insert into "SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"
+	    ("ID" ,"ROLEGROUP_ID","ROLE_ID" ,"MODULE_ID")
+	   SELECT "SECURITY"."cdp.security.data::mapRoleGroupRoleSeqId".NEXTVAL
+	 ,"ROLEGROUP_ID"
+	 ,"ROLE_ID"	 
+	  ,"MODULE_ID" 
+FROM  :var_map_rolegroup_role ; 	
+
+ 
+ var_map_view_role = SELECT A.MODULE_ID ,B.ROLE_NAME ,B.VIEW_NAME  ,B.MAP_TYPE ,C.ROLE_ID
+FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" A
+,"_SYS_BIC"."cdp.init.pcdw.models/CV_MAP_VIEW_ROLE" B
+,"SECURITY"."cdp.security.data::userManagement.INFO_ROLES" C
+WHERE A."MODULE_NAME" = :aMODULE_NAME
+AND A."MODULE_ID" = C."MODULE_ID"
+AND B."ROLE_NAME" = C."ROLE_NAME"
+ 
+ AND (B.ROLE_NAME ,B.VIEW_NAME ,B.MAP_TYPE) NOT IN (
+SELECT E.ROLE_NAME ,F.VIEW_NAME ,F.MAP_TYPE
+FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLES" E
+,"SECURITY"."cdp.security.data::userManagement.MAP_VIEW_ROLE" F
+WHERE E."MODULE_ID" = :aMODULE_ID
+AND E."MODULE_ID" =F."MODULE_ID"
+ AND E."ROLE_ID" =F."ROLE_ID"
+)
+ ;
+ 
+ 
+ insert into "SECURITY"."cdp.security.data::userManagement.MAP_VIEW_ROLE"
+  		(ID, MODULE_ID, VIEW_NAME, ROLE_ID ,MAP_TYPE)
+  SELECT "SECURITY"."cdp.security.data::mapViewRoleId".NEXTVAL
+  	,"MODULE_ID" 
+	 ,"VIEW_NAME"
+	 ,"ROLE_ID"	 
+	  ,"MAP_TYPE"
+FROM  :var_map_view_role ; 
+ 
+ 
+ /*************
+ 分配管理员权限
+ CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		aMODULE_NAME NVARCHAR(256),  
+    	aROLEGROUP_NAME NVARCHAR(256),	--//rolegroup id	
+    	aROLE_NAME NVARCHAR(256),  	--//role id  
+    	aUSERGROUP_NAME NVARCHAR(256),  
+    	aUSER_NAME NVARCHAR(256),
+	?);
+	
+	
+ *************/
+ if 	:aUSER_NAME  != '' then
+  CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,  
+    	'',
+    	'cdp.security.roles::Base',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+ CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,  
+    	'',
+    	'cdp.security.roles::Access',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+ CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,  
+    	'',
+    	'cdp.security.roles::userAdmin',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,
+    	'',
+    	'cdp.security.roles::roleSetup',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,
+    	'',
+    	'cdp.security.roles::roleAdmin',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+ 
+CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,
+    	'',
+    	'cdp.log.roles::logAccess',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+CALL "SECURITY"."cdp.security.procedures::createMapAllByName" ( 
+		:aMODULE_NAME ,
+    	'',
+    	'cdp.log.roles::logAdmin',  	--//role id  
+    	'',
+    	:aUSER_NAME,	errorInfo);
+    	
+ 
+ end if;
+       
+ --如果成功添加,则log添加成功！
+ CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'END'
+ 		,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.pcdw.init.procedures::initRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000001'
+     	,I_DETAIL=>'cdp.pcdw.init.procedures::initRole ('||:aMODULE_NAME||') successfully executed . ');
+     	
+
+END;

@@ -1,0 +1,88 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_control_cycle::beforeUpdateUiCycleControl" (
+	IN newInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_CONTROL_CYCLE_T",
+	IN oldInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_CONTROL_CYCLE_T",
+	OUT errorInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	READS SQL DATA 
+	AS
+	 ITEM NVARCHAR(40);
+	 LOGICAL_PLANT NVARCHAR(40);
+	 PHYSICAL_PLANT NVARCHAR(40);
+	 WAREHOUSE_NUMBER NVARCHAR(40);
+	 STORAGE_LOCATION NVARCHAR(40);
+	 STORAGE_TYPE NVARCHAR(40);
+	 STORAGE_BIN NVARCHAR(40);
+	 v_tmp INTEGER;
+BEGIN
+	SELECT ITEM,LOGICAL_PLANT,PHYSICAL_PLANT,WAREHOUSE_NUMBER,STORAGE_LOCATION,STORAGE_TYPE,STORAGE_BIN
+		INTO ITEM,LOGICAL_PLANT,PHYSICAL_PLANT,WAREHOUSE_NUMBER,STORAGE_LOCATION,STORAGE_TYPE,STORAGE_BIN
+			FROM :newInfo;
+			
+	SELECT count(1) into v_tmp FROM UI_CONTROL_CYCLE where  ITEM =:ITEM and 
+			PHYSICAL_PLANT=:PHYSICAL_PLANT and LOGICAL_PLANT=:LOGICAL_PLANT;
+	if v_tmp = 0
+	then
+		errorinfo = select 400 as http_status_code, 
+     		'Primary key constraint, NOT EXIST' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+	
+	
+	select count(*) into v_tmp from (Select SITEID from CONF_SITEMASTER where SITEID=:LOGICAL_PLANT);
+	if v_tmp = 0
+	then
+		errorinfo = select 400 as http_status_code, 
+     		'LOGICAL_PLANT: VALIDATION FAILED, NOT EXIST IN CONF_SITEMASTER' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+	
+	select count(*) into v_tmp from (Select PHYSICALPLANT from CONF_SITEMASTER where PHYSICALPLANT=:PHYSICAL_PLANT);
+	if v_tmp = 0
+	then
+		errorinfo = select 400 as http_status_code, 
+     		'PHYSICAL_PLANT: VALIDATION FAILED, NOT EXIST IN CONF_SITEMASTER' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+/*	
+	select count(*) into v_tmp from (Select distinct whs_no from CONF_WAHREHOUSE_INFO where whs_no=:WAREHOUSE_NUMBER);
+	if v_tmp = 0
+	then
+		errorinfo = select 400 as http_status_code, 
+     		'WAREHOUSE_NUMBER: VALIDATION FAILED, NOT EXIST IN CONF_WAHREHOUSE_INFO' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+*/	
+	select count(*) into v_tmp from (Select distinct storage_location from CONF_WAHREHOUSE_INFO where storage_location=:storage_location);
+	if v_tmp = 0
+	then
+		errorinfo = select 400 as http_status_code, 
+     		'STORAGE_LOCATION: VALIDATION FAILED, NOT EXIST IN CONF_WAHREHOUSE_INFO' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+	
+	select count(*) into v_tmp from (Select distinct storage_bin from CONF_WAHREHOUSE_INFO where storage_bin=:storage_bin);
+	if v_tmp = 0
+	then
+		errorinfo = select 400 as http_status_code, 
+     		'STORAGE_BIN: VALIDATION FAILED, NOT EXIST IN CONF_WAHREHOUSE_INFO' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+	
+	select count(*) into v_tmp from (Select distinct storage_type from CONF_WAHREHOUSE_INFO where storage_type=:storage_type);
+	if v_tmp = 0
+	then
+		errorinfo = select 400 as http_status_code, 
+     		'STORAGE_TYPE: VALIDATION FAILED, NOT EXIST IN CONF_WAHREHOUSE_INFO' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+END;

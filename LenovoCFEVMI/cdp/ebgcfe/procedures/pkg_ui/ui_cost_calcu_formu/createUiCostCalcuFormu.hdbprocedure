@@ -1,0 +1,148 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::createUiCostCalcuFormu" (
+	     IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_CALCU_FORMU_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER  
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA
+/************************************************************************
+*name      :                     createUiCostCalcuFormu
+*function    :               
+*input     ：               newInfo
+*output     :    errorInfo            
+*author     :                     Eric Zhou
+*CreateDate    :                  2014.12.16
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	   aI_DETAIL NVARCHAR(300) :='';
+	   alogide INTEGER :=0;
+	   v_product_group NVARCHAR(10);
+	   v_prod_family NVARCHAR(120); 
+	   v_category NVARCHAR(10);
+	   v_brand NVARCHAR(40);
+	   v_plant NVARCHAR(20);
+	   v_geo NVARCHAR(20);
+	   v_resourceExists BIGINT;
+	   v_level1_tbas NVARCHAR(200); 
+	   v_level2_tbas NVARCHAR(200); 
+	   v_level3_tbas NVARCHAR(200); 
+	   v_level4_tbas NVARCHAR(200); 
+	   v_level5_tbas NVARCHAR(200); 
+	   v_level6_tbas NVARCHAR(200); 
+	   
+	   privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::createUiCostCalcuFormu error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::createUiCostCalcuFormu'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_cost_calcu_formu::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+    
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::createUiCostCalcuFormu'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+select 'EBG',PRODFAMILY,CATEGORY,BRAND,PLANT,SUBGEO,LEVEL1_TBAS,LEVEL2_TBAS,
+		LEVEL3_TBAS,LEVEL4_TBAS,LEVEL5_TBAS,LEVEL6_TBAS into v_product_group,v_prod_family,v_category
+		,v_brand,v_plant,v_geo,v_level1_tbas,v_level2_tbas,v_level3_tbas,v_level4_tbas,
+		v_level5_tbas,v_level6_tbas from :newInfo;  
+		
+select count(1) into v_resourceExists from "EBGCFE"."UI_COST_CALCU_FORMU" where PRODUCT_GROUP = :v_product_group and 
+		PRODFAMILY = :v_prod_family and CATEGORY = :v_category and BRAND = :v_brand AND 
+		PLANT = :v_plant AND SUBGEO = :v_geo;
+
+--if item exits in database
+if  :v_resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists'; 
+end if;	
+
+--insert into UI_GROUP_COST table
+insert into "EBGCFE"."UI_COST_CALCU_FORMU"(CYCLE,
+									PRODFAMILY,
+									PRODUCT_GROUP,
+									BRAND,
+									PLANT,
+									CATEGORY,
+									SUBGEO,
+									LEVEL1_TBAS,
+									LEVEL2_TBAS,
+									LEVEL3_TBAS,
+									LEVEL4_TBAS,
+									LEVEL5_TBAS,
+									LEVEL6_TBAS,
+									SYS_LAST_MODIFIED_BY, SYS_LAST_MODIFIED_DATE, SYS_CREATED_BY, SYS_CREATED_DATE
+									) 
+	values ('CURRENT',:v_prod_family,'EBG',:v_brand,
+				:v_plant,:v_category,:v_geo,
+				:v_level1_tbas,:v_level2_tbas,:v_level3_tbas,:v_level4_tbas,
+		:v_level5_tbas,:v_level6_tbas, session_user, CURRENT_TIMESTAMP, session_user, CURRENT_TIMESTAMP);
+	
+--INSERT INTO UI_GROUP_COST_LOG TABLE
+insert into "EBGCFE"."UI_COST_CALCU_FORMU_LOG"(
+									PRODFAMILY,
+									PRODUCT_GROUP,
+									BRAND,
+									PLANT,
+									CATEGORY,
+									SUBGEO,
+									LEVEL1_TBAS,
+									LEVEL2_TBAS,
+									LEVEL3_TBAS,
+									LEVEL4_TBAS,
+									LEVEL5_TBAS,
+									LEVEL6_TBAS,
+									SYS_CREATED_BY,
+									SYS_CREATED_DATE,
+									ACTION,
+									AT_MODIFIED_ON,
+    								AT_MILLIS 
+									)
+	values (:v_prod_family,:v_product_group,:v_brand,
+				:v_plant,:v_category,:v_geo,
+				:v_level1_tbas,:v_level2_tbas,:v_level3_tbas,:v_level4_tbas,
+		:v_level5_tbas,:v_level6_tbas,SESSION_USER,CURRENT_TIMESTAMP,'create',current_timestamp,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));									
+		
+	  	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::createUiCostCalcuFormu successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::createUiCostCalcuFormu'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   	
+END;

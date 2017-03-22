@@ -1,0 +1,58 @@
+namespace cdp.log.data;
+
+@Schema: 'EX_LOG'
+context Logs {
+ 
+ type LOGKey : String(10);
+ 
+ type DISPLAY_MODULE { 
+    MODULE : String(10);
+};
+   
+ 
+ @Catalog.tableType : #COLUMN 
+    Entity HTTP_LOG_FILE {
+        key  LOGSID: LOGKey;
+        MODULE: String(10); // model name , example: VMI CFE etc.
+        ACCESS_TIME: UTCDateTime; 
+        REMOTE_HOST: String(20);
+        USER_NAME: String(20);
+        HTTP_REQUEST_METHOD: String(15);
+        HTTP_REQUEST_PATH: String(300);
+        HTTP_REQUEST_VERSION: String(10);
+        HTTP_RESPONSE_CODE: String(10);
+        HTTP_RESPONSE_LENGTH: Integer;
+        HTTP_REQUEST_DURATION: Integer;
+    };
+    
+  
+@Catalog.tableType : #COLUMN 
+   Entity TRANSACTION_LOG_FILE {
+       key  LOGSID: LOGKey;
+       key EVENT_NAME: String(100);
+       key EVENT_TYPE: String(200);
+       USER_NAME: String(256);
+       STATUS: String(50);
+       START_TIME: UTCDateTime;
+       END_TIME: UTCDateTime;
+       MESSAGE: String(3000);
+       DETAILS: String(5000);
+       LOG_DATE: UTCDateTime;
+       CREATE_DATE: UTCDateTime;
+       MODULE: String(10);
+       STEP_COUNT: Integer;
+       CURRENT_STEP: Integer;
+    };
+    
+@Catalog.tableType : #COLUMN 
+   Entity LOG_FILE_CONF {
+   	   key   HOST_ID: Integer; //Server的编号
+       key   STATUS: Integer; //标识Server是否有效。1：有效； 0：无效 
+       HOSTNAME:String(256); //域名
+       HOST: String(100); //IP
+       PORT:String(10); 
+       URL_PATH_POSTFIX: String(256); //URL后缀
+       PORT_VALIDATED: Integer; //标识URL使用IP+PORT还是HOSTNAME。1:IP+PORT;0:HOSTNAME
+    };
+ 
+};

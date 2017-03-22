@@ -1,0 +1,217 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_confirmed_pull::PRC_CONFIRMED_PULL_RESPONSE" (
+    IN iv_id VARCHAR(10), OUT on_exitcode  DECIMAL
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+    /************************************************************************
+    *name      : PRC_CONFIRMED_PULL_RESPONSE              --函数名
+    *function  :                --函数功能
+    *input     ：  iv_id       --输入参数
+    *output     :on_exitcode          --输出参数
+    *author     : FangYuan               --作者
+    *CreateDate : 20141201                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/
+    AS         
+     gv_logic_name    VARCHAR2 (40)  := 'PKG_CONFIRMED_PULL';    
+     v_logic_proc_name   VARCHAR2 (40) := 'PRC_CONFIRMED_PULL_RESPONSE';
+     logidi integer:=0;
+     
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+           
+         on_exitcode := ::SQL_ERROR_CODE;
+
+         
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);
+         /*
+         COMMIT;*/           
+    END;
+
+      on_exitcode := -20099;
+
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');
+                                                
+      /*update confirmed_pull t set status='OLD' where exists(select 'x' from R3_RSP_CONFIRMED_PULL  s
+                                                                 where s.PULL_LINE_ID=t.pull_line_id
+                                                                 and  s.PULL_HEADER_ID=t.pull_header_id
+                                                                 and  s.STATUS='SUCCESS')
+                                                     and WERKS in (select siteid from ud_site_schedule where id=iv_id);
+
+      commit;
+
+      update confirmed_pull t set status='ERROR' where exists(select 'x' from R3_RSP_CONFIRMED_PULL  s
+                                                                   where s.PULL_LINE_ID=t.pull_line_id
+                                                                   and  s.PULL_HEADER_ID=t.pull_header_id
+                                                                   and  s.STATUS='ERROR')
+                                               and WERKS in (select siteid from ud_site_schedule where id=iv_id);
+
+      commit;*/
+      
+      --2013.07.11 Auto Create Dispatch list for EXCESS, SHIPPING, SHIPPING_GROUP baiying MEX CSE Project AS
+      INSERT INTO DISPATCH_LIST(WERKS,                 PULL_LINE_ID,           PULL_HEADER_ID,
+                            SRC_STORAGE_TYPE,      SRC_STORAGE_LOC,        SRC_STORAGE_BIN,
+                            DEST_STORAGE_TYPE,     DEST_STORAGE_LOC,       DEST_STORAGE_BIN,
+                            LOI_STORAGE_TYPE,                              LOI_STORAGE_BIN,
+                            INVENTORY_TYPE,
+                            LIFNR,                 WHS_NO,                 DEPT,
+                            MATNR,                 STATUS,                 SYS_SOURCE,
+                            PULL_TYPE,             UNRESERVED_QTY,         SHIPPED_DATE,
+                            HEADER_LIFNR,          TPL_ID, DELIVERY_DATE,
+                            SA_NUMBER,SA_LINE_ID,LINE_QTY,LOI_QTY,DISPATCH_QTY,
+                            DIFFERENCE_QTY,
+                            SYS_AUTH_ID, SYS_CREATED_BY,SYS_CREATED_DATE,MATNR_DESCR
+                           )                
+           SELECT  pl.WERKS,                 pl.PULL_LINE_ID,           pl.PULL_HEADER_ID,
+                            pl.SRC_STORAGE_TYPE,      pl.SRC_STORAGE_LOC,        pl.SRC_STORAGE_BIN,
+                            pl.DEST_STORAGE_TYPE,     pl.DEST_STORAGE_LOC,       pl.DEST_STORAGE_BIN,
+                            wh.default_storage_type,                      wh.default_storage_bin,
+                            pl.INVENTORY_TYPE,
+                            pl.LINE_SUPPLIERID,       wh.whs_no,                 pl.DEPT,
+                            pl.MATNR,                 'IN_PROCESS',              pl.SYS_SOURCE,
+                            pl.PULL_TYPE,             pl.UNRESERVED_QTY,         pl.DELIVERY_DATE,
+                            pl. HEADER_SUPPLIERID,    wh.OWNER, pl.DELIVERY_DATE,
+                            pl.SA_NUMBER,pl.SA_LINE_ID,pl.PULL_QTY,'0',pl.FULL_BOX_QTY,
+                            pl.FULL_BOX_QTY-pl.PULL_QTY,
+                            pl.SYS_AUTH_ID,v_logic_proc_name,CURRENT_TIMESTAMP,ism.ITEMDESC
+                       FROM PULL_LINE pl,CONF_WAHREHOUSE_INFO wh,ITEMSITEMASTER ism
+                      WHERE pl.src_storage_loc=wh.storage_location
+                       AND  pl.src_storage_type=wh.storage_type
+                       AND  pl.src_storage_bin=wh.storage_bin
+                       AND  pl.werks=wh.werks
+                       AND  pl.Pull_Type in  ('EXCESS','SHIPPING','SHIPPING_GROUP')
+                       AND pl.status  = 'SENT'
+                       AND pl.WERKS in (select siteid from CONF_SITE_SCHEDULE where id=iv_id)
+                       AND pl.MATNR = ism.item and pl.werks = ism.siteid
+                       AND EXISTS (
+                            SELECT DISTINCT 'x'
+                                  FROM Z_PCDW_RSP_PULL_LINE s
+                                 WHERE ((s.pull_line_id IS NULL or s.pull_line_id = pl.pull_line_id)
+                                   AND s.pull_header_id = pl.pull_header_id
+                                   AND UPPER(s.status) = 'SUCCESS') 
+                                  )
+                       AND NOT EXISTS (
+                               SELECT 1 FROM DISPATCH_LIST DL WHERE DL.pull_line_id = pl.pull_line_id
+                                         AND DL.pull_header_id = pl.pull_header_id 
+                                      );
+      --2013.07.11 Auto Create Dispatch list for EXCESS, SHIPPING, SHIPPING_GROUP baiying MEX CSE Project AE
+
+      UPDATE pull_line t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document,ECC_STATUS) =           --2013.07.11 Update Ecc_status value in PULL_LINe baiying MEX CSE Project Modified
+                (SELECT DISTINCT 'OLD', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document,'PULL_OLD'               --2013.07.11 Update Ecc_status value in PULL_LINe baiying MEX CSE Project Modified
+                            FROM Z_PCDW_RSP_PULL_LINE
+                           WHERE t.pull_line_id = pull_line_id
+                             AND t.pull_header_id = pull_header_id
+                             AND UPPER (status) = 'SUCCESS')
+       WHERE EXISTS (
+                SELECT DISTINCT 'x'
+                           FROM Z_PCDW_RSP_PULL_LINE s
+                          WHERE s.pull_line_id = t.pull_line_id
+                            AND s.pull_header_id = t.pull_header_id
+                            AND UPPER (s.status) = 'SUCCESS')
+         AND werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE
+                        WHERE ID = iv_id)
+         --AND status = 'SENT';                              --added @2007-11-12
+         AND ECC_STATUS ='SENT'; --modify by nancy wei 2013/08/22
+
+      UPDATE pull_line t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document,ECC_STATUS) =       --2013.07.11 Update Ecc_status value in PULL_LINe baiying MEX CSE Project Modified
+                (SELECT DISTINCT 'OLD', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document,'PULL_OLD'               --2013.07.11 Update Ecc_status value in PULL_LINe baiying MEX CSE Project Modified
+                            FROM Z_PCDW_RSP_PULL_LINE
+                           WHERE t.pull_header_id = pull_header_id
+                             AND pull_line_id IS NULL
+                             AND UPPER (status) = 'SUCCESS')
+       WHERE EXISTS (
+                SELECT DISTINCT 'x'
+                           FROM Z_PCDW_RSP_PULL_LINE s
+                          WHERE s.pull_line_id IS NULL
+                            AND s.pull_header_id = t.pull_header_id
+                            AND UPPER (s.status) = 'SUCCESS')
+         AND werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE
+                        WHERE ID = iv_id)
+         --AND status = 'SENT';                              --added @2007-11-12
+         AND ecc_status ='SENT' ;--modify by nancy wei 2013/08/22
+         
+      --2013.07.11 baiying MEX CSE Project AS
+      UPDATE pull_line t SET t.STATUS = case when d.confirmed_qty>0 then 'ACCEPT' else 'REJECT' end,
+      		t.ECC_STATUS = case when d.status = 'ERROR' then 'CONFIRM_ERROR' ELSE 'CONFIRM_OLD' END
+      from clear_diff d
+       WHERE d.pull_line_id = t.pull_line_id and d.pull_header_id = t.pull_header_id
+       and
+       EXISTS (
+                SELECT DISTINCT 'x'
+                  FROM Z_PCDW_RSP_PULL_LINE s
+                 WHERE (s.pull_line_id = t.pull_line_id or s.pull_line_id is null)
+                   AND s.pull_header_id = t.pull_header_id
+                   AND UPPER(s.status) = 'SUCCESS')
+--         AND EXISTS(
+--        				SELECT distinct 'x' from clear_diff d
+--         				where d.pull_line_id = t.pull_line_id
+--         					and d.pull_header_id = t.pull_header_id
+--         			)
+         AND t.werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE
+                        WHERE ID = iv_id)
+         AND t.status = 'OLD';
+      --2013.07.11 baiying MEX CSE Project AE
+ 
+      UPDATE pull_line t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document,ECC_STATUS) =       --2013.07.11 Update Ecc_status value in PULL_LINe baiying MEX CSE Project Modified
+                (SELECT DISTINCT 'ERROR', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document,'PULL_ERROR'
+                            FROM Z_PCDW_RSP_PULL_LINE
+                           WHERE t.pull_line_id = pull_line_id
+                             AND t.pull_header_id = pull_header_id
+                             AND UPPER (status) = 'ERROR')
+       WHERE EXISTS (
+                SELECT DISTINCT 'x'
+                           FROM Z_PCDW_RSP_PULL_LINE s
+                          WHERE s.pull_line_id = t.pull_line_id
+                            AND s.pull_header_id = t.pull_header_id
+                            AND UPPER (s.status) = 'ERROR')
+         AND werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE
+                        WHERE ID = iv_id)
+         --AND status = 'SENT';                              --added @2007-11-12
+         AND ecc_status ='SENT' ;--modify nancy wei 2013/08/22
+        
+     --2013.08.05 Modify the status and ecc_status of pull_line for pull_type 'SHIPPING''EXCESS''SHIPPING_GROUP' baiying AS
+       UPDATE pull_line t 
+          SET status = 'ACCEPT',ECC_STATUS = 'CONFIRM_OLD'
+       WHERE EXISTS(
+                SELECT DISTINCT 'x'
+                           FROM  clear_diff dif
+                          WHERE  dif.pull_line_id = t.pull_line_id
+                            AND  dif.pull_header_id = t.pull_header_id
+                            AND  dif.status = 'OLD')
+         AND status = 'OLD' AND pull_type in ('EXCESS','SHIPPING','SHIPPING_GROUP')
+         AND werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE
+                        WHERE ID = iv_id);
+     --2013.08.05 Modify the status and ecc_status of pull_line for pull_type 'SHIPPING''EXCESS''SHIPPING_GROUP' baiying AE
+
+       CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!');
+      on_exitcode := 0;
+
+END;

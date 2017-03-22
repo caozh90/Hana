@@ -1,0 +1,14 @@
+FUNCTION "MXEBGVMI"."cdp.mxebgvmi.functions.pkg_pcdw_to_vmi::FUNC_GETDATE" (IN param VARCHAR ) 
+	RETURNS result TIMESTAMP
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER AS
+BEGIN
+   IF    param = '00000000'
+     	 OR param = '0000/00/00'
+      	OR param = '0000-00-00 00:00:00'
+   THEN
+      result := TO_TIMESTAMP ('9999-12-31 00:00:00', 'YYYY-MM-DD HH24:MI:SS');
+   ELSE
+      result := TO_TIMESTAMP (param);
+   END IF;
+END;

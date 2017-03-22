@@ -1,0 +1,155 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_writeback_gatp::PRC_OPTION_WB_GATP_TRANSFER" (
+	IN iv_id VARCHAR(10), 
+	OUT on_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+--	READS SQL DATA 
+/************************************************************************
+*name      : PRC_OPTION_WB_GATP_TRANSFER              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2015/03/24                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/ 
+AS
+	  v_request_id varchar(50);
+      n_dis_quantity integer; 
+      n_all_count integer; 
+      v_status varchar(20);
+      v_pull_id varchar(100);
+      v_line_id VARCHAR(5000);
+      v_logidi INTEGER := 0;
+      v_pkg_name          VARCHAR (40)            := 'pkg_writeback_gatp';
+	  v_logic_proc_name   VARCHAR (40)            := 'PRC_OPTION_WB_GATP_TRANSFER';
+	  v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+	  v_dept      varchar(40);
+	  v_plant     varchar(40);
+
+BEGIN
+
+-------- modify by xwu 2015/11/17 ----------------------------------------
+/*
+DECLARE CURSOR CUR FOR SELECT REF_REQUEST_ID,COUNT(*) AS ALL_COUNT FROM MID_OPTION_LINE
+				WHERE (PULL_HEADER_ID,PULL_LINE_ID) in 
+					(SELECT PULL_HEADER_ID,PULL_LINE_ID FROM RSP_OPTION_DISPATCH_CURRENT) 
+					And sys_source = 'DF'
+				GROUP BY REF_REQUEST_ID;
+*/
+	declare cursor CUR for select a.ref_request_id,count(*) as all_count 
+	from mid_option_line as a, rsp_option_dispatch_current as b,z_pcdw_rsp_option_dispatch as c
+	where a.ref_request_id = b.request_id
+	   and a.pull_header_id = c.pull_header_id
+	   and a.pull_line_id = c.pull_line_id
+       and b.pull_header_id=c.pull_header_id
+	   and b.pull_line_id=c.pull_line_id
+	   and a.sys_source = 'DF'
+	   and c.status = 'SUCCESS'
+	 group by a.ref_request_id;
+------------------------------------------------------------------------------
+				
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- COMMIT;      --comment by Eric Zhou
+	END;
+	
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+on_exitcode := -20099;
+
+
+    --------------------------------------------------------------------------
+    /*
+       get plant, dept from CONF_SITE_SCHEDULE
+       2016/1/14 add by xwu.
+    */
+    select top 1 siteid, dept into v_plant, v_dept  
+    from "SZEBGVMI"."CONF_SITE_SCHEDULE" 
+    where id = :iv_id;
+    --------------------------------------------------------------------------
+
+
+	--delete from "PCDW"."EXP_APO_OPTION_DISPATCH_UPDATE";
+	
+	--- add by xwu 2016/1/15, 先删除这个工厂的dispatch历史记录.
+	DELETE FROM PCDW.EXP_APO_OPTION_DISPATCH_UPDATE t1
+	WHERE t1.plant IN (SELECT siteid
+	                         FROM CONF_SITE_SCHEDULE
+	                        WHERE ID = :iv_id);
+	
+	FOR cur_dis AS CUR
+	DO
+		v_request_id := cur_dis.ref_request_id;
+   		n_all_count := cur_dis.all_count;
+
+/*   modify by xwu 2015/11/12, 直接从mid_option_line取count判断status
+   		select case when count(*) = :n_all_count then 'C' else 'P' end into v_status
+  			FROM dispatch_list where status = 'OLD' and pull_line_id in
+ 			(
+				Select pull_line_id from mid_option_line where ref_request_id = :v_request_id
+			);
+*/			
+   		select case when count(*) = :n_all_count then 'C' else 'P' end into v_status
+		from mid_option_line where ref_request_id = :v_request_id;
+-------------------------------------------------------------------------------------
+			
+  		Select ifnull(sum(dispatch_qty),0) into n_dis_quantity from dispatch_list where
+			Pull_line_id in (
+   				Select pull_line_id from mid_option_line where ref_request_id = :v_request_id
+			)
+		And pull_line_id in
+		(
+			Select PULL_LINE_ID FROM Z_PCDW_RSP_OPTION_DISPATCH WHERE STATUS = 'SUCCESS'
+		)
+		And pull_line_id in   -- add by xwu2015/11/16
+		(
+		    Select PULL_LINE_ID FROM PCDW.EXP_ECC_OPTION_DISPATCH_lIST 
+		            WHERE werks IN (SELECT siteid
+			                                    FROM conf_site_schedule
+			                                    WHERE ID = :iv_id)
+		) ;
+		
+		select Pull_line_id into v_line_id from 
+			(Select STRING_AGG(Pull_line_id,',') as Pull_line_id, 1 from dispatch_list where
+					Pull_line_id in (
+   							Select pull_line_id from mid_option_line where ref_request_id = :v_request_id
+					)
+					And pull_line_id in
+					(
+						Select PULL_LINE_ID FROM Z_PCDW_RSP_OPTION_DISPATCH WHERE STATUS = 'SUCCESS'
+					) group by 1
+			) ;
+
+		--BACK UP
+		DELETE FROM PCDW.BAK_EXP_APO_OPTION_DISPATCH_UPDATE
+		where days_between(sys_timestamp,current_timestamp)>90;
+		
+		insert into PCDW.BAK_EXP_APO_OPTION_DISPATCH_UPDATE  -- add plant , dept fields by xwu 2016/1/14.
+			(REQUEST_ID,QTY,PULLID,STATUS, SYS_TIMESTAMP,APO_STATUS,PLANT, DEPT) values
+				 (:v_request_id, :n_dis_quantity,:v_line_id, :v_status, current_timestamp,'NEW', :v_plant, :v_dept);
+	
+		insert into PCDW.EXP_APO_OPTION_DISPATCH_UPDATE           -- add plant , dept fields by xwu 2016/1/14.
+			(REQUEST_ID,QTY,PULLID,STATUS, SYS_TIMESTAMP,APO_STATUS, PLANT, DEPT) values
+				 (:v_request_id, :n_dis_quantity,:v_line_id, :v_status, current_timestamp,'NEW', :v_plant, :v_dept);
+	
+	END FOR;
+	on_exitcode := 0;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');  
+END;

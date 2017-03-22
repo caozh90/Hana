@@ -1,0 +1,129 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_ZPLN_HANA_SBBSWR"( 
+    IN iv_id  VARCHAR(12),
+    OUT on_exitcode INTEGER
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA PCDW 
+    AS
+
+/************************************************************************
+   *name        : PRC_ZPLN_HANA_SBBSWR
+   *function    : Insert SBBSWR data into PCDW
+   *input       : iv_id
+   *output      : on_exitcode
+   *author      : li shunshun    
+   *CreateDate  : 20150721
+   *UpdateDate  :              
+   *  ------------------------------------------------------------
+   *  update by xwu 2015/9/21
+   *  function: 由于ECC_SBBSWR表存在key, 导致ds更新表由于重复记录的错误.
+   *  1. ecc_sbbswr -- drop key.
+   *  2. insert pcdw_sbbswr时，根据创建日期取最新一条记录更新
+   *  ------------------------------------------------------------
+   *************************************************************************/
+      
+     v_con_startdate      VARCHAR(8); 
+     v_con_enddate        VARCHAR(8);
+     v_startdate          VARCHAR(8);
+     v_enddate            VARCHAR(8);
+     v_sysdate            DATE              := current_date;     
+     
+     vMsg                 VARCHAR(1024);
+     vCode                INTEGER;
+     
+     v_pkg_name           VARCHAR (40)      := 'pkg_update_para';
+     v_prc_name           VARCHAR(30)       := 'PRC_ZPLN_HANA_SBBSWR';   
+     v_full_name          VARCHAR(100)      := v_pkg_name||'.'||v_prc_name;
+     v_logidi             INTEGER           := 0;
+     
+BEGIN
+
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+   on_exitcode := ::SQL_ERROR_CODE;
+   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE		=>'PROC_ERROR',
+										       I_LOGSID		=>:v_logidi,
+									    	   I_EVENT_NAME =>:v_full_name,
+											   I_MODULE		=>'PCDW',
+											   I_MESSAGE	=>'ERROR',
+											   I_DETAIL		=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+  
+   vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+   vCode := ::SQL_ERROR_CODE;
+   
+   INSERT INTO PCDW_PROC_LOG (EVENTTIME,EVENTNAME,SUBEVENT,MSGCODE,EVENTMSG,EVENTTYPE,DATASOURCE,DATADEST,EVENTDESCR)
+   VALUES (CURRENT_TIMESTAMP,:v_prc_name,'OTHERS ERROR',:vCode,:vMsg,'','','','END');  
+   
+  END;
+
+  CALL "EX_LOG"."cdp.log.procedures::logProc"( I_TYPE		=>'PROC_START',
+  											   I_LOGSID	  	=>:v_logidi,
+											   I_EVENT_NAME =>:v_full_name,
+											   I_MODULE		=>'PCDW',
+										       I_DETAIL		=>iv_id||':'||'Start');
+			    
+     
+  select top 1 low into v_con_enddate 
+  from   CONF_PARAMETER
+  where  progname = 'ZPLN_HANA_SBBSWR' 
+     and paraclass = 'I_TODATE' 
+     and buid = :iv_id;
+     
+  v_con_startdate :=TO_CHAR(add_days(to_date(v_con_enddate,'YYYYMMDD'),-1),'YYYYMMDD');
+  v_con_enddate := TO_CHAR (v_sysdate, 'YYYYMMDD');
+  
+  INSERT INTO PCDW_PROC_LOG (EVENTTIME,EVENTNAME,SUBEVENT,MSGCODE,EVENTMSG,EVENTTYPE,DATASOURCE,DATADEST,EVENTDESCR)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,null,null,null,null,'ECC_SBBSWR','PCDW_SBBSWR','START-'|| v_con_startdate||'-'||v_con_enddate);     
+                     
+  --start
+  DELETE FROM BAK_ECC_SBBSWR 
+  WHERE DAYS_BETWEEN(SYS_LAST_MODIFIED_DATE,CURRENT_TIMESTAMP)>90;
+  --back up
+  insert into BAK_ECC_SBBSWR(MATNR,SBBNO,RANUM,DATAB,DATBI,MENGE,ERDAT,ERZET,ERNAM,TSTAMP,STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY) 
+  select MATNR,SBBNO,RANUM,DATAB,DATBI,MENGE,ERDAT,ERZET,ERNAM,TSTAMP,STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,CURRENT_TIMESTAMP,SESSION_USER from ECC_SBBSWR;
+  --upsert   -- comment by xwu 2015/9/21
+  --upsert PCDW_SBBSWR(MATNR,SBBNO,RANUM,DATAB,DATBI,MENGE,ERDAT,ERZET,ERNAM,TSTAMP,STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY) 
+  --select MATNR,SBBNO,RANUM,DATAB,DATBI,MENGE,ERDAT,ERZET,ERNAM,TSTAMP,STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,CURRENT_TIMESTAMP,SESSION_USER from ECC_SBBSWR;
+  
+  ---------------------------------- add by xwu 2015/9/21 -------------------------------------
+  /* 根据相应的key值，只取最新的一条记录更新(by erdate) 
+      注意： 如果ERDAT还重复的话, 根据sys_last_modify_date timestamp取最近一条update */
+  upsert PCDW_SBBSWR(MATNR,SBBNO,RANUM,DATAB,DATBI,MENGE,ERDAT,ERZET,ERNAM,TSTAMP,STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY) 
+  select MATNR,SBBNO,RANUM,DATAB,DATBI,MENGE,ERDAT,ERZET,ERNAM,TSTAMP,STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,CURRENT_TIMESTAMP,SESSION_USER 
+  from ( select MATNR,SBBNO,RANUM,DATAB,DATBI,MENGE,ERDAT,ERZET,ERNAM,TSTAMP,STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,CURRENT_TIMESTAMP,SESSION_USER,
+             rank() over(partition by a.MATNR, a.SBBNO, a.RANUM, a.DATAB, a.DATBI order by a.ERDAT desc)  as rk1,
+             rank() over(partition by a.MATNR, a.SBBNO, a.RANUM, a.DATAB, a.DATBI,a.ERDAT order by a.SYS_LAST_MODIFIED_DATE desc)  as rk2
+             from ECC_SBBSWR as a
+             --Comment by Zhoubinbin 20160630, should update status IS 'A' or 'U' to 'D' when status was updated in ECC
+             --where a.status <> 'D' --add by zhangxj
+             ) as b
+  where b.rk1 = 1
+     and b.rk2= 1;
+  --------------------------------------------------------------------------------------------------
+  
+  v_startdate := TO_CHAR(add_days(:v_sysdate,-1),'YYYYMMDD');  
+  v_enddate   := TO_CHAR(v_sysdate,'YYYYMMDD');
+   
+  UPDATE CONF_PARAMETER
+     SET low = :v_startdate
+  WHERE  progname = 'ZPLN_HANA_SBBSWR'
+     AND paraclass = 'I_FROMDATE'
+     AND buid = :iv_id;
+  UPDATE CONF_PARAMETER
+     SET low = :v_enddate
+  WHERE  progname = 'ZPLN_HANA_SBBSWR'
+     AND paraclass = 'I_TODATE'
+     AND buid = :iv_id;
+
+  on_exitcode := 0;
+  
+  INSERT INTO PCDW_PROC_LOG (EVENTTIME,EVENTNAME,SUBEVENT,MSGCODE,EVENTMSG,EVENTTYPE,DATASOURCE,DATADEST,EVENTDESCR)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,'SUCCESS',:vCode,:vMsg,'','','','END');     
+   
+  CALL "EX_LOG"."cdp.log.procedures::logProc" (I_TYPE       =>'PROC_END',
+  											   I_LOGSID     =>:v_logidi,
+			 								   I_EVENT_NAME =>:v_full_name,
+			 								   I_MODULE     =>'PCDW',
+											   I_DETAIL     =>iv_id||':'||'Success');
+END;

@@ -1,0 +1,98 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_elem::beforeUpdateUiCostElem" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_ELEM_T"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_ELEM_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    AS
+        aElement_name NVARCHAR(40);
+        aElement_type NVARCHAR(40);
+        aDesc  NVARCHAR(200);
+        aTote NVARCHAR(1);
+        aTotl NVARCHAR(1);
+        aAsp_prod_family NVARCHAR(40); 
+                
+        validate integer;
+BEGIN
+
+ 
+    
+select 
+    ELEMENT_NAME,
+    ELEMENT_TYPE,
+    DESC,
+    TOTE,
+    TOTL,
+    ASP_PROD_FAMILY
+  into 
+    aElement_name,
+    aElement_type,
+    aDesc,
+    aTote,
+    aTotl,
+    aAsp_prod_family
+  from :newInfo;
+  
+    --ELEM_TYPE
+    select  count(1) into validate from Conf_parameters where pdomain='UI_COST_ELEM' 
+        and Pname='ELEM_TYPE' and Pvalue=:aElement_type;
+    if validate = 0  then
+         errorinfo = select 400 as http_status_code, 
+            'ELEM_TYPE: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --ASP_FAMILY
+    select  count(1) into validate from Conf_parameters where pdomain='UI_COST_ELEM' and Pname='ASP_PROD_FAMILY'
+        and Pvalue = :aAsp_prod_family; 
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'ASP_FAMILY: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    /*
+    --Negative Flag
+    select  count(1) into validate from 
+        Conf_parameters where pdomain='UI_COST_ELEM' and Pname='NEGATIVE_FLAG' and Pvalue = :aNegative_flag;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'NEGATIVE_FLAG: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --Status
+    select  count(1) into validate from Conf_parameters where pdomain='UI_COST_ELEM' and Pname='STATUS'
+                and Pvalue = :aStatus;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'STATUS: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    */
+    --TOTE
+    select  count(1) into validate from Conf_parameters where pdomain='UI_COST_ELEM' and Pname='TOTE'
+            and pvalue = :aTote;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'TOTE: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    
+    --TOTL
+    select  count(1) into validate from Conf_parameters where pdomain='UI_COST_ELEM' and Pname='TOTL'
+            and pvalue = :aTotl;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'TOTL: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+END;

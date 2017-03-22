@@ -1,0 +1,43 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_seo_costbom::ui_seo_costbom_download_delete"
+(
+IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTO_COSTBOM_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+	currentUser varchar(100);
+	
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+
+    END; 
+       
+	--procedure begin
+	 --赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	
+	DELETE FROM "EBGCFE"."UI_SEO_DOWNLOAD" AS a
+	WHERE EXISTS (
+		SELECT 1
+			FROM :newInfo as b
+			WHERE a.CYCLE = b.CYCLE
+			AND a.ITEM = b.ITEM
+			AND a.PLANT = b.PLANT
+			AND a.COUNTRY = b.COUNTRY
+			AND a.MODIFIED_BY = :currentUser
+	);
+	
+END;

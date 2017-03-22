@@ -1,0 +1,145 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::SP_ZMATMAST_IDOC_PCDW_QMAT" ( 
+IN   PI_MATNR                   VARCHAR(100),
+IN   PI_WERKS                   VARCHAR(100),
+IN   PI_ART                     VARCHAR(100),
+IN   PI_AKTIV                   VARCHAR(100),
+IN   PI_FLAG                    VARCHAR(100),
+IN   PI_IDOCNUM                 DECIMAL,
+IN   PI_IDOCTIME                VARCHAR(100),
+IN   PI_SYS_CREATED_BY          VARCHAR(100),
+IN   PI_SYS_LAST_MODIFIED_BY    VARCHAR(100) 
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	AS
+  /***********************************************************************/
+  /* PROCEDURE          SP_ZMATMAST_IDOC_PCDW_QMAT
+  /* DESCRIPTION        INSERT IDOC DATA TO ECC_QMAT TABLE
+  /* PARAMETERS          PI_MATNR,PI_WERKS,PI_ART,PI_AKTIV,PI_FLAG,PI_IDOCNUM,PI_IDOCTIME
+  /* SOURCE             IDOC
+  /* TARGET TABLE       ECC_QMAT
+  /* VERSION            V1.0
+  /***********************************************************************/
+   V_IDOCTIME   TIMESTAMP;
+  vMsg	 	 VARCHAR(1024);
+  vCode	     int;
+  n	 	 	 INT;
+BEGIN
+	-- exception
+    --定义异常
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+	  vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+        VALUES   (CURRENT_TIMESTAMP,
+                  'SP_ZMATMAST_IDOC_PCDW_QMAT',
+                  'ERROR',
+                  :vCode,
+                  :vMsg,
+                  '',
+                  '',
+                  '',
+                  'END');
+    	--exec 'commit';   --2017.02.08 PI issue by baying deleted  
+    	
+    	INSERT INTO ECC_QMAT_ERR (MATNR,
+                                WERKS,
+                                ART,
+                                AKTIV,
+                                FLAG,
+                                IDOCNUM,
+                                IDOCTIME,
+                                SYS_CREATED_DATE,
+                                SYS_CREATED_BY,
+                                Z_ERRMSG)
+           VALUES (:PI_MATNR,
+                   :PI_WERKS,
+                   :PI_ART,
+                   :PI_AKTIV,
+                   :PI_FLAG,
+                   :PI_IDOCNUM,
+                   :PI_IDOCTIME,
+                   CURRENT_TIMESTAMP,
+                   :PI_SYS_CREATED_BY,
+                   :vMsg);
+
+     	--EXEC 'COMMIT';    --2017.02.08 PI issue by baying deleted  
+    END;
+	-- exception
+
+	V_IDOCTIME := TO_TIMESTAMP (:PI_IDOCTIME);
+
+   IF :PI_MATNR IS NOT NULL THEN 
+   
+   		select count(1) into n from ECC_QMAT 
+	        WHERE MATNR = :PI_MATNR AND WERKS = :PI_WERKS AND ART = :PI_ART
+             AND (  IDOCTIME < :V_IDOCTIME
+                  OR (IDOCTIME = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM)
+                  OR IDOCTIME IS NULL); 
+   	 	IF n>0 then 
+
+			DELETE FROM   ECC_QMAT
+            WHERE   MATNR = :PI_MATNR AND WERKS = :PI_WERKS AND (  IDOCTIME < :V_IDOCTIME
+                  OR (IDOCTIME = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR IDOCTIME IS NULL);
+            
+            INSERT INTO ECC_QMAT (MATNR,
+                               WERKS,
+                               ART,
+                               AKTIV,
+                               FLAG,
+                               IDOCNUM,
+                               IDOCTIME,
+                               SYS_CREATED_DATE,
+                               SYS_CREATED_BY)
+            VALUES   (:PI_MATNR,
+                     :PI_WERKS,
+                     :PI_ART,
+                     :PI_AKTIV,
+                     :PI_FLAG,
+                     :PI_IDOCNUM,
+                     :V_IDOCTIME,
+                     CURRENT_TIMESTAMP,
+                     :PI_SYS_CREATED_BY);
+			--exec 'commit';   --2017.02.08 PI issue by baying deleted  
+			
+		ELSEIF n=0 THEN
+		
+			select count(1) into n from ECC_QMAT 
+	         	WHERE MATNR = :PI_MATNR AND WERKS = :PI_WERKS AND ART = :PI_ART;
+	         if n=0 then
+	         	INSERT INTO ECC_QMAT (MATNR,
+                               WERKS,
+                               ART,
+                               AKTIV,
+                               FLAG,
+                               IDOCNUM,
+                               IDOCTIME,
+                               SYS_CREATED_DATE,
+                               SYS_CREATED_BY)
+	              VALUES (:PI_MATNR,
+	                      :PI_WERKS,
+	                      :PI_ART,
+	                      :PI_AKTIV,
+	                      :PI_FLAG,
+	                      :PI_IDOCNUM,
+	                      :V_IDOCTIME,
+	                      CURRENT_TIMESTAMP,
+	                      :PI_SYS_CREATED_BY);
+	         end if;
+		
+			--EXEC 'COMMIT';   --2017.02.08 PI issue by baying deleted  
+		END IF;
+	END IF;
+END;

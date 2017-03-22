@@ -1,0 +1,190 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_create_data_apo::PRC_GET_SHIPMENT_APO" (OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_GET_SHIPMENT_APO        
+*function   : Prepare SHIPMENT Data for APO
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Liuyg5
+*CreateDate : 2016-08-19
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_lastrun_time timestamp;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_SHIPMENT_APO', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_SHIPMENT_APO', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1; 
+
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_SHIPMENT_APO', 'Insert', NULL, '', '', '', '', 'step 1');
+    EXEC 'COMMIT';
+ 
+     DELETE FROM Z_MID_PCDW_SHIP_APO1;
+     
+  INSERT INTO z_mid_pcdw_ship_apo1
+    (order_id, line_item_id, planning_item_id, geo_id, ship_date, shipped_qty, item_type, land1, plant)
+    SELECT t1.vbeln AS order_id, lpad(t1.posnr, 6, '0') AS line_item_id, t2.matnr AS planning_item_id, t4.geo_id,
+           (SELECT start_dt FROM conf_weekly_calendar WHERE t1.shipdate BETWEEN start_dt AND end_dt) AS ship_date,
+           t1.shipqty, MAP(t3.mtart, 'ZITR', 'OPTION', 'ZREV', 'MTM', 'ZXMT', 'CTO') AS item_type,
+           t2.ship2_land1, t1.werks
+      FROM pcdw_ship_so t1,
+           pcdw_so t2,
+           pcdw_itemsitemaster t3, 
+           apo_ztdp_sw_geo t4
+     WHERE t1.vbeln = t2.vbeln
+           AND lpad(t1.posnr, 6, '0') = lpad(t2.posnr, 6, '0')
+           AND t2.matnr = t3.item
+           AND t2.werks = t3.siteid
+           AND t3.zucod LIKE 'H%'
+           AND t2.ad_country = t4.country
+           AND (t2.l_abgru IS NULL OR length(t2.l_abgru) = 0)--active
+           AND t1.shipdate >= add_days(current_date, -60) and t1.shipdate<add_days(current_date, 1)
+           AND t2.kwmeng <>'0';--去重
+
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_SHIPMENT_APO', 'Get Itemtype', NULL, '', '', '', '', 'step 3');
+    EXEC 'COMMIT';
+    
+    DELETE FROM z_mid_pcdw_ship_apo2;
+     
+    INSERT INTO z_mid_pcdw_ship_apo2 (planning_item_id,
+                                      plant,
+                                      mitem_id,
+                                      geo_id,
+                                      ship_date,
+                                      shipped_qty,
+                                      sshipped_qty,
+                                      ITEM_TYPE,
+                                      LAND1)
+       --Scenario-I - CTO -> SBB (dependant data)
+       SELECT t2.idnrk AS planning_item_id,
+              t1.plant,
+              t1.planning_item_id AS mitem_id,
+              t1.geo_id,
+              t1.ship_date,
+              t1.shipped_qty AS shipped_qty,
+              t1.shipped_qty * t2.menge AS sshipped_qty,
+              t1.item_type,
+              t1.land1
+         FROM z_mid_pcdw_ship_apo1 t1, PCDW_ORDBOM_X86 t2
+        WHERE     t1.order_id = t2.vbeln
+              AND t1.line_item_id = t2.posnr
+              AND t1.planning_item_id = t2.matnr
+              AND t1.item_type IN ('CTO', 'MTM')
+              AND EXISTS
+                     (SELECT 1
+                        FROM pcdw_itemsitemaster T3
+                       WHERE     t2.idnrk = t3.item
+                              AND t1.plant = t3.siteid
+                              --AND t3.itemclass = 'SBB'
+                              AND (t3.STRGR = 'ZS' or SUBSTR(t3.ZUCOD,1,4)='HCSB')
+                              AND t3.zucod LIKE 'H%')
+       UNION ALL
+       --Option
+       SELECT 'DUMMY' AS planning_item_id,
+              t1.plant,
+              t1.planning_item_id AS mitem_id,
+              t1.geo_id,
+              t1.ship_date,
+              t1.shipped_qty AS shipped_qty,
+              t1.shipped_qty AS sshipped_qty,
+              t1.item_type,
+              t1.land1
+         FROM z_mid_pcdw_ship_apo1 t1
+        WHERE t1.item_type = 'OPTION';
+
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_SHIPMENT_APO', 'Get SBB', NULL, '', '', '', '', 'step 4');
+    EXEC 'COMMIT';
+    
+    DELETE FROM pcdw_ship_apo;
+ 
+      INSERT INTO pcdw_ship_apo (MANDT,
+                                   MMATNR,
+                                   PLANT,
+                                   SMATNR,
+                                   ZDATE,
+                                   ZTIME,
+                                   GEO,
+                                   LAND1,
+                                   MLFIMG,
+                                   SLFIMG,
+                                   MTART,
+                                   MMEINS,
+                                   SMEINS,
+                                   SYS_CREATED_BY,
+                                   SYS_CREATED_DATE,
+                                   SYS_LAST_MODIFIED_BY,
+                                   SYS_LAST_MODIFIED_DATE)
+           SELECT '301',
+                  mitem_id,
+                  plant,
+                  planning_item_id,
+                  ship_date,
+                  ship_date,
+                  geo_id,
+                  LAND1,
+                  SUM (shipped_qty) AS shipped_qty,
+                  SUM (sshipped_qty) AS sshipped_qty,
+                  ITEM_TYPE,
+                  '',
+                  '',
+                  'pkg_create_data_apo.PRC_GET_SHIPMENT_APO',
+                  CURRENT_TIMESTAMP,
+                  'pkg_create_data_apo.PRC_GET_SHIPMENT_APO',
+                  CURRENT_TIMESTAMP
+             FROM z_mid_pcdw_ship_apo2
+           GROUP BY mitem_id,
+                    plant,
+                    planning_item_id,
+                    ship_date,
+                    ship_date,
+                    geo_id,
+                    LAND1,
+                    ITEM_TYPE;
+
+        UPDATE pcdw_ship_apo t1
+           SET t1.SMEINS =
+                  (SELECT t2.MEINS
+                     FROM pcdw_itemsitemaster t2
+                    WHERE     t1.smatnr = t2.item
+                          AND t1.plant = t2.siteid);
+
+        UPDATE pcdw_ship_apo t1
+           SET t1.MMEINS =
+                  (SELECT t2.MEINS
+                     FROM pcdw_itemsitemaster t2
+                    WHERE     t1.mmatnr = t2.item
+                          AND t1.plant = t2.siteid);
+
+        UPDATE pcdw_ship_apo t1
+           SET t1.SMEINS =
+                  (SELECT t2.MEINS
+                     FROM pcdw_itemsitemaster t2
+                    WHERE     t1.mmatnr = t2.item
+                          AND t1.plant = t2.siteid)
+         WHERE smatnr = 'DUMMY';
+    											              
+   PO_RETURNCODE := 0;
+   -- log process end
+    INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_create_data_apo.PRC_GET_SHIPMENT_APO', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';       
+END;

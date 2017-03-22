@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_HANA_DS_TARGET_JOB" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_HANA_DS_TARGET_JOB"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="DS_JOB_INFO" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="DS_INFO_SZ" columnObjectName="DS_JOB_INFO"/>
+    </DataSource>
+    <DataSource id="HANA_DS_JOB_INFO" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="DS_INFO_SZ" columnObjectName="HANA_DS_JOB_INFO"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="JOBNAME"/>
+        <viewAttribute id="TARGET"/>
+        <viewAttribute id="PROCESS_NAME"/>
+        <viewAttribute id="JOB_NAME"/>
+        <viewAttribute id="G_JOB_INIT_FLAG"/>
+        <viewAttribute id="G_DEBUG"/>
+        <viewAttribute id="G_STARTFROMSTEP"/>
+        <viewAttribute id="G_IVID"/>
+        <viewAttribute id="G_WFNAME"/>
+        <viewAttribute id="WAITING_TIME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#DS_JOB_INFO">
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TARGET" source="TARGET"/>
+      </input>
+      <input node="#HANA_DS_JOB_INFO">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROCESS_NAME" source="PROCESS_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOB_NAME" source="JOB_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="G_JOB_INIT_FLAG" source="G_JOB_INIT_FLAG"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="G_DEBUG" source="G_DEBUG"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="G_STARTFROMSTEP" source="G_STARTFROMSTEP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="G_IVID" source="G_IVID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="G_WFNAME" source="G_WFNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WAITING_TIME" source="WAITING_TIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOB_NAME"/>
+      </input>
+      <joinAttribute name="JOBNAME"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_1">
+    <attributes>
+      <attribute id="JOBNAME" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Data Services 作业名"/>
+        <keyMapping columnObjectName="Join_1" columnName="JOBNAME"/>
+      </attribute>
+      <attribute id="TARGET" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="最近运行作业的目标schema"/>
+        <keyMapping columnObjectName="Join_1" columnName="TARGET"/>
+      </attribute>
+      <attribute id="PROCESS_NAME" key="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="流程名"/>
+        <keyMapping columnObjectName="Join_1" columnName="PROCESS_NAME"/>
+      </attribute>
+      <attribute id="JOB_NAME" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="JOB_NAME"/>
+        <keyMapping columnObjectName="Join_1" columnName="JOB_NAME"/>
+      </attribute>
+      <attribute id="G_JOB_INIT_FLAG" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="0表示job是增量不是初始化"/>
+        <keyMapping columnObjectName="Join_1" columnName="G_JOB_INIT_FLAG"/>
+      </attribute>
+      <attribute id="G_DEBUG" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="是否在Debug模式，1 for 开发和测试，0 for 生成环境"/>
+        <keyMapping columnObjectName="Join_1" columnName="G_DEBUG"/>
+      </attribute>
+      <attribute id="G_STARTFROMSTEP" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="默认从1启动"/>
+        <keyMapping columnObjectName="Join_1" columnName="G_STARTFROMSTEP"/>
+      </attribute>
+      <attribute id="G_IVID" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="G_IVID"/>
+        <keyMapping columnObjectName="Join_1" columnName="G_IVID"/>
+      </attribute>
+      <attribute id="G_WFNAME" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="调用存储过程的参数，当前设为’MXEBGVMI’"/>
+        <keyMapping columnObjectName="Join_1" columnName="G_WFNAME"/>
+      </attribute>
+      <attribute id="WAITING_TIME" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="流程死锁时的等待时间（秒）"/>
+        <keyMapping columnObjectName="Join_1" columnName="WAITING_TIME"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="20" y="180"/>
+        <rectangleSize height="82" width="241"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

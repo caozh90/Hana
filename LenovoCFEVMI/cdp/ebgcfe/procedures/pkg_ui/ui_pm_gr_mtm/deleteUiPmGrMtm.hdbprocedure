@@ -1,0 +1,106 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::deleteUiPmGrMtm" ( 
+    IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_GR_MTM_T",
+    OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiPmSalesReport
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo            
+*author      :      zhaodan1
+*CreateDate  :      2016.3.9
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::deleteUiPmGrMtm error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::deleteUiPmGrMtm'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_pm_gr_mtm::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    	errorInfo = SELECT 400 as http_status_code, 
+             			  'SQL ERROR CODE : 0' error_message, 
+             			 privilegeExists detail FROM dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::deleteUiPmGrMtm'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+ 
+-- delete record from table	  	
+DELETE FROM "EBGCFE"."PM_UI_GR_MTM" 
+  WHERE DUMMY_PK IN ( SELECT DUMMY_PK FROM :oldInfo); 
+  
+if ::rowcount < 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;*/
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';
+	 
+end if;		
+	
+--insert log table
+INSERT INTO "EBGCFE"."PM_UI_GR_MTM_LOG"(
+			DUMMY_PK,
+			PRODUCT_GROUP,
+            OEM_NAME,TIME_FENCE,FUNCTION_TYPE,PROFIT_CENTER,
+            GR_DATE,GR_QTY,USER_ACTION,
+			SYS_CREATED_DATE,
+			SYS_CREATED_BY,							
+			SYS_LAST_MODIFIED_DATE,
+			SYS_LAST_MODIFIED_BY,
+			AT_ACTION,	LOG_DATE
+	 )SELECT 
+	 		a.DUMMY_PK,
+	 		'EBG',
+	 		a.OEM_NAME,a.TIME_FENCE,a.FUNCTION_TYPE,a.PROFIT_CENTER,
+            a.GR_DATE,a.GR_QTY,'',
+	 		CURRENT_TIMESTAMP,
+	 		SESSION_USER,
+	 		CURRENT_TIMESTAMP,
+	 		SESSION_USER,
+	 		 'delete',  CURRENT_TIMESTAMP
+	 		FROM :oldInfo a; 
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::deleteUiPmGrMtm successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_gr_mtm::deleteUiPmGrMtm'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+END;

@@ -1,0 +1,109 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::updateInfoUserForOData" (
+IN newInfo "SECURITY"."cdp.security.data::userManagement.InfoUserT"
+,IN oldInfo "SECURITY"."cdp.security.data::userManagement.InfoUserT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+            
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aUSER_ID BIGINT;
+	aUSER_NAME NVARCHAR(256); 
+	apasswd NVARCHAR(256);
+    aLOGINNAME NVARCHAR(256);
+    aFIRSTNAME NVARCHAR(30);
+    aLASTNAME NVARCHAR(30);
+    aEMAILADDRESS NVARCHAR(200);
+    aSTATUS NVARCHAR(20);
+    aLOCALE NVARCHAR(16);
+    aDESIGNATION NVARCHAR(200);
+    aMODULE_NAME NVARCHAR(256); 
+    
+    PHONENUMBER  NVARCHAR(50);
+  	DEPARTMENT NVARCHAR(256); --//部门
+  	COMPANY NVARCHAR(256);		--//公司
+  	USER_GROUP NVARCHAR(256);	--	//用户账户组
+  	VALID_FROM Timestamp ;--//Data as of which the user can connect
+  	VALID_UNTIL Timestamp ;--//Data as of which the user can no longer connect
+  	INTERNAL_SIGN NVARCHAR(256); --//内部用户标识
+  	EXTERNAL_SIGN NVARCHAR(256); --//外部用户标识
+  	         
+	 aSTATUS_OLD NVARCHAR(20);
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	
+	
+ *****************************/
+ 
+           
+     select NAME
+        ,PASSWORD
+        ,LOGINNAME
+        ,FIRSTNAME
+        ,LASTNAME
+        ,EMAILADDRESS
+        ,STATUS  
+        ,LOCALE
+  		,DESIGNATION 
+  		,MODULE_NAME
+  		,		PHONENUMBER  
+  			,		DEPARTMENT  --//部门
+  			,		COMPANY 
+  			,		USER_GROUP
+  			,		VALID_FROM
+  			,		VALID_UNTIL
+  			,		INTERNAL_SIGN
+  			,		EXTERNAL_SIGN
+  into 
+ 	aUSER_NAME  
+	,apasswd 
+    ,aLOGINNAME 
+    ,aFIRSTNAME 
+    ,aLASTNAME 
+    ,aEMAILADDRESS
+    ,aSTATUS 
+    ,aLOCALE 
+    ,aDESIGNATION 
+    ,aMODULE_NAME
+    ,		PHONENUMBER  
+  			,		DEPARTMENT  --//部门
+  			,		COMPANY 
+  			,		USER_GROUP
+  			,		VALID_FROM
+  			,		VALID_UNTIL
+  			,		INTERNAL_SIGN
+  			,		EXTERNAL_SIGN
+  from :newInfo;
+    
+    SELECT ID ,STATUS INTO aUSER_ID ,aSTATUS_OLD
+    from :oldInfo;
+    
+
+             
+call "SECURITY"."cdp.security.procedures::updateInfoUser" (
+             aUSER_ID
+			,aUSER_NAME
+			,aLOGINNAME
+		    ,aFIRSTNAME
+		    ,aLASTNAME 
+		    ,aEMAILADDRESS 
+		    ,aSTATUS
+		    ,aLOCALE
+		    ,aDESIGNATION
+		   ,		PHONENUMBER  
+  			,		DEPARTMENT  --//部门
+  			,		COMPANY 
+  			,		USER_GROUP
+  			,		VALID_FROM
+  			,		VALID_UNTIL
+  			,		INTERNAL_SIGN
+  			,		EXTERNAL_SIGN
+  			,aSTATUS_OLD
+            ,errorInfo);
+             
+END;

@@ -1,0 +1,121 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_asn_pull::updateASNPullStatus_new" (
+	        IN DEST_STORAGE_TYPE   varchar(40),
+			IN DEST_STORAGE_BIN   varchar(40),
+			IN DEST_STORAGE_LOC   varchar(40),
+			IN WERKS   varchar(4),
+			IN PHYSICAL_PLANT   varchar(40),
+			IN PRODUCTION_LINE   varchar(40),
+			IN DELIVERY_DATE   NVARCHAR(200),
+			IN MATNR   varchar(18),
+			IN NOTES   varchar(200),
+			IN SRC_STORAGE_LOC varchar(40),
+			IN JOB_TYPE varchar(20),
+			OUT error_message nvarchar(400)
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER --INVOKER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA
+	AS
+/************************************************************************
+*name      :
+*author     : 
+*CreateDate    : 2015-08-14
+*UpdateDate  :      
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.ui_asn_pul';
+		proc_name varchar(100) :='updateASNPullStatus';
+		logid0 INTEGER :=0;
+		n2 int;
+		 IS_LOI VARCHAR(20);
+		 SUPPLIER VARCHAR(40);
+		 PULL_QTY DEC;
+		 SRC_STORAGE_TYPE VARCHAR(40);
+		 SRC_STORAGE_BIN VARCHAR(40);
+		 VENDOR VARCHAR(40);
+		 CREATED_DATE TIMESTAMP;
+		 SCENARIO_ID DEC;
+		 SYS_ENT_STATE VARCHAR(10) ;	 		
+		error_message nvarchar(400);
+		privilegeExists  NVARCHAR(300)  ;
+		NEW_NOTES   varchar(200);
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+
+ 	oldinfo = select *  from "SZEBGVMI"."RPT_ASN_PULL"
+			 	where DEST_STORAGE_TYPE = :DEST_STORAGE_TYPE
+				and   DEST_STORAGE_BIN = :DEST_STORAGE_BIN
+				and   DEST_STORAGE_LOC = :DEST_STORAGE_LOC
+				and	  WERKS = :WERKS
+				and	  PHYSICAL_PLANT = :PHYSICAL_PLANT
+				and	  PRODUCTION_LINE = :PRODUCTION_LINE 
+				and	  DELIVERY_DATE = :DELIVERY_DATE
+				and   MATNR = :MATNR
+				and   SRC_STORAGE_LOC = :SRC_STORAGE_LOC
+				;
+	select count(1) into n2 from :oldinfo;
+	 if n2 <= 0 then
+	     	error_message := 'The record does not exist in DB';
+		 	/*errorInfo = select 400 as http_status_code, 
+	     		:error_message ERROR_MESSAGE, 
+	     		:error_message DETAIL from dummy;*/
+	     	--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);	     		
+	     	return;
+	 end if;
+	 
+	 UPDATE "SZEBGVMI"."RPT_ASN_PULL"
+		SET   NOTES = :NOTES
+		WHERE DEST_STORAGE_TYPE = :DEST_STORAGE_TYPE
+		and   DEST_STORAGE_BIN = :DEST_STORAGE_BIN
+		and   DEST_STORAGE_LOC = :DEST_STORAGE_LOC
+		and	  WERKS = :WERKS
+		and	  PHYSICAL_PLANT = :PHYSICAL_PLANT
+		and	  PRODUCTION_LINE = :PRODUCTION_LINE
+		and	  DELIVERY_DATE = :DELIVERY_DATE
+		and   MATNR = :MATNR
+		and   SRC_STORAGE_LOC = :SRC_STORAGE_LOC;
+		
+	SELECT  :NOTES INTO NEW_NOTES   FROM DUMMY ;
+		
+-- record log 
+    select    DEST_STORAGE_BIN,DEST_STORAGE_TYPE,DEST_STORAGE_LOC,WERKS,PHYSICAL_PLANT,
+		  	  IS_LOI,PRODUCTION_LINE,SUPPLIER,DELIVERY_DATE,MATNR,
+		  	  PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,VENDOR,
+		  	  NOTES,CREATED_DATE,SCENARIO_ID,SYS_ENT_STATE
+	  into
+	 		  DEST_STORAGE_BIN,DEST_STORAGE_TYPE,DEST_STORAGE_LOC,WERKS,PHYSICAL_PLANT,
+		  	  IS_LOI,PRODUCTION_LINE,SUPPLIER,DELIVERY_DATE,MATNR,
+		  	  PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,VENDOR,
+		  	  NOTES,CREATED_DATE,SCENARIO_ID,SYS_ENT_STATE
+    from :oldinfo;
+		
+	 insert into "SZEBGVMI"."RPT_ASN_PULL_LOG"
+  	( DEST_STORAGE_BIN,DEST_STORAGE_TYPE,DEST_STORAGE_LOC,WERKS,PHYSICAL_PLANT,
+  	  IS_LOI,PRODUCTION_LINE,SUPPLIER,DELIVERY_DATE,MATNR,
+  	  PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,VENDOR,
+  	  NOTES,CREATED_DATE,SCENARIO_ID,SYS_ENT_STATE,
+	  AT_MODIFIED_BY,
+	  AT_ACTION,
+	  AT_MODIFIED_TIME
+  	)
+  	values
+  	( :DEST_STORAGE_BIN,:DEST_STORAGE_TYPE,:DEST_STORAGE_LOC,:WERKS,
+  	  :PHYSICAL_PLANT,:IS_LOI,:PRODUCTION_LINE,:SUPPLIER,
+  	  :DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,
+  	  :SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:VENDOR,:NEW_NOTES,
+  	  :CREATED_DATE,:SCENARIO_ID,:SYS_ENT_STATE,	  
+  	  SESSION_USER,
+      :JOB_TYPE,
+      current_timestamp
+  	);	
+		
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+END;

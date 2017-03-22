@@ -1,0 +1,46 @@
+role cdp.ds.roles::Access
+
+
+             {
+
+ 
+		catalog schema "_SYS_BIC": SELECT , EXECUTE;
+		catalog schema "_SYS_BI": SELECT;
+		catalog schema "DS_INFO": SELECT,EXECUTE;
+
+//		SELECT 'analytic privilege: '||"PACKAGE_ID"||':'||"OBJECT_NAME"||'.'||"OBJECT_SUFFIX"||';'
+//				FROM "_SYS_REPO"."ACTIVE_OBJECT" 
+//				WHERE ("OBJECT_SUFFIX" = 'analyticprivilege')
+//				AND "PACKAGE_ID" LIKE 'cdp.log.%'
+
+		analytic privilege: cdp.ds.models:AP_DSCONF.analyticprivilege;
+		analytic privilege: cdp.ds.models:AP_DSJOB.analyticprivilege;
+		analytic privilege: cdp.ds.models:AP_DSMONITOR.analyticprivilege;
+		
+		sql object cdp.ds.procedures.ds_management.ds_ftp_conf::createDsFtpConf:EXECUTE;
+		sql object cdp.ds.procedures.ds_management.ds_ftp_conf::updateDsFtpConf:EXECUTE;
+		sql object cdp.ds.procedures.ds_management.ds_ftp_conf::deleteDsFtpConf:EXECUTE;
+		
+		sql object cdp.ds.procedures.ds_management.ds_ftp_info::createDsFtpInfo:EXECUTE;
+		sql object cdp.ds.procedures.ds_management.ds_ftp_info::updateDsFtpInfo:EXECUTE;
+		sql object cdp.ds.procedures.ds_management.ds_ftp_info::deleteDsFtpInfo:EXECUTE;
+		
+		--DS configuration
+		sql object cdp.ds.procedures.ds_management.hana_ds_con_info::createHanaDsConInfo:EXECUTE;
+		sql object cdp.ds.procedures.ds_management.hana_ds_con_info::updateHanaDsConInfo:EXECUTE;
+		sql object cdp.ds.procedures.ds_management.hana_ds_con_info::deleteHanaDsConInfo:EXECUTE;
+		
+		sql object cdp.ds.procedures.ds_management.hana_ds_job_info::createHanaDsJobInfo:EXECUTE;
+		sql object cdp.ds.procedures.ds_management.hana_ds_job_info::updateHanaDsJobInfo:EXECUTE;
+		sql object cdp.ds.procedures.ds_management.hana_ds_job_info::deleteHanaDsJobInfo:EXECUTE;
+		
+		sql object cdp.ds.procedures::ds_update_status:EXECUTE;
+		
+		  //add by zhangxj 20160314 start
+  	 analytic privilege: cdp.pcdw.models.to_bw:AP_EXP_CFE_MTM_BW.analyticprivilege;
+  	 analytic privilege: cdp.pcdw.models.to_lbp:AP_EXP_CFE_TO_LBP.analyticprivilege;
+  	 analytic privilege: cdp.pcdw.models.to_price_tool:AP_EXP_CFE_TO_PRICE_TOOL.analyticprivilege;
+  	 analytic privilege: cdp.pcdw.models.to_psat:AP_EXP_CFE_TO_PSAT.analyticprivilege;
+        //add by zhangxj 20160314 end 
+		
+}

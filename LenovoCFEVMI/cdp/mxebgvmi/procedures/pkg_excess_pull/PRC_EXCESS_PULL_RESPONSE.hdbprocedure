@@ -1,0 +1,117 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_excess_pull::PRC_EXCESS_PULL_RESPONSE" (
+IN iv_id VARCHAR(10),OUT on_exitcode DECIMAL
+ ) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_EXCESS_PULL_RESPONSE              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141204                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+AS
+
+      v_logic_proc_name   VARCHAR2 (40)           := 'PRC_EXCESS_PULL_RESPONSE';
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_EXCESS_PULL';    
+      logidi integer:=0;
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         
+          on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+
+
+      on_exitcode := -20099;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');  
+
+      UPDATE special_dispatch t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document) =
+                (SELECT DISTINCT 'OLD', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document
+                            FROM z_pcdw_rsp_special_dispatch
+                           WHERE t.pull_line_id = pull_line_id
+                             AND t.pull_header_id = pull_header_id
+                             AND status = 'SUCCESS')
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM z_pcdw_rsp_special_dispatch s
+                 WHERE s.pull_line_id = t.pull_line_id
+                   AND s.pull_header_id = t.pull_header_id
+                   AND s.status = 'SUCCESS')
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND status = 'SENT'                    --changed the status to 'SENT'
+                            ;
+
+      UPDATE special_dispatch t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document) =
+                (SELECT DISTINCT 'ERROR', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document
+                            FROM z_pcdw_rsp_special_dispatch
+                           WHERE t.pull_line_id = pull_line_id
+                             AND t.pull_header_id = pull_header_id
+                             AND status = 'ERROR')
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM z_pcdw_rsp_special_dispatch s
+                 WHERE s.pull_line_id = t.pull_line_id
+                   AND s.pull_header_id = t.pull_header_id
+                   AND s.status = 'ERROR')
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND status = 'SENT'                    --changed the status to 'SENT'
+                            ;
+
+      --COMMIT;
+
+      UPDATE excess_pull t
+         SET (status, reason_code) =
+                (SELECT status, reason_code
+                   FROM special_dispatch sd
+                  WHERE sd.pull_line_id = t.pull_line_id
+                    AND sd.pull_header_id = t.pull_header_id
+                    AND sd.werks = t.werks
+                    AND sd.status IN ('OLD', 'ERROR'))
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM special_dispatch sd
+                 WHERE t.pull_line_id = sd.pull_line_id
+                   AND t.pull_header_id = sd.pull_header_id
+                   AND t.werks = sd.werks
+                   AND sd.status IN ('OLD', 'ERROR'))
+         AND t.status = 'IN_PROCESS'
+         AND t.werks IN (SELECT siteid
+                           FROM conf_site_schedule
+                          WHERE ID = iv_id);
+
+     -- COMMIT;
+      on_exitcode := 0;
+
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!'); 
+END;

@@ -1,0 +1,100 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_pcdw_to_vmi::PRC_MO_BOM_ASN" (
+	in   p_wfname varchar(10), 
+	out p_out_exitcode integer
+ ) 
+    language sqlscript
+    sql security invoker
+	default schema "SZEBGVMI"
+	AS
+ /*
+   name: 
+       PRC_MO_BOM_ASN 
+   function:  
+       同步pcdw.APO_MO_BOM_ASN表到 PRODUCTIONORDERS_BOM_ASN
+   intput: 
+       1. p_wfname
+   output:
+       1. p_out_exitcode     exit code.
+   create/updated : 
+       xwu. 2015/9/15
+ */  
+	v_prc_name        varchar(70) := 'PRC_MO_BOM_ASN';
+	gv_logic_name    varchar(40)  := 'PKG_PCDW_TO_VMI';
+	v_full_name        varchar(100) := gv_logic_name||'.'||v_prc_name;
+	v_logidi               integer := 0;
+BEGIN
+    
+    ---------------------------------------// sql exception -----------------------------------------    
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	begin
+		 p_out_exitcode := ::SQL_ERROR_CODE;
+		 call "EX_LOG"."cdp.log.procedures::logProc"
+			 ( I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			   I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			   I_MESSAGE=>'ERROR',
+			   I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||'Failure');                                                  
+	end;
+	
+    ---------------------------------------// start process -----------------------------------------    
+	--1. start log
+	p_out_exitcode := -1;
+	call "EX_LOG"."cdp.log.procedures::logProc"
+			  ( I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			    I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+                I_DETAIL=>'Start' );
+    
+    --2. truncate table
+    --delete from PRODUCTIONORDERS_BOM_ASN;
+    
+    --3. PRODUCTIONORDERS_BOM_ASN
+    insert into PRODUCTIONORDERS_BOM_ASN (
+             "SCENARIO_ID",
+             "PRODUCTIONORDID",
+             "LINENUM",
+             "ITEM",
+             "SITEID",
+             "LGORT",
+             "QTYPER",
+             "STATUS",
+             "PROMFLAG",
+             "ASNFLAG",
+             "SYS_CREATED_BY",
+             "SYS_CREATION_DATE",
+             "SYS_LAST_MODIFIED_BY",
+             "SYS_LAST_MODIFIED_DATE" )
+    select
+            0 AS SCENARIO_ID,
+            ZMONM, 
+            ZMPOS, 
+            ZMMAT,  
+            ZMWRK,
+            ZMLGO,
+            ZMMNG,
+            'IN_PROCESS' AS STATUS,
+            '' AS PROMFLAG,
+            'Y' AS ASNFLAG,
+            SESSION_USER,
+            CURRENT_TIMESTAMP,
+            SESSION_USER,
+            CURRENT_TIMESTAMP
+    from PCDW.APO_MO_BOM_ASN
+    where wfname = :p_wfname 
+        and status = 'NEW';
+         
+    -- 4. update status
+    update PCDW.APO_MO_BOM_ASN set STATUS = 'COMPLETE' where STATUS='NEW';
+
+    -- 5. delete old data.
+    delete from PCDW.APO_MO_BOM_ASN 
+    where status='COMPLETE' 
+       and sys_created_date < add_days ( current_timestamp, -65) 
+       and wfname=:p_wfname;
+
+    ---------------------------------------// end process ----------------------------------------------    
+    p_out_exitcode := 0;
+    call  "EX_LOG"."cdp.log.procedures::logProc"
+			  ( I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			    I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			    I_DETAIL=>'Success') ; 
+
+END;

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Privilege:analyticPrivilege xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Privilege="http://www.sap.com/ndb/BiModelPrivilege.ecore" schemaVersion="1.1" id="AP_UI_FLEXIBLE_ADDER">
+  <descriptions defaultDescription="AP_UI_FLEXIBLE_ADDER"/>
+  <securedModels allInformationModels="false">
+    <modelUri>/cdp.ebgcfe.models.ui_flexible_adder/calculationviews/CV_UI_ADDER_CONF_TBA</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_flexible_adder/calculationviews/CV_UI_FLEXIBLE_ADDER_CREATE_ADDER_NAME</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_flexible_adder/calculationviews/CV_UI_FLEXIBLE_ADDER_CREATE_DDL</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_flexible_adder/calculationviews/CV_UI_FLEXIBLE_ADDER_CREATE_TBA_TYPE</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_flexible_adder/calculationviews/CV_UI_FLEXIBLE_ADDER_SEARCH_DDL</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_flexible_adder/calculationviews/CV_UI_FLEXIBLE_ADDER_SEARCH_FAMILY_DDL</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_flexible_adder/calculationviews/CA_UI_FLEXIBLE_ADDER</modelUri>
+  </securedModels>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="PLANT">
+      <procedureFilter operator="IN" procedureName="&quot;SECURITY&quot;.cdp.security.procedures::getResourceUserByPLANT"/>
+    </filter>
+    <attributeName>PLANT</attributeName>
+    <originInformationModelUri>/cdp.ebgcfe.models.ui_flexible_adder/calculationviews/CA_UI_FLEXIBLE_ADDER</originInformationModelUri>
+  </restriction>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="SUBGEO">
+      <procedureFilter operator="IN" procedureName="&quot;SECURITY&quot;.cdp.security.procedures::getResourceUserByGEO"/>
+    </filter>
+    <attributeName>SUBGEO</attributeName>
+    <originInformationModelUri>/cdp.ebgcfe.models.ui_flexible_adder/calculationviews/CA_UI_FLEXIBLE_ADDER</originInformationModelUri>
+  </restriction>
+</Privilege:analyticPrivilege>

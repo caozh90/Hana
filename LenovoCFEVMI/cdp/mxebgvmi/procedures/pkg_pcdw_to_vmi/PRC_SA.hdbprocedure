@@ -1,0 +1,62 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_pcdw_to_vmi::PRC_SA" (
+	IN p_wfname VARCHAR(20), OUT p_out_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA 
+	AS
+/************************************************************************
+*name      : PRC_SA              --函数名
+*function    :               --函数功能
+*input     ：  p_wfname              --输入参数
+*output     : p_out_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/01                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+************************************************************************/
+	v_prc_name VARCHAR(70) := 'PRC_SA';	
+	gv_logic_name    VARCHAR2 (40)  := 'PKG_PCDW_TO_VMI';
+	v_full_name VARCHAR(100) := gv_logic_name||'.'||v_prc_name;
+	v_logidi INTEGER := 0;
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 p_out_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||'Failure');                                                  
+		 
+/*		 
+         --COMMIT;
+ */       
+	END;
+	p_out_exitcode := -1;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>'Start');
+	delete from Z_PCDW_SA;
+	
+	insert into Z_PCDW_SA(SA_NUMBER,SA_LINE_ID,ORDER_TYPE,START_DATE,END_DATE,LIFNR
+							,MATNR,WERKS,CREATE_DATE,LINE_CHANGE_DATE,QTY,OPEN_QTY
+							,STATUS,PURCHASE_GROUP,SYS_CREATED_BY,SYS_CREATED_DATE
+						)
+			select TRIM(EBELN),EBELP,TRIM(BSART),
+				"MXEBGVMI"."cdp.mxebgvmi.functions.pkg_pcdw_to_vmi::FUNC_GETDATE"(TRIM (to_varchar(KDATB))).result,
+				"MXEBGVMI"."cdp.mxebgvmi.functions.pkg_pcdw_to_vmi::FUNC_GETDATE"(TRIM (to_varchar(KDATE))).result,
+						TRIM(LIFNR),TRIM(MATNR),TRIM(WERKS),
+				"MXEBGVMI"."cdp.mxebgvmi.functions.pkg_pcdw_to_vmi::FUNC_GETDATE"(TRIM (to_varchar(CREATE_DATE))).result,
+				"MXEBGVMI"."cdp.mxebgvmi.functions.pkg_pcdw_to_vmi::FUNC_GETDATE"(TRIM (to_varchar(LINE_CHANGE_DATE))).result
+						,KTMNG,OKTMN,TRIM(LOEKZ),TRIM(EKGRP),TRIM(:v_prc_name),CURRENT_TIMESTAMP
+			from pcdw.ECC_SA a where a.wfname=:p_wfname;
+			
+			
+    p_out_exitcode := 0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>'Success');
+END;

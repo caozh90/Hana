@@ -1,0 +1,93 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::setSessionModuleUser" (
+	IN	 aXSSESSION_ID NVARCHAR(64),
+	IN   aCOMMENT NVARCHAR(256)	
+	,IN	aMODULE_ID NVARCHAR(10)
+    --,IN	aUSER_ID BIGINT    
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"  ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+
+    aUSER_ID BIGINT;	
+	aMODULE_NAME NVARCHAR(256);
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	 privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic  
+ call	"SECURITY"."cdp.security.procedures::setSessionModuleUser" (
+	'',
+	''
+	,'1000000001',?);
+
+ *****************************/
+ 
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::setSessionModuleUser error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::setSessionModuleUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);    	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;
+ 
+ /*
+call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityBase'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+   */ 
+ 
+ SELECT "MODULE_NAME", A."USER_ID" INTO aMODULE_NAME,aUSER_ID
+ FROM "SECURITY"."cdp.security.data::userManagement.INFO_USER" A
+ ,"SECURITY"."cdp.security.data::userManagement.INFO_MODULE" B
+ ,"SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" C
+WHERE A."USER_NAME" = SESSION_USER 
+--AND A."USER_ID" = :aUSER_ID
+AND A."USER_ID" = C."USER_ID"
+AND B."MODULE_ID" = :aMODULE_ID
+AND B."MODULE_ID" = C."MODULE_ID"
+;
+   
+     --START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::setSessionModuleUser"'
+	,I_MODULE=>:aMODULE_NAME); 
+	
+call "SECURITY"."cdp.security.procedures::createDataSessionContext" (	      
+    :aXSSESSION_ID 
+ 	,'MODULE_ID'
+	,:aMODULE_ID
+	,:aCOMMENT,errorInfo);  
+ 
+
+-- exec	'SET ''MODULE_ID'' = '''||:aMODULE_ID||'''';
+	
+aI_DETAIL := 'cdp.security.procedures::setSessionModuleUser ('||:aMODULE_ID||' ,'||:aUSER_ID||') successfully executed . ';
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::setSessionModuleUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000028'
+     	,I_DETAIL=>:aI_DETAIL);	
+
+END;

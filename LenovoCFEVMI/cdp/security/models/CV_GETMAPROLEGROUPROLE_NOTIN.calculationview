@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.2" id="CV_GETMAPROLEGROUPROLE_NOTIN" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_GETMAPGROUPUSER_NOTIN"/>
+  <localVariables>
+    <variable id="P_ROLEGROUP_ID" parameter="true">
+      <descriptions defaultDescription="P_ROLEGROUP_ID"/>
+      <variableProperties datatype="BIGINT" defaultValue="0" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#AN_GETMAPROLEGROUPROLE_NOTIN">
+      <targetVariable name="P_ROLEGROUP_ID" resourceUri="/cdp.security.models/analyticviews/AN_GETMAPROLEGROUPROLE_NOTIN"/>
+      <localVariable>#P_ROLEGROUP_ID</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"/>
+    </DataSource>
+    <DataSource id="AN_GETMAPROLEGROUPROLE_NOTIN" type="ANALYTIC_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/cdp.security.models/analyticviews/AN_GETMAPROLEGROUPROLE_NOTIN</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="ROLEGROUP_ID">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$P_ROLEGROUP_ID$$"/>
+        </viewAttribute>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="ROLE_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="ID"/>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="ROLE_NAME"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="ROLE_ID_1"/>
+        <viewAttribute id="DISPLAY_ROLE_NAME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#AN_GETMAPROLEGROUPROLE_NOTIN">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ID" source="ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_NAME" source="ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPLAY_ROLE_NAME" source="DISPLAY_ROLE_NAME"/>
+      </input>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID_1" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+      </input>
+      <joinAttribute name="MODULE_ID"/>
+      <joinAttribute name="ROLE_ID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="ROLE_ID"/>
+        <viewAttribute id="ROLE_NAME"/>
+        <viewAttribute id="COMMENT"/>
+        <viewAttribute id="ROLE_ID_1">
+          <filter xsi:type="AccessControl:SingleValueFilter" operator="NL" including="true"/>
+        </viewAttribute>
+        <viewAttribute id="DISPLAY_ROLE_NAME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID" source="ROLE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_NAME" source="ROLE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLE_ID_1" source="ROLE_ID_1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPLAY_ROLE_NAME" source="DISPLAY_ROLE_NAME"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="MODULE_ID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MODULE_ID"/>
+      </attribute>
+      <attribute id="ROLEGROUP_ID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLEGROUP_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLEGROUP_ID"/>
+      </attribute>
+      <attribute id="ROLE_ID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLE_ID"/>
+      </attribute>
+      <attribute id="ROLE_NAME" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="COMMENT" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="COMMENT"/>
+      </attribute>
+      <attribute id="DISPLAY_ROLE_NAME" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DISPLAY_ROLE_NAME"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="339"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="243"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

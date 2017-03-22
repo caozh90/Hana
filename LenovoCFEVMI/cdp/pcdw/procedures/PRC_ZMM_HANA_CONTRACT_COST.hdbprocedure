@@ -1,0 +1,78 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_ZMM_HANA_CONTRACT_COST" (  
+    OUT P_OUT_EXITCODE INTEGER 
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA PCDW 
+    AS 
+
+/***************************** 
+-- author:      liuxt
+-- create date: 2016-10-09
+-- description: PCDW.ECC_CONTRACT_COST data into PCDW.PCDW_CONTRACT_COST
+-- modify [1]:  
+ *****************************/
+     
+     vmsg                 VARCHAR(1024);
+     vcode                INTEGER;
+     v_prc_name           VARCHAR(30)       := 'PRC_ZMM_HANA_CONTRACT_COST';   
+     v_logidi             INTEGER           := 0;
+     v_status             VARCHAR(20)       := 'INSERT';
+     
+BEGIN
+
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+   P_OUT_EXITCODE := ::SQL_ERROR_CODE;
+   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE		=>'PROC_ERROR',
+										       I_LOGSID		=>:V_LOGIDI,
+									    	   I_EVENT_NAME =>:V_PRC_NAME,
+											   I_MODULE		=>'PCDW',
+											   I_MESSAGE	=>'ERROR',
+											   I_DETAIL		=>TO_CHAR(::SQL_ERROR_CODE) || ':' ||SUBSTR(::SQL_ERROR_MESSAGE, 1, 512));                                                  
+  
+   vmsg :=   SUBSTR(::SQL_ERROR_MESSAGE, 1, 500);
+   vcode := ::SQL_ERROR_CODE;
+   
+   insert into pcdw_proc_log (eventtime,eventname,subevent,msgcode,eventmsg,eventtype,datasource,datadest,eventdescr)
+   values (current_timestamp,:v_prc_name,'others error',:vcode,:vmsg,'','','','end');  
+   
+  END;
+
+  CALL "EX_LOG"."cdp.log.procedures::logProc"( I_TYPE		=>'PROC_START',
+  											   I_LOGSID	  	=>:V_LOGIDI,
+											   I_EVENT_NAME =>:V_PRC_NAME,
+											   I_MODULE		=>'PCDW',
+										       I_DETAIL		=>:V_PRC_NAME||':'||'START');
+			    
+
+  --delete 90 days ago and bak now
+  DELETE FROM pcdw.bak_ecc_contract_cost 
+  WHERE sys_bak_date_timestamp<ADD_DAYS(CURRENT_TIMESTAMP,-90);
+  
+  INSERT INTO pcdw.bak_ecc_contract_cost
+  SELECT t.*,CURRENT_TIMESTAMP FROM  pcdw.ecc_contract_cost t;
+  
+  --trans data
+  DELETE FROM pcdw.pcdw_contract_cost;
+  
+  INSERT INTO pcdw.pcdw_contract_cost
+  SELECT * FROM pcdw.ecc_contract_cost;
+  
+  --run log
+  INSERT INTO pcdw_proc_log (eventtime,eventname,subevent,msgcode,eventmsg,eventtype,datasource,datadest,eventdescr)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,null,null,null,null,'ECC_CONTRACT_COST','PCDW_CONTRACT_COST',null);     
+                     
+    
+  INSERT INTO pcdw_proc_log (eventtime,eventname,subevent,msgcode,eventmsg,eventtype,datasource,datadest,eventdescr)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,'SUCCESS',:vcode,:vmsg,'','','','end');     
+   
+  P_OUT_EXITCODE := 0; 
+  CALL "EX_LOG"."cdp.log.procedures::logProc" (I_TYPE       =>'PROC_END',
+  											   I_LOGSID     =>:V_LOGIDI,
+			 								   I_EVENT_NAME =>:V_PRC_NAME,
+			 								   I_MODULE     =>'PCDW',
+											   I_DETAIL     =>:V_PRC_NAME||':'||'SUCCESS');
+END;
+ 
+ 

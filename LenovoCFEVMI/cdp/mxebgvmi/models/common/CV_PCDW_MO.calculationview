@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_PCDW_MO" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_PCDW_MO"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="BAK_PCDW_MO_BOM" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="BAK_PCDW_MO_BOM"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_2">
+      <viewAttributes>
+        <viewAttribute id="PRODUCTIONORDID"/>
+        <viewAttribute id="BOMNAME"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="SYS_CREATED_DATE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="DATE" id="CUR_DATE_30">
+          <formula>adddays(now(),-30)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#BAK_PCDW_MO_BOM">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTIONORDID" source="PRODUCTIONORDID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BOMNAME" source="BOMNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+      </input>
+      <filter>&quot;SYS_CREATED_DATE&quot; >&quot;CUR_DATE_30&quot;</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_2">
+    <attributes>
+      <attribute id="PRODUCTIONORDID" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTIONORDID"/>
+        <keyMapping columnObjectName="Aggregation_2" columnName="PRODUCTIONORDID"/>
+      </attribute>
+      <attribute id="BOMNAME" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="BOMNAME"/>
+        <keyMapping columnObjectName="Aggregation_2" columnName="BOMNAME"/>
+      </attribute>
+      <attribute id="MATNR" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Aggregation_2" columnName="MATNR"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="SYS_CREATED_DATE" order="4" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <measureMapping columnObjectName="Aggregation_2" columnName="SYS_CREATED_DATE"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="200"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,367 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cryad_ph"
+(
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CRYAD_PH_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+/************************************************************************
+*name        :      ui_cryad_ph
+*function    :      upload data UI_CRYAD_PH_S         
+*input       ：              business_name etc
+*output      :                
+*author      :      zhao dan
+*CreateDate  :      2016.8.24
+*UpdateDate  :        
+*************************************************************************/ 
+
+	AS
+	path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n_ins int;
+	n_upd int;
+	error_num int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'UI_CRYAD_PH';
+	validate int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	select '1' from dummy;
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	select '1' from dummy;
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+    END; 
+       
+	--procedure begin
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	--检查重复
+	DUP_ERR = 	
+	SELECT  CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+ 		   '"DUPLICATE DATA"::'||' check your file.' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE (CYCLE,PRODUCT_GROUP,PH,ITEM,PLANT,COUNTRY,TBA_TYPE) IN 
+	      (  SELECT CYCLE,PRODUCT_GROUP, PH,ITEM,PLANT,COUNTRY,TBA_TYPE 
+	           FROM  :newInfo 
+		       GROUP BY CYCLE,PRODUCT_GROUP, PH,ITEM,PLANT,COUNTRY,TBA_TYPE 
+		       HAVING COUNT(*) > 1
+	       );
+	       
+	newInfo = 
+	SELECT * FROM :newInfo 
+	WHERE    ( CYCLE,PRODUCT_GROUP, PH,ITEM,PLANT,COUNTRY,TBA_TYPE ) 
+	            NOT IN ( SELECT CYCLE,PRODUCT_GROUP, PH,ITEM,PLANT,COUNTRY,TBA_TYPE FROM  :DUP_ERR ) 
+	                 ;
+
+	PH_ERR =
+	SELECT  CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+ 		   '"PH"::'||PH||' PH. not exists.' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE NOT EXISTS ( select 1 
+						from ebgcfe.ui_item 
+						where
+						 LEFT(PROD_H,LENGTH(A.PH)) = a.PH ) AND
+		   A.PH	<> 'N/A'			 ;
+		 
+	ITEM_ERR =
+	SELECT  CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+ 		   '"ITEM"::'||ITEM||' ITEM. not exists.' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE NOT EXISTS ( select 1 
+						from ebgcfe.ui_item 
+						where
+						 item_type in ('MTM','CTO','BUNDLE','OPTION') AND
+						 ITEM = A.ITEM
+				      ) AND
+		 A.ITEM	<> 'N/A'			 ;	
+		 
+/*	PH_ITEM_ERR =
+	SELECT  CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+ 		   'ITEM or PH should be filled at least one .' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE A.PH <> '' AND
+		 A.ITEM	<> '' ;		*/
+		 
+	PLANT_ERR =
+	SELECT  CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+ 		    '"PLANT"::'||PLANT||' PLANT. not exists.' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE A.PLANT <> 'ALL' AND
+		  A.PLANT NOT IN (select distinct plant from UI_PLANT WHERE PLANT<>'WW')	 ;			 	 	 
+				
+	COUNTRY_ERR =
+	SELECT  CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+ 		    '"COUNTRY"::'||COUNTRY||' COUNTRY. not exists.' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE UPPER(A.COUNTRY) NOT IN (select distinct (COUNTRY) from UI_REGION )	 ;	
+	
+	TBA_TYPE_ERR =
+	SELECT  CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+ 		    '"TBA_TYPE"::'||TBA_TYPE||' TBA_TYPE. not exists.' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE A.TBA_TYPE NOT IN (select distinct(pvalue) from conf_parameters where pdomain='UI_ADDER_CONF' and pname='TBA_TYPE' )	 ;		
+				
+	ERROR_INFOR = 
+	SELECT  CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+	 		STRING_AGG(ERROR_MESSAGE,',') "ERROR_MESSAGE",
+	 		business_name,
+	 		SEQ,
+	 		POSITION
+	FROM
+		( SELECT * 
+			FROM :DUP_ERR UNION	
+		 SELECT * 
+			FROM :PH_ERR UNION
+		 SELECT * 
+			FROM :ITEM_ERR UNION		
+		 SELECT * 
+			FROM :PLANT_ERR UNION	
+		 SELECT * 
+			FROM :COUNTRY_ERR UNION	
+		 SELECT * 
+			FROM :TBA_TYPE_ERR 						
+		 )
+	GROUP BY CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+	 		business_name,
+	 		SEQ,
+	 		POSITION;
+
+	SELECT count(1) into error_num FROM :ERROR_INFOR;
+	
+
+	--remove error records
+	if error_num >0 then 	
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cryad_ph_err"(:ERROR_INFOR);
+
+	END IF;
+	
+
+	success_info = SELECT *
+				 	FROM :newInfo as a
+				 	WHERE NOT EXISTS ( select 1 from :ERROR_INFOR
+									   where CYCLE = a.CYCLE and  PRODUCT_GROUP = a.PRODUCT_GROUP and
+											 PH = a.PH       and  ITEM = a.ITEM and
+											 PLANT = a.PLANT and  COUNTRY = a.COUNTRY and
+											 TBA_TYPE = a.TBA_TYPE);
+    insert_info = select * 
+    				from :success_info as a
+    				where not exists ( select 1 from ui_cryad_ph 
+    				                   where CYCLE = a.CYCLE and  PRODUCT_GROUP = a.PRODUCT_GROUP and
+											 PH = a.PH       and  ITEM = a.ITEM and
+											 PLANT = a.PLANT and  COUNTRY = a.COUNTRY and
+											 TBA_TYPE = a.TBA_TYPE)	;	
+											 
+	upd_info = select * 
+    				from :success_info as a
+    				where    exists ( select 1 from ui_cryad_ph 
+    				                   where CYCLE = a.CYCLE and  PRODUCT_GROUP = a.PRODUCT_GROUP and
+											 PH = a.PH       and  ITEM = a.ITEM and
+											 PLANT = a.PLANT and  COUNTRY = a.COUNTRY and
+											 TBA_TYPE = a.TBA_TYPE)	;											 									
+											
+	SELECT count(1) into n_ins
+	 	FROM :insert_info;	 
+	if n_ins > 0 then
+		INSERT INTO "EBGCFE"."UI_CRYAD_PH"(
+				CYCLE,PRODUCT_GROUP,
+				PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+				M1,M2,M3,M4,M5,
+				M6,M7,M8,M9,M10,
+				M11,M12,M13,M14,M15,
+				M16,M17,M18,			
+				SYS_CREATED_BY,
+				SYS_CREATED_DATE,
+				SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,
+				ACTION				
+			)
+			SELECT  CYCLE,PRODUCT_GROUP,
+					PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+					M1,M2,M3,M4,M5,
+					M6,M7,M8,M9,M10,
+					M11,M12,M13,M14,M15,
+					M16,M17,M18,
+			       :currentUser,
+				   :create_time,
+				   :currentUser,
+				   :create_time,
+				   'create'
+			FROM :insert_info as a ;
+	
+		 	
+		 	--insert操作需要写入日志
+	 	insert into "EBGCFE"."UI_CRYAD_PH_LOG"(
+				CYCLE,PRODUCT_GROUP,
+				PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+				M1,M2,M3,M4,M5,
+				M6,M7,M8,M9,M10,
+				M11,M12,M13,M14,M15,
+				M16,M17,M18,
+				SYS_CREATED_BY,
+				SYS_CREATED_DATE,
+				AT_MODIFIED_BY,
+				AT_ACTION,
+				AT_MODIFIED_ON,
+				AT_MILLIS
+		 )SELECT 
+			    CYCLE,PRODUCT_GROUP,
+				PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+				M1,M2,M3,M4,M5,
+				M6,M7,M8,M9,M10,
+				M11,M12,M13,M14,M15,
+				M16,M17,M18,
+			    :currentUser,
+			    :create_time,
+			    :currentUser,
+			    'create',    
+		 		CURRENT_TIMESTAMP,
+		 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) 
+		 		FROM :insert_info as a;
+		end if;
+		
+	SELECT count(1) into n_upd
+	 	FROM :upd_info;	 
+	if n_upd > 0 then
+				
+		UPDATE "EBGCFE"."UI_CRYAD_PH" a
+		   SET (  a.m1, a.m2, a.m3, a.m4,	      
+			      a.m5, a.m6, a.m7, a.m8,
+			      a.m9, a.m10, a.m11, a.m12,
+			      a.m13, a.m14, a.m15, a.m16,
+			      a.m17, a.m18,	     
+			      a.SYS_LAST_MODIFIED_DATE, a.SYS_LAST_MODIFIED_BY,
+			      a.action)
+			 = 
+				( b.m1, b.m2, b.m3, b.m4,	      
+			      b.m5, b.m6, b.m7, b.m8,
+			      b.m9, b.m10, b.m11, b.m12,
+			      b.m13, b.m14, b.m15, b.m16,
+			      b.m17, b.m18,	      
+				  CURRENT_TIMESTAMP,SESSION_USER,
+				  'update')
+		FROM "EBGCFE"."UI_CRYAD_PH" a, :upd_info b 
+		WHERE a.CYCLE = b.CYCLE and  a.PRODUCT_GROUP = b.PRODUCT_GROUP and
+			  a.PH = b.PH       and  a.ITEM = b.ITEM and
+			  a.PLANT = b.PLANT and  a.COUNTRY = b.COUNTRY and
+			  a.TBA_TYPE = b.TBA_TYPE ;		
+        
+
+		 	
+		 	--insert操作需要写入日志
+	 	insert into "EBGCFE"."UI_CRYAD_PH_LOG"(
+				CYCLE,PRODUCT_GROUP,
+				PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+				M1,M2,M3,M4,M5,
+				M6,M7,M8,M9,M10,
+				M11,M12,M13,M14,M15,
+				M16,M17,M18,
+				SYS_CREATED_BY,
+				SYS_CREATED_DATE,
+				AT_MODIFIED_BY,
+				AT_ACTION,
+				AT_MODIFIED_ON,
+				AT_MILLIS
+		 )SELECT 
+			    CYCLE,PRODUCT_GROUP,
+				PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+				M1,M2,M3,M4,M5,
+				M6,M7,M8,M9,M10,
+				M11,M12,M13,M14,M15,
+				M16,M17,M18,
+			    :currentUser,
+			    :create_time,
+			    :currentUser,
+			    'update',    
+		 		CURRENT_TIMESTAMP,
+		 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) 
+		 		FROM :insert_info as a;
+		end if;		
+			
+
+		-- passing successful total numbers
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:n_ins+:n_upd,0,:table_name);
+
+END;

@@ -1,0 +1,95 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xmva::beforeCreateUiXmva" (
+	     IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XMVA_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA
+/************************************************************************
+*name      :                     beforeCreateUiXmva
+*function    :               
+*input     ：               newInfo
+*output     :    errorInfo            
+*author     :                     Fang Yuan
+*CreateDate    :                  2015.1.22
+*UpdateDate  :        
+*************************************************************************/ 
+	AS 
+	  
+	   v_prod_family NVARCHAR(100); 
+	   v_subgeo NVARCHAR(20);
+	   v_tba_type NVARCHAR(10);
+	   v_brand NVARCHAR(40);
+	   v_plant NVARCHAR(50);
+	  
+	  validate1 INTEGER; 
+BEGIN
+
+   	
+    select FAMILY,SUBGEO,TBA_TYPE,BRAND,PLANT
+		 into v_prod_family,v_subgeo,v_tba_type
+		,v_brand,v_plant from :newInfo;  
+	
+	--BRAND	
+    select count(1) into validate1 from "EBGCFE"."UI_PRODFAMILY" 
+    where BRAND = :v_brand;
+    IF validate1<=0 then
+        errorinfo = select 400 as http_status_code, 
+            'BRAND: VALIDATION FAILED, NOT EXIST IN UI_PRODFAMILY' error_message, 
+            '' detail from dummy;
+        return;
+
+    END IF;
+    
+    --FAMILY
+    select count(1) into validate1 from "EBGCFE"."UI_PRODFAMILY" 
+    where PROD_FAMILY = :v_prod_family;
+    if :v_prod_family = 'ALL' then
+    	validate1 := 1;
+    end if;    
+    
+    IF validate1<=0 then
+        errorinfo = select 400 as http_status_code, 
+            'FAMILY: VALIDATION FAILED, NOT EXIST IN UI_PRODFAMILY' error_message, 
+            '' detail from dummy;
+        return;
+
+    END IF;
+    
+    
+    --PLANT
+    select count(1) into validate1 from "EBGCFE"."UI_PLANT" 
+    where PLANT = :v_plant;
+    IF validate1<=0 then
+        errorinfo = select 400 as http_status_code, 
+            'PLANT: VALIDATION FAILED, NOT EXIST IN UI_PLANT' error_message, 
+            '' detail from dummy;
+        return;
+
+    END IF;
+    
+    --SUBGEO
+    select count(1) into validate1 from "EBGCFE"."UI_REGION" 
+    where SUBGEO = :v_subgeo;
+    if :v_subgeo = 'ALL' then
+    	validate1 := 1;
+    end if;	
+    IF validate1<=0 then
+        errorinfo = select 400 as http_status_code, 
+            'SUBGEO: VALIDATION FAILED, NOT EXIST IN UI_REGION' error_message, 
+            '' detail from dummy;
+        return;
+    END IF;
+   
+   -- TBA_TYPE
+    select count(1) into validate1 from "EBGCFE"."CONF_PARAMETERS"
+    where pdomain='UI_MVA' and pname='TBA_TYPE' and pvalue= :v_tba_type;
+    IF validate1<=0 then
+        errorinfo = select 400 as http_status_code, 
+            'TBA_TYPE: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+
+    END IF;
+END;

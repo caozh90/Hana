@@ -1,0 +1,18 @@
+role cdp.ebgcfe.roles::funcSupport {
+	catalog schema "EBGCFE": SELECT,INSERT,EXECUTE,UPDATE,DEBUG,DELETE;
+	catalog schema "DS_INFO": 	SELECT,INSERT,DELETE,UPDATE;
+	catalog schema "PCDW": 	SELECT;
+	catalog schema "EX_LOG": 	SELECT;
+	catalog sql object "SYS"."REPOSITORY_REST": EXECUTE;		
+		--添加cdp.pcdw的读写权限
+	package cdp:	
+						REPO.READ;	
+	package cdp.pcdw:	
+						REPO.READ;
+	catalog schema "_SYS_BIC": SELECT;
+	catalog schema "_SYS_BI":  SELECT;
+	--Analytic privileges delete this role on 8/25/2015,if user has this role,authorization will not work,he can see any UI ,
+	--this role only need by CFE_TO_CRM account which need call webservice
+	--catalog analytic privilege : "_SYS_BI_CP_ALL";	
+	
+} 

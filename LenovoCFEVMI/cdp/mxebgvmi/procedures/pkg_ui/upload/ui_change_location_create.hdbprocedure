@@ -1,0 +1,70 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_change_location_create" ( 
+IN   MATNR NVARCHAR(18),
+IN   LINE_NUM NVARCHAR(10),
+IN   STORAGE_LOC NVARCHAR(40),
+IN   MO_NUM NVARCHAR(12),
+IN   STATUS NVARCHAR(40),
+IN	 REMARK NVARCHAR(40),
+OUT  result_status int,--1 for error, 0 for success
+OUT  error_message nvarchar(4096)	
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+	
+	MATNR_DESCR NVARCHAR(40);
+	currentUser varchar(60);
+	CREATE_DATE TIMESTAMP;
+	lineNum int;
+	isMatnr int;
+	isExit int;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+  	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+ 	BEGIN
+ 	    result_status := 1;
+    	error_message := ::SQL_ERROR_MESSAGE;
+ 	END ;
+ 	
+ 	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into CREATE_DATE from dummy;
+	
+	--检查MATNR有效性
+	select count(1) into isMatnr from "MXEBGVMI"."ITEMSITEMASTER" where ITEM = :MATNR;
+	if isMatnr > 0 then
+		select ITEMDESC into MATNR_DESCR from "MXEBGVMI"."ITEMSITEMASTER" where ITEM = :MATNR;
+	else
+		result_status := 1;
+		error_message := 'Part number does not exit.';
+		RETURN;
+	end if;
+	
+	--检查STORAGE_LOC 有效性
+	SELECT COUNT(1) INTO isExit FROM "MXEBGVMI"."CONF_WAHREHOUSE_INFO"
+ 	WHERE STORAGE_LOCATION = :STORAGE_LOC;
+ 	if isExit = 0 then
+ 		result_status := 1;
+		error_message := 'STORAGE_LOC number does not exit.';
+		RETURN;
+ 	end if;
+	
+	
+	
+	select count(1) into lineNum from "MXEBGVMI"."UI_CHANGE_SL"
+ 	where MATNR = :MATNR and MO_NUM = :MO_NUM and STORAGE_LOC = :STORAGE_LOC;
+ 	if lineNum > 0 then	--主键冲突
+ 		result_status := 1;
+ 		error_message := 'You are inserting duplicated data!';
+ 	else  	--插入数据
+ 		INSERT INTO "MXEBGVMI"."UI_CHANGE_SL"
+ 		(MATNR,MATNR_DESCR,LINE_NUM,STORAGE_LOC,MO_NUM,STATUS,REMARK,SYS_CREATED_DATE,SYS_CREATED_BY)
+ 		VALUES
+ 		(:MATNR,:MATNR_DESCR,:LINE_NUM,:STORAGE_LOC,:MO_NUM,:STATUS,:REMARK,:CREATE_DATE,:currentUser);
+ 		result_status := 0;
+ 		error_message := 'Data insert successful';
+ 	end if;
+ 	
+END;

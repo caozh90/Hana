@@ -1,0 +1,44 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteMapAllForOData" (
+		IN newInfo "SECURITY"."cdp.security.data::userManagement.MapAllT",
+		OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+
+
+    aRoleGROUP_ID BIGINT;	--//rolegroup id	
+    aRole_ID BIGINT;  	--//role id
+    aModule_ID  BIGINT;
+    aUser_ID BIGINT;
+    aUserGroup_ID BIGINT;
+    
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+    select 
+	MODULE_ID, 	--//userid /usergroup id	
+    ROLEGROUP_ID,
+    ROLE_ID,
+    USER_ID,
+    GROUP_ID
+  into 
+ 	aModule_ID,  --//module id
+ 	aRoleGROUP_ID,
+	aRole_ID,
+	aUser_ID,
+	aUserGroup_ID
+  from :newInfo;
+  
+CALL "SECURITY"."cdp.security.procedures::deleteMapAll" (
+		--	aModule_ID  
+    		
+    	aUser_ID 
+    	,	aUserGroup_ID
+    	,	aRoleGROUP_ID	--//rolegroup id	
+    	,	aRole_ID   	--//role id    
+		, errorInfo);
+END;

@@ -1,0 +1,235 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_item_type::updateUiItemType" ( 
+	     IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_ITEM_TYPE_T"
+		,IN oldInfo  "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_ITEM_TYPE_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      :                     updateUiItemType
+*function    :               
+*input     ：               
+*output     :                
+*author     :                     shangqian
+*CreateDate    :                  2015.2.10
+*UpdateDate  :        
+*************************************************************************/	
+		aItem NVARCHAR(40);
+		aProduct_group NVARCHAR(10);
+		aUser_item_desc NVARCHAR(200);
+		aUser_item_type NVARCHAR(20);
+		aUser_eol_status NVARCHAR(20);
+		
+		aUser_asp_prd_family NVARCHAR(100);
+		
+		resourceExists BIGINT;		
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;  
+		
+	    v_event_name  VARCHAR(200) := 'cdp.ebgcfe.procedures.pkg_ui.ui_item_type::updateUiItemType';
+        v_exitcode    DECIMAL;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_item_type::updateUiItemType error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_item_type::updateUiItemType'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_force_item_type::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_item_type::updateUiItemType'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+ select
+    USER_ITEM_DESC,
+    USER_ITEM_TYPE,
+    USER_EOL_STATUS,
+    USER_ASP_PRD_FAMILY
+  into  	
+	aUser_item_desc,
+	aUser_item_type,
+	aUser_eol_status,
+	aUser_asp_prd_family	
+  from :newInfo;
+  
+ select
+    ITEM,
+    PRODUCT_GROUP    
+  into  	
+ 	aItem,
+	aProduct_group
+  from :oldInfo;
+  
+  	SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_ITEM" A    
+     WHERE 
+          A.USER_ITEM_DESC = :aUser_item_desc 
+          AND A.USER_ITEM_TYPE = :aUser_item_type
+          AND A.USER_EOL_STATUS = :aUser_eol_status
+          AND A.USER_ASP_PRD_FAMILY = :aUser_asp_prd_family
+          AND A.ITEM = :aItem
+          AND A.PRODUCT_GROUP = :aProduct_group;
+   
+    if  :resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;*/
+     	return;--SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before';    	
+    end if;
+
+    if ifnull(:aUser_item_desc, '') != ''
+    then
+    	update "EBGCFE"."UI_ITEM" set
+    	ITEM_DESC = :aUser_item_desc,
+    	--USER_ITEM_DESC = :aUser_item_desc,    	
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user
+   		 where
+	    	ITEM = :aItem and
+	    	PRODUCT_GROUP = :aProduct_group;    	
+    end if;
+    
+    if ifnull(:aUser_item_type, '') != ''
+    then
+    	update "EBGCFE"."UI_ITEM" set
+    	ITEM_TYPE = :aUser_item_type,
+    	--USER_ITEM_TYPE = :aUser_item_type,    	
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user
+   		 where
+	    	ITEM = :aItem and
+	    	PRODUCT_GROUP = :aProduct_group;    	
+    end if;
+    
+    if ifnull(:aUser_eol_status, '') != ''
+    then
+    	update "EBGCFE"."UI_ITEM" set
+    	EOL_STATUS = :aUser_eol_status,
+    	--USER_EOL_STATUS = :aUser_eol_status,    	
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user
+   		 where
+	    	ITEM = :aItem and
+	    	PRODUCT_GROUP = :aProduct_group;    	
+    end if;
+    
+    if ifnull(:aUser_asp_prd_family, '') != ''
+    then
+    	update "EBGCFE"."UI_ITEM" set
+    	ASP_PRD_FAMILY = :aUser_asp_prd_family,
+    	--USER_EOL_STATUS = :aUser_eol_status,    	
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user
+   		 where
+	    	ITEM = :aItem and
+	    	PRODUCT_GROUP = :aProduct_group;    	
+    end if;  
+      
+    UPDATE ebgcfe.ui_item t1
+       SET (t1.asp_prd_family, t1.brand ) = (t2.prod_family, t2.brand )
+      FROM ebgcfe.ui_machinetype t2
+     WHERE IFNULL(t1.user_asp_prd_family, '') <> ''
+       AND IFNULL(:aUser_asp_prd_family,'')    = ''
+       AND t1.item                            = :aitem
+       AND t1.machine_type                    = t2.machinetype;    
+         
+    update "EBGCFE"."UI_ITEM" set
+    	--ITEM_DESC = :aUser_item_desc,
+    	USER_ITEM_DESC = :aUser_item_desc,
+    	--ITEM_TYPE = :aUser_item_type,
+    	USER_ITEM_TYPE = :aUser_item_type,
+    	--EOL_STATUS = :aUser_eol_status,
+    	USER_EOL_STATUS = :aUser_eol_status,
+    	
+    	USER_ASP_PRD_FAMILY = :aUser_asp_prd_family,
+    	    	
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user
+   		 where
+	    	ITEM = :aItem and
+	    	PRODUCT_GROUP = :aProduct_group;
+	    	
+	 /*use User family to set item Brand*/    	
+	UPDATE "EBGCFE".UI_ITEM T1
+       SET T1.BRAND = T2.BRAND
+      FROM "EBGCFE".ui_prodfamily T2
+     WHERE T1.ITEM                             = :aItem
+       AND IFNULL(T1.USER_ASP_PRD_FAMILY, '') <> ''
+       AND T1.USER_ASP_PRD_FAMILY = T2.PROD_FAMILY;    	
+       
+    --Added by Zhoubinbin 20161127, Set eol status logic
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.base_funcs::updateEolStatus"('ITEM', :aItem, :v_event_name, :v_exitcode); 
+	    	    
+    /*put operation to log table*/
+    /*insert into "EBGCFE"."UI_ITEM_LOG"
+    (
+    	PRODUCT_GROUP,
+    	ITEM,
+    	SYS_LAST_MODIFIED_DATE,
+    	USER_ITEM_DESC,
+    	USER_ITEM_TYPE,
+    	USER_EOL_STATUS,
+    	USER_ASP_PRD_FAMILY,
+    	ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    values
+    (
+    	:aProduct_group,
+    	:aItem,
+    	current_date,
+		aUser_item_desc,
+		aUser_item_type,
+		aUser_eol_status,
+		aUser_asp_prd_family,	    	
+    	'update',
+    	session_user,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    );*/
+    	
+/*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_item_type::updateUiItemType ('||:aItem||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures::ui_item_type'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_PARTIAL_CAL" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_PARTIAL_CAL"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="UI_ONDEMAND_CAL_LIST" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_ONDEMAND_CAL_LIST"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews/>
+  <logicalModel id="UI_ONDEMAND_CAL_LIST">
+    <attributes>
+      <attribute id="ITEM" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ONDEMAND_CAL_LIST" columnName="ITEM"/>
+      </attribute>
+      <attribute id="ITEM_TYPE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_TYPE"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ONDEMAND_CAL_LIST" columnName="ITEM_TYPE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ONDEMAND_CAL_LIST" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="SYS_LAST_MODIFIED_DATE" hidden="false" order="5" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="30">
+          <formula>string(seconddate(&quot;SYS_LAST_MODIFIED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="SYS_LAST_MODIFIED_DATE_RAW" hidden="true" order="3" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <measureMapping schemaName="EBGCFE" columnObjectName="UI_ONDEMAND_CAL_LIST" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

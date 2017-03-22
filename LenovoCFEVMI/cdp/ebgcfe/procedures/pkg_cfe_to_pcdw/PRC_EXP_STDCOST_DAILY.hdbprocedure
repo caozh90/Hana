@@ -1,0 +1,91 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cfe_to_pcdw::PRC_EXP_STDCOST_DAILY" (
+	IN p_user_id         VARCHAR(64),
+	OUT p_out_exitcode   INTEGER,
+    OUT p_out_exitmess   VARCHAR(500)
+  ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_EXP_STDCOST_DAILY            
+*function   : 
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id 
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : kangl
+*CreateDate : 2015-08-25
+*UpdateDateV_1 : 2015-10-17      Frankie --函数更改信息（包括作者、时间、更改内容等
+*************************************************************************/	
+	AS
+
+
+     v_user_id       	 VARCHAR(64)  := p_user_id;
+     v_prc_name 	         VARCHAR(30)  := 'PRC_EXP_STDCOST_DAILY';
+     v_g_pkg_name 	     VARCHAR(30)  := 'pkg_cfe_to_pcdw';
+     v_full_name      	 VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+     v_time               BIGINT;
+     v_taking_time        BIGINT;
+     v_debug              CHAR;
+     v_step_counter       INT;
+     v_init_date          TIMESTAMP;
+     logidi               int :=0;
+
+    
+BEGIN
+/*******************************************************************************************/
+  -- exception
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := SUBSTR(::SQL_ERROR_MESSAGE, 1, 500 );  
+ 	 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+ 	 	                                            I_LOGSID      => :logidi,
+ 	 	                                            I_EVENT_NAME  => :v_full_name,
+ 	 	                                            I_MODULE      => 'EBGCFE',
+		                                            I_MESSAGE     => 'ERROR',
+		                                            I_DETAIL      => TO_CHAR(::SQL_ERROR_CODE) || ':' ||
+                                                                     SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );                                   
+    END;
+	
+	
+    
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE'); 
+
+
+    --clear product_group='EBG' data
+
+	
+	delete from PCDW.EXP_CFE_STDCOST_DAILY where PRODUCT_GROUP = 'EBG';
+	  
+	
+	INSERT INTO PCDW.EXP_CFE_STDCOST_DAILY
+		(CYCLE,PRODUCT_GROUP,ITEM,PLANT,EFFECT_DATE,COMP_PRICE,PR_PRICE,
+		 GROUP_PRICE,SYS_CREATED_DATE,SYS_CREATED_BY)
+	 SELECT A.CYCLE, A.PRODUCT_GROUP, A.ITEM , A.PLANT, CURRENT_TIMESTAMP AS EFFECT_DATE,
+		    A.STDCOST*C.M1 AS COMP_PRICE, A.STDCOST*C.M1 AS PR_PRICE, A.STDCOST AS GROUP_PRICE,
+		    CURRENT_TIMESTAMP AS SYS_CREATED_DATE, :p_user_id AS SYS_CREATED_BY
+       FROM UI_STDCOST_DAILY A,
+            (SELECT DISTINCT PRODUCT_GROUP, ECC_PLANT, CURRENCY
+               FROM UI_CFE_ECC_PLANTMAPPING)  B,
+            UI_EXCHANGE_RATE C 
+      WHERE A.PRODUCT_GROUP = B.PRODUCT_GROUP
+        AND A.PLANT         = B.ECC_PLANT
+        AND B.PRODUCT_GROUP = C.PRODUCT_GROUP
+        AND B.CURRENCY      = C.CURRENCY_NAME;
+
+   
+	p_out_exitcode := 0;
+    p_out_exitmess := 'SUCCESSFUL';
+     
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  
+   
+  
+END;

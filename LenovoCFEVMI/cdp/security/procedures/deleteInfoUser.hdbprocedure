@@ -1,0 +1,170 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteInfoUser" (
+	IN aUSER_ID BIGINT
+	--,IN aMODULE_NAME NVARCHAR(200)
+	,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+	 ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+	alogidk INTEGER :=0;
+	userExists Integer := 0;
+	aModuleExists Integer :=0;
+	userName VARCHAR(256);
+	aMODULE_ID NVARCHAR(10) :='';
+	aMODULE_NAME NVARCHAR(256);
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	privilegeExists  NVARCHAR(300)  ;
+	
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	 
+	1\是否存在userid,不存在返回,
+	2\是否存在module name,不存在返回,
+	3、获得module id
+	
+	
+	4\删除在这个module中的  group 中的userid
+	
+	5\删除在这个module中的  map_all 中的userid
+	6\删除在这个module中的  MAP_RESOURCE_USER 中的userid
+	
+	7\判断 是否 模块 都没有这个用户了，再删除 INFO_USER 中的 user id 
+	    a\如果是 则 删除 info——user
+	    b\drop 这个用户。 不在这里执行，如果需要执行，则执行dropUser 这个过程。
+	8\删除在这个module中的userid
+	
+	
+	
+	
+	
+	CALL "SECURITY"."cdp.security.procedures::deleteInfoUser" (
+	IN aUSER_ID BIGINT
+	,IN aMODULE_NAME NVARCHAR(200)
+	,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+	
+ *****************************/
+     
+   DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299;   
+     
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到aUSER_ID ,则返回，同时告知不存在这个userid
+			aI_DETAIL :='cdp.security.procedures::deleteInfoUser can not find the userid : '||aUSER_ID ||' .';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     END;
+     
+       DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>'cdp.security.procedures::deleteUser error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE);
+   	
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+    END; 
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityUserAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+ CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);  
+   --START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoUser"'
+	,I_MODULE=>:aMODULE_NAME); 
+	
+  
+   --1\是否存在userid,不存在返回,
+    select USER_NAME into userName from "SYS"."USERS" WHERE "USER_ID" = :aUSER_ID;
+    
+    --2\是否存在module name,不存在返回,
+  	SELECT count(1) into aModuleExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" 
+WHERE "MODULE_NAME" = :aMODULE_NAME GROUP BY "MODULE_NAME"; 
+	if :aModuleExists = 0 then
+		--如果存在同名的模型，则返回
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000004'
+     	,I_DETAIL=>'cdp.security.procedures::deleteUser error : module name ->' ||:aMODULE_NAME||' not exists .');
+		return ; 
+	end if;
+
+	--3、获得module id
+	SELECT "MODULE_ID" into aMODULE_ID FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" 
+WHERE "MODULE_NAME" = :aMODULE_NAME;
+
+	--4\删除在这个module中的  group 中的userid	
+	delete from "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"  
+	WHERE "USER_ID" = :aUSER_ID	
+	AND "MODULE_ID" = :aMODULE_ID;		
+	
+	
+	--5\删除在这个module中的  map_all 中的userid	
+	delete from "SECURITY"."cdp.security.data::userManagement.MAP_ALL" 
+	where  "USER_ID" = :aUSER_ID  		
+  		AND "MODULE_ID" = :aMODULE_ID;
+  	
+  	--6\删除在这个module中的  MAP_RESOURCE_USER 中的userid	
+  	delete from "SECURITY"."cdp.security.data::userManagement.MAP_RESOURCE_USER" 
+  	where USER_ID = :aUSER_ID AND "MODULE_ID" = :aMODULE_ID;
+  
+	--7\判断 是否 模块 都没有这个用户了，再删除 INFO_USER 中的 user id 
+	--    a\如果是 则 删除 info——user
+	--    b\drop 这个用户。 不在这里执行，如果需要执行，则执行dropUser 这个过程。
+	
+	SELECT top 1 count(1) into userExists FROM "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" 
+	 WHERE USER_ID = :aUSER_ID ;
+  	if userExists =1 then
+  	begin
+  		delete from "SECURITY"."cdp.security.data::userManagement.INFO_USER"  where  USER_ID = :aUSER_ID;
+  		exec 'drop user ' || :userName;
+  	end;
+  	end if;
+  	
+  	--8\删除在这个module中的userid
+  	delete from "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER"  A  	
+  	where  USER_ID = :aUSER_ID AND MODULE_ID =:aMODULE_ID;
+  	
+  	 --如果成功删除,则log添加成功！
+	aI_DETAIL := 'cdp.security.procedures::deleteInfoUser ('||:aUSER_ID||' ) [user name :'||:userName||'];  successfully executed . ';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000003'
+     	,I_DETAIL=>:aI_DETAIL); 
+     	 
+ 		
+END;

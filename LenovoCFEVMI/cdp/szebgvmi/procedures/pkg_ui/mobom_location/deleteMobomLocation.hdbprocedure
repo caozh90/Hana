@@ -1,0 +1,66 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.mobom_location::deleteMobomLocation" (
+		IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_MOBOM_LOCATION_T",
+		OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+/************************************************************************
+*name      : deleteMobomLocation              --函数名
+*function  : 删除表 UI_MOBOM_LOCATION 中的一条数据            --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-07-27       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+		ITEM NVARCHAR(40);
+		LOGICAL_PLANT NVARCHAR(40);
+		--STORAGE_LOCATION NVARCHAR(40);
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.szebgvmi.procedures.pkg_ui.mobom_location::deleteMobomLocation error: '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+ -----LOGIC START-------
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'mobomlocation::deleteable'		,privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.mobom_location::deleteMobomLocation'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+  
+   	--DELETE data
+   	select ITEM,LOGICAL_PLANT
+  	into ITEM,LOGICAL_PLANT
+  	from :newInfo;
+ 	   	
+   	DELETE FROM UI_MOBOM_LOCATION
+   	WHERE ITEM = :ITEM AND LOGICAL_PLANT = :LOGICAL_PLANT;
+   	
+   	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_END'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.mobom_location::deleteMobomLocation'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+  
+   	
+END;

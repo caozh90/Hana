@@ -1,0 +1,234 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::createUiPmBom" ( 
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_BOM",
+	OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      createUiPmBom
+*function    :               
+*input       ：              newInfo
+*output      :      errorInfo            
+*author      :      leon Bian
+*CreateDate  :      2015.10.10
+*UpdateDate  :        
+*************************************************************************/ 	
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	v_resourceExists BIGINT;
+	v_cvsbb_count BIGINT;
+	V_CYCLE VARCHAR(40);
+	V_PRODUCT_GROUP VARCHAR(10);
+	V_OEM_NAME VARCHAR(40);
+	V_ITEM VARCHAR(20);
+	V_ITEM_DESC VARCHAR(200);
+	V_ITEM_TYPE VARCHAR(40);
+	V_BS_PART VARCHAR(20);
+	V_COMMODITY VARCHAR(40);
+	V_PART_DESC VARCHAR(200);
+	V_PART_QTY DECIMAL(15,4);
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::createUiPmBom error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::createUiPmBom'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_pm_bom::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::createUiPmBom'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+
+select  a.CYCLE,
+		a.PRODUCT_GROUP,
+		a.OEM_NAME,
+		a.ITEM,
+		(select ITEM_DESC from UI_ITEM WHERE ITEM = a.ITEM AND PRODUCT_GROUP = a.PRODUCT_GROUP),--ITEM_DESC
+		(select ITEM_TYPE from UI_ITEM WHERE ITEM = a.ITEM AND PRODUCT_GROUP = a.PRODUCT_GROUP),--ITEM_TYPE
+		a.BS_PART,
+		(select COMMODITY from UI_PM_BS_PART WHERE BS_PART = a.BS_PART AND PRODUCT_GROUP = a.PRODUCT_GROUP and OEM_NAME = a.OEM_NAME),--COMMODITY
+		(select ITEM_DESC from UI_ITEM WHERE ITEM = a.BS_PART AND PRODUCT_GROUP = a.PRODUCT_GROUP),--PART_DESC,
+		a.PART_QTY
+into   V_CYCLE,
+	   V_PRODUCT_GROUP,
+	   V_OEM_NAME,
+	   V_ITEM,
+	   V_ITEM_DESC,
+	   V_ITEM_TYPE,
+	   V_BS_PART,
+	   V_COMMODITY,
+	   V_PART_DESC,
+	   V_PART_QTY
+from :newInfo AS a;  
+
+select count(1) into v_resourceExists from "EBGCFE"."UI_PM_BOM" 
+where PRODUCT_GROUP = :V_PRODUCT_GROUP 
+  AND OEM_NAME = :V_OEM_NAME 
+  AND ITEM = :V_ITEM
+  and BS_PART = :V_BS_PART; 
+
+--if item exits in database
+if  :v_resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+	    
+end if;	
+
+--ITEM
+SELECT COUNT(1) INTO v_cvsbb_count
+          FROM UI_ITEM
+          WHERE ITEM = V_ITEM
+          AND EOL_STATUS='OL';
+          
+ IF :v_cvsbb_count = 0 THEN
+	 errorinfo = select 400 as http_status_code, 
+            'ITEM: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;         
+     RETURN;
+ END IF ;
+
+--B/S Part
+SELECT COUNT(1) INTO v_cvsbb_count
+          FROM UI_ITEM
+          WHERE ITEM = V_BS_PART
+          AND ITEM_TYPE in ('COMPONENT','OPTION');
+ IF :v_cvsbb_count = 0 THEN
+	 errorinfo = select 400 as http_status_code, 
+            'B/S Part: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;         
+     RETURN;
+ END IF ;      
+--insert into UI_PM_BOM table
+
+insert into "EBGCFE"."UI_PM_BOM"(CYCLE,
+								PRODUCT_GROUP,
+								OEM_NAME,
+								ITEM,
+								ITEM_DESC,
+								ITEM_TYPE,
+								BS_PART,
+								COMMODITY,
+								PART_DESC,
+								PART_QTY,
+								ACTION,
+								STATUS,
+								CHANGE_ID,
+								CHANGE_ACTION,
+								SYS_CREATED_DATE,
+								SYS_CREATED_BY,
+								SYS_LAST_MODIFIED_DATE,
+								SYS_LAST_MODIFIED_BY
+									) 
+	values ('CURRENT',
+	   V_PRODUCT_GROUP,
+	   V_OEM_NAME,
+	   V_ITEM,
+	   V_ITEM_DESC,
+	   V_ITEM_TYPE,
+	   V_BS_PART,
+	   V_COMMODITY,
+	   V_PART_DESC,
+	   V_PART_QTY,
+	   'insert',--ACTION
+	   '',--STATUS
+	   '',--CHANGE_ID
+	   '',--CHANGE_ACTION
+	   CURRENT_TIMESTAMP,
+	   SESSION_USER,
+	   CURRENT_TIMESTAMP,
+	   SESSION_USER
+	   );
+	
+--INSERT INTO UI_PM_BOM_LOG TABLE
+insert into "EBGCFE"."UI_PM_BOM_LOG"(
+	CYCLE,
+	PRODUCT_GROUP,
+	OEM_NAME,
+	ITEM,
+	ITEM_DESC,
+	ITEM_TYPE,
+	BS_PART,
+	COMMODITY,
+	PART_DESC,
+	PART_QTY,
+	ACTION,
+	STATUS,
+	CHANGE_ID,
+	CHANGE_ACTION,
+	SYS_CREATED_DATE,
+	SYS_CREATED_BY,
+	SYS_LAST_MODIFIED_DATE,
+	SYS_LAST_MODIFIED_BY,
+	AT_MODIFIED_BY,
+	AT_ACTION,
+	AT_MODIFIED_ON,
+	AT_MILLIS
+	 )SELECT 
+	        'CURRENT',
+		    'EBG',
+		    a.OEM_NAME,
+			a.ITEM,
+			a.ITEM_DESC,
+			a.ITEM_TYPE,
+			a.BS_PART,
+			a.COMMODITY,
+			a.PART_DESC,
+			a.PART_QTY,
+			'',--ACTION
+		    '',--STATUS
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+	 		SESSION_USER,
+	 		'insert',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :newInfo a; 							
+		
+	  	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::createUiPmBom successfully inserted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::createUiPmBom'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+END;

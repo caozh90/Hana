@@ -1,0 +1,501 @@
+FUNCTION "EBGCFE"."cdp.ebgcfe.functions::FUNC_PKG_CONS" ( ) 
+
+RETURNS
+	  --AUTH LEVEL  DEFINITION
+  AUTH_LEVEL_1 VARCHAR(20),  
+  AUTH_LEVEL_2 VARCHAR(20),
+  AUTH_LEVEL_3 VARCHAR(20),
+  AUTH_LEVEL_4 VARCHAR(20),
+  AUTH_LEVEL_5 VARCHAR(20),
+
+  --CURRENT CYCLE STRING DEFINITION
+  CYCLE_CURRENT VARCHAR(20),
+  CYCLE_HISTORY VARCHAR(20),
+  CYCLE_TYPE_FINAL VARCHAR(20),
+  CYCLE_TYPE_B     VARCHAR(2),
+  CYCLE_DATE_FORMAT VARCHAR(20),
+  CYCLE_MON_DATE_FORMAT VARCHAR(20),
+
+  --Static String value
+  STR_SUCCESS VARCHAR(20),
+  STR_WARN VARCHAR(20),
+  STR_ERROR VARCHAR(20),
+  STR_DEFAULT VARCHAR(20),
+
+  DEFAULT_COST        NUMBER,
+  DEFAULT_VK_COST     NUMBER,
+  DEFAULT_MTM_COST    NUMBER, 
+
+  --PKG_CONS.COST_NAME_INBOUND_FREIGHT
+  --Data process bom cost type  definition
+  COST_NAME_INBOUND_FREIGHT VARCHAR(20),
+  --???COST_NAME_INBOUND_FREIGH VARCHAR(20) := 'IFR%';
+  COST_NAME_MVA VARCHAR(20),
+  COST_NAME_COMMITHIGH  VARCHAR(20),
+  COST_NAME_OUTBOUND_FREIGHT VARCHAR(20),
+  COST_NAME_DOMFR_FREIGHT VARCHAR(20),
+  COST_NAME_WARRANTY VARCHAR(20),
+  COST_NAME_UPLIFT VARCHAR(20),
+  COST_NAME_CNY_ADJUST  VARCHAR(20),
+  COST_NAME_OGP_FREIGH  VARCHAR(20),
+  COST_NAME_VGP_FREIGH   VARCHAR(20),
+  COST_NAME_OPTVIS_WEIGHT VARCHAR(20),
+  COST_NAME_REBATE_BYGEO   VARCHAR(20),
+  COST_NAME_ADD_OGC       VARCHAR(20),
+  COST_NAME_OPTLIFT       VARCHAR(20),
+
+
+  --SBB BOM REPLACEMENT
+  DEFUALT_STLNR VARCHAR(8),
+
+--WorkFlow status
+  CHANGE_ACTION_DELETED VARCHAR(20),
+  CHANGE_ACTION_INSERTED VARCHAR(20),
+  CHANGE_ACTION_UPDATED VARCHAR(20),
+
+
+--COST Calculation RUN LEVEL
+  RUN_LEVEL_ECC_BOM VARCHAR(10),
+  RUN_LEVEL_PLANT_BOM VARCHAR(10),
+  RUN_LEVEL_COST_BOM VARCHAR(10),
+  RUN_LEVEL_COST_REFRESH VARCHAR(20),
+
+  OUTPUT_TYPE_COMPONENT VARCHAR(20),
+  OUTPUT_TYPE_MTM VARCHAR(20),
+  OUTPUT_TYPE_SBB VARCHAR(20),
+  OUTPUT_TYPE_CTOSBB VARCHAR(20),
+  OUTPUT_TYPE_CTO    VARCHAR(20),
+
+--Add by Zhoubinbin 2013-1-12 for 3PO
+  OUTPUT_TYPE_3PO   VARCHAR(20),
+  OUTPUT_BRAND_3PO  VARCHAR(20),
+
+--Add by Zhoubinbin 2013-3-12 for IOMEGA
+  OUTPUT_TYPE_IOMEGA   VARCHAR(20),
+  OUTPUT_BRAND_IOMEGA  VARCHAR(20),
+
+  -- Public title name of report
+   C_TITLE_PLATFORM            VARCHAR(30),
+   C_TITLE_SUPPLYCHAIN         VARCHAR(30),
+   C_TITLE_INDUSTRY            VARCHAR(30),
+   C_TITLE_OPTIONS             VARCHAR(30),
+   C_TITLE_ECAT                VARCHAR(30),
+   C_TITLE_TOTALBOX            VARCHAR(30),
+   C_TITLE_APPEND              VARCHAR(30),
+
+  --COST TYPE
+    COST_TYPE_WITHOUTCOST     VARCHAR(30),
+    COST_TYPE_VISUAL          VARCHAR(30),
+    COST_TYPE_SBBCOST         VARCHAR(30),
+    COST_TYPE_REBATEBYGEO     VARCHAR(30),
+    COST_TYPE_OPTION          VARCHAR(30),
+    COST_TYPE_COMMITHIGH      VARCHAR(30),
+    COST_TYPE_DUMMY           VARCHAR(30),
+    COST_TYPE_COMPCOST        VARCHAR(30),
+    COST_TYPE_COSTOUTPUT      VARCHAR(30),
+    COST_TYPE_TBA             VARCHAR(30),
+
+
+     ITEM_TYPE_DUMMY_GROUP VARCHAR(100),
+     COST_TAPE_ACTION        VARCHAR(30),
+
+  --COST NAME
+     --ui limitation
+  ui_limit                    INTEGER,
+  ui_limit_statement          VARCHAR(100),
+
+   --WORKFLOW
+    SYNC_LASTRUN_PKGNAME      VARCHAR(30),
+    SYNC_LASTRUN_NETCHANGE    VARCHAR(30),
+
+    --COST TRACKER
+--    COST_ACTUAL                 VARCHAR(20) := 'ACTUAL';
+--    COST_FORECAST               VARCHAR(20) := 'FCST';
+
+    --COST TRACKER
+    COST_ACTUAL                  VARCHAR(20),
+    COST_FORECAST                VARCHAR(20),
+    QTYPE_BASEQ                  VARCHAR(20),
+    QTYPE_COMPQ                  VARCHAR(20),
+    QUERY_TYPE_ONE               VARCHAR(20),
+    QUERY_TYPE_TWO               VARCHAR(20),
+
+----------------------------FOR PKG_BOM_CALCULATION PACKAGE---------------------
+
+    C_F_ID_SEP_CHAR             CHAR(1),
+    C_F_ADDER_CATEGORY_ALL      CHAR(3),
+    C_F_ADDER_CATEGORY_F        CHAR(1),
+    C_F_ADDER_CATEGORY_NF       CHAR(2),
+    C_F_ADDER_NAME_ALL          CHAR(3),
+    C_F_LOG_TOPLAYER            CHAR(1),
+
+    C_F_DEBUG                   CHAR(1),
+    C_F_PRODUCT_TPG             VARCHAR(20),
+    C_F_PRODUCT_IPG             VARCHAR(20),
+    C_F_COSTELEM_BOME           VARCHAR(10),
+    C_F_COSTELEM_BOML           VARCHAR(10),
+    C_F_BOMLVL_MTM              VARCHAR(3),
+    C_F_BOMLVL_SBB              VARCHAR(3),
+    C_F_ITEMTYPE_MTM            VARCHAR(20),
+    C_F_ITEMTYPE_OPTION         VARCHAR(20),
+    C_F_ITEMTYPE_VISUAL         VARCHAR(20),
+    C_F_ITEMTYPE_VLH            VARCHAR(20),
+
+    C_F_ITEMTYPE_CTO            VARCHAR(20),
+    C_F_ITEMTYPE_SBB            VARCHAR(20),
+    C_F_ITEMTYPE_SHELL          VARCHAR(20),
+    C_F_ITEMTYPE_COMP           VARCHAR(20),
+    C_F_ITEMTYPE_SW             VARCHAR(20),
+    C_F_ITEMTYPE_SERVICE        VARCHAR (20),
+    C_F_ITEMTYPE_DUMMY          VARCHAR(20),
+    C_F_ITEMTYPE_DUMMYGROUP     VARCHAR(20),
+
+    C_F_BASE_SBB                VARCHAR(20),
+    C_F_COMMODITY_SF            VARCHAR(30),
+    C_F_COSTNAME_SF             VARCHAR(30),
+
+    --PLANT TYPE
+    C_F_PLANTTYPE_DC            VARCHAR(10),
+
+    --GEO TYPE
+    C_F_GEOTYPE_SUBGEO          VARCHAR(20),
+    C_F_GEOTYPE_COUNTRY         VARCHAR(20),
+
+    --FREIGHT TYPE
+    C_F_FREIGHTTYPE_GEOMIX      VARCHAR(10),
+    C_F_FREIGHTTYPE_OCEAN       VARCHAR(10),
+
+    --COST TYPE
+    C_F_COSTTYPE_SBBCOST        VARCHAR(30),
+    C_F_COSTNAME_SBBCOST        VARCHAR(30),
+    C_F_COSTNAME_COMMITHIGH     VARCHAR(20),
+    C_F_COSTTYPE_COMP           VARCHAR(20),
+    C_F_COSTTYPE_SBBADDER       VARCHAR(20),
+    C_F_COSTTYPE_REBATEBYGEO    VARCHAR(20),
+    C_F_COSTNAME_REBATEBYGEO    VARCHAR(20),
+    C_F_COSTTYPE_TBA            VARCHAR(20),
+    C_F_COSTTYPE_TEMP           VARCHAR(20),
+    C_F_COSTTYPE_OUTPUT         VARCHAR(20),
+    C_F_COSTTYPE_LEVEL0         VARCHAR(20),
+    C_F_COSTTYPE_LEVEL1         VARCHAR(20),
+    C_F_COSTTYPE_LEVEL2         VARCHAR(20),
+    C_F_COSTTYPE_LEVEL3         VARCHAR(20),
+    C_F_COSTTYPE_LEVEL4         VARCHAR(20),
+    C_F_COSTTYPE_LEVEL5         VARCHAR(20),
+    C_F_COSTTYPE_LEVEL6         VARCHAR(20),
+    C_F_COSTNAME_LEVEL0         VARCHAR(20),
+    C_F_COSTNAME_LEVEL4         VARCHAR(20),
+    C_F_COSTNAME_LEVEL6         VARCHAR(20),
+    C_F_COSTNAME_PKG            VARCHAR(20),
+    C_F_COSTNAME_COMPWARR       VARCHAR(20),
+
+    --TBA
+    C_F_TBA_OVGPFRT             VARCHAR(20),
+    C_F_TBA_OGC                 VARCHAR(20),
+    C_F_TBA_UPLIFT              VARCHAR(20),
+    C_F_TBA_DEV                 VARCHAR (20),
+    C_F_TBA_NDEV                VARCHAR (20),
+    C_F_TBA_CRYAD               VARCHAR(20),
+    C_F_TBA_MVA                 VARCHAR(20),
+    C_F_TBA_VGP                 VARCHAR(20),
+    C_F_TBA_OGP                 VARCHAR(20),
+    C_F_TBA_IFRT                VARCHAR(20),
+    C_F_TBA_OPTLIFT             VARCHAR(20),
+    C_F_TBA_OUTFR               VARCHAR(20),
+    C_F_TBA_WAR                 VARCHAR(20),
+    C_F_TBA_DUTY                VARCHAR(20),
+    C_F_TBA_COMMIT_HIGH         VARCHAR(20),
+    C_F_TBA_DOMFR               VARCHAR(20),
+    C_F_TBA_REBATE_BY_KIT       VARCHAR(20),
+    C_F_TBA_REBATE_BY_LCAP      VARCHAR(20),
+    C_F_TBA_REBATE_BY_GEO       VARCHAR(20),
+    C_F_TBA_REBATE_BY_OTHERS    VARCHAR(20),
+
+    C_F_COSTGEOLVL_PLANT        VARCHAR(20),
+    C_F_COSTGEOLVL_SUBGEO       VARCHAR(20),
+    C_F_COSTGEOVALUE_ALL        VARCHAR(20),
+
+    C_F_CHAR_DOLLAR             CHAR(1),
+    C_F_CODE_DOLLAR             NUMBER(1),
+    C_F_CHAR_PERCENT            CHAR(1),
+    C_F_CODE_PERCENT            NUMBER(1),
+    C_F_TBATYPE_USDOLLAR        VARCHAR(10),
+    C_F_TBATYPE_PERCENTAGE      VARCHAR(10),
+
+    C_F_LEVEL0_ALL_COST         VARCHAR(20),
+    C_F_LEVEL1_ALL_COST         VARCHAR(20),
+    C_F_LEVEL2_ALL_COST         VARCHAR(20),
+    C_F_LEVEL3_ALL_COST         VARCHAR(20),
+    C_F_LEVEL4_ALL_COST         VARCHAR(20),
+    C_F_LEVEL5_ALL_COST         VARCHAR(20),
+
+    C_F_STATUS_TEMP             VARCHAR(4),
+    C_F_ACTION_INSERT           VARCHAR(10),
+    C_F_STATUS_ACTIVE           VARCHAR(10),
+    C_F_FORMU_MTM               VARCHAR(10), --z_ui_cost_calcu_formu.category%TYPE := 'MTM';
+    C_F_FOR_ALL                 VARCHAR(3),
+    C_F_FOR_ALLCOUNTRY          VARCHAR(2),
+
+
+    C_F_RUNSTATUS_FULL          VARCHAR(10),
+    C_F_RUNSTATUS_ONDEMAND      VARCHAR(10),
+    C_F_INIT_DATE               DATE,    
+	
+	C_DEBUG_STATUS              VARCHAR(1)
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+/************************************************************************
+*name       : FUNC_PKG_CONS               
+*function   : Returns constant value
+*input      ：n/a
+*output     : constant values
+*author     : Eric Zhou
+*CreateDate : 2014-11-06
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+
+   --AUTH LEVEL  DEFINITION
+  AUTH_LEVEL_1   := 'PRODUCT_GROUP';
+  AUTH_LEVEL_2   := 'BRAND';
+  AUTH_LEVEL_3   := 'GEO';
+  AUTH_LEVEL_4   := 'SUBGEO';
+  AUTH_LEVEL_5   := 'COUNTRY';
+
+  --CURRENT CYCLE STRING DEFINITION
+  CYCLE_CURRENT  := 'CURRENT';
+  CYCLE_HISTORY  := 'HISTORY';
+  CYCLE_TYPE_FINAL  := 'FINAL';
+  CYCLE_TYPE_B       := 'B';
+  CYCLE_DATE_FORMAT  := 'YYYYMM';
+  CYCLE_MON_DATE_FORMAT  := 'MONYYYY';
+
+  --Static String value
+  STR_SUCCESS  := 'SUCCESS';
+  STR_WARN  := 'WARN';
+  STR_ERROR  := 'ERROR';
+  STR_DEFAULT  := 'ALL';
+  
+  --DEFAULT_COST        := '99999';
+  DEFAULT_VK_COST :=999999;
+  DEFAULT_MTM_COST := 999999;
+  
+  --PKG_CONS.COST_NAME_INBOUND_FREIGHT
+  --Data process bom cost type  definition
+  COST_NAME_INBOUND_FREIGHT  := 'IFRT';
+  --???COST_NAME_INBOUND_FREIGH  := 'IFR%';
+  COST_NAME_MVA  := 'MVA';
+  COST_NAME_COMMITHIGH   := '???';
+  COST_NAME_OUTBOUND_FREIGHT  := 'OUTFR';
+  COST_NAME_DOMFR_FREIGHT  := 'DOMFR';
+  COST_NAME_WARRANTY  := 'WAR';
+  COST_NAME_UPLIFT  := 'UPLIFT';
+  COST_NAME_CNY_ADJUST   := 'CRYAD';
+  COST_NAME_OGP_FREIGH  :='OGP';
+  COST_NAME_VGP_FREIGH   :='VGP';
+  COST_NAME_OPTVIS_WEIGHT :='OVGPFRT';
+  COST_NAME_REBATE_BYGEO   :='REBATE_BYGEO';
+  COST_NAME_ADD_OGC       :='OGC';
+  COST_NAME_OPTLIFT       :='OPTLIFT';
+
+
+  --SBB BOM REPLACEMENT
+  DEFUALT_STLNR  := 'XXXXXXXX';
+
+--WorkFlow status
+  CHANGE_ACTION_DELETED  :='DELETE';
+  CHANGE_ACTION_INSERTED  :='INSERT';
+  CHANGE_ACTION_UPDATED  :='UPDATE';
+
+
+--COST Calculation RUN LEVEL
+  RUN_LEVEL_ECC_BOM  := 'ECC_BOM';
+  RUN_LEVEL_PLANT_BOM  := 'PLANT_BOM';
+  RUN_LEVEL_COST_BOM  := 'COST_BOM';
+  RUN_LEVEL_COST_REFRESH  := 'COST_REFRESH';
+
+  OUTPUT_TYPE_COMPONENT  := 'COMPONENT';
+  OUTPUT_TYPE_MTM  := 'MTM';
+  OUTPUT_TYPE_SBB  := 'SBB';
+  OUTPUT_TYPE_CTOSBB  := 'CTOSBB';
+  OUTPUT_TYPE_CTO     := 'CTO';
+
+--Add by Zhoubinbin 2013-1-12 for 3PO
+  OUTPUT_TYPE_3PO    := 'VLH';
+  OUTPUT_BRAND_3PO   := 'VLH';
+
+--Add by Zhoubinbin 2013-3-12 for IOMEGA
+  OUTPUT_TYPE_IOMEGA    := 'IOMEGA';
+  OUTPUT_BRAND_IOMEGA   := 'IOMEGA';
+
+  -- Public title name of report
+   C_TITLE_PLATFORM            := 'Platform';
+   C_TITLE_SUPPLYCHAIN         := 'Supply Chain';
+   C_TITLE_INDUSTRY            := 'Industry';
+   C_TITLE_OPTIONS             := 'Options';
+   C_TITLE_ECAT                := 'ECAT';
+   C_TITLE_TOTALBOX            := 'Total Box';
+   C_TITLE_APPEND              := ' Cost';
+
+  --COST TYPE
+    COST_TYPE_WITHOUTCOST      := 'WITHOUT-COST';
+    COST_TYPE_VISUAL           := 'VISUAL';
+    COST_TYPE_SBBCOST          := 'SBB-COST';
+    COST_TYPE_REBATEBYGEO      := 'REBATE_BYGEO';
+    COST_TYPE_OPTION           := 'OPTION';
+    COST_TYPE_COMMITHIGH       := 'COMMIT-HIGH';
+    COST_TYPE_DUMMY            := 'DUMMY';
+    COST_TYPE_COMPCOST         := 'COMP-COST';
+    COST_TYPE_COSTOUTPUT       := 'COST-OUTPUT';
+    COST_TYPE_TBA              := 'TBA';
+
+
+     ITEM_TYPE_DUMMY_GROUP  :='DUMMY_GROUP';
+     COST_TAPE_ACTION         := 'COST-TAPE';
+
+  --COST NAME
+     --ui limitation
+  ui_limit                     :=2001;
+  ui_limit_statement           :=' and rownum < '||ui_limit;
+
+   --WORKFLOW
+    SYNC_LASTRUN_PKGNAME      :='WORKFLOW';
+    SYNC_LASTRUN_NETCHANGE    :='NET_CHANGE';
+
+    --COST TRACKER
+--    COST_ACTUAL                  := 'ACTUAL';
+--    COST_FORECAST                := 'FCST';
+
+    --COST TRACKER
+    COST_ACTUAL                    := 'ACTUAL';
+    COST_FORECAST                  := 'FCST';
+    QTYPE_BASEQ                    := 'BASEQ';
+    QTYPE_COMPQ                    := 'COMPQ';
+    QUERY_TYPE_ONE                 := 'ONE_QUARTER';
+    QUERY_TYPE_TWO                 := 'TWO_QUARTER';
+
+----------------------------FOR PKG_BOM_CALCULATION PACKAGE---------------------
+
+    C_F_ID_SEP_CHAR                   := '#';
+    C_F_ADDER_CATEGORY_ALL            := 'ALL';
+    C_F_ADDER_CATEGORY_F              := 'F';
+    C_F_ADDER_CATEGORY_NF             := 'NF';
+    C_F_ADDER_NAME_ALL                := 'ALL';
+    C_F_LOG_TOPLAYER                  := 'T';
+
+    C_F_DEBUG                         := 'T';
+    C_F_PRODUCT_TPG              := 'TPG';
+    C_F_PRODUCT_IPG              := 'IPG';
+    C_F_COSTELEM_BOME            := 'BOME';
+    C_F_COSTELEM_BOML            := 'BOML';
+    C_F_BOMLVL_MTM                := 'MTM';
+    C_F_BOMLVL_SBB                := 'SBB';
+    C_F_ITEMTYPE_MTM             := 'MTM';
+    C_F_ITEMTYPE_OPTION          := 'OPTION';
+    C_F_ITEMTYPE_VISUAL          := 'VISUAL';
+    C_F_ITEMTYPE_VLH             := 'VLH';
+
+    C_F_ITEMTYPE_CTO             := 'CTO';
+    C_F_ITEMTYPE_SBB             := 'SBB';
+    C_F_ITEMTYPE_SHELL           := 'SHELL';
+    C_F_ITEMTYPE_COMP            := 'COMPONENT';
+    C_F_ITEMTYPE_SW              := 'SOFTWARE';
+    C_F_ITEMTYPE_SERVICE         := 'SERVICE';
+    C_F_ITEMTYPE_DUMMY           := 'DUMMY';
+    C_F_ITEMTYPE_DUMMYGROUP      := 'DUMMY_GROUP';
+
+    C_F_BASE_SBB                 := 'BASE';
+    C_F_COMMODITY_SF             := 'SOFTWARE';
+    C_F_COSTNAME_SF              := 'SOFTWARE ROYALTY';
+
+    --PLANT TYPE
+    C_F_PLANTTYPE_DC             := 'DC';
+
+    --GEO TYPE
+    C_F_GEOTYPE_SUBGEO           := 'SUBGEO';
+    C_F_GEOTYPE_COUNTRY          := 'COUNTRY';
+
+    --FREIGHT TYPE
+    C_F_FREIGHTTYPE_GEOMIX       := 'GEO_MIX';
+    C_F_FREIGHTTYPE_OCEAN        := 'OCEAN';
+
+    --COST TYPE
+    C_F_COSTTYPE_SBBCOST         := 'SBB-COST';
+    C_F_COSTNAME_SBBCOST         := 'SBB-COST';
+    C_F_COSTNAME_COMMITHIGH      := 'COMMIT-HIGH';
+    C_F_COSTTYPE_COMP            := 'COMP-COST';
+    C_F_COSTTYPE_SBBADDER        := 'SBB-ADDER';
+    C_F_COSTTYPE_REBATEBYGEO     := 'REBATE_BY_GEO';
+    C_F_COSTNAME_REBATEBYGEO     := 'REBATE_BY_GEO';
+    C_F_COSTTYPE_TBA             := 'TBA';
+    C_F_COSTTYPE_TEMP            := 'TEMP-COST';
+    C_F_COSTTYPE_OUTPUT          := 'COST-OUTPUT';
+    C_F_COSTTYPE_LEVEL0          := 'LEVEL0-OUTPUT';
+    C_F_COSTTYPE_LEVEL1          := 'LEVEL1-OUTPUT';
+    C_F_COSTTYPE_LEVEL2          := 'LEVEL2-OUTPUT';
+    C_F_COSTTYPE_LEVEL3          := 'LEVEL3-OUTPUT';
+    C_F_COSTTYPE_LEVEL4          := 'LEVEL4-OUTPUT';
+    C_F_COSTTYPE_LEVEL5          := 'LEVEL5-OUTPUT';
+    C_F_COSTTYPE_LEVEL6          := 'LEVEL6-OUTPUT';
+    C_F_COSTNAME_LEVEL0          := 'BOME 1';
+    C_F_COSTNAME_LEVEL4          := 'ECONOMIC-COST';
+    C_F_COSTNAME_LEVEL6          := 'COMMISSIONABLE-COST';
+    C_F_COSTNAME_PKG             := 'DIRECT_BY_PKG';
+    C_F_COSTNAME_COMPWARR        := 'COMP_WARR';
+
+    --TBA
+    C_F_TBA_OVGPFRT              := 'OVGPFRT';
+    C_F_TBA_OGC                  := 'OGC';
+    C_F_TBA_UPLIFT               := 'UPLIFT';
+    C_F_TBA_DEV                  := 'DEV';
+    C_F_TBA_NDEV                 := 'NDEV';   
+    C_F_TBA_CRYAD                := 'CRYAD';
+    C_F_TBA_MVA                  := 'MVA';
+    C_F_TBA_VGP                  := 'VGP';
+    C_F_TBA_OGP                  := 'OGP';
+    C_F_TBA_IFRT                 := 'IFRT';
+    C_F_TBA_OPTLIFT              := 'OPTLIFT';
+    C_F_TBA_OUTFR                := 'OUTFR';
+    C_F_TBA_WAR                  := 'WAR';
+    C_F_TBA_DUTY                 := 'DUTY';
+    C_F_TBA_COMMIT_HIGH          := 'COMMIT-HIGH';
+    C_F_TBA_DOMFR                := 'DOMFR';
+    C_F_TBA_REBATE_BY_KIT        := 'REBATE_BY_KIT';
+    C_F_TBA_REBATE_BY_LCAP       := 'REBATE_BY_LCAP';
+    C_F_TBA_REBATE_BY_GEO        := 'REBATE_BY_GEO';
+    C_F_TBA_REBATE_BY_OTHERS     := 'REBATE_BY_OTHERS';
+
+    C_F_COSTGEOLVL_PLANT         := 'PLANT';
+    C_F_COSTGEOLVL_SUBGEO        := 'SUBGEO';
+    C_F_COSTGEOVALUE_ALL         := 'ALL';
+
+    C_F_CHAR_DOLLAR                  := '$';
+    C_F_CODE_DOLLAR                 := 1;
+    C_F_CHAR_PERCENT                  := '%';
+    C_F_CODE_PERCENT                := 2;
+    C_F_TBATYPE_USDOLLAR         := 'US_DOLLAR';
+    C_F_TBATYPE_PERCENTAGE       := 'PERCENTAGE';
+
+    C_F_LEVEL0_ALL_COST          := 'LEVEL0_ALL_COST';
+    C_F_LEVEL1_ALL_COST          := 'LEVEL1_ALL_COST';
+    C_F_LEVEL2_ALL_COST          := 'LEVEL2_ALL_COST';
+    C_F_LEVEL3_ALL_COST          := 'LEVEL3_ALL_COST';
+    C_F_LEVEL4_ALL_COST          := 'LEVEL4_ALL_COST';
+    C_F_LEVEL5_ALL_COST          := 'LEVEL5_ALL_COST';
+
+    C_F_STATUS_TEMP               := 'TEMP';
+    C_F_ACTION_INSERT            := 'INSERT';
+    C_F_STATUS_ACTIVE            := 'ACTIVE';
+    C_F_FORMU_MTM                := 'MTM'; --z_ui_cost_calcu_formu.category%TYPE := 'MTM';
+    C_F_FOR_ALL                   := 'ALL';
+    C_F_FOR_ALLCOUNTRY            := 'WW';
+
+
+    C_F_RUNSTATUS_FULL           := 'FULL';
+    C_F_RUNSTATUS_ONDEMAND       := 'ON_DEMAND';
+    C_F_INIT_DATE                 := TO_DATE ('2000-01-01 01:01:01', 'yyyy-mm-dd hh:mi:ss');
+    
+    C_DEBUG_STATUS               := 'T';
+
+END;

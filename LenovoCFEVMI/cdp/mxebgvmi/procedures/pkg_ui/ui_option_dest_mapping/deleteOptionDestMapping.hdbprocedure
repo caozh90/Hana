@@ -1,0 +1,74 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_option_dest_mapping::deleteOptionDestMapping" (
+	 IN LOGICAL_PLANT NVARCHAR(40),
+	 IN SOURCE_LOCATION NVARCHAR(40),
+	 IN SOURCE_TYPE NVARCHAR(40),
+	 IN SOURCE_BIN NVARCHAR(40),
+	 IN DESTINATION_LOCATION NVARCHAR(40)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+	AS
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+BEGIN              
+    	aI_DETAIL :='updateOptionDestMapping error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'updateOptionDestMapping'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+END;  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'optiondestinationmapping::deleteable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ --START
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'updateOptionDestMapping'
+       ,I_MODULE=>'MXEBGVMI'
+   	); 
+   	
+--delete操作需要写入日志
+insert into "MXEBGVMI"."UI_OPTION_DEST_MAPPING_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				LOGICAL_PLANT,WAREHOUSE_OWNER,SOURCE_LOCATION,SOURCE_TYPE,SOURCE_BIN,DESTINATION_LOCATION,DESTINATION_TYPE,DESTINATION_BIN
+			)
+select
+SESSION_USER,'delete',CURRENT_TIMESTAMP,
+LOGICAL_PLANT,WAREHOUSE_OWNER,SOURCE_LOCATION,SOURCE_TYPE,SOURCE_BIN,DESTINATION_LOCATION,DESTINATION_TYPE,DESTINATION_BIN
+from  "MXEBGVMI"."UI_OPTION_DEST_MAPPING" 
+			where LOGICAL_PLANT = :LOGICAL_PLANT and SOURCE_LOCATION = :SOURCE_LOCATION 
+				and SOURCE_TYPE = :SOURCE_TYPE and SOURCE_BIN = :SOURCE_BIN
+				and DESTINATION_LOCATION = :DESTINATION_LOCATION;	
+
+
+delete from  "MXEBGVMI"."UI_OPTION_DEST_MAPPING" 
+			where LOGICAL_PLANT = :LOGICAL_PLANT and SOURCE_LOCATION = :SOURCE_LOCATION 
+				and SOURCE_TYPE = :SOURCE_TYPE and SOURCE_BIN = :SOURCE_BIN
+				and DESTINATION_LOCATION = :DESTINATION_LOCATION;
+  	
+--END
+aI_DETAIL := 'updateOptionDestMapping successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'updateOptionDestMapping'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	   	
+END;

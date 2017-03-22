@@ -1,0 +1,77 @@
+role cdp.ebgdf.roles::Access {
+	catalog schema "_SYS_BIC":SELECT,EXECUTE;
+	catalog schema "_SYS_BI": SELECT;
+	catalog schema "EBGDF": EXECUTE;
+//Step_1_User Input_MFI_PPN ADDED BY Leon 20150813 START
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_MFI_PPN_S" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_MFI_PPN_ES" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_LEAD_TIME_S" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_LEAD_TIME_E" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_REPORTINTERLOCK_S" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_REPORTINTERLOCK_E" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_RELCONFCLASS_S" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_RELCONFCLASS_E" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_PNCLASS_S" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_PNCLASS_E" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_PEGGING_S" :SELECT ;
+	catalog sql object "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_PEGGING_E" :SELECT ;
+
+	//models START
+	 analytic privilege: cdp.ebgdf.models.ui_mfi_ppn:AP_UI_MFI_PPN.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.models.ui_report_interlock:AP_UI_REPORT_INTERLOCK.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.models.ui_pn_class:AP_UI_PN_CLASS.analyticprivilege;
+	 analytic privilege: cdp.ebgdf.models.ui_pn_class:AP_UI_PN_CLASS_DLL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.models.ui_pegging:AP_UI_PEGGING.analyticprivilege;
+	 analytic privilege: cdp.ebgdf.models.ui_pegging:AP_UI_PEGGING_DLL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.models.ui_rel_config_class:AP_UI_REL_CONFIG_CLASS.analyticprivilege;
+	 analytic privilege: cdp.ebgdf.models.ui_rel_config_class:AP_UI_REL_CONFIG_CLASS_DLL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.models.ui_lead_time:AP_UI_LEAD_TIME.analyticprivilege;
+	 analytic privilege: cdp.ebgdf.models.ui_lead_time:AP_UI_LEAD_TIME_DLL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.models.ui_forecast_mid:AP_UI_FORECAST_MID.analyticprivilege;
+	 analytic privilege: cdp.ebgdf.models.ui_forecast_mid:AP_UI_FORECAST_MID_DLL.analyticprivilege;
+	 
+	//models END
+	
+	//upload START	
+	 analytic privilege: cdp.ebgdf.service.upload.models:AP_UPLOAD.analyticprivilege;
+	
+	 analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_MFI_PPN_ERR_DETAIL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_REPORT_INTERLOCK_ERR_DETAIL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_PN_CLASS_ERR_DETAIL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_PEGGING_ERR_DETAIL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_REL_CONFIG_CLASS_ERR_DETAIL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_LEAD_TIME_ERR_DETAIL.analyticprivilege;
+	 
+	 analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_FORECAST_MID_ERR_DETAIL.analyticprivilege;
+	 
+	//upload END
+//Step_1_User Input_MFI_PPN ADDED BY Leon 20150817 END
+    analytic privilege: cdp.ebgdf.models.ui_class_percent:AP_UI_CLASS_PERCENT_DDL.analyticprivilege;
+    analytic privilege: cdp.ebgdf.models.ui_class_percent:AP_UI_CLASS_PERCENT.analyticprivilege;
+    analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_CLASS_PERCENT_ERR_DETAIL.analyticprivilege;
+	
+	analytic privilege: cdp.ebgdf.models.ui_max_class:AP_UI_MAX_CLASS_DDL.analyticprivilege;
+    analytic privilege: cdp.ebgdf.models.ui_max_class:AP_UI_MAX_CLASS.analyticprivilege;
+    analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_MAX_CLASS_ERR_DETAIL.analyticprivilege;
+    
+    analytic privilege: cdp.ebgdf.models.ui_attributes:AP_UI_ATTRIBUTES_SEARCH_DDL.analyticprivilege;
+    analytic privilege: cdp.ebgdf.models.ui_attributes:AP_UI_ATTRIBUTES.analyticprivilege;
+    analytic privilege: cdp.ebgdf.service.upload.models:AP_UI_ATTRIBUTES_ERR_DETAIL.analyticprivilege;
+	
+	analytic privilege: cdp.ebgdf.models.ui_ltvalue:AP_UI_LTVALUE.analyticprivilege;
+	//set step
+	analytic privilege: cdp.ebgdf.models.ui_getstep:AP_UI_WORK_STEP.analyticprivilege;
+	
+	
+}

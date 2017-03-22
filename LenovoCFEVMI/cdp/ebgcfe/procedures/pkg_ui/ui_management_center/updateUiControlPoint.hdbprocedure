@@ -1,0 +1,67 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_management_center::updateUiControlPoint" 
+( 
+	
+	 out status varchar(20)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY definer--INVOKER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA
+	AS
+	aI_DETAIL 		 NVARCHAR(300) :='';
+	alogide 		 INTEGER :=0;
+	n 				integer;
+	value           integer;
+	control_point_status nvarchar(20);
+	privilegeExists  NVARCHAR(300)  ;  
+BEGIN
+/***************************** 
+*name       :updateUiControlPoint
+*function   :               
+*input      :           
+*output     :errorInfo            
+*author     :chenwh3
+*DeleteDate :
+*UpdateDate :2015.08.31         
+ *****************************/
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION
+ BEGIN 
+ 	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_management_center::updateUiControlPoint error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_management_center::updateUiControlPoint'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		/*errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy; 	*/
+ END ;
+ select DISTINCT pvalue  into n 
+  from "EBGCFE"."CONF_PARAMETERS" where pdomain='UI_MANAGEMENT_CENTER' and pname='BUTTON_VALUE';
+  --update the value of n  and update the control_point_status depend on the value of n
+  if mod(n,2) = 0 then
+  	--update  "EBGCFE"."BUTTON_VALUE" set value = 1;
+  	update  "EBGCFE"."CONF_PARAMETERS" set pvalue = '1' where pdomain='UI_MANAGEMENT_CENTER' and pname='BUTTON_VALUE';
+  	update "EBGCFE"."UI_CONTROL_POINT" set control_point_status= 'OFF' 
+  		where control_point='Cutoff BOM Refresh' and product_group='EBG';
+  else
+  	update  "EBGCFE"."CONF_PARAMETERS" set pvalue = '0' where pdomain='UI_MANAGEMENT_CENTER' and pname='BUTTON_VALUE';
+  	update "EBGCFE"."UI_CONTROL_POINT" set control_point_status= 'ON' 
+  		where control_point='Cutoff BOM Refresh' and product_group='EBG';
+  end if;
+  --GET THE NEW VALUE OF control_point_status
+Select control_point_status into status
+ from "EBGCFE"."UI_CONTROL_POINT" where control_point='Cutoff BOM Refresh' and product_group='EBG';
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_management_center::updateUiControlPoint successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_management_center::updateUiControlPoint'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+END;

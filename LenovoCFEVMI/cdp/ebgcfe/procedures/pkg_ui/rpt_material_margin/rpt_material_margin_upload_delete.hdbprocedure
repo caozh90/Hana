@@ -1,0 +1,41 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.rpt_material_margin::rpt_material_margin_upload_delete" 
+(
+IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MATERIAL_MARGIN_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+	currentUser varchar(100);
+	
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+
+    END; 
+       
+	--procedure begin
+	 --赋值时间戳和用户名
+	
+	DELETE FROM "EBGCFE"."UI_RPT_MODELLIST" AS a
+	WHERE EXISTS (
+		SELECT 1
+			FROM :newInfo as b
+			WHERE a.ITEM = b.ITEM
+			and a.MT = b.MT
+			and a.FAMILY = b.FAMILY
+			and a.REPORT_NAME = 'RPT_MATERIALMARGIN'
+	);
+	
+END;

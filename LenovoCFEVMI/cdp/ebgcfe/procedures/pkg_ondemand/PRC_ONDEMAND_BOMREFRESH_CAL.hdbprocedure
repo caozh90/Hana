@@ -1,0 +1,84 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_BOMREFRESH_CAL" (
+  in  p_change_id         varchar(100),
+  in  p_product_group  varchar(20),
+  in  p_user_id              varchar(64),
+  out p_exit_code         integer,
+  out p_exit_message   varchar(500)
+) 
+    language sqlscript sql security definer
+    default schema "EBGCFE"	
+AS
+ /*
+   name: 
+       PRC_ONDEMAND_BOMREFRESH_CAL
+   function:
+       CAL:  call CALL BOM_REFRESH BY ITEM.
+   intput: 
+       1. p_change_id
+       2. p_product_group
+       3. p_user_id
+   output:
+       1. p_exit_exitcode
+       2. p_exit_message 
+   create/updated : 
+       xwu. 2015/9/1
+ */ 
+
+BEGIN
+  ---------------------------------// variables // --------------------------------------------
+  declare v_pkg_name          varchar(30) := 'PKG_ONDEMAND';
+  declare v_prc_name           varchar(30) := 'PRC_ONDEMAND_BOMREFRESH_CAL';
+  declare v_full_name           varchar(60) := :v_pkg_name ||'.'|| :v_prc_name;
+  declare logidi                     integer := 0;
+  declare v_subprc_exitcode integer;
+  declare v_event_name       nvarchar(100);
+  
+  ---------------------------------// exception // -------------------------------------------
+  declare exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;   
+  declare exit handler for exp_procedure   
+      begin
+	        p_exit_code := ::SQL_ERROR_CODE;
+	        p_exit_message := ::SQL_ERROR_MESSAGE;
+            call "EX_LOG"."cdp.log.procedures::logProc"(
+                          I_TYPE=>'PROC_ERROR',
+                          I_LOGSID=>:logidi,
+		                  I_EVENT_NAME=>:v_full_name,
+		                  I_MODULE=>'EBGCFE',
+		                  I_MESSAGE=>'ERROR', 
+		                  I_DETAIL=>:p_exit_message); 			           
+      end; 
+  declare exit handler for SQLEXCEPTION   
+    begin  
+	        p_exit_code := ::SQL_ERROR_CODE;
+	        p_exit_message := ::SQL_ERROR_MESSAGE; 
+		    call "EX_LOG"."cdp.log.procedures::logProc"(
+		               I_TYPE=>'PROC_ERROR',
+		               I_LOGSID=>:logidi,
+			           I_EVENT_NAME=>:v_full_name, 
+			           I_MODULE=>'EBGCFE',
+			           I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) ); 
+    end;   
+    
+  -- process logic
+  p_exit_code := -1;
+  p_exit_message := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  
+  -- get event name
+  v_event_name := :p_change_id;
+  -- call bom refresh by item
+  call "cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_BOM_BY_ITEM" (:v_event_name, :v_subprc_exitcode);
+  if :v_subprc_exitcode <> 0  then
+       p_exit_message := 'Error occurred in pkg_ondemand::PRC_ONDEMAND_BOMREFRESH_CAL';
+       signal exp_procedure set MESSAGE_TEXT = :p_exit_message;          
+  end if;      
+  
+  p_exit_code := 0;
+  p_exit_message := 'SUCCESSFUL';
+  call "EX_LOG"."cdp.log.procedures::logProc"(
+                     I_TYPE=>'PROC_END',
+                     I_LOGSID=>:logidi,
+	                 I_EVENT_NAME=>:v_full_name,
+	                 I_MODULE=>'EBGCFE');  	 
+	                                              
+END;

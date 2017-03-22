@@ -1,0 +1,131 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_region" (
+IN 	PRODUCT_GROUP varchar(10),
+IN 	GEO varchar(40),
+IN	SUBGEO varchar(20),
+IN  COUNTRY varchar(20),
+IN  COUNTRY_NAME varchar(40),
+IN	 	table_name varchar(200),
+IN	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER,
+IN CYCLE varchar(20)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_region              --函数名
+*function  : upload数据至表ui_region并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Eric               --作者
+*CreateDate    : 2015-01-21       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_region';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate int;
+		var_oper VARCHAR(10);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_region_err"(
+			:PRODUCT_GROUP,:GEO,:SUBGEO,:COUNTRY,:COUNTRY_NAME,:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE,:CYCLE);
+     	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'EBGCFE',
+            I_MESSAGE=>'ERROR', I_DETAIL=>'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);
+    END; 
+    --exception 
+/*	call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_region::uploadable'           ,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+*/
+	--procedure begin
+/*	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'EBGCFE',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+*/	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+	
+	SELECT top 1 count(1) into validate from "EBGCFE"."UI_REGION" A    
+     WHERE /*A.PRODUCT_GROUP = :aProduct_group
+          AND*/ A.GEO = :GEO
+          and A.SUBGEO = :SUBGEO
+          and A.COUNTRY = :COUNTRY
+          and A.PRODUCT_GROUP = :PRODUCT_GROUP;
+	if validate = 0
+	then
+		    insert into "EBGCFE"."UI_REGION"
+  	(PRODUCT_GROUP, GEO, SUBGEO, COUNTRY, COUNTRY_NAME, CYCLE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE)
+  	values(:PRODUCT_GROUP, :GEO, :SUBGEO, :COUNTRY, :COUNTRY_NAME, 'CURRENT', 
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+  		var_oper := 'create';
+  	else
+  		update "EBGCFE"."UI_REGION" set    	
+    	COUNTRY_NAME = :COUNTRY_NAME,
+ 	 	SYS_LAST_MODIFIED_BY = :currentUser,
+		SYS_LAST_MODIFIED_DATE =:create_time
+    where
+    	GEO = :GEO
+    	and SUBGEO = :SUBGEO
+    	and COUNTRY = :COUNTRY
+    	and PRODUCT_GROUP = :PRODUCT_GROUP; 
+        var_oper := 'update';
+  	end if;
+
+insert into "EBGCFE"."UI_REGION_LOG"
+    (
+    	GEO,
+    	SUBGEO,
+    	COUNTRY,
+    	COUNTRY_NAME,    	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    values
+    (
+    	:GEO,
+    	:SUBGEO,
+    	:COUNTRY,
+    	:COUNTRY_NAME,   	
+    	CURRENT_TIMESTAMP,    	
+    	:var_oper,
+    	session_user,
+    	CURRENT_TIMESTAMP,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    );  	  	
+			
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+	
+/*	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'EBGCFE',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+                                               */
+END;

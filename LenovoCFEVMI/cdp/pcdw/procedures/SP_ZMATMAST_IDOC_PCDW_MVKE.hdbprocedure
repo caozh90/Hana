@@ -1,0 +1,179 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::SP_ZMATMAST_IDOC_PCDW_MVKE" ( 
+IN PI_MATNR        NVARCHAR(100),
+IN PI_PRODH        NVARCHAR(100),
+IN PI_SVPRODH      NVARCHAR(100),
+IN PI_PRAT1        NVARCHAR(100),
+IN PI_LVORM        NVARCHAR(100),
+IN PI_MVGR1        NVARCHAR(100),
+IN PI_VKORG        NVARCHAR(100),
+IN PI_FLAG         NVARCHAR(100),
+IN PI_IDOCNUM      DECIMAL,
+IN PI_IDOCTIME     NVARCHAR(100),
+IN PI_SYS_CREATED_BY       NVARCHAR(100),
+IN PI_SYS_LAST_MODIFIED_BY NVARCHAR(100),
+IN PI_VMSTA        NVARCHAR(20) --ADD BY SAP.GAVIN
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER  
+	DEFAULT SCHEMA PCDW
+	AS
+	/***********************************************************************/
+  /* PROCEDURE          ?SP_ZMATMAST_IDOC_PCDW_MVKE
+  /* DESCRIPTION        ?INSERT IDOC DATA TO ECC_MVKE TABLE
+  /* PARAMETERS         ?PI_MATNR, PI_PRODH, PI_SVPRODH
+  /* SOURCE             ?IDOC
+  /* TARGET TABLE       ?ECC_MVKE
+  /* VERSION            ?V1.0
+  /***********************************************************************/
+
+  V_IDOCTIME TIMESTAMP;
+  V_VKORG    NVARCHAR(20);
+  vMsg	 	 NVARCHAR(1024);
+  vCode	     int;
+  n	 	 	 INT;
+BEGIN
+	-- exception
+    --定义异常
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+	  vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+        VALUES   (CURRENT_TIMESTAMP,
+                  'SP_ZMATMAST_IDOC_PCDW_MVKE',
+                  'ERROR',
+                  :vCode,
+                  :vMsg,
+                  '',
+                  '',
+                  '',
+                  'END');
+    	--exec 'commit';   --2017.02.08 PI issue by baying deleted  
+    	
+    	INSERT INTO Ecc_Mvke_Err
+		      (matnr,
+		       prodh,
+		       svprodh,
+		       prat1,
+		       lvorm,
+		       mvgr1,
+		       vkorg,
+		       flag,
+		       idocnum,
+		       idoctime,
+		       sys_created_date,
+		       sys_created_by,
+		       z_errmsg,
+		       VMSTA
+		       )
+		    VALUES
+		      (:PI_MATNR,
+		       :PI_PRODH,
+		       :PI_SVPRODH,
+		       :PI_PRAT1,
+		       :PI_LVORM,
+		       :PI_MVGR1,
+		       :V_VKORG,
+		       :PI_FLAG,
+		       :PI_IDOCNUM,
+		       :PI_IDOCTIME,
+		       CURRENT_TIMESTAMP,
+		       :PI_SYS_CREATED_BY,
+		       :vMsg,
+		       :PI_VMSTA);
+  
+    		--exec 'COMMIT';   --2017.02.08 PI issue by baying deleted  
+    END;
+	-- exception
+
+
+	V_VKORG := :PI_VKORG;
+
+--Add for PB201012200003 to ensure MVKE/MARC/MARA/MBEW/MAKT got the IDOC at the time time   Hexiaoyan 2011-4-9
+
+/*  IF PI_VKORG IS NULL THEN
+    V_VKORG := 'X';
+  ELSE
+    V_VKORG := PI_VKORG;
+  END IF; */
+
+  	V_IDOCTIME := TO_TIMESTAMP(:PI_IDOCTIME);
+	
+	IF :PI_MATNR IS NOT NULL THEN
+  	
+	  	SELECT COUNT(1) INTO n FROM ecc_mvke WHERE matnr = :PI_MATNR
+	       AND vkorg = :V_VKORG
+	       AND (idoctime < :V_IDOCTIME OR
+	           (idoctime = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR
+	           idoctime IS NULL);
+	  	IF n > 0 THEN
+	  	
+		    UPDATE ecc_mvke
+		       SET prodh                  = :PI_PRODH,
+		           svprodh                = :PI_SVPRODH,
+		           prat1                  = :PI_PRAT1,
+		           lvorm                  = :PI_LVORM,
+		           mvgr1                  = :PI_MVGR1,
+		           flag                   = :PI_FLAG,
+		           idocnum                = :PI_IDOCNUM,
+		           idoctime               = :V_IDOCTIME,
+		           sys_last_modified_date = CURRENT_TIMESTAMP,
+		           sys_last_modified_by   = :PI_SYS_LAST_MODIFIED_BY,
+		           VMSTA 	 		 	  = :PI_VMSTA
+		     WHERE matnr = :PI_MATNR
+		       AND vkorg = :V_VKORG
+		       AND (idoctime < :V_IDOCTIME OR
+		           (idoctime = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR
+		           idoctime IS NULL);
+			--exec 'commit';   --2017.02.08 PI issue by baying deleted  
+	
+		ELSEIF (n=0) THEN
+		 	SELECT COUNT(1) INTO n FROM ecc_mvke WHERE matnr = :PI_MATNR
+	       	 AND vkorg = :V_VKORG;
+	       	 
+	       	 if n=0 then
+	       	 	INSERT INTO ecc_mvke
+		        (matnr,
+		         prodh,
+		         svprodh,
+		         prat1,
+		         lvorm,
+		         mvgr1,
+		         vkorg,
+		         flag,
+		         idocnum,
+		         idoctime,
+		         sys_created_date,
+		         sys_created_by,
+		         VMSTA)
+		      VALUES
+		        (:PI_MATNR,
+		         :PI_PRODH,
+		         :PI_SVPRODH,
+		         :PI_PRAT1,
+		         :PI_LVORM,
+		         :PI_MVGR1,
+		         :V_VKORG,
+		         :PI_FLAG,
+		         :PI_IDOCNUM,
+		         :V_IDOCTIME,
+		         CURRENT_TIMESTAMP,
+		         :PI_SYS_CREATED_BY,
+		         :PI_VMSTA);
+	       	 end if;
+	       	 
+
+		--exec 'commit';   --2017.02.08 PI issue by baying deleted  
+		END IF;
+	END IF;
+END;

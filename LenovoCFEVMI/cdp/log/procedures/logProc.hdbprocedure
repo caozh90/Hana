@@ -1,0 +1,48 @@
+PROCEDURE "EX_LOG"."cdp.log.procedures::logProc" (
+    IN I_TYPE VARCHAR(10),INOUT I_LOGSID VARCHAR(10) ,IN I_EVENT_NAME VARCHAR(100),IN I_MODULE VARCHAR(10),IN I_MESSAGE VARCHAR(3000) DEFAULT '',
+    IN I_DETAIL VARCHAR(3000) DEFAULT '',IN I_STEP_COUNT INTEGER DEFAULT 0, IN I_CURRENT_STEP INTEGER DEFAULT 0
+ ) 
+    LANGUAGE SQLSCRIPT 
+    --SQL SECURITY INVOKER 
+    --DEFAULT SCHEMA <default_schema_name>
+    --READS SQL DATA 
+    
+	/************************************************************************
+	*name      : logProc              --函数名
+	*function  : 记录transaction log              --函数功能
+	*input     ：   I_TYPE  类型：INFO ,ERR,WARN,PROC_START,PROC_END,PROC_ERROR,STEP_START,STEP_END
+				 I_LOGSID	  log id
+				 I_EVENT_NAME 包名.存储过程名
+				 I_MODULE	  module:CFE,VMI
+				 I_MESSAGE	  message
+				 I_DETAIL	  detail
+				 I_STEP_COUNT	有关step的过程，全部step数
+				 I_CURRENT_STEP 有关step的过程，当前step数
+				 
+	             --输入参数
+	*output     :无 --输出参数
+	*author     : Fangyuan               --作者
+	*CreateDate : 20141128                  --创建时间
+	*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+	
+	*************************************************************************/        
+    AS
+    
+    V_EVENT_TYPE VARCHAR(200):='PROC_LOG';
+    V_STATUS VARCHAR(50):='';
+
+BEGIN
+    V_EVENT_TYPE:=CASE WHEN :I_TYPE='INFO' OR :I_TYPE='WARN' OR :I_TYPE='ERR' THEN :I_TYPE ELSE 'PROC_LOG' END;
+    
+    V_STATUS:=CASE WHEN :I_TYPE='PROC_START' THEN 'START'
+                   WHEN :I_TYPE='PROC_END' THEN 'END'
+                   WHEN :I_TYPE='PROC_ERROR' THEN 'ERROR'
+                   WHEN :I_TYPE='STEP_START' THEN 'START'
+                   WHEN :I_TYPE='STEP_END' THEN 'END'
+                   ELSE '' END;   
+   
+   CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+        I_EVENT_TYPE=>:V_EVENT_TYPE,I_STATUS=>:V_STATUS,I_LOGSID=>:I_LOGSID,I_EVENT_NAME=>:I_EVENT_NAME,I_MODULE=>:I_MODULE,I_MESSAGE=>:I_MESSAGE,
+        I_DETAIL=>:I_DETAIL,I_STEP_COUNT=>:I_STEP_COUNT,I_CURRENT_STEP=>:I_CURRENT_STEP );
+	--exec 'commit';
+END;

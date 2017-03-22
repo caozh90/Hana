@@ -1,0 +1,54 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createMapGroupUserForOData" ( 
+IN newInfo "SECURITY"."cdp.security.data::userManagement.MapGroupUserT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+	
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aID NVARCHAR(10);	
+	aMODULE_ID NVARCHAR(10);	
+    aGROUP_ID BIGINT;	--//usergroup id
+    aPublicGROUP_ID BIGINT;	--//usergroup id		
+    aUSER_ID BIGINT;  	--//USER ID
+     
+    aMODULE_NAME NVARCHAR(200);   
+    groupUserExists Integer := 0;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	将 一些用户加入到某个用户组中。
+	
+	1、首先检查这个用户是否存在。
+	2、如果不存在，则返回。
+	3、这个用户组中是否存在这个用户，如果存在，则返回。
+	4、如果这个用户族中不存在，则insert map_group_user
+	5、检查 这个用户是否在public group 当中，如果在，则从中删除。
+	
+ *****************************/
+ 
+
+    
+ 	select 
+	GROUP_ID 	--//userid /usergroup id	
+    ,USER_ID
+  --  ,MODULE_ID
+  into 
+ 	aGROUP_ID  --//module id
+	,aUSER_ID
+	--,aMODULE_ID
+  from :newInfo;
+  
+CALL "SECURITY"."cdp.security.procedures::createMapGroupUser" ( 
+	--aMODULE_ID, 	
+    
+    	aGROUP_ID 	--//usergroup id
+    ,	aUSER_ID   	--//USER ID
+	, errorInfo );
+     		
+END;

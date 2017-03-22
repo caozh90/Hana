@@ -1,0 +1,148 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::createUiPmBsPart"
+( 
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_BS_PART"
+	,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA
+	AS  
+	   aI_DETAIL 	     NVARCHAR(300) :='';
+	   alogide 			 INTEGER :=0;
+	   privilegeExists   NVARCHAR(300)  ; 
+	   
+	   v_OEM_NAME NVARCHAR(40);
+	   v_BS_PART NVARCHAR(40);
+	   v_COMMODITY           NVARCHAR(20);
+	   v_PART_DESC	         NVARCHAR(200) :='';
+	   resourceExists  BIGINT;
+	   VALIDATE		 BIGINT;
+	    		
+BEGIN
+/***************************** 
+*name       :    createUiPmBsPart
+*function   :               
+*input      :    newInfo
+*output     :    errorInfo            
+*author     :    Justin
+*DeleteDate :                  
+*UpdateDate :    
+*CreateDate :    2015.10.10
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+	BEGIN
+		aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::createUiPmBsPart error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+		
+		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::createUiPmBsPart'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+	END;
+
+--check the privilege
+	call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_pm_bs_part::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+--start
+ 	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::createUiPmBsPart'
+       ,I_MODULE=>'EBGCFE'
+   	);
+
+
+	SELECT OEM_NAME,BS_PART,COMMODITY
+ 		INTO v_OEM_NAME,v_BS_PART,v_COMMODITY
+ 		FROM :newinfo;
+ 		
+ 		--UI_ITEM里面把ITEM等于BS_PART的ITEM_DESC
+ 		VALIDATE := 0;
+ 		SELECT count(ITEM_DESC) INTO VALIDATE FROM EBGCFE.UI_ITEM WHERE ITEM = :v_BS_PART;
+ 		if VALIDATE >= 1 then
+ 			SELECT  top 1 ITEM_DESC INTO v_PART_DESC FROM EBGCFE.UI_ITEM WHERE ITEM = :v_BS_PART;
+ 		end if;
+ 		
+ 	
+ 	
+ 	
+--CHECK BS_PART VALID
+
+	SELECT COUNT(*) INTO VALIDATE	FROM  "EBGCFE"."UI_ITEM" WHERE ITEM_TYPE in ('COMPONENT','OPTION') AND  ITEM = :v_BS_PART;
+	IF	VALIDATE <= 0
+	THEN
+		 errorinfo = select 400 as http_status_code, 
+            'BS_PART :  VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;     
+		RETURN;
+	END IF;
+ 	
+ 	
+ 		
+ --CHECK THE ITEM VALIDATION
+ SELECT  count(1) into resourceExists FROM "EBGCFE"."UI_PM_BS_PART" A    
+     WHERE A.CYCLE = 'CURRENT' AND A.PRODUCT_GROUP = 'EBG' AND A.OEM_NAME = :v_OEM_NAME AND A.BS_PART = :v_BS_PART;
+   
+    if  :resourceExists > 0 
+    then
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+    end if;
+    
+    
+ ---INSERT INTO UI_PM_BS_PART  
+	  insert into "EBGCFE"."UI_PM_BS_PART"
+	            (CYCLE,PRODUCT_GROUP,OEM_NAME,BS_PART,COMMODITY,PART_DESC,"SYS_CREATED_DATE",SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION)  
+	  	values ('CURRENT','EBG',:v_OEM_NAME,:v_BS_PART,:v_COMMODITY,:v_PART_DESC,CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER,'insert');
+	        
+--insert into log     
+INSERT into  "EBGCFE"."UI_PM_BS_PART_LOG"
+	(
+	"PRODUCT_GROUP",
+	"OEM_NAME",
+	"BS_PART",
+	"COMMODITY",
+	"PART_DESC",
+	"SYS_LAST_MODIFIED_DATE",   
+    "AT_ACTION",
+    "SYS_LAST_MODIFIED_BY",
+    "AT_MODIFIED_ON",
+    "AT_MILLIS"    	
+	)
+	
+ VALUES(	
+	'EBG',
+	:v_OEM_NAME,
+	:v_BS_PART,
+	:v_COMMODITY,
+	:v_PART_DESC,
+	CURRENT_TIMESTAMP,
+    'insert',
+    session_user,
+    current_date,
+    TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+ /*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::createUiPmBsPart successfully inserted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'pkg_ui.ui_pm_bs_part::createUiPmBsPart'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+END;

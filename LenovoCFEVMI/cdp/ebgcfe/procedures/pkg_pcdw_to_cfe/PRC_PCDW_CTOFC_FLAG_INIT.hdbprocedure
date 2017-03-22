@@ -1,0 +1,133 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_CTOFC_FLAG_INIT" (
+  IN  P_PRODUCT_GROUP   VARCHAR(20),
+  OUT P_EXIT_CODE       INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE 
+	--READS SQL DATA 
+	AS
+/************************************************************************
+*name       : PRC_PCDW_CTOFC_FLAG_INIT       
+*function   : Load CTOFC_FLAG data from PCDW
+*input      ： p_product_group : product group
+*output     : p_exit_code : error code  
+*author     : ZHANGXJ
+*CreateDate :  2016-02-19
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+BEGIN
+  -- variable
+  DECLARE v_g_pkg_name        VARCHAR(30) := 'PKG_PCDW_TO_CFE';
+  DECLARE v_prc_name          VARCHAR(30) := 'PRC_PCDW_CTOFC_FLAG_INIT';
+  DECLARE v_full_name         VARCHAR(60) := :v_g_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  DECLARE v_exitcode          INTEGER;
+  DECLARE v_exit_message      VARCHAR(500);
+  DECLARE v_cur_cycle         VARCHAR(100)  := 'CURRENT';  
+
+
+
+  -- exception
+  DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;   
+  DECLARE EXIT HANDLER FOR exp_procedure   
+  BEGIN
+      P_EXIT_CODE := ::SQL_ERROR_CODE;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR', 
+                                                  I_LOGSID     => :logidi,
+		                                          I_EVENT_NAME => :v_full_name,
+		                                          I_MODULE     => 'EBGCFE',
+		                                          I_MESSAGE    => 'ERROR', 
+		                                          I_DETAIL     => :v_exit_message); 			           
+  END;
+      
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+  BEGIN     
+      P_EXIT_CODE := ::SQL_ERROR_CODE;
+             
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+  END;   
+    
+  -- process logic
+  P_EXIT_CODE := -1;
+  V_EXIT_MESSAGE := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                              I_LOGSID     => :logidi,
+		                                      I_EVENT_NAME => :v_full_name,
+		                                      I_MODULE     => 'EBGCFE');  
+
+  --Modified by Zhoubinbin 20160727, Add cost_flag column                                      	                                      
+  UPSERT ui_ctofc_flag(cycle,product_group,cto,fc,announce_date,withdraw_date,action,status,change_id,
+                       change_action,sys_last_modified_date,sys_last_modified_by, cost_flag)
+  SELECT v_cur_cycle,p_product_group,cto,fc,annc_date,withdraw_date,NULL,NULL,NULL,NULL,
+         CURRENT_TIMESTAMP,v_full_name, cost_flag
+   FROM pcdw.pcdw_ctofc_flag t1
+  --Modified by Zhoubinbin 20160721, Do not replace data was modified by user
+  WHERE NOT EXISTS(SELECT 1 FROM ui_ctofc_flag t2
+                    WHERE t2.cto = t1.cto
+                      AND t2.fc  = t1.fc
+                      AND t2.sys_last_modified_by <> :v_full_name);
+  
+  --Update cost_flag value when announce date or withdraw date was modified by user                    
+  UPDATE ui_ctofc_flag t1
+     SET t1.cost_flag = t2.cost_flag
+    FROM pcdw.pcdw_ctofc_flag t2
+   WHERE t1.cto = t2.cto
+     AND t1.fc  = t2.fc
+     AND t1.sys_last_modified_by <> :v_full_name;
+     
+  --Get hardware vk cost flag from ui_ctofc_flag and biz_fcsbbmap tables
+  tab_hw_flag = SELECT product_group, vk, MAP(cost_flag, 1, 'Y', 0, 'N') AS cost_flag
+                  FROM (
+		                SELECT t1.product_group, t2.varcond AS vk, t1.cost_flag,
+		                       ROW_NUMBER() OVER(PARTITION BY t1.product_group, t2.varcond 
+		                                         ORDER BY t1.cost_flag DESC) AS pri
+		                  FROM ui_ctofc_flag t1, biz_fcsbbmap t2
+		                 WHERE t1.cto = t2.matnr
+		                   AND t1.fc  = t2.fc
+		                   AND t1.cost_flag IN(1, 0)
+		                )
+		         WHERE pri = 1;
+  
+  --Get software vk cost flag from ui_ctofc_flag and biz_fcsbbmap tables		         
+  tab_sw_flag = SELECT product_group, vk, MAP(cost_flag, 1, 'Y', 0, 'N') AS cost_flag
+                  FROM (
+		                SELECT t1.product_group, t2.varcond AS vk, t1.cost_flag,
+		                       ROW_NUMBER() OVER(PARTITION BY t1.product_group, t2.varcond 
+		                                         ORDER BY t1.cost_flag DESC) AS pri
+		                  FROM ui_ctofc_flag t1, biz_fcsbbmap t2
+		                 WHERE t1.cto             = t2.matnr
+		                   AND t1.fc||'_'||t1.cto = t2.fc
+		                   AND t1.cost_flag IN(1, 0)
+		                )
+		         WHERE pri = 1;
+     
+  DELETE FROM ui_costflag
+  WHERE sys_last_modified_by = :v_full_name
+    AND vk                  <> 'N/A'
+    AND sbb_type             = 'N/A';
+  
+  INSERT INTO ui_costflag
+      (product_group, sbb_type, vk, cost_flag, sys_created_date, sys_created_by, 
+       sys_last_modified_date, sys_last_modified_by)
+  SELECT product_group, 'N/A', vk, cost_flag, CURRENT_TIMESTAMP, :v_full_name,
+         CURRENT_TIMESTAMP, :v_full_name
+    FROM (SELECT product_group, vk, cost_flag FROM :tab_hw_flag
+          UNION ALL
+          SELECT product_group, vk, cost_flag FROM :tab_sw_flag t1
+           WHERE NOT EXISTS(SELECT 1 FROM :tab_hw_flag t2
+                             WHERE t2.product_group = t1.product_group
+                               AND t2.vk            = t1.vk)) t3
+   WHERE NOT EXISTS(SELECT 1 FROM ui_costflag t4
+                     WHERE t4.product_group = t3.product_group
+                       AND t4.vk            = t3.vk
+                       AND t4.sbb_type      = 'N/A');
+      
+  p_exit_code := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                              I_LOGSID     => :logidi,
+	                                          I_EVENT_NAME => :v_full_name,
+	                                          I_MODULE     => 'EBGCFE');       
+END;

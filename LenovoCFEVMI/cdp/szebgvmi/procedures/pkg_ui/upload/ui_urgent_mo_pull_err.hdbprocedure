@@ -1,0 +1,58 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_urgent_mo_pull_err" (
+IN 	 	error_message	varchar(4096),
+IN 	 	business_name varchar(200),
+IN  LOGICAL_PLANT NVARCHAR(4096),
+IN   MO_ID NVARCHAR(4096),
+IN   STATUS NVARCHAR(4096),
+IN   DS_LINE NVARCHAR(4096),
+IN   BOM_NAME NVARCHAR(4096),
+IN   QUANTITY NVARCHAR(4096),
+IN   START_TIME NVARCHAR(4096),
+IN   END_TIME NVARCHAR(4096),
+IN   PLANNED_START_TIME NVARCHAR(4096),
+IN   PLANNED_END_TIME NVARCHAR(4096),
+IN   SYS_SOURCE NVARCHAR(4096),
+IN		seq	 nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	AS
+/************************************************************************
+*name      : ui_urgent_mo_pull_err              --函数名
+*function  : 保存在上传数据至表ui_urgent_mo_pull时产生的错误信息              --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-16       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	business_code varchar(20);
+	table_name nvarchar(20):='UI_URGENT_MO_PULL';
+			privilegeExists  NVARCHAR(30);
+BEGIN
+		--verify privilege
+	    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+	    'urgentmomaintaince::uploadable',:privilegeExists);
+	    IF  :privilegeExists != 'OK' THEN
+	    errorInfo = select 400 as http_status_code, 
+	     		'SQL ERROR CODE : 0' error_message, 
+	     		:privilegeExists detail from dummy;
+	    	RETURN ;
+	    END IF;
+
+	    --添加business信息
+	    business_code := :seq;
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,0,1,:table_name);    
+			
+     	--记录upload的错误
+     	INSERT INTO "SZEBGVMI"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("SZEBGVMI"."cdp.szebgvmi.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || :business_code,:position,:error_message,:table_name,:business_name); 
+     	--详细记录upload的数据信息
+     	insert into "SZEBGVMI"."UI_URGENT_MO_PULL_ERR_DETAIL"(CODE,POSITION,
+			LOGICAL_PLANT,MO_ID,STATUS,DS_LINE,BOM_NAME,QUANTITY,START_TIME,END_TIME,PLANNED_START_TIME,PLANNED_END_TIME,SYS_SOURCE)
+		VALUES(:table_name || :business_code,:position,
+			:LOGICAL_PLANT,:MO_ID,:STATUS,:DS_LINE,:BOM_NAME,:QUANTITY,:START_TIME,:END_TIME,:PLANNED_START_TIME,:PLANNED_END_TIME,:SYS_SOURCE);
+END;

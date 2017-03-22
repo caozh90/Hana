@@ -1,0 +1,143 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_force_item_type_v2" (
+IN  PRODUCT_GROUP nvarchar(10),
+IN	ITEM nvarchar(40),
+IN	USER_ITEM_DESC nvarchar(200),
+IN  USER_ITEM_TYPE nvarchar(20),
+IN  USER_EOL_STATUS nvarchar(20),
+IN	 	table_name varchar(200),
+IN	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER,
+IN CYCLE varchar(20)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_force_item_type              --函数名
+*function  : upload数据至表UI_ITEM并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Eric               --作者
+*CreateDate    : 2015-02-10       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_force_item_type';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate int;
+		var_oper VARCHAR(10);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_force_item_type_v2_err"(
+			:PRODUCT_GROUP,:ITEM,:USER_ITEM_DESC,:USER_ITEM_TYPE,:USER_EOL_STATUS,:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE,:CYCLE);
+     	
+    END; 
+    --exception 
+
+	
+	--procedure begin
+	
+	
+                                               	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+
+     	
+	select count(1) into validate from ebgcfe.CONF_ITEMTYPE where ITEM_TYPE=:USER_ITEM_TYPE;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_force_item_type_v2_err"(
+			:PRODUCT_GROUP,:ITEM,:USER_ITEM_DESC,:USER_ITEM_TYPE,:USER_EOL_STATUS,:table_name,:business_name,:business_code,:position,'"USER_ITEM_TYPE"::'||:USER_ITEM_TYPE||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	select count(1) into validate from  conf_parameters 
+		where pdomain='UI_ITEM' and pname='EOL_STATUS' and pvalue = :USER_EOL_STATUS;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_force_item_type_v2_err"(
+			:PRODUCT_GROUP,:ITEM,:USER_ITEM_DESC,:USER_ITEM_TYPE,:USER_EOL_STATUS,:table_name,:business_name,:business_code,:position,'"USER_EOL_STATUS"::'||:USER_EOL_STATUS||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+
+	select count(1) into validate from ebgcfe.UI_ITEM where ITEM=:ITEM;
+				
+	if validate = 0
+	then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_force_item_type_v2_err"(
+			:PRODUCT_GROUP,:ITEM,:USER_ITEM_DESC,:USER_ITEM_TYPE,:USER_EOL_STATUS,:table_name,:business_name,:business_code,:position,'"ITEM"::'||:ITEM||' is illegal',:CYCLE);
+		
+		return;
+/*		        insert into "EBGCFE"."UI_FORCEITEMTYPE"
+  	( PART, ITEM_TYPE,EOL_STATUS, CYCLE, 
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		)
+  	values( :PART, :ITEM_TYPE,:EOL_STATUS, 'CURRENT',
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+  		var_oper := 'create';
+*/
+  	else
+  		update "EBGCFE"."UI_ITEM" set
+    		ITEM_DESC = :USER_ITEM_DESC,
+    		USER_ITEM_DESC = :USER_ITEM_DESC, 
+    		ITEM_TYPE = :USER_ITEM_TYPE,
+    		USER_ITEM_TYPE = :USER_ITEM_TYPE,
+    		EOL_STATUS = :USER_EOL_STATUS,
+    		USER_EOL_STATUS = :USER_EOL_STATUS,
+    		SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    		SYS_LAST_MODIFIED_BY = session_user
+   		 where
+	    	ITEM = :ITEM; --and
+	    	--PRODUCT_GROUP = :PRODUCT_GROUP;   
+        var_oper := 'update';
+  	end if;
+ 
+insert into "EBGCFE"."UI_ITEM_LOG"
+    (
+    	PRODUCT_GROUP,
+    	ITEM,
+    	SYS_LAST_MODIFIED_DATE,
+    	USER_ITEM_DESC,
+    	USER_ITEM_TYPE,
+    	USER_EOL_STATUS,
+    	AT_ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    values
+    (
+    	:PRODUCT_GROUP,
+    	:ITEM,
+    	current_date,
+		USER_ITEM_DESC,
+		USER_ITEM_TYPE,
+		USER_EOL_STATUS,	    	
+    	'update',
+    	session_user,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    );
+	
+			
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+	
+	
+	
+
+END;

@@ -1,0 +1,306 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_CTC" ( 
+  IN V_CYCLE VARCHAR(40),
+  IN V_DeltaCYCLE VARCHAR(200),
+  OUT p_out_exitcode  NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+    /************************************************************************
+    *name       : PRC_RPT_CTC       
+    *function   : 
+    *input      ：v_cycle : cycle 
+                 V_deltacycle ： deltacycle
+    *output     : p_out_exitcode : error code 
+    *author     : FangYuan
+    *CreateDate : 2015-03-03
+    *UpdateDate :        --zhangxj,20160129 
+    *************************************************************************/
+      v_pkg_name        VARCHAR(30)  := 'PKG_REPORT';
+      v_prc_name        VARCHAR(50)  := 'PRC_RPT_CTC';
+      v_full_name       VARCHAR(100) := :v_pkg_name || '.' || :v_prc_name;  
+      logidi            INTEGER := 0;
+      v_cycle_mon       VARCHAR(10);
+      v_delta_mon       VARCHAR(10); 
+      v_cycle_fcst      VARCHAR(10);
+      v_subprc_name                VARCHAR(30);
+      v_subprc_exitcode            DECIMAL;
+           
+BEGIN
+
+    DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001; --user defined exception      
+            
+    DECLARE EXIT HANDLER FOR exp_procedure             
+    BEGIN  
+    	p_out_exitcode := ::SQL_ERROR_CODE;                  
+        logidi:=0;      
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR', 
+                                                    I_LOGSID     => :logidi,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => substr(::SQL_ERROR_MESSAGE, 1, 500 ));
+    END;  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+      p_out_exitcode:=::SQL_ERROR_CODE;            
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+        I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+        I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+  
+    p_out_exitcode := -1;
+    --start
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+
+    DELETE FROM RPT_CTC;
+    
+    SELECT cycle_fcst_month INTO v_cycle_fcst FROM ui_cycle WHERE cycle = :V_CYCLE;
+    
+	SELECT CASE WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),0) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M1'  
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),1) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M2' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),2) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M3' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),3) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M4' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),4) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M5' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),5) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M6' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),6) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M7' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),7) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M8' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),8) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M9' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),9) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M10' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),10) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M11' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),11) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M12' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),12) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M13' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),13) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M14' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),14) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M15' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),15) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M16' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),16) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M17' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),17) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M18' 
+			ELSE 'M1' END INTO v_cycle_mon  
+	   FROM ui_cycle WHERE cycle = :V_CYCLE;
+
+
+	SELECT CASE WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),0) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M1'  
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),1) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M2' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),2) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M3' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),3) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M4' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),4) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M5' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),5) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M6' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),6) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M7' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),7) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M8' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),8) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M9' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),9) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M10' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),10) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M11' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),11) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M12' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),12) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M13' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),13) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M14' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),14) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M15' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),15) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M16' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),16) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M17' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),17) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M18' 
+			ELSE 'M1' END INTO v_delta_mon  
+	   FROM ui_cycle WHERE cycle = :V_DeltaCYCLE;
+    
+    --If cycle is current then get data from current table, otherwise get data from history table
+    IF :V_CYCLE='CURRENT'
+    THEN
+        --Get MTM's BMC
+        TAB1 = SELECT T1.PRODUCT_GROUP, T1.CYCLE, T1.MODEL_BRAND AS BRAND, T1.MODEL_FAMILY AS FAMILY,
+	                  'N/A' AS CTO, T1.MODEL, T2.ITEM_DESC AS DESCRIPTION, T1.PLANT, T1.SUBGEO, T1.COUNTRY,
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1,T2.EOL_STATUS
+	             FROM BIZ_COSTADDER_MTM T1, UI_ITEM T2
+	            WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+	              AND T1.MODEL         = T2.ITEM
+	              AND T1.CHILDREN      = 'LEVEL4_ALL_COST';
+	    
+	    --Get CTO-SBB's BMC
+	    TAB1 = SELECT * FROM :TAB1
+	           UNION ALL
+	           SELECT T1.PRODUCT_GROUP, T1.CYCLE, T1.MODEL_BRAND AS BRAND, T1.MODEL_FAMILY AS FAMILY,
+	                  T1.MODEL AS CTO, T1.FATHER AS MODEL, T2.ITEM_DESC AS DESCRIPTION, T1.PLANT,T1.SUBGEO, T1.COUNTRY, 
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1, T2.EOL_STATUS
+	             FROM BIZ_COSTADDER_CTO T1, UI_ITEM T2
+	            WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+	              AND T1.FATHER        = T2.ITEM
+                  AND T1.CHILDREN      ='LEVEL4_ALL_COST';
+ 	ELSE
+        --Get MTM's BMC
+        TAB1 = SELECT T1.PRODUCT_GROUP, T1.CYCLE, T1.MODEL_BRAND AS BRAND, T1.MODEL_FAMILY AS FAMILY,
+	                  'N/A' AS CTO, T1.MODEL, T2.ITEM_DESC AS DESCRIPTION, T1.PLANT, T1.SUBGEO, T1.COUNTRY, 
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1, T2.EOL_STATUS
+	             FROM BIZ_COSTADDER_MTM_HIS T1, UI_ITEM_HIS T2
+	            WHERE T1.CYCLE_PRODUCTGROUP = T2.CYCLE_PRODUCTGROUP
+	              AND T1.MODEL              = T2.ITEM
+	              AND T1.CHILDREN           = 'LEVEL4_ALL_COST'
+	              AND T1.CYCLE_PRODUCTGROUP = :V_CYCLE||'EBG';
+	    
+	    --Get CTO-SBB's BMC
+	    TAB1 = SELECT * FROM :TAB1
+	           UNION ALL
+	           SELECT T1.PRODUCT_GROUP, T1.CYCLE, T1.MODEL_BRAND AS BRAND, T1.MODEL_FAMILY AS FAMILY,
+	                  T1.MODEL AS CTO, T1.FATHER AS MODEL, T2.ITEM_DESC AS DESCRIPTION, T1.PLANT,T1.SUBGEO, T1.COUNTRY, 
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1, T2.EOL_STATUS
+	             FROM BIZ_COSTADDER_CTO_HIS T1, UI_ITEM_HIS T2
+	            WHERE T1.CYCLE_PRODUCTGROUP = T2.CYCLE_PRODUCTGROUP
+	              AND T1.FATHER             = T2.ITEM
+                  AND T1.CHILDREN           ='LEVEL4_ALL_COST'
+                  AND T1.CYCLE_PRODUCTGROUP = :V_CYCLE||'EBG';
+    END IF;    
+ 
+    --If deltacycle is current then get data from current table, otherwise get data from history table
+    IF :V_DELTACYCLE='CURRENT'
+    THEN
+        --Get MTM's BMC
+        TAB2 = SELECT T1.PRODUCT_GROUP, T1.CYCLE, T1.MODEL_BRAND AS BRAND, T1.MODEL_FAMILY AS FAMILY,
+	                  'N/A' AS CTO, T1.MODEL, T2.ITEM_DESC AS DESCRIPTION, T1.PLANT, T1.SUBGEO, T1.COUNTRY, 
+	                  MAP(v_delta_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1, T2.EOL_STATUS
+	             FROM BIZ_COSTADDER_MTM T1, UI_ITEM T2
+	            WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+	              AND T1.MODEL         = T2.ITEM
+	              AND T1.CHILDREN      = 'LEVEL4_ALL_COST';
+	    
+	    --Get CTO-SBB's BMC
+	    TAB2 = SELECT * FROM :TAB2
+	           UNION ALL
+	           SELECT T1.PRODUCT_GROUP, T1.CYCLE, T1.MODEL_BRAND AS BRAND, T1.MODEL_FAMILY AS FAMILY,
+	                  T1.MODEL AS CTO, T1.FATHER AS MODEL, T2.ITEM_DESC AS DESCRIPTION, T1.PLANT,T1.SUBGEO, T1.COUNTRY, 
+	                  MAP(v_delta_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1, T2.EOL_STATUS
+	             FROM BIZ_COSTADDER_CTO T1, UI_ITEM T2
+	            WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+	              AND T1.FATHER        = T2.ITEM
+                  AND T1.CHILDREN      ='LEVEL4_ALL_COST';
+ 	ELSE
+        --Get MTM's BMC
+        TAB2 = SELECT T1.PRODUCT_GROUP, T1.CYCLE, T1.MODEL_BRAND AS BRAND, T1.MODEL_FAMILY AS FAMILY,
+	                  'N/A' AS CTO, T1.MODEL, T2.ITEM_DESC AS DESCRIPTION, T1.PLANT, T1.SUBGEO, T1.COUNTRY, 
+	                  MAP(v_delta_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1, T2.EOL_STATUS
+	             FROM BIZ_COSTADDER_MTM_HIS T1, UI_ITEM_HIS T2
+	            WHERE T1.CYCLE_PRODUCTGROUP = T2.CYCLE_PRODUCTGROUP
+	              AND T1.MODEL              = T2.ITEM
+	              AND T1.CHILDREN           = 'LEVEL4_ALL_COST'
+	              AND T1.CYCLE_PRODUCTGROUP = :V_DELTACYCLE||'EBG';
+	    
+	    --Get CTO-SBB's BMC
+	    TAB2 = SELECT * FROM :TAB2
+	           UNION ALL
+	           SELECT T1.PRODUCT_GROUP, T1.CYCLE, T1.MODEL_BRAND AS BRAND, T1.MODEL_FAMILY AS FAMILY,
+	                  T1.MODEL AS CTO, T1.FATHER AS MODEL, T2.ITEM_DESC AS DESCRIPTION, T1.PLANT,T1.SUBGEO, T1.COUNTRY, 
+	                  MAP(v_delta_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1, T2.EOL_STATUS
+	             FROM BIZ_COSTADDER_CTO_HIS T1, UI_ITEM_HIS T2
+	            WHERE T1.CYCLE_PRODUCTGROUP = T2.CYCLE_PRODUCTGROUP
+	              AND T1.FATHER             = T2.ITEM
+                  AND T1.CHILDREN           ='LEVEL4_ALL_COST'
+                  AND T1.CYCLE_PRODUCTGROUP = :V_DELTACYCLE||'EBG';
+     END IF;    
+     
+     --Compare the cost of current cycle with the cost of deltacycle
+	 INSERT INTO RPT_CTC
+	     (PRODUCT_GROUP, CYCLE, DELTACYCLE, BRAND, FAMILY, CTO, MODEL,
+	      EOL_STATUS, DESCRIPTION, PLANT, SUBGEO, COUNTRY, M1, DELTA_M1, 
+	      DELTACOST, DELTAPERCENTAGE, STATUS, SYS_CREATED_BY, SYS_CREATED_DATE,
+		  SYS_LAST_MODIFIED_BY, SYS_LAST_MODIFIED_DATE,CHANGE_REASON)
+     SELECT IFNULL(T1.PRODUCT_GROUP, T2.PRODUCT_GROUP) AS PRODUCT_GROUP, 
+            :V_CYCLE AS CYCLE, :V_DELTACYCLE  AS DELTACYCLE,
+            IFNULL(T1.BRAND,  T2.BRAND)       AS BRAND,
+            IFNULL(T1.FAMILY, T2.FAMILY)      AS FAMILY,
+            IFNULL(T1.CTO,    T2.CTO)         AS CTO,
+            IFNULL(T1.MODEL,  T2.MODEL)       AS MODEL,
+            T1.EOL_STATUS                     AS EOL_STATUS,
+            IFNULL(T1.DESCRIPTION, T2.DESCRIPTION) AS DESCRIPTION,
+            IFNULL(T1.PLANT,      T2.PLANT)       AS PLANT,
+            IFNULL(T1.SUBGEO,     T2.SUBGEO)      AS SUBGEO,
+            IFNULL(T1.COUNTRY,    T2.COUNTRY)     AS COUNTRY,
+            T1.M1                                 AS M1,
+            T2.M1                                 AS DELTA_M1,
+            T1.M1-T2.M1                           AS DELTACOST,
+            MAP(T2.M1, NULL, NULL, 0, 0, TO_DECIMAL((T1.M1-T2.M1)/T2.M1, 15, 4)) AS DELTAPERCENTAGE,
+            'ACTIVE'                              AS STATUS,
+            :V_FULL_NAME                          AS SYS_CREATED_BY,
+            CURRENT_TIMESTAMP                     AS SYS_CREATED_DATE,
+            :V_FULL_NAME                          AS SYS_LAST_MODIFIED_BY,
+            CURRENT_TIMESTAMP                     AS SYS_LAST_MODIFIED_DATE,
+            CASE WHEN (T1.MODEL IS NULL OR T2.MODEL IS NULL ) AND T1.CTO<>'N/A'  THEN 'L1_BOM_CHANGE' 
+                      WHEN (T1.MODEL IS NULL OR T2.MODEL IS NULL ) AND T1.CTO= 'N/A'  THEN 'MTM_CHANGE'   
+                      ELSE 'OTHER' END  AS CHANGE_REASON
+       FROM :TAB1 T1
+            FULL OUTER JOIN
+            :TAB2 T2	
+         ON (T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+        AND T1.CTO           = T2.CTO
+        AND T1.MODEL         = T2.MODEL
+        AND T1.PLANT         = T2.PLANT
+        AND T1.SUBGEO        = T2.SUBGEO
+        AND T1.COUNTRY       = T2.COUNTRY)
+      WHERE IFNULL(T1.M1,0) <> 0
+        AND IFNULL(T2.M1,0) <> 0
+        AND ABS(IFNULL(T1.M1,0)-IFNULL(T2.M1,0))  > 1;	
+    
+    EXEC 'commit';
+    
+    --start get ctc change_reason,add by zhangxj on 20160413
+    v_subprc_name := 'PRC_RPT_CTC_CBOM';
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_CTC_CBOM" (v_cycle,v_deltacycle,v_subprc_exitcode);                          
+    IF v_subprc_exitcode <> 0 THEN  SIGNAL exp_procedure;
+    END IF; 
+    
+    UPDATE rpt_ctc a
+            SET a.change_reason = 'BOM_CHANGE'
+     WHERE a.cto='N/A'
+           AND EXISTS (SELECT 1 FROM rpt_ctc_bom b 
+                                    WHERE a.model = b.model
+                                         AND a.plant   = b.plant
+                                         AND b.item_type<>'CTO');
+    UPDATE rpt_ctc a
+            SET a.change_reason = 'BOM_CHANGE'
+     WHERE a.cto<>'N/A'
+           AND EXISTS (SELECT 1 FROM rpt_ctc_bom b 
+                                    WHERE a.cto = b.model
+                                         AND a.plant   = b.plant
+                                         AND b.item_type='CTO');    
+     UPDATE rpt_ctc a
+            SET a.change_reason = 'COSTTAPE_CHANGE'
+     WHERE a.cto='N/A'
+           AND EXISTS (SELECT 1 FROM rpt_ctc_costbom b 
+                                    WHERE a.model = b.model
+                                         AND a.plant   = b.plant
+                                         AND b.item_type<>'CTO');
+    UPDATE rpt_ctc a
+            SET a.change_reason = 'COSTTAPE_CHANGE'
+     WHERE a.cto<>'N/A'
+           AND EXISTS (SELECT 1 FROM rpt_ctc_costbom b 
+                                    WHERE a.cto      = b.model
+                                         AND a.plant   = b.plant
+                                         AND b.item_type='CTO');    
+    --end modifed 
+   
+    P_OUT_EXITCODE := 0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END(',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+END;

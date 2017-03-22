@@ -1,0 +1,721 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_CBOM_CAL_FINALCOST" ( 
+    IN  p_change_id     VARCHAR(100),
+    IN  p_product_group VARCHAR(20),
+    IN  p_user_id       VARCHAR(64),
+    OUT p_out_exitcode  INTEGER,
+    OUT p_out_exitmess  VARCHAR(500) 
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE" 
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_CBOM_CAL_FINALCOST         
+*function   : Calculate Cost for MTM
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : Leonard Ling
+*CreateDate : 2015-01-22
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	AS
+	    v_g_pkg_name        VARCHAR(30)  := 'PKG_BOM_CALCULATION'; 
+        v_change_id         VARCHAR(100) := :p_change_id;
+        v_product_group     VARCHAR(20)  := :p_product_group;
+        v_user_id           VARCHAR(64)  := :p_user_id;
+        v_cost_lvl          DECIMAL(2)   := 0;
+
+        v_maxrows           NUMBER := 1000;
+        v_rownum            NUMBER := 0;
+        V_STEP_COUNTER		NUMBER :=0;
+        v_taking_time       DECIMAL(17,3);
+        v_time              DECIMAL(17,3);
+
+        v_prc_name          VARCHAR(30)  := 'PRC_CBOM_CAL_FINALCOST';
+        v_full_name         VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+        v_init_date         TIMESTAMP;      
+        v_found             INTEGER := 1;   
+        v_row_count         INTEGER;
+        i                   INTEGER;
+        v_runlvl            VARCHAR(20);
+        v_runlvl_val1       VARCHAR(20);
+        v_runlvl_val2       VARCHAR(20);        
+        v_adder_category    VARCHAR(10); 
+        v_adder_name        VARCHAR(20); 
+        v_debug             VARCHAR(1); 
+  		c_f_costtype_temp  VARCHAR(20);
+        c_f_level0_all_cost  VARCHAR(20);
+        c_f_costgeolvl_subgeo VARCHAR(20);
+        c_f_costtype_output VARCHAR(20);
+        c_f_costtype_level0 VARCHAR(20);
+        c_f_costtype_level4 VARCHAR(20);
+        c_f_costtype_level6 VARCHAR(20);
+        c_f_costname_level0 VARCHAR(20);
+        c_f_costname_level4 VARCHAR(20);
+        c_f_costname_level6 VARCHAR(20);
+        v_tbatype_usdollar  VARCHAR(20);
+        v_tbatype_percentage VARCHAR(20);
+        c_f_costtype_comp VARCHAR(20);
+        C_F_COSTGEOLVL_PLANT VARCHAR(20);
+        c_f_costtype_tba VARCHAR(20);
+        C_F_FOR_ALL VARCHAR(3);
+        v_g_curr_date TIMESTAMP:=CURRENT_TIMESTAMP;
+		logidi            INTEGER := 0;
+		logidj            INTEGER := 0;
+		logidk            INTEGER := 0;
+		logidl            INTEGER := 0;
+		logidm            INTEGER := 0;
+		logidn            INTEGER := 0;
+		logido            INTEGER := 0;
+		logidp            INTEGER := 0;
+         
+BEGIN
+    DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found   
+    BEGIN     
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );  
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+	                                                I_LOGSID     => :logidi,
+			                                        I_EVENT_NAME => :v_full_name, 
+			                                        I_MODULE     => 'EBGCFE',
+			                                        I_MESSAGE    => 'ERROR', 
+			                                        I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );       
+    END;
+     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );                
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidi, 
+                                                    I_EVENT_NAME => :v_full_name, 
+                                                    I_MODULE     => 'EBGCFE',
+			                                        I_MESSAGE    => 'ERROR', 
+			                                        I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );     
+    END;
+     
+    p_out_exitcode := -1;
+    p_out_exitmess := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE'); 
+     
+    -- Process Logic 
+    SELECT SESSION_CONTEXT('v_step_counter_bom_calculation') into v_step_counter FROM DUMMY;
+  
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costtype_temp INTO c_f_costtype_temp FROM DUMMY; 
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_level0_all_cost  INTO  c_f_level0_all_cost FROM DUMMY;  
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costgeolvl_subgeo  INTO c_f_costgeolvl_subgeo  FROM DUMMY;    
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costtype_output  INTO c_f_costtype_output  FROM DUMMY;    
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costtype_level0  INTO c_f_costtype_level0  FROM DUMMY;  
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costtype_level4  INTO c_f_costtype_level4  FROM DUMMY;  
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costtype_level6  INTO c_f_costtype_level6  FROM DUMMY; 
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costname_level0  INTO c_f_costname_level0  FROM DUMMY;
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costname_level4  INTO c_f_costname_level4  FROM DUMMY;
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costname_level6  INTO c_f_costname_level6  FROM DUMMY; 
+    
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_COSTTYPE_COMP  INTO c_f_costtype_comp  FROM DUMMY; 
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_costtype_tba  INTO c_f_costtype_tba  FROM DUMMY;   
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_COSTGEOLVL_PLANT  INTO C_F_COSTGEOLVL_PLANT  FROM DUMMY; 
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_FOR_ALL  INTO C_F_FOR_ALL  FROM DUMMY; 
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_TBATYPE_USDOLLAR    INTO V_TBATYPE_USDOLLAR    FROM DUMMY; 
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_TBATYPE_PERCENTAGE  INTO V_TBATYPE_PERCENTAGE  FROM DUMMY;   
+   
+    -- Runtime info   
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG  INTO v_debug  FROM DUMMY; 
+    IF :v_debug IS NOT NULL  
+    THEN
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+        
+    DELETE FROM MID_cbom_leveln WHERE product_group = :v_product_group;
+    DELETE FROM mid_cbom_level1 WHERE product_group = :v_product_group;
+    DELETE FROM mid_cbom_level2 WHERE product_group = :v_product_group;
+     
+    INSERT INTO mid_cbom_level2
+        (cycle, product_group, model, father, plant, subgeo, country, cost_lvl, 
+         model_type, model_brand, model_family, m1, m2, m3, m4, m5, m6, m7, m8, 
+         m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, 
+         lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, 
+         lm18, weighted_average, lattest_procur, sys_created_date)
+    SELECT 'CURRENT', t1.product_group, t2.model, t2.father, t1.plant,
+           t1.subgeo, t1.country, 0 AS cost_lvl, t1.output_type, t1.brand,
+           t1.asp_prd_family, SUM(m1), SUM(m2), SUM(m3), SUM(m4), SUM(m5),
+           SUM(m6), SUM(m7), SUM(m8), SUM(m9), SUM(m10), SUM(m11), SUM(m12), 
+           SUM(m13), SUM(m14), SUM(m15), SUM(m16), SUM(m17), SUM(m18), 
+           SUM(lm1), SUM(lm2), SUM(lm3), SUM(lm4), SUM(lm5), SUM(lm6), 
+           SUM(lm7), SUM(lm8), SUM(lm9), SUM(lm10), SUM(lm11), SUM(lm12), 
+           SUM(lm13), SUM(lm14), SUM(lm15), SUM(lm16), SUM(lm17), SUM(lm18), 
+           SUM(weighted_average), SUM(lattest_procur), current_timestamp
+      FROM MID_biz_toplayer_ch t1, BIZ_cbom_mtmsbb t2
+     WHERE t1.product_group = t2.product_group
+       AND t1.item          = t2.model
+       AND t1.plant         = t2.plant
+       AND t1.product_group = :v_product_group
+       AND t1.output_type   <> 'CTO'
+    GROUP BY t1.product_group, t2.model, t2.father, t1.plant,
+             t1.subgeo, t1.country, t1.output_type, t1.brand,
+             t1.asp_prd_family;
+      
+    INSERT INTO mid_cbom_level2
+        (cycle, product_group, model, father, plant, subgeo, country, cost_lvl, 
+         model_type, model_brand, model_family, is_basesbb, m1, m2, m3, m4, m5, 
+         m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, 
+         lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, 
+         lm16, lm17, lm18, weighted_average, lattest_procur, sys_created_date)
+    SELECT 'CURRENT', t1.product_group, t2.model, t2.children AS father, t1.plant,
+           t1.subgeo, t1.country, 0 AS cost_lvl, t1.output_type, t1.brand,
+           t1.asp_prd_family, is_basesbb, m1, m2, m3, m4, m5, m6, m7, m8, m9, 
+           m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, 
+           lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, 
+           lm18, weighted_average, lattest_procur, current_timestamp
+      FROM MID_biz_toplayer_ch t1, BIZ_cbom_ctosbb t2
+     WHERE t1.product_group = t2.product_group
+       AND t1.item          = t2.model
+       AND t1.plant         = t2.plant
+       AND t1.product_group = :v_product_group
+       AND t1.output_type   = 'CTO';      
+
+    INSERT INTO mid_cbom_level2
+        (cycle, product_group, model, father, plant, subgeo, country, cost_lvl, 
+         model_type, model_brand, model_family, is_basesbb, m1, m2, m3, m4, m5, 
+         m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, 
+         lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, 
+         lm16, lm17, lm18, weighted_average, lattest_procur, sys_created_date)
+    SELECT 'CURRENT', product_group, model, father, plant, subgeo, country, cost_lvl, 
+           model_type, model_brand, model_family, is_basesbb, m1, m2, m3, m4, m5, 
+           m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, 
+           lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, 
+           lm16, lm17, lm18, weighted_average, lattest_procur, current_timestamp
+      FROM MID_adder_final
+     WHERE product_group = :v_product_group
+       AND cost_lvl      = 0;
+      
+    --LEVEL0
+    INSERT INTO mid_cbom_level1
+         (cycle, product_group, model, father, children, item_desc, model_type,
+          plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+          cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+          altpri, altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, 
+          m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, 
+          lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+          weighted_average, lattest_procur, is_basesbb, value_type)
+    SELECT 'CURRENT', t1.product_group, t1.model, t1.father,
+            :c_f_level0_all_cost AS children, NULL AS item_desc, model_type, plant, 
+            model_brand, model_family, subgeo, country, :v_cost_lvl AS cost_lvl,
+            'SUBGEO' AS cost_geo_lvl, subgeo AS cost_geo_value, plant AS cost_plant,
+            :c_f_costtype_output AS cost_type, :c_f_costtype_level0 AS cost_name, 
+            1 AS qtyper, NULL AS altgrup, NULL AS altpri, 100 AS altpercent,
+            NULL AS path, 1 AS lvl, SUM(m1), SUM(m2), SUM(m3), SUM(m4), SUM(m5),
+            SUM(m6), SUM(m7), SUM(m8), SUM(m9), SUM(m10), SUM(m11), SUM(m12), 
+            SUM(m13), SUM(m14), SUM(m15), SUM(m16), SUM(m17), SUM(m18), SUM(lm1), 
+            SUM(lm2), SUM(lm3), SUM(lm4), SUM(lm5), SUM(lm6), SUM(lm7), SUM(lm8), 
+            SUM(lm9), SUM(lm10), SUM(lm11), SUM(lm12), SUM(lm13), SUM(lm14), SUM(lm15), 
+            SUM(lm16), SUM(lm17), SUM(lm18), SUM(weighted_average), SUM(lattest_procur), 
+            is_basesbb, :v_tbatype_usdollar
+       FROM mid_cbom_level2 t1
+      WHERE product_group = :v_product_group
+     GROUP BY product_group, model, father, model_type, plant, model_brand, model_family, 
+              subgeo, country, is_basesbb;
+
+    IF :v_debug= 'T'
+    THEN
+        v_step_counter := v_step_counter + 1;
+        v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+          
+        IF :v_taking_time < 0 THEN v_taking_time := :v_taking_time + 86400.000; END IF;
+           
+        logidj:=0;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                    I_LOGSID     => :logidj,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                     to_char(v_taking_time) || ' sec');
+                                                                   
+         v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+     END IF;              
+
+    WHILE :v_cost_lvl <=6
+    DO  --LOOP
+        IF :v_cost_lvl = 0 OR :v_cost_lvl = 4 OR :v_cost_lvl = 6
+        THEN
+            INSERT INTO MID_cbom_leveln
+                (cycle, product_group, model, father, children, item_desc, model_type,
+                 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+                 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+                 altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                 lattest_procur, action, status, is_basesbb, value_type, sys_created_date)
+            SELECT a.cycle, a.product_group, a.model, a.father, a.children,
+                   b.item_desc,
+                   a.model_type, a.plant, a.model_brand, a.model_family, a.subgeo, a.country, a.cost_lvl,
+                   a.cost_geo_lvl, a.cost_geo_value, a.cost_plant, a.cost_type,
+                   CASE v_cost_lvl WHEN 0 THEN :c_f_costname_level0
+                                   WHEN 4 THEN :c_f_costname_level4
+                                   WHEN 6 THEN :c_f_costname_level6
+                   END AS cost_name,
+                   a.qtyper, a.altgrup, a.altpri, a.altpercent, a.path, a.lvl, 
+                   m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, 
+                   m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, 
+                   lm13, lm14, lm15, lm16, lm17, lm18, weighted_average, lattest_procur, 
+                   'INSERT' AS action, 'ACTIVE' AS status, a.is_basesbb, a.value_type, 
+                   current_timestamp
+              FROM mid_cbom_level1 a, ui_item b
+             WHERE a.product_group = :v_product_group and a.model=b.item;
+        END IF;
+           
+        v_cost_lvl := :v_cost_lvl + 1;        
+        IF :v_cost_lvl > 6 THEN
+            BREAK;
+        END IF;
+            
+        IF MOD(:v_cost_lvl, 2) = 1 
+        THEN
+            DELETE FROM mid_cbom_level2 WHERE product_group = :v_product_group;
+              
+           INSERT INTO mid_cbom_level1
+                (cycle, product_group, model, father, children, item_desc, model_type,
+                 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+                 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+                 altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                 lattest_procur, is_basesbb, value_type, sys_created_date)
+            SELECT 'CURRENT', t1.product_group, t2.model, t2.father, t1.children AS children, 
+                   t1.item_desc AS item_desc, t2.model_type, t2.plant, t2.model_brand, 
+                   t2.model_family, t2.subgeo, t2.country, t1.cost_lvl AS cost_lvl, 
+                   t1.cost_geo_lvl, t2.subgeo AS cost_geo_value, t2.plant AS cost_plant, 
+                   t1.cost_type, t1.cost_name, 1 AS qtyper, t1.altgrup, t1.altpri, 
+                   t1.altpercent, t1.path, t1.lvl, 
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m1*t1.m1/100 ELSE t2.lm1*t1.m1/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m2*t1.m2/100 ELSE t2.lm2*t1.m2/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m3*t1.m3/100 ELSE t2.lm3*t1.m3/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m4*t1.m4/100 ELSE t2.lm4*t1.m4/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m5*t1.m5/100 ELSE t2.lm5*t1.m5/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m6*t1.m6/100 ELSE t2.lm6*t1.m6/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m7*t1.m7/100 ELSE t2.lm7*t1.m7/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m8*t1.m8/100 ELSE t2.lm8*t1.m8/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m9*t1.m9/100 ELSE t2.lm9*t1.m9/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m10*t1.m10/100 ELSE t2.lm10*t1.m10/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m11*t1.m11/100 ELSE t2.lm11*t1.m11/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m12*t1.m12/100 ELSE t2.lm12*t1.m12/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m13*t1.m13/100 ELSE t2.lm13*t1.m13/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m14*t1.m14/100 ELSE t2.lm14*t1.m14/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m15*t1.m15/100 ELSE t2.lm15*t1.m15/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m16*t1.m16/100 ELSE t2.lm16*t1.m16/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m17*t1.m17/100 ELSE t2.lm17*t1.m17/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m18*t1.m18/100 ELSE t2.lm18*t1.m18/100 END,
+                   t2.lm1*t1.lm1/100, t2.lm2*t1.lm2/100, 
+                   t2.lm3*t1.lm3/100, t2.lm4*t1.lm4/100, t2.lm5*t1.lm5/100, t2.lm6*t1.lm6/100, 
+                   t2.lm7*t1.lm7/100, t2.lm8*t1.lm8/100, t2.lm9*t1.lm9/100, t2.lm10*t1.lm10/100, 
+                   t2.lm11*t1.lm11/100, t2.lm12*t1.lm12/100, t2.lm13*t1.lm13/100, t2.lm14*t1.lm14/100, 
+                   t2.lm15*t1.lm15/100, t2.lm16*t1.lm16/100, t2.lm17*t1.lm17/100, t2.lm18*t1.lm18/100,
+                   t2.weighted_average*t1.weighted_average/100, t2.lattest_procur*t1.lattest_procur/100, 
+                   t1.is_basesbb, :v_tbatype_usdollar, current_timestamp
+              FROM mid_adder_final t1, mid_cbom_level1 t2
+             WHERE t1.model = t2.model
+               AND t1.father = t2.father
+               AND t1.plant = t2.plant
+               AND t1.country = t2.country
+               AND t1.cost_lvl = :v_cost_lvl
+               AND t1.tba_type = :v_tbatype_percentage
+               AND t1.product_group = t2.product_group
+               AND t1.product_group = :v_product_group
+               --Added by Zhoubinbin 20170212
+               AND t2.plant NOT IN(SELECT pvalue FROM conf_parameters
+                                    WHERE pdomain = 'SYSX'
+                                      AND pname   = 'PC_PLANT');
+           
+           --Added by Zhoubinbin 20170212, User BOME to cal adders with percentage for PC plant                  
+           INSERT INTO mid_cbom_level1
+                (cycle, product_group, model, father, children, item_desc, model_type,
+                 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+                 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+                 altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                 lattest_procur, is_basesbb, value_type, sys_created_date)
+            SELECT 'CURRENT', t1.product_group, t2.model, t2.father, t1.children AS children, 
+                   t1.item_desc AS item_desc, t2.model_type, t2.plant, t2.model_brand, 
+                   t2.model_family, t2.subgeo, t2.country, t1.cost_lvl AS cost_lvl, 
+                   t1.cost_geo_lvl, t2.subgeo AS cost_geo_value, t2.plant AS cost_plant, 
+                   t1.cost_type, t1.cost_name, 1 AS qtyper, t1.altgrup, t1.altpri, 
+                   t1.altpercent, t1.path, t1.lvl, 
+                   t2.m1*t1.m1/100, t2.m2*t1.m2/100, t2.m3*t1.m3/100, t2.m4*t1.m4/100,
+                   t2.m5*t1.m5/100, t2.m6*t1.m6/100, t2.m7*t1.m7/100, t2.m8*t1.m8/100,
+                   t2.m9*t1.m9/100, t2.m10*t1.m10/100, t2.m11*t1.m11/100, t2.m12*t1.m12/100,
+                   t2.m13*t1.m13/100, t2.m14*t1.m14/100, t2.m15*t1.m15/100, t2.m16*t1.m16/100,
+                   t2.m17*t1.m17/100, t2.m18*t1.m18/100, 
+                   t2.lm1*t1.lm1/100, t2.lm2*t1.lm2/100, 
+                   t2.lm3*t1.lm3/100, t2.lm4*t1.lm4/100, t2.lm5*t1.lm5/100, t2.lm6*t1.lm6/100, 
+                   t2.lm7*t1.lm7/100, t2.lm8*t1.lm8/100, t2.lm9*t1.lm9/100, t2.lm10*t1.lm10/100, 
+                   t2.lm11*t1.lm11/100, t2.lm12*t1.lm12/100, t2.lm13*t1.lm13/100, t2.lm14*t1.lm14/100, 
+                   t2.lm15*t1.lm15/100, t2.lm16*t1.lm16/100, t2.lm17*t1.lm17/100, t2.lm18*t1.lm18/100,
+                   t2.weighted_average*t1.weighted_average/100, t2.lattest_procur*t1.lattest_procur/100, 
+                   t1.is_basesbb, :v_tbatype_usdollar, current_timestamp
+              FROM mid_adder_final t1, mid_cbom_level1 t2
+             WHERE t1.model = t2.model
+               AND t1.father = t2.father
+               AND t1.plant = t2.plant
+               AND t1.country = t2.country
+               AND t1.cost_lvl = :v_cost_lvl
+               AND t1.tba_type = :v_tbatype_percentage
+               AND t1.product_group = t2.product_group
+               AND t1.product_group = :v_product_group
+               AND t2.plant IN(SELECT pvalue FROM conf_parameters
+                                WHERE pdomain = 'SYSX'
+                                  AND pname   = 'PC_PLANT');
+               
+               
+            INSERT INTO MID_adder_final
+                (product_group, model, father, lvl, plant, children, item_desc, 
+                 subgeo, country, model_type, model_brand, model_family, cost_lvl, 
+                 cost_geo_lvl, cost_geo_value, cost_plant, cost_type, cost_name, qtyper, 
+                 altgrup, altpri, altpercent, path, m1, m2, m3, m4, m5, m6, m7, m8, m9, 
+                 m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, 
+                 lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18,
+      	         weighted_average,lattest_procur, is_basesbb, value_type, sys_created_date)   
+            SELECT product_group, model, father, lvl, plant, children, item_desc, 
+                   subgeo, country, model_type, model_brand, model_family, cost_lvl, 
+                   cost_geo_lvl, cost_geo_value, cost_plant, cost_type, cost_name, qtyper, 
+                   altgrup, altpri, altpercent, path, m1, m2, m3, m4, m5, m6, m7, m8, m9, 
+                   m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, 
+                   lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+                   weighted_average,lattest_procur, is_basesbb, value_type, current_timestamp
+              FROM mid_cbom_level1 
+             WHERE product_group = :v_product_group
+               AND cost_lvl      = :v_cost_lvl
+               AND cost_type     = 'TBA';
+               
+            IF :v_debug= 'T'
+            THEN
+                v_step_counter := v_step_counter + 1;
+                v_taking_time  := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+           
+                IF :v_taking_time < 0 THEN v_taking_time := :v_taking_time + 86400.000; END IF;
+           
+                logidk:=0;
+                CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                            I_LOGSID     => :logidk,
+                                                            I_EVENT_NAME => :v_full_name,
+                                                            I_MODULE     => 'EBGCFE',
+                                                            I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                             to_char(v_taking_time) || ' sec');            
+                v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+            END IF;   
+
+            INSERT INTO mid_cbom_level1 
+                (cycle, product_group, model, father, children, item_desc, model_type,
+                 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+                 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+                 altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                 lattest_procur, is_basesbb, sys_created_date)
+            SELECT 'CURRENT', t1.product_group, model, father, 'TEMP' AS children,
+                   NULL AS item_desc, model_type, plant, model_brand, model_family, 
+                   subgeo, country, cost_lvl AS cost_lvl, :c_f_costtype_temp AS cost_geo_lvl,
+                   subgeo AS cost_geo_value, plant AS cost_plant, :c_f_costtype_temp AS cost_type, 
+                   :c_f_costtype_temp AS cost_name, 1 AS qtyper, NULL AS altgrup, NULL AS altpri, 
+                   100 AS altpercent, NULL AS path, 1 AS lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, 
+                   m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, 
+                   lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                   lattest_procur, is_basesbb, current_timestamp
+              FROM MID_adder_final t1
+             WHERE t1.cost_lvl      = :v_cost_lvl
+               AND t1.tba_type      = :v_tbatype_usdollar
+               AND t1.product_group = :v_product_group;
+
+            IF :v_debug= 'T'
+            THEN
+                v_step_counter := v_step_counter + 1;
+                v_taking_time  := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+           
+                IF :v_taking_time < 0 THEN v_taking_time := :v_taking_time + 86400.000; END IF;
+           
+                logidl:=0;
+                CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                            I_LOGSID     => :logidl,
+                                                            I_EVENT_NAME => :v_full_name,
+                                                            I_MODULE     => 'EBGCFE',
+                                                            I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                             to_char(v_taking_time) || ' sec');            
+                v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+            END IF;   
+
+            INSERT INTO mid_cbom_level2
+                (cycle, product_group, model, father, children, item_desc, model_type,
+                 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+                 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+                 altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                 lattest_procur, is_basesbb, value_type, sys_created_date)
+            SELECT 'CURRENT', product_group, model, father,
+                   'LEVEL' || to_char(:v_cost_lvl) || '_ALL_COST' AS children, NULL AS item_desc, 
+                   model_type, plant, model_brand, model_family, subgeo, country, :v_cost_lvl AS cost_lvl,
+                   :c_f_costgeolvl_subgeo AS cost_geo_lvl, subgeo AS cost_geo_value, plant AS cost_plant,
+                   :c_f_costtype_output AS cost_type, 'LEVEL' || to_char(:v_cost_lvl) || '-OUTPUT' AS cost_name,
+                   1 AS qtyper, NULL AS altgrup, NULL AS altpri, 100 AS altpercent, NULL AS path, 1 AS lvl, 
+                   SUM(m1), SUM(m2), SUM(m3), SUM(m4), SUM(m5), SUM(m6), SUM(m7), SUM(m8), SUM(m9), SUM(m10), 
+                   SUM(m11), SUM(m12), SUM(m13), SUM(m14), SUM(m15), SUM(m16), SUM(m17), SUM(m18), SUM(lm1), 
+                   SUM(lm2), SUM(lm3), SUM(lm4), SUM(lm5), SUM(lm6), SUM(lm7), SUM(lm8), SUM(lm9), SUM(lm10), 
+                   SUM(lm11), SUM(lm12), SUM(lm13), SUM(lm14), SUM(lm15), SUM(lm16), SUM(lm17), SUM(lm18), 
+                   SUM(weighted_average), SUM(lattest_procur), t1.is_basesbb, :v_tbatype_usdollar, current_timestamp
+              FROM mid_cbom_level1 t1
+             WHERE t1.product_group = :v_product_group
+            GROUP BY product_group, model, father, model_type, plant, model_brand, model_family, subgeo,
+                     country, is_basesbb;
+
+            IF :v_debug= 'T'
+            THEN
+                v_step_counter := v_step_counter + 1;
+                v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+           
+                IF :v_taking_time < 0 THEN v_taking_time := :v_taking_time + 86400.000; END IF;
+           
+                logidm:=0;
+                CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                            I_LOGSID     => :logidm,
+                                                            I_EVENT_NAME => :v_full_name,
+                                                            I_MODULE     => 'EBGCFE',
+                                                            I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                            to_char(v_taking_time) || ' sec');            
+                v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+            END IF; 
+        ELSE
+            DELETE FROM mid_cbom_level1 WHERE product_group = :v_product_group;
+   
+            INSERT INTO mid_cbom_level2
+                (cycle, product_group, model, father, children, item_desc, model_type,
+                 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+                 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+                 altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                 lattest_procur, is_basesbb, value_type, sys_created_date)
+            SELECT 'CURRENT', t1.product_group, t2.model, t2.father, t1.children AS children,
+                   t1.item_desc, t2.model_type, t2.plant, t2.model_brand, t2.model_family, 
+                   t2.subgeo, t2.country, t1.cost_lvl AS cost_lvl, t1.cost_geo_lvl AS cost_geo_lvl, 
+                   t2.subgeo AS cost_geo_value, t2.plant AS cost_plant, t1.cost_type, t1.cost_name, 
+                   1 AS qtyper, t1.altgrup, t1.altpri, t1.altpercent, t1.path, t1.lvl,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m1*t1.m1/100 ELSE t2.lm1*t1.m1/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m2*t1.m2/100 ELSE t2.lm2*t1.m2/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m3*t1.m3/100 ELSE t2.lm3*t1.m3/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m4*t1.m4/100 ELSE t2.lm4*t1.m4/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m5*t1.m5/100 ELSE t2.lm5*t1.m5/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m6*t1.m6/100 ELSE t2.lm6*t1.m6/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m7*t1.m7/100 ELSE t2.lm7*t1.m7/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m8*t1.m8/100 ELSE t2.lm8*t1.m8/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m9*t1.m9/100 ELSE t2.lm9*t1.m9/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m10*t1.m10/100 ELSE t2.lm10*t1.m10/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m11*t1.m11/100 ELSE t2.lm11*t1.m11/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m12*t1.m12/100 ELSE t2.lm12*t1.m12/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m13*t1.m13/100 ELSE t2.lm13*t1.m13/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m14*t1.m14/100 ELSE t2.lm14*t1.m14/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m15*t1.m15/100 ELSE t2.lm15*t1.m15/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m16*t1.m16/100 ELSE t2.lm16*t1.m16/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m17*t1.m17/100 ELSE t2.lm17*t1.m17/100 END,
+                   CASE WHEN :v_cost_lvl > 4 THEN t2.m18*t1.m18/100 ELSE t2.lm18*t1.m18/100 END,
+                   t2.lm1*t1.lm1/100, t2.lm2*t1.lm2/100, 
+                   t2.lm3*t1.lm3/100, t2.lm4*t1.lm4/100, t2.lm5*t1.lm5/100, t2.lm6*t1.lm6/100, 
+                   t2.lm7*t1.lm7/100, t2.lm8*t1.lm8/100, t2.lm9*t1.lm9/100, t2.lm10*t1.lm10/100, 
+                   t2.lm11*t1.lm11/100, t2.lm12*t1.lm12/100, t2.lm13*t1.lm13/100, t2.lm14*t1.lm14/100, 
+                   t2.lm15*t1.lm15/100, t2.lm16*t1.lm16/100, t2.lm17*t1.lm17/100, t2.lm18*t1.lm18/100,
+                   t2.weighted_average*t1.weighted_average/100, t2.lattest_procur*t1.lattest_procur/100,  
+                   t2.is_basesbb, :v_tbatype_usdollar, current_timestamp
+              FROM mid_adder_final t1, mid_cbom_level2 t2
+             WHERE t1.model         = t2.model
+               AND t1.father        = t2.father
+               AND t1.plant         = t2.plant
+               AND t1.country       = t2.country
+               AND t1.cost_lvl      = :v_cost_lvl
+               AND t1.tba_type      = :V_TBATYPE_PERCENTAGE
+               AND t1.product_group = t2.product_group
+               AND t1.product_group = :v_product_group
+               --Added by Zhoubinbin 20170212
+               AND t2.plant NOT IN(SELECT pvalue FROM conf_parameters
+                                    WHERE pdomain = 'SYSX'
+                                      AND pname   = 'PC_PLANT');
+                                      
+            INSERT INTO mid_cbom_level2
+                (cycle, product_group, model, father, children, item_desc, model_type,
+                 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+                 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+                 altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                 lattest_procur, is_basesbb, value_type, sys_created_date)
+            SELECT 'CURRENT', t1.product_group, t2.model, t2.father, t1.children AS children,
+                   t1.item_desc, t2.model_type, t2.plant, t2.model_brand, t2.model_family, 
+                   t2.subgeo, t2.country, t1.cost_lvl AS cost_lvl, t1.cost_geo_lvl AS cost_geo_lvl, 
+                   t2.subgeo AS cost_geo_value, t2.plant AS cost_plant, t1.cost_type, t1.cost_name, 
+                   1 AS qtyper, t1.altgrup, t1.altpri, t1.altpercent, t1.path, t1.lvl,
+                   t2.m1*t1.m1/100, t2.m2*t1.m2/100, t2.m3*t1.m3/100, t2.m4*t1.m4/100,
+                   t2.m5*t1.m5/100, t2.m6*t1.m6/100, t2.m7*t1.m7/100, t2.m8*t1.m8/100,
+                   t2.m9*t1.m9/100, t2.m10*t1.m10/100, t2.m11*t1.m11/100, t2.m12*t1.m12/100,
+                   t2.m13*t1.m13/100, t2.m14*t1.m14/100, t2.m15*t1.m15/100, t2.m16*t1.m16/100,
+                   t2.m17*t1.m17/100, t2.m18*t1.m18/100, 
+                   t2.lm1*t1.lm1/100, t2.lm2*t1.lm2/100, 
+                   t2.lm3*t1.lm3/100, t2.lm4*t1.lm4/100, t2.lm5*t1.lm5/100, t2.lm6*t1.lm6/100, 
+                   t2.lm7*t1.lm7/100, t2.lm8*t1.lm8/100, t2.lm9*t1.lm9/100, t2.lm10*t1.lm10/100, 
+                   t2.lm11*t1.lm11/100, t2.lm12*t1.lm12/100, t2.lm13*t1.lm13/100, t2.lm14*t1.lm14/100, 
+                   t2.lm15*t1.lm15/100, t2.lm16*t1.lm16/100, t2.lm17*t1.lm17/100, t2.lm18*t1.lm18/100,
+                   t2.weighted_average*t1.weighted_average/100, t2.lattest_procur*t1.lattest_procur/100,  
+                   t2.is_basesbb, :v_tbatype_usdollar, current_timestamp
+              FROM mid_adder_final t1, mid_cbom_level2 t2
+             WHERE t1.model         = t2.model
+               AND t1.father        = t2.father
+               AND t1.plant         = t2.plant
+               AND t1.country       = t2.country
+               AND t1.cost_lvl      = :v_cost_lvl
+               AND t1.tba_type      = :V_TBATYPE_PERCENTAGE
+               AND t1.product_group = t2.product_group
+               AND t1.product_group = :v_product_group
+               AND t2.plant IN(SELECT pvalue FROM conf_parameters
+                                WHERE pdomain = 'SYSX'
+                                  AND pname   = 'PC_PLANT');
+      
+            INSERT INTO mid_adder_final
+                (product_group, model, father, lvl, plant, children, item_desc, subgeo,
+      	         country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+      	         cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+   		         altpri, altpercent, path, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average, 
+                 lattest_procur, is_basesbb, value_type, sys_created_date)   
+            SELECT product_group, model, father, lvl, plant, children, item_desc, subgeo, 
+                   country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+      	           cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+      	           altpercent, path, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                   m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                   lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18,  weighted_average,
+                   lattest_procur, is_basesbb, value_type, current_timestamp 
+              FROM mid_cbom_level2 
+             WHERE product_group = :v_product_group
+               AND cost_lvl      = :v_cost_lvl
+               AND cost_type     = 'TBA';      
+
+            IF :v_debug= 'T'
+            THEN
+                v_step_counter := v_step_counter + 1;
+                v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+           
+                IF :v_taking_time < 0 THEN v_taking_time := :v_taking_time + 86400.000; END IF;
+           
+                logidn:=0;
+                CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                            I_LOGSID     => :logidn,
+                                                            I_EVENT_NAME => :v_full_name,
+                                                            I_MODULE     => 'EBGCFE',
+                                                            I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                            to_char(v_taking_time) || ' sec');            
+                v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+            END IF;  
+
+            INSERT INTO mid_cbom_level2
+                (cycle, product_group, model, father, children, item_desc, model_type,
+                 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+                 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+                 altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                 lattest_procur, is_basesbb, sys_created_date)
+            SELECT 'CURRENT', product_group, model, father, :c_f_costtype_temp AS children,
+                   NULL AS item_desc, model_type, plant, model_brand, model_family, subgeo,
+                   country, cost_lvl AS cost_lvl, :c_f_costtype_temp AS cost_geo_lvl, 
+                   subgeo AS cost_geo_value, plant AS cost_plant, :c_f_costtype_temp AS cost_type, 
+                   :c_f_costtype_temp AS cost_name, 1 AS qtyper, NULL AS altgrup, NULL AS altpri, 
+                   100 AS altpercent, NULL AS path, 1 AS lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, 
+                   m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, 
+                   lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average, 
+                   lattest_procur, is_basesbb, current_timestamp
+              FROM MID_adder_final t1
+             WHERE t1.cost_lvl      = :v_cost_lvl
+               AND t1.tba_type      = :v_tbatype_usdollar
+               AND t1.product_group = :v_product_group;
+
+            IF :v_debug= 'T'
+            THEN
+                v_step_counter := v_step_counter + 1;
+                v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+           
+                IF :v_taking_time < 0 THEN v_taking_time := :v_taking_time + 86400.000; END IF;
+           
+                logido:=0;
+                CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                            I_LOGSID     => :logido,
+                                                            I_EVENT_NAME => :v_full_name,
+                                                            I_MODULE     => 'EBGCFE',
+                                                            I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                          to_char(v_taking_time) || ' sec');            
+                v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+            END IF;  
+
+            INSERT INTO mid_cbom_level1
+                (cycle, product_group, model, father, children, item_desc, model_type,
+                 plant, model_brand, model_family, subgeo, country, cost_lvl, cost_geo_lvl, 
+                 cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup, altpri, 
+                 altpercent, path, lvl, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+                 m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, 
+                 lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average,
+                 lattest_procur, is_basesbb, value_type, sys_created_date)
+            SELECT MAX('CURRENT'), t1.product_group, model, father,
+                   MAX('LEVEL' || to_char(:v_cost_lvl) || '_ALL_COST') AS children, MAX(NULL) AS item_desc, 
+                   model_type, plant, model_brand, model_family, subgeo, country, MAX(TO_CHAR(:v_cost_lvl)) AS cost_lvl,
+                   MAX(:c_f_costgeolvl_subgeo) AS cost_geo_lvl, subgeo AS cost_geo_value, plant AS cost_plant,
+                   MAX(:c_f_costtype_output) AS cost_type, MAX('LEVEL' || to_char(:v_cost_lvl) || '-OUTPUT') AS cost_name,
+                   MAX(1) AS qtyper, MAX(NULL) AS altgrup, MAX(NULL) AS altpri, MAX(100) AS altpercent, MAX(NULL) AS path, MAX(1) AS lvl, 
+                   SUM(m1), SUM(m2), SUM(m3), SUM(m4), SUM(m5), SUM(m6), SUM(m7), SUM(m8), SUM(m9), SUM(m10), 
+                   SUM(m11), SUM(m12), SUM(m13), SUM(m14), SUM(m15), SUM(m16), SUM(m17), SUM(m18), SUM(lm1), 
+                   SUM(lm2), SUM(lm3), SUM(lm4), SUM(lm5), SUM(lm6), SUM(lm7), SUM(lm8), SUM(lm9), SUM(lm10), 
+                   SUM(lm11), SUM(lm12), SUM(lm13), SUM(lm14), SUM(lm15), SUM(lm16), SUM(lm17), SUM(lm18), 
+                   SUM(weighted_average), SUM(lattest_procur), is_basesbb, MAX(:v_tbatype_usdollar), MAX(current_timestamp)
+              FROM mid_cbom_level2 t1
+             WHERE product_group = :v_product_group
+            GROUP BY product_group, model, father, model_type, plant, model_brand, model_family, subgeo,
+                     country, is_basesbb;
+
+            --COMMIT;
+            IF :v_debug= 'T'
+            THEN
+                v_step_counter := v_step_counter + 1;
+                v_taking_time :=  to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+           
+                IF :v_taking_time < 0 THEN v_taking_time := :v_taking_time + 86400.000; END IF;
+           
+                logidp:=0;
+                CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                            I_LOGSID     => :logidp,
+                                                            I_EVENT_NAME => :v_full_name,
+                                                            I_MODULE     => 'EBGCFE',
+                                                            I_MESSAGE    => 'step '||to_char(v_step_counter)||': ' ||
+                                                                            to_char(v_taking_time) || ' sec');            
+                v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+            END IF;  
+        END IF;
+    END WHILE; 
+    
+    EXEC 'COMMIT';     
+
+	UPDATE CAL_RUNTIME x 
+	   SET end_t=CURRENT_TIMESTAMP
+	 WHERE x.pkg_name=:v_g_pkg_name 
+       AND x.proc_name=:v_prc_name 
+       AND end_t is null 
+       AND prd_group=:v_product_group;
+	
+     p_out_exitcode := 0;
+	 p_out_exitmess := 'SUCCESSFUL';
+	 CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+	                                             I_LOGSID     => :logidi,
+											     I_EVENT_NAME => :v_full_name,
+											     I_MODULE     => 'EBGCFE'); 
+        
+END;

@@ -1,0 +1,66 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_time_fence_err" (
+IN 	 	error_message	varchar(4096),
+IN 	 	business_name varchar(200),
+IN	 	OEM_NAME NVARCHAR(40) ,
+IN		TIME_FENCE NVARCHAR(1000),
+IN	    FUNCTION_TYPE NVARCHAR(40),
+IN	 	TIME_FENCE_TYPE NVARCHAR(40),
+IN	 	PROFIT_CENTER	NVARCHAR(40),
+IN	    START_DATE TIMESTAMP,
+IN		END_DATE TIMESTAMP,
+IN		SYS_CREATED_BY NVARCHAR(40),
+IN		SYS_CREATED_DATE TIMESTAMP,
+IN		SEQ	nvarchar(20),
+IN 	 	position int
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+	
+	business_code varchar(20);
+	table_name varchar(100) :='PM_UI_TIME_FENCE';
+	privilegeExists  NVARCHAR(300)  ;
+	
+	
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 	    --添加business信息
+		business_code := :SEQ;
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,0,1,:table_name);
+     	
+     	--记录upload的错误
+     	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || :business_code,:position,:error_message,:table_name,:business_name); 
+     	
+     	--详细记录upload的数据信息
+     	insert into "EBGCFE"."PM_UI_TIME_FENCE_ERR_DETAIL"(
+			     	CODE,
+			     	POSITION,
+			     	OEM_NAME,
+			     	TIME_FENCE,
+			     	FUNCTION_TYPE,
+			     	TIME_FENCE_TYPE,
+			     	PROFIT_CENTER,
+			     	START_DATE,
+			     	END_DATE,
+			     	SYS_CREATED_BY,
+			     	SYS_CREATED_DATE)
+					VALUES(
+					:table_name || :business_code,
+					:position,
+					:OEM_NAME,
+					:TIME_FENCE,
+					:FUNCTION_TYPE,
+					:TIME_FENCE_TYPE,
+			     	:PROFIT_CENTER,
+			     	:START_DATE,
+			     	:END_DATE,
+			     	:SYS_CREATED_BY,
+			     	:SYS_CREATED_DATE);
+END;

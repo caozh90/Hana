@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_UI_ADDER_CONF" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_ADDER_CONF"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="UI_ADDER_CONF" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_ADDER_CONF"/>
+    </DataSource>
+    <DataSource id="UI_ADDER_CONF_HIS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_ADDER_CONF_HIS"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="ADDER_NAME"/>
+        <viewAttribute id="TBA_TYPE"/>
+        <viewAttribute id="ADDER_DESC"/>
+        <viewAttribute id="FLEXIBLE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="ASP_PROD_FAMILY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#UI_ADDER_CONF">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDER_NAME" source="ADDER_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TBA_TYPE" source="TBA_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDER_DESC" source="ADDER_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FLEXIBLE" source="FLEXIBLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PROD_FAMILY" source="ASP_PROD_FAMILY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="ADDER_NAME"/>
+        <viewAttribute id="TBA_TYPE"/>
+        <viewAttribute id="ADDER_DESC"/>
+        <viewAttribute id="ASP_PROD_FAMILY"/>
+        <viewAttribute id="FLEXIBLE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="CYCLE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#UI_ADDER_CONF_HIS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDER_NAME" source="ADDER_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TBA_TYPE" source="TBA_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDER_DESC" source="ADDER_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PROD_FAMILY" source="ASP_PROD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FLEXIBLE" source="FLEXIBLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <viewAttributes>
+        <viewAttribute id="ADDER_NAME"/>
+        <viewAttribute id="TBA_TYPE"/>
+        <viewAttribute id="ADDER_DESC"/>
+        <viewAttribute id="FLEXIBLE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="ASP_PROD_FAMILY"/>
+        <viewAttribute id="CYCLE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDER_NAME" source="ADDER_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TBA_TYPE" source="TBA_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDER_DESC" source="ADDER_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FLEXIBLE" source="FLEXIBLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PROD_FAMILY" source="ASP_PROD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDER_NAME" source="ADDER_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TBA_TYPE" source="TBA_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDER_DESC" source="ADDER_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FLEXIBLE" source="FLEXIBLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PROD_FAMILY" source="ASP_PROD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Union_1">
+    <attributes>
+      <attribute id="ADDER_NAME" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ADDER_NAME"/>
+        <keyMapping columnObjectName="Union_1" columnName="ADDER_NAME"/>
+      </attribute>
+      <attribute id="TBA_TYPE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TBA_TYPE"/>
+        <keyMapping columnObjectName="Union_1" columnName="TBA_TYPE"/>
+      </attribute>
+      <attribute id="ADDER_DESC" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ADDER_DESC"/>
+        <keyMapping columnObjectName="Union_1" columnName="ADDER_DESC"/>
+      </attribute>
+      <attribute id="FLEXIBLE" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FLEXIBLE"/>
+        <keyMapping columnObjectName="Union_1" columnName="FLEXIBLE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Union_1" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE_RAW" hidden="true" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Union_1" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="ASP_PROD_FAMILY" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ASP_PROD_FAMILY"/>
+        <keyMapping columnObjectName="Union_1" columnName="ASP_PROD_FAMILY"/>
+      </attribute>
+      <attribute id="CYCLE" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Union_1" columnName="CYCLE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="SYS_LAST_MODIFIED_DATE" hidden="false" order="9" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_LAST_MODIFIED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="120" y="310"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="290" y="355"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="210" y="240"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

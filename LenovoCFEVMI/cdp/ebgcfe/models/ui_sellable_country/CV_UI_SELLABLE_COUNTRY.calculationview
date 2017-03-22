@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_SELLABLE_COUNTRY" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_UI_SELLABLE_COUNTRY"/>
+  <localVariables/>
+  <variableMappings/>
+  <informationModelLayout relativeWidthScenario="27"/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="CYCLE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCT_GROUP" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="ITEM" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="COUNTRY" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="PRODCLASS" length="50"/>
+        <viewAttribute datatype="DATE" id="ANNOUNCE_DATE"/>
+        <viewAttribute datatype="DATE" id="WITHDRAW_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="OPTION" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="COFCAT" length="60"/>
+        <viewAttribute datatype="TIMESTAMP" id="SYS_CREATED_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_CREATED_BY" length="100"/>
+        <viewAttribute datatype="NVARCHAR" id="SYS_LAST_MODIFIED_DATE" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_BY" length="100"/>
+        <viewAttribute datatype="DATE" id="IAD"/>
+        <viewAttribute datatype="DATE" id="EOW"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = select 
+ 	    &quot;CYCLE&quot;,
+		&quot;PRODUCT_GROUP&quot;,
+		&quot;ITEM&quot;,
+		&quot;COUNTRY&quot;,
+		&quot;PRODCLASS&quot;,
+		ANNOUNCE_DATE &quot;ANNOUNCE_DATE&quot;,
+		WITHDRAW_DATE &quot;WITHDRAW_DATE&quot;,
+		&quot;OPTION&quot;,
+		&quot;COFCAT&quot;,
+		&quot;SYS_CREATED_DATE&quot;,
+		&quot;SYS_CREATED_BY&quot;,
+		TO_VARCHAR(TO_DATE(SYS_LAST_MODIFIED_DATE), 'YYYY-MM-DD')  &quot;SYS_LAST_MODIFIED_DATE&quot;,
+		&quot;SYS_LAST_MODIFIED_BY&quot;,
+		&quot;IAD&quot;,
+		&quot;EOW&quot;
+		from 
+		&quot;EBGCFE&quot;.&quot;UI_SELLABLE_COUNTRY&quot;
+		;
+		
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="CYCLE" order="1">
+        <descriptions/>
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="2">
+        <descriptions/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="ITEM" order="3">
+        <descriptions/>
+        <keyMapping columnObjectName="Script_View" columnName="ITEM"/>
+      </attribute>
+      <attribute id="COUNTRY" order="4">
+        <descriptions/>
+        <keyMapping columnObjectName="Script_View" columnName="COUNTRY"/>
+      </attribute>
+      <attribute id="PRODCLASS" order="5">
+        <descriptions/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODCLASS"/>
+      </attribute>
+      <attribute id="OPTION" order="8">
+        <descriptions/>
+        <keyMapping columnObjectName="Script_View" columnName="OPTION"/>
+      </attribute>
+      <attribute id="COFCAT" order="9">
+        <descriptions/>
+        <keyMapping columnObjectName="Script_View" columnName="COFCAT"/>
+      </attribute>
+      <attribute id="SYS_CREATED_BY" order="11">
+        <descriptions/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_CREATED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="13">
+        <descriptions/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="ANNOUNCE_DATE" order="6" aggregationType="min" measureType="simple">
+        <descriptions/>
+        <measureMapping columnObjectName="Script_View" columnName="ANNOUNCE_DATE"/>
+      </measure>
+      <measure id="WITHDRAW_DATE" order="7" aggregationType="min" measureType="simple">
+        <descriptions/>
+        <measureMapping columnObjectName="Script_View" columnName="WITHDRAW_DATE"/>
+      </measure>
+      <measure id="SYS_CREATED_DATE" order="10" aggregationType="min" measureType="simple">
+        <descriptions/>
+        <measureMapping columnObjectName="Script_View" columnName="SYS_CREATED_DATE"/>
+      </measure>
+      <measure id="SYS_LAST_MODIFIED_DATE" order="12" aggregationType="min" measureType="simple">
+        <descriptions/>
+        <measureMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </measure>
+      <measure id="IAD" order="14" aggregationType="min" measureType="simple">
+        <descriptions/>
+        <measureMapping columnObjectName="Script_View" columnName="IAD"/>
+      </measure>
+      <measure id="EOW" order="15" aggregationType="min" measureType="simple">
+        <descriptions/>
+        <measureMapping columnObjectName="Script_View" columnName="EOW"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

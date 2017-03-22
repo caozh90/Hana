@@ -1,0 +1,163 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::updateUirelconfigclass"
+( 
+         IN newInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_RELCONFCLASS_T",
+		 IN oldInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_RELCONFCLASS_T",
+		 OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      updateUirelconfigclass
+*function    :               
+*input       ：              newInfo&oldInfo
+*output      :      errorInfo
+*author      :      leon Bian
+*CreateDate  :      2015.8.21
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	resourceExists BIGINT;
+	privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::updateUirelconfigclass error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::updateUirelconfigclass'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_rel_config_class::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::updateUirelconfigclass'
+       ,I_MODULE=>'EBGDF'
+   	); 
+			   	
+SELECT COUNT(*) into resourceExists 
+	FROM :oldInfo a,:newInfo b 
+where a.CYCLE_ID = b.CYCLE_ID 
+	and a.MACH_T = b.MACH_T
+	and a.BIZ_LINE = b.BIZ_LINE
+	and a.X_NAME = b.X_NAME
+	and a.PROJECT = b.PROJECT
+	and a.LOD = b.LOD
+	and a.ABCD = b.ABCD
+	and a.ABCD_1 = b.ABCD_1
+	and a.ABCD_2 = b.ABCD_2
+	and a.ABCD_3 = b.ABCD_3
+	and a.ABCD_4 = b.ABCD_4
+	and a.ABCD_5 = b.ABCD_5;
+
+if resourceExists > 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;	     		
+	     	return;*/
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists'; 
+	 return;
+end if;			
+--update into RPT_RELCONFCLASS table
+update "EBGDF"."RPT_RELCONFCLASS" a set (a.ABCD,
+										a.ABCD_1,
+										a.ABCD_2,
+										a.ABCD_3,
+										a.ABCD_4,
+										a.ABCD_5,
+										a.LAST_UPDATE_TS,
+										a.LAST_UPDATE_USERID) = 
+									 (b.ABCD,
+									  b.ABCD_1,
+									  b.ABCD_2,
+									  b.ABCD_3,
+									  b.ABCD_4,
+									  b.ABCD_5,
+									  CURRENT_UTCTIMESTAMP,
+									  SESSION_USER)
+		FROM :newInfo b 
+		where a.MTM = b.MTM; 
+
+--insert log table
+--INSERT INTO RPT_RELCONFCLASS_LOG TABLE
+insert into "EBGDF"."RPT_RELCONFCLASS_LOG"(
+	"CYCLE_ID",
+	"MTM",
+	"MACH_T",
+	"BIZ_LINE",
+	"X_NAME",
+	"PROJECT",
+	"LOD",
+	"ABCD",
+	"ABCD_1",
+	"ABCD_2",
+	"ABCD_3",
+	"ABCD_4",
+	"ABCD_5",
+	"CREATE_TS",
+	"CREATE_USERID",
+	"LAST_UPDATE_TS",
+	"LAST_UPDATE_USERID",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+	 )SELECT 
+	        a."CYCLE_ID",
+			a."MTM",
+			a."MACH_T",
+			a."BIZ_LINE",
+			a."X_NAME",
+			a."PROJECT",
+			a."LOD",
+			a."ABCD",
+			a."ABCD_1",
+			a."ABCD_2",
+			a."ABCD_3",
+			a."ABCD_4",
+			a."ABCD_5",
+			CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+	 		CURRENT_UTCTIMESTAMP,
+	 		'update',
+	 		CURRENT_UTCTIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a; 	
+
+   	
+aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::updateUirelconfigclass successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::updateUirelconfigclass'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

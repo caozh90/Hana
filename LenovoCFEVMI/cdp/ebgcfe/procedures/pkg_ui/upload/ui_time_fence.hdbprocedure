@@ -1,0 +1,154 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_time_fence" ( 
+IN	 	OEM_NAME NVARCHAR(40) ,
+IN		TIME_FENCE NVARCHAR(1000),
+IN	    FUNCTION_TYPE NVARCHAR(40),
+IN	 	TIME_FENCE_TYPE NVARCHAR(40),
+IN	 	PROFIT_CENTER	NVARCHAR(40),
+IN	    START_DATE TIMESTAMP,
+IN		END_DATE TIMESTAMP,
+IN		SYS_CREATED_BY NVARCHAR(40),
+IN		SYS_CREATED_DATE TIMESTAMP,
+IN 	 	business_name varchar(200),
+IN		SEQ	nvarchar(20),
+IN 	 	position int
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_time_fence';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		validate1 int;
+		validate2 int;
+		table_name varchar(100) :='PM_UI_TIME_FENCE';
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		PRODUCT_GROUP NVARCHAR(10) :='EBG';
+		privilegeExists  NVARCHAR(30)  ;
+		
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ --exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN 
+     
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_time_fence_err"(
+     	::SQL_ERROR_MESSAGE,:business_name,
+     	:OEM_NAME,:TIME_FENCE,:FUNCTION_TYPE,:TIME_FENCE_TYPE,
+     	:PROFIT_CENTER,:START_DATE,:END_DATE,:SYS_CREATED_BY,:SYS_CREATED_DATE,
+     	SEQ,:position);
+     	
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_time_fence_err"(
+     	::SQL_ERROR_MESSAGE,:business_name,
+     	:OEM_NAME,:TIME_FENCE,:FUNCTION_TYPE,:TIME_FENCE_TYPE,
+     	:PROFIT_CENTER,:START_DATE,:END_DATE,:SYS_CREATED_BY,:SYS_CREATED_DATE,
+     	SEQ,:position);
+     	
+    END; 
+    --exception 
+	
+
+	--procedure begin
+	
+	
+	business_code := :SEQ;
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+		select count(1) into n from "EBGCFE"."PM_UI_TIME_FENCE" 
+		where PRODUCT_GROUP = :PRODUCT_GROUP 
+		  AND OEM_NAME = :OEM_NAME
+		  AND TIME_FENCE = :TIME_FENCE
+		  AND PROFIT_CENTER = :PROFIT_CENTER;
+	
+		if n>0 then
+			update "EBGCFE"."PM_UI_TIME_FENCE" set 
+			FUNCTION_TYPE = :FUNCTION_TYPE,
+			TIME_FENCE_TYPE = :TIME_FENCE_TYPE,
+     		START_DATE = :START_DATE,
+     		END_DATE = :END_DATE,
+			SYS_LAST_MODIFIED_BY = :currentUser,
+			SYS_LAST_MODIFIED_DATE = :create_time
+			where PRODUCT_GROUP = :PRODUCT_GROUP 
+			  AND OEM_NAME = :OEM_NAME
+			  AND TIME_FENCE = :TIME_FENCE
+			  AND PROFIT_CENTER = :PROFIT_CENTER;
+		--update操作需要写入日志
+		insert into "EBGCFE"."PM_UI_TIME_FENCE_LOG"(AT_ACTION,
+     		PRODUCT_GROUP,OEM_NAME,TIME_FENCE,FUNCTION_TYPE,TIME_FENCE_TYPE,
+     		PROFIT_CENTER,START_DATE,END_DATE,SYS_CREATED_BY,SYS_CREATED_DATE,
+		 	SYS_LAST_MODIFIED_BY,
+		 	SYS_LAST_MODIFIED_DATE
+		)
+		VALUES
+		 	('update',
+     		:PRODUCT_GROUP,:OEM_NAME,:TIME_FENCE,:FUNCTION_TYPE,:TIME_FENCE_TYPE,
+     		:PROFIT_CENTER,:START_DATE,:END_DATE,:SYS_CREATED_BY,:SYS_CREATED_DATE,
+		 	:currentUser,
+		 	:create_time);
+			
+		ELSEIF n=0 THEN
+			INSERT INTO "EBGCFE"."PM_UI_TIME_FENCE"(
+     			PRODUCT_GROUP,
+     			OEM_NAME,
+     			TIME_FENCE,
+     			FUNCTION_TYPE,
+     			TIME_FENCE_TYPE,
+     			PROFIT_CENTER,
+     			START_DATE,
+     			END_DATE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		 	)
+		 	VALUES(
+		 		:PRODUCT_GROUP,
+     			:OEM_NAME,
+     			:TIME_FENCE,
+     			:FUNCTION_TYPE,
+     			:TIME_FENCE_TYPE,
+     			:PROFIT_CENTER,
+     			:START_DATE,
+     			:END_DATE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+		 	--insert操作需要写入日志
+			insert into "EBGCFE"."PM_UI_TIME_FENCE_LOG"(AT_ACTION,
+     		PRODUCT_GROUP,OEM_NAME,TIME_FENCE,FUNCTION_TYPE,TIME_FENCE_TYPE,
+     		PROFIT_CENTER,START_DATE,END_DATE,SYS_CREATED_BY,SYS_CREATED_DATE,
+		 	SYS_LAST_MODIFIED_BY,
+		 	SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+			 	('create',
+     			:PRODUCT_GROUP,:OEM_NAME,:TIME_FENCE,:FUNCTION_TYPE,:TIME_FENCE_TYPE,
+     			:PROFIT_CENTER,:START_DATE,:END_DATE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+		 	
+		END IF;
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+END;

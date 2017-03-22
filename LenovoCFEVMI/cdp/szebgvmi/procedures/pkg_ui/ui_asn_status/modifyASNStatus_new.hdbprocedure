@@ -1,0 +1,126 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_asn_status::modifyASNStatus_new" ( 
+	        IN SCENARIO_ID  Decimal(11,0),
+	        IN PRODUCTIONORDID varchar(80),
+	        IN LINENUM 	varchar(8),
+	        IN STATUS 	varchar(40),
+			OUT errorInfo nvarchar(400)
+		
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER --INVOKER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA
+	AS
+/************************************************************************
+*name      : updateASNPullStatus
+*author     : chenjb1
+*CreateDate    : 2015-08-14
+*UpdateDate  :      
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.ui_asn_status';
+		proc_name varchar(100) :='modifyASNStatus';
+		logid0 INTEGER :=0;
+		n2 int; 
+		 ITEM VARCHAR(40);
+		 QTYPER DECIMAL(15,4);
+		 LGORT VARCHAR(4);
+		 PROMFLAG VARCHAR(1);
+		 ASNFLAG VARCHAR(1);
+		 ENGINE_ID DECIMAL(28,0); 
+		 SITEID VARCHAR(40);
+		 SYS_TARGET_ID DECIMAL(11,0); 
+		 SYS_AUTH_ID VARCHAR(25);
+		 SYS_SOURCE VARCHAR(25) ;
+		 SYS_CREATED_BY VARCHAR(70);
+		 SYS_CREATION_DATE TIMESTAMP;
+		 SYS_ENT_STATE VARCHAR(25);
+		 SYS_LAST_MODIFIED_BY VARCHAR(70);
+		 SYS_LAST_MODIFIED_DATE TIMESTAMP;
+		 SYS_NC_TYPE VARCHAR(25);
+		 SYS_ERR_CODE VARCHAR(1000);
+		 SYS_ERR_SVRTY VARCHAR(30);
+		 SYS_FILTER VARCHAR(60);
+	    SYS_EXCEPTION_TYPE VARCHAR(20);
+		error_message nvarchar(400);
+		privilegeExists  NVARCHAR(300)  ;
+		NEW_STATUS 	varchar(40);
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+    oldinfo = select *  from "SZEBGVMI"."PRODUCTIONORDERS_BOM_ASN"
+	 	where   SCENARIO_ID = :SCENARIO_ID
+	 		and PRODUCTIONORDID = :PRODUCTIONORDID
+			and LINENUM = :LINENUM;
+			
+	 select count(1) into n2 from :oldinfo;
+	 if n2 <= 0 then
+	     	error_message := 'The record does not exist in DB';
+		 	/*errorInfo = select 400 as http_status_code, 
+	     		:error_message ERROR_MESSAGE, 
+	     		:error_message DETAIL from dummy;*/
+	     	--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);	     		
+	     	return;
+	 
+	 end if;
+	 if STATUS <> 'ASN_DELETED' then
+	     	error_message := 'Current status is not ASN_DELETED ';
+	     	--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);	     		
+	     	return;
+	 elseif STATUS = 'ASN_DELETED' then
+	 UPDATE "SZEBGVMI"."PRODUCTIONORDERS_BOM_ASN"
+		SET 
+             STATUS = :STATUS,
+             SYS_LAST_MODIFIED_BY = SESSION_USER,		 
+             SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+		where   SCENARIO_ID = :SCENARIO_ID
+	 		and PRODUCTIONORDID = :PRODUCTIONORDID
+			and LINENUM = :LINENUM;
+	SELECT :STATUS INTO NEW_STATUS FROM DUMMY;
+-- record log 
+    select  SCENARIO_ID ,PRODUCTIONORDID ,LINENUM,
+		    ITEM,QTYPER,LGORT,PROMFLAG,ASNFLAG,
+			ENGINE_ID,STATUS,SITEID,SYS_TARGET_ID,SYS_AUTH_ID,
+			SYS_SOURCE,SYS_CREATED_BY,SYS_CREATION_DATE,SYS_ENT_STATE,SYS_LAST_MODIFIED_BY,
+			SYS_LAST_MODIFIED_DATE,SYS_NC_TYPE,SYS_ERR_CODE,SYS_ERR_SVRTY,SYS_FILTER,SYS_EXCEPTION_TYPE
+	  into
+	 		SCENARIO_ID ,PRODUCTIONORDID ,LINENUM,
+		    ITEM,QTYPER,LGORT,PROMFLAG,ASNFLAG,
+			ENGINE_ID,STATUS,SITEID,SYS_TARGET_ID,SYS_AUTH_ID,
+			SYS_SOURCE,SYS_CREATED_BY,SYS_CREATION_DATE,SYS_ENT_STATE,SYS_LAST_MODIFIED_BY,
+			SYS_LAST_MODIFIED_DATE,SYS_NC_TYPE,SYS_ERR_CODE,SYS_ERR_SVRTY,SYS_FILTER,SYS_EXCEPTION_TYPE
+    from :oldinfo;
+    	 		
+	  INSERT INTO "SZEBGVMI"."PRODUCTIONORDERS_BOM_ASN_LOG"
+	  ( SCENARIO_ID ,PRODUCTIONORDID ,LINENUM,
+	    ITEM,QTYPER,LGORT,PROMFLAG,ASNFLAG,
+		ENGINE_ID,STATUS,SITEID,SYS_TARGET_ID,SYS_AUTH_ID,
+		SYS_SOURCE,SYS_CREATED_BY,SYS_CREATION_DATE,SYS_ENT_STATE,SYS_LAST_MODIFIED_BY,
+		SYS_LAST_MODIFIED_DATE,SYS_NC_TYPE,SYS_ERR_CODE,SYS_ERR_SVRTY,SYS_FILTER,SYS_EXCEPTION_TYPE, 
+	    AT_MODIFIED_BY,
+		AT_ACTION,
+		AT_MODIFIED_TIME
+	  )
+	  VALUES(
+	  :SCENARIO_ID ,:PRODUCTIONORDID ,:LINENUM,
+	  :ITEM,:QTYPER,:LGORT,:PROMFLAG,:ASNFLAG,
+	  :ENGINE_ID,:NEW_STATUS,:SITEID,:SYS_TARGET_ID,:SYS_AUTH_ID,
+	  :SYS_SOURCE,:SYS_CREATED_BY,:SYS_CREATION_DATE,:SYS_ENT_STATE,SESSION_USER,
+	  :SYS_LAST_MODIFIED_DATE,:SYS_NC_TYPE,:SYS_ERR_CODE,:SYS_ERR_SVRTY,:SYS_FILTER,:SYS_EXCEPTION_TYPE, 
+	  SESSION_USER,
+	  'ASN_DELETED',
+	   current_timestamp
+	  );		
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+   end if;
+END;

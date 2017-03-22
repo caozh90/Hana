@@ -1,0 +1,82 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_lead_time_err" 
+(
+	IN newInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_LEAD_TIME_E"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/***************************** 
+*name        :    ui_lead_time_err
+*function    :               
+*input       :    
+*output      :              
+*author      :    bianzh1
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2015.08.20
+ *****************************/
+	AS
+	business_code varchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'RPT_LEADTIME';
+	currentUser varchar(100);
+	create_DATE LONGDATE;
+	privilegeExists  NVARCHAR(300)  ;
+	wrongnums INT;
+BEGIN
+   --添加business信息
+    select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	--business_code := :SEQ;
+		
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_DATE INTO create_DATE FROM DUMMY;
+		
+  	-- passing wrong total numbers
+	SELECT count(1) into wrongnums
+	 	FROM :newInfo;	
+  	call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::business_info"(
+		:table_name || :business_code,:business_name,0,:wrongnums,:table_name);   
+			
+	--记录upload的错误
+    INSERT INTO "EBGDF"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+    SELECT "EBGDF"."cdp.ebgdf.sequences::upload_error_info_id".NEXTVAL,
+           :table_name || SEQ,
+           position,
+           error_message,
+           :table_name,
+           business_name
+    FROM :newInfo;
+    --VALUES("EBGDF"."cdp.ebgdf.sequences::upload_error_info_id".NEXTVAL,
+    --:table_name || :business_code,:position,:error_message,:table_name,:business_name); 
+     	
+    --详细记录upload的数据信息
+    insert into "EBGDF"."RPT_LEADTIME_ERR_DETAIL"( CODE,
+												   POSITION,
+												   CYCLE_ID,
+												   MFI_FFI_FC_IND,
+												   MFI_FFI_FC,
+												   PPN,
+												   ABCD_T,
+												   ABCD,
+												   LEADTIME,
+												   CREATE_TS,
+												   CREATE_USERID,
+												   LAST_UPDATE_TS,
+												   LAST_UPDATE_USERID )
+	SELECT :table_name || business_code,
+			  position,
+			  CYCLE_ID,
+			  MFI_FFI_FC_IND,
+			  MFI_FFI_FC,
+			  PPN,
+			  ABCD_T,
+			  ABCD,
+			  LEADTIME,
+			  :create_DATE,
+			  :currentUser,
+			  :create_DATE,
+			  :currentUser
+	FROM :newInfo;
+
+END;

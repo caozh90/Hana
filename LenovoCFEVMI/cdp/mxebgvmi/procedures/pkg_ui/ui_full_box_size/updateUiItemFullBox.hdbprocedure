@@ -1,0 +1,109 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_full_box_size::updateUiItemFullBox" (
+		IN newInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_ITEM_FULL_BOX_T"
+		,IN oldInfo  "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_ITEM_FULL_BOX_T"
+		,OUT errorInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aItem NVARCHAR(40);
+		aVendorId NVARCHAR(40);
+		aBoxSize BIGINT;
+		resourceExists BIGINT;
+		
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.mxebgvmi.procedures::updateUiItemFullBox error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::updateUiItemFullBox'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'fullboxsize::editable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::updateUiItemFullBox'
+       ,I_MODULE=>'MXEBGVMI'
+   	); 
+  
+ select
+    BOX_SIZE      
+  into  	
+	aBoxSize	
+  from :newInfo;
+ 
+ select
+    ITEM,
+    VENDORID    
+  into  	
+ 	aItem,
+	aVendorId
+  from :oldInfo; 
+  
+  SELECT top 1 count(1) into resourceExists FROM "MXEBGVMI"."UI_ITEM_FULL_BOX" A    
+     WHERE A.ITEM = :aItem
+          AND A.VENDORID = :aVendorId 
+          AND A.BOX_SIZE = :aBoxSize;
+   
+    if  :resourceExists > 0 
+    then
+	    errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;
+    end if;
+    
+    
+  update "MXEBGVMI"."UI_ITEM_FULL_BOX"
+  	set   BOX_SIZE = :aBoxSize,SYS_LAST_MODIFIED_BY = session_user,SYS_LAST_MODIFIED_DATE = current_timestamp
+  	where  ITEM = :aItem
+  	 and VENDORID = :aVendorId;
+
+	--记录log
+  	insert into "MXEBGVMI"."UI_ITEM_FULL_BOX_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				ITEM, VENDORID, BOX_SIZE
+			)
+			VALUES
+			 	(session_user,
+			 	'update',
+			 	current_timestamp,
+			 	:aItem, :aVendorId, :aBoxSize
+				 );
+
+/*END*/
+ 	    aI_DETAIL := 'cdp.mxebgvmi.procedures::updateUiItemFullBox ('||:aItem||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::updateUiItemFullBox'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	 	      	 
+END;

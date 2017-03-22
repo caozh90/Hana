@@ -1,0 +1,79 @@
+service /*namespace "cdp.szebgvmi.service"*/ {
+
+/**
+***这四个view用于DS和FTP的管理功能
+***
+**/
+"cdp.dssz.models::AT_DS_FTP_INFO" as "DS_FTP_INFO"
+key("ID")
+create using "cdp.dssz.procedures.ds_management.ds_ftp_info::createDsFtpInfo"
+update using "cdp.dssz.procedures.ds_management.ds_ftp_info::updateDsFtpInfo"
+delete using "cdp.dssz.procedures.ds_management.ds_ftp_info::deleteDsFtpInfo"
+;
+
+"cdp.dssz.models::AT_DS_FTP_CONF_TARGET" as "DS_FTP_CONF"
+key("PROCESS_NAME","PROCESS_RID")
+create using "cdp.dssz.procedures.ds_management.ds_ftp_conf::createDsFtpConf"
+update using "cdp.dssz.procedures.ds_management.ds_ftp_conf::updateDsFtpConf"
+delete using "cdp.dssz.procedures.ds_management.ds_ftp_conf::deleteDsFtpConf"
+;
+
+
+"cdp.dssz.models::AT_HANA_DS_CON_INFO" as "HANA_DS_CON_INFO"
+key ("HOST","WEBSERVER_PORT")
+create using "cdp.dssz.procedures.ds_management.hana_ds_con_info::createHanaDsConInfo"
+update using "cdp.dssz.procedures.ds_management.hana_ds_con_info::updateHanaDsConInfo"
+delete using "cdp.dssz.procedures.ds_management.hana_ds_con_info::deleteHanaDsConInfo"
+;
+
+//"cdp.dssz.models::AT_HANA_DS_JOB_INFO" as "HANA_DS_JOB_INFO"
+"cdp.dssz.models::CV_HANA_DS_TARGET_JOB" as "HANA_DS_JOB_INFO"
+key("PROCESS_NAME")
+create using "cdp.dssz.procedures.ds_management.hana_ds_job_info::createHanaDsJobInfo"
+update using "cdp.dssz.procedures.ds_management.hana_ds_job_info::updateHanaDsJobInfo"
+delete using "cdp.dssz.procedures.ds_management.hana_ds_job_info::deleteHanaDsJobInfo"
+;
+
+"cdp.dssz.models::AT_DS_JOB_INFO" as "DS_JOB_INFO"
+key("JOBNAME")
+;
+/**
+***这四个view用于DS和FTP的管理功能
+***
+**/
+
+"cdp.dssz.models::AT_DS_JOB_PROCESS_INFO" as "DS_JOB_PROCESS_INFO"
+key generate local "GenID"
+;
+
+"cdp.dssz.models::AT_DS_JOB_RFC_RETURN" as "DS_JOB_RFC_RETURN"
+key("JOBRUNID","REPONAME","RFCNAME")
+;
+
+"cdp.dssz.models::AT_DS_JOB_RUN_INFO" as "DS_JOB_RUN_INFO"
+key("JOBRUNID","REPONAME")
+;
+
+"cdp.dssz.models::AT_DS_JOB_STEP_INFO" as "DS_JOB_STEP_INFO"
+key generate local "GenID"
+;
+
+//"cdp.dssz.models::CV_DS_JOB_RUN_INFO_STATUS" as "DS_JOB_RUN_INFO_STATUS"
+//key("JOBRUNID")
+"cdp.dssz.models::AT_DS_JOB_STATUS" as "DS_JOB_RUN_INFO_STATUS"
+key generate local "GenID"
+;
+
+/**
+***PROCESS_NAME和JOB_NAME的下拉框
+***
+**/
+"cdp.dssz.models::AN_PROCESS_NAME" as "PROCESS_NAME"
+key generate local "PROCESS_ID"
+aggregates always
+;
+"cdp.dssz.models::AN_JOB_NAME" as "JOB_NAME"
+key generate local "JOB_ID"
+aggregates always
+;
+}

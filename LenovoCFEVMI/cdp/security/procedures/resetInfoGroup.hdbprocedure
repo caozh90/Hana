@@ -1,0 +1,179 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::resetInfoGroup" (
+	IN aGROUP_ID BIGINT
+	,IN aREVOKE_FROM_NAME NVARCHAR(256)
+   -- in aMODULE_NAME NVARCHAR(200)
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	groupExists Integer := 0;
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+    aMODULE_ID NVARCHAR(10);       
+   -- aGROUP_NAME NVARCHAR(200);
+    aCOMMENT NVARCHAR(200); 
+     	
+    aMODULE_NAME NVARCHAR(256);
+    
+    
+    V_INDEX INTEGER;
+    aREAL_TYPE INTEGER ARRAY;
+    aREAL_NAME NVARCHAR(256) ARRAY;
+    aTEMP_NAME NVARCHAR(256) ;
+BEGIN
+
+/***************************** 
+	RESET Info user group
+	成功则 drop role：
+	cdp.security.cdr.group::GROUP_ID
+	
+	example:
+	
+call "SECURITY"."cdp.security.procedures::resetInfoGroup" (
+'aGROUP_NAME NVARCHAR(200)',
+    'aMODULE_NAME NVARCHAR(200)'
+,?            );
+ 
+)
+ *****************************/
+      
+      
+    --exception     
+   DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到amodule_ID ,则返回，
+			aI_DETAIL :='cdp.security.procedures::resetInfoGroup can not find the module : '||aMODULE_NAME ||' .';
+			
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::resetInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::resetInfoGroup error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::resetInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+  
+  CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+  --START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::resetInfoGroup"'
+	,I_MODULE=>:aMODULE_NAME); 
+	 
+  --**## 	exec 'DROP ROLE "cdp.security.cdr.group::' ||:aGROUP_ID ||'"';
+  	
+--**##	exec 'CREATE ROLE "cdp.security.cdr.group::' ||:aGROUP_ID ||'"';
+	   
+ if aREVOKE_FROM_NAME != '0' then    
+  V_TSTTAB =    SELECT B."ROLE_NAME" AS "REAL_NAME"  ,0 AS "TYPE"
+    FROM "SECURITY"."cdp.security.data::userManagement.MAP_ALL"  A
+    ,"SECURITY"."cdp.security.data::userManagement.INFO_ROLES"  B
+    WHERE A."MODULE_ID" = :aMODULE_ID AND A."GROUP_ID" = :aGROUP_ID
+    AND A."ROLE_ID" = B."ROLE_ID"
+    AND B."ROLE_NAME" <> :aREVOKE_FROM_NAME
+    GROUP BY B."ROLE_NAME"
+    UNION ALL
+    SELECT B."REAL_ROLE_NAME"  AS "REAL_NAME"  ,0 AS "TYPE"
+    FROM "SECURITY"."cdp.security.data::userManagement.MAP_ALL"  A
+    ,"SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP"  B
+    WHERE A."MODULE_ID" = :aMODULE_ID AND A."GROUP_ID" = :aGROUP_ID
+    AND A."ROLEGROUP_ID" = B."ROLEGROUP_ID"
+    AND B."REAL_ROLE_NAME" <> :aREVOKE_FROM_NAME
+    GROUP BY B."REAL_ROLE_NAME"
+    UNION ALL
+    SELECT B."USER_NAME"  AS "REAL_NAME" ,1 AS "TYPE"
+    FROM "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"  A
+    ,"SECURITY"."cdp.security.data::userManagement.INFO_USER"  B
+    WHERE A."MODULE_ID" = :aMODULE_ID AND A."GROUP_ID" = :aGROUP_ID
+    AND A."USER_ID" = B."USER_ID"
+    GROUP BY B."USER_NAME"    
+    ;
+    else
+    
+    V_TSTTAB =   
+    SELECT B."REAL_ROLE_NAME"  AS "REAL_NAME"  ,0 AS "TYPE"
+    FROM "SECURITY"."cdp.security.data::userManagement.MAP_ALL"  A
+    ,"SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP"  B
+    WHERE A."MODULE_ID" = :aMODULE_ID AND A."GROUP_ID" = :aGROUP_ID
+    AND A."ROLEGROUP_ID" = B."ROLEGROUP_ID"
+    AND B."REAL_ROLE_NAME" <> :aREVOKE_FROM_NAME
+    GROUP BY B."REAL_ROLE_NAME"
+    UNION ALL
+    SELECT B."USER_NAME"  AS "REAL_NAME" ,1 AS "TYPE"
+    FROM "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"  A
+    ,"SECURITY"."cdp.security.data::userManagement.INFO_USER"  B
+    WHERE A."MODULE_ID" = :aMODULE_ID AND A."GROUP_ID" = :aGROUP_ID
+    AND A."USER_ID" = B."USER_ID"
+    GROUP BY B."USER_NAME"    
+    ;
+    
+    
+    end if;
+aREAL_TYPE := ARRAY_AGG(:V_TSTTAB.TYPE); 
+aREAL_NAME := ARRAY_AGG(:V_TSTTAB.REAL_NAME);
+    
+
+     FOR V_INDEX IN 1 .. CARDINALITY(:aREAL_TYPE) DO 
+ aTEMP_NAME := :aREAL_NAME[:V_INDEX];
+ IF :aREAL_TYPE[:V_INDEX] = 1 THEN
+ BEGIN
+ --**##exec 'GRANT "cdp.security.cdr.group::' ||:aGROUP_ID ||'" TO ' || :aREAL_NAME[:V_INDEX];
+ 
+ END ;
+ ELSE
+ BEGIN
+ 	
+   --**## call _SYS_REPO.GRANT_ACTIVATED_ROLE (:aTEMP_NAME,'cdp.security.cdr.group::' ||:aGROUP_ID ); 
+ END ;
+END IF; 
+
+END FOR; 
+
+
+  	
+
+
+
+--分配group 中相关的人。
+--分配group 所对应的权限 和权限组合
+
+  	
+	    --如果成功添加,则log添加成功！
+	    aI_DETAIL := 'cdp.security.procedures::resetInfoGroup ('||:aGroup_ID||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::resetInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000031'
+     	,I_DETAIL=>:aI_DETAIL); 
+     		
+END;

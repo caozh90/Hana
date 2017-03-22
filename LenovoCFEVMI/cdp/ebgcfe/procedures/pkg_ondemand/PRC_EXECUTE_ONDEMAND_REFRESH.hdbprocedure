@@ -1,0 +1,103 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ondemand::PRC_EXECUTE_ONDEMAND_REFRESH" (
+  IN    v_change_id            VARCHAR(100),
+  IN    v_product_group        VARCHAR(20),
+  IN    v_ondemand_type        VARCHAR(20),
+  IN    G_MODEL         VARCHAR(1000),
+  IN    G_FAMILY        VARCHAR(1000),  
+  OUT   exit_code              INTEGER,
+  OUT   exit_message           VARCHAR(500)
+ )
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_EXECUTE_ONDEMAND_REFRESH          
+*function   : Execute On-demand Refresh (from UI)
+*input      ：v_change_id : change id / v_product_group : product group
+              v_user_id : user id
+*output     : exit_code : error code / exit_message : error message
+*author     : Leonard Ling
+*CreateDate : 2014-12-30
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	AS
+BEGIN
+DECLARE    logidi               INTEGER := 0;  
+DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN 
+      exit_code := ::SQL_ERROR_CODE;     
+	  exit_message := substr(::SQL_ERROR_MESSAGE, 1, 500 );  
+      --exit_message := substr(::SQL_ERROR_MESSAGE, 1, 500);
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+									I_EVENT_NAME=>'pkg_ondemand.PRC_EXECUTE_ONDEMAND_REFRESH', I_MODULE=>'EBGCFE',
+									I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) ); 							   
+  END;      
+  
+exit_code := -1;
+exit_message := 'ERROR';    
+/*
+IF :v_ondemand_type = 'NEW_PRODUCT' THEN
+	-- MM Data
+	CALL "cdp.ebgcfe.procedures.pkg_ondemand::PRC_PRE_ONDEMAND_NEWPRODUCT"(v_change_id=>:v_change_id, v_product_group=>:v_product_group, v_user_id=>SESSION_USER,
+	                                                                    exit_code=>:exit_code, exit_message=>:exit_message);
+	IF :exit_code <> 0 THEN
+	  RETURN;
+	END IF;   
+	
+	CALL "cdp.ebgcfe.procedures.pkg_ondemand::PRC_CAL_ONDEMAND_NEWPRODUCT"(v_change_id=>:v_change_id, v_product_group=>:v_product_group, v_user_id=>SESSION_USER,
+	                                                                    exit_code=>:exit_code, exit_message=>:exit_message);
+	IF :exit_code <> 0 THEN
+	  RETURN;
+	END IF;   
+	CALL "cdp.ebgcfe.procedures.pkg_ondemand::PRC_POST_ONDEMAND_NEWPRODUCT"(v_change_id=>:v_change_id, v_product_group=>:v_product_group, v_user_id=>SESSION_USER,
+	                                                                    exit_code=>:exit_code, exit_message=>:exit_message);
+	IF :exit_code <> 0 THEN
+	  RETURN;
+	END IF;   
+ELSEIF :v_ondemand_type = 'MODEL_LIST' THEN	
+*/
+IF :v_ondemand_type = 'MODEL_LIST' THEN
+	-- Model List
+	CALL "cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_MODELLIST_PRE"(p_change_id=>:v_change_id, p_product_group=>:v_product_group, p_user_id=>SESSION_USER,
+	                                                                    P_MODEL=>:G_MODEL,P_family=>:G_FAMILY,
+	                                                                    p_exit_code=>:exit_code, p_exit_message=>:exit_message);	
+	IF :exit_code <> 0 THEN
+	  RETURN;
+	END IF;   
+	CALL "cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_MODELLIST_CAL"(p_change_id=>:v_change_id, p_product_group=>:v_product_group, p_user_id=>SESSION_USER,
+	                                                                    p_exit_code=>:exit_code, p_exit_message=>:exit_message);		
+	IF :exit_code <> 0 THEN
+	  RETURN;
+	END IF;   
+	CALL "cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_MODELLIST_POST"(p_change_id=>:v_change_id, p_product_group=>:v_product_group, p_user_id=>SESSION_USER,
+	                                                                    p_exit_code=>:exit_code, p_exit_message=>:exit_message);		
+	IF :exit_code <> 0 THEN
+	  RETURN;
+	END IF;   
+
+ELSEIF :v_ondemand_type = 'COST_BOM' THEN
+	-- CostBOM
+	CALL "cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_COSTBOM_PRE"(p_change_id=>:v_change_id, p_product_group=>:v_product_group, p_user_id=>SESSION_USER,
+	                                                                    P_MODEL=>:G_MODEL,P_family=>:G_FAMILY,
+	                                                                    p_exit_code=>:exit_code, p_exit_message=>:exit_message);		                                                                    
+	IF :exit_code <> 0 THEN
+	  RETURN;
+	END IF;   
+	CALL "cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_COSTBOM_CAL"(p_change_id=>:v_change_id, p_product_group=>:v_product_group, p_user_id=>SESSION_USER,
+	                                                                    p_exit_code=>:exit_code, p_exit_message=>:exit_message);	
+	IF :exit_code <> 0 THEN
+	  RETURN;
+	END IF;   
+	CALL "cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_COSTBOM_POST"(p_change_id=>:v_change_id, p_product_group=>:v_product_group, p_user_id=>SESSION_USER,
+	                                                                    p_exit_code=>:exit_code, p_exit_message=>:exit_message);		
+	IF :exit_code <> 0 THEN
+	  RETURN;
+	END IF;   	
+ELSE
+ exit_message := 'Internal error: unknown ondemand type';
+ RETURN;
+END IF;
+ exit_code := 0;
+ exit_message := 'Executed successfully';
+END;

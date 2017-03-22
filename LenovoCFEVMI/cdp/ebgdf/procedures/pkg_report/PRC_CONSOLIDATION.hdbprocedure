@@ -1,0 +1,75 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_report::PRC_CONSOLIDATION" (
+  OUT P_OUT_EXITCODE INTEGER
+) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER 
+  DEFAULT SCHEMA EBGDF
+  -- test transport 4
+  AS
+BEGIN
+
+  -- data
+  DECLARE   V_PKG_NAME        VARCHAR(100) := 'PKG_REPORT';    
+  DECLARE   V_PRC_NAME        VARCHAR(100) := 'PRC_CONSOLIDATION';
+  DECLARE   V_FUNC_FULL_NAME  VARCHAR(100) := :V_PKG_NAME || '.' || :V_PRC_NAME;  
+  DECLARE   logidi            INTEGER := 0;
+  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+            P_OUT_EXITCODE := -1;  
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+          (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+          I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'EBGDF',
+          I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+                                        substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+        RESIGNAL;     
+    END;  
+    
+  -- process logic
+  P_OUT_EXITCODE := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF'); 
+  
+  
+  --EXECUTE IMMEDIATE 'truncate table RPT_PN_CLASS';
+  DELETE FROM RPT_PN_CLASS;
+  
+  
+  INSERT INTO RPT_PN_CLASS (CYCLE_ID,
+                            MFI_FFI_FC_IND,
+                            MFI_FFI_FC,
+                            PPN,
+                            ABCD_T,
+                            LOD,
+                            ABCD,
+                            ABCD_1,
+                            ABCD_2,
+                            ABCD_3,
+                            ABCD_4,
+                            ABCD_5,
+                            LAST_UPDATE_TS,
+                            LAST_UPDATE_USERID)
+  SELECT year(current_date)||'_'||substring(current_date,6,2)||'_1'  CYCLE_ID,     
+         b.MFI_FFI_FC_IND,
+         b.sbb_opt MFI_FFI_FC,
+         b.ppn PPN,
+         b.abcd_t ABCD_T,
+         b.LOD,
+         b.rec_abcd ABCD,
+         b.rec_abcd ABCD_1,
+         CASE WHEN b.LOD>=add_months(CURRENT_TIMESTAMP,1) and b.LOD < add_months(CURRENT_TIMESTAMP,2) AND b.rec_abcd <>'D' THEN 'D' ELSE b.rec_abcd END AS ABCD_2,
+         CASE WHEN b.LOD>=add_months(CURRENT_TIMESTAMP,1) and b.LOD < add_months(CURRENT_TIMESTAMP,3) AND b.rec_abcd <>'D' THEN 'D' ELSE b.rec_abcd END AS ABCD_3,
+         CASE WHEN b.LOD>=add_months(CURRENT_TIMESTAMP,1) and b.LOD < add_months(CURRENT_TIMESTAMP,4) AND b.rec_abcd <>'D' THEN 'D' ELSE b.rec_abcd END AS ABCD_4,
+         CASE WHEN b.LOD>=add_months(CURRENT_TIMESTAMP,1) and b.LOD < add_months(CURRENT_TIMESTAMP,5) AND b.rec_abcd <>'D' THEN 'D' ELSE b.rec_abcd END AS ABCD_5,
+         CURRENT_TIMESTAMP LAST_UPDATE_TS,
+         null LAST_UPDATE_USERID 
+    FROM rpt_interlock b;
+   
+  P_OUT_EXITCODE := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF');  
+  
+end ;

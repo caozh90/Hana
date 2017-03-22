@@ -1,0 +1,141 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_mo_pull::PRC_P_MO_PULL_CHECK" (
+in i_sysdate timestamp ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+	AS
+    /************************************************************************
+    *name       : PRC_P_MO_PULL_CHECK                      --函数名
+    *function   : 对于mo pull的大循环游标的数据的逻辑，做一个分析报表                      --函数功能
+    *input      :           --输入参数
+    *output     :           --输出参数
+    *author     : FangYuan                      --作者
+    *CreateDate : 20150311                          --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）    
+    *************************************************************************/	
+     gv_logic_name    VARCHAR(40)  := 'PKG_MO_PULL';    
+     v_logic_proc_name   VARCHAR(40) := 'PRC_P_MO_PULL_CHECK';
+     V_FUNC_FULL_NAME      VARCHAR(100) := :gv_logic_name || '.' || :v_logic_proc_name;       
+     logidi integer := 0; 	
+BEGIN
+   -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+        CALL "EX_LOG"."cdp.log.procedures::logProc"
+                (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+                I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'MXEBGVMI',
+                I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+                                        substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+    END; 
+    
+  -- process start  
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+        (I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+        I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'MXEBGVMI');
+        
+   INSERT INTO MO_PULL_PRE_CHECK
+   ("PRODUCTIONORDID",
+    "BUILD_ENTITY",
+    "WERKS",
+    "MATNR",
+    "BOM_QTY",
+    "MO_STATUS",
+    "PRODUCTION_LINE",
+    "MMSTA",
+    "SSCODE",
+    "UD_BACK_FLUSH",
+    "LOCATION",
+    "SYS_TIMESTAMP",
+    "MO_IN_MID_MO_LINE",
+    "MOD_BOM_MO_QTY",
+    "CHECK_STATUS",
+    "EXIST_ITEM")    
+    SELECT I.PRODUCTIONORDID,I.BUILD_ENTITY,I.WERKS,I.MATNR,I.BOM_QTY,I.STATUS AS MO_STATUS,FLR.DS_LINE AS PRODUCTION_LINE,
+    ITM.MMSTA,ITM.UD_STORAGE_CONDITION AS SSCODE,ITM.UD_BACK_FLUSH,I.LOCATION,:i_sysdate,'N',I.MOD_BOM_MO_QTY,'IGNORE','N'
+    FROM
+    (select BOM.MATNR,BOM.QTY AS BOM_QTY,BOM.LOCATION,BOM.WERKS,UPR.RES_NAME,BOM.PRODUCTIONORDID,MO.STATUS,MO.BUILD_ENTITY,
+    MOD(SUM(BOM.QTY) OVER (PARTITION BY BOM.PRODUCTIONORDID,BOM.MATNR),MO.QTY) MOD_BOM_MO_QTY    
+    from Z_PCDW_MO_BOM bom, Z_PCDW_DS_MO UPR,Z_PCDW_MO MO
+    WHERE bom.WERKS=UPR.WERKS AND BOM.PRODUCTIONORDID=UPR.WORK_ORD_NUM AND BOM.PRODUCTIONORDID=MO.PRODUCTIONORDID AND BOM.BOMNAME=MO.BOMNAME
+    AND UPR.STATUS='IN_PROCESS'
+    ) I 
+    LEFT OUTER JOIN ITEMSITEMASTER ITM
+    ON I.MATNR=ITM.ITEM AND I.WERKS=ITM.SITEID
+    LEFT OUTER JOIN UI_LINE_FLOOR_MAPPING FLR
+    ON I.RES_NAME=FLR.DS_LINE AND I.WERKS=FLR.SYS_AUTH_ID; 
+    
+    --update EXIST_ITEM to 'Y', which exist in itemsitemaster, the default is 'N'
+    UPDATE MO_PULL_PRE_CHECK C
+    SET EXIST_ITEM='Y'
+    FROM ITEMSITEMASTER I
+    WHERE C.WERKS=I.SITEID AND C.MATNR=I.ITEM AND C.SYS_TIMESTAMP=:i_sysdate;           
+
+    --update MO_IN_MID_MO_LINE to 'Y',which exist in mid_mo_line, the default is 'N'   
+    UPDATE MO_PULL_PRE_CHECK CEK SET MO_IN_MID_MO_LINE='Y'
+    FROM MID_MO_LINE MID 
+    WHERE MID.PRODUCTIONORDID=CEK.PRODUCTIONORDID AND MID.WERKS=CEK.WERKS AND CEK.SYS_TIMESTAMP=:i_sysdate;
+    
+    --update CHECK_STATUS , default is 'IGNORE'
+    UPDATE MO_PULL_PRE_CHECK SET CHECK_STATUS='HOLD'
+    WHERE SYS_TIMESTAMP=:i_sysdate AND EXIST_ITEM='Y' AND UPPER(mo_status) <> 'DELETED' AND
+    (  MMSTA IN ('99', '98', '97', '04') 
+    OR (MOD_BOM_MO_QTY>0 AND UD_BACK_FLUSH='1' AND SSCODE IN 
+                                                   (SELECT DISTINCT material_code
+                                                     FROM conf_material_map
+                                                     WHERE material_type IN ('NORMAL') AND status = 'ACTIVE'))) ;
+        
+    UPDATE MO_PULL_PRE_CHECK SET CHECK_STATUS='PROCESS'
+    WHERE SYS_TIMESTAMP=:i_sysdate--:i_sysdate
+    AND EXIST_ITEM='Y'
+    AND BOM_QTY>0
+    AND UPPER(MO_STATUS) <> 'DELETED'
+    AND (PRODUCTION_LINE IS NOT NULL OR PRODUCTION_LINE<>'')
+    AND (MMSTA NOT IN ('99', '98', '97', '04') OR MMSTA IS NULL)
+    AND (WERKS,PRODUCTIONORDID) NOT IN (SELECT DISTINCT WERKS,PRODUCTIONORDID FROM MID_MO_LINE)
+    AND (SSCODE IS NOT NULL OR SSCODE <> '')
+    AND( SSCODE IN 
+             (SELECT DISTINCT MATERIAL_CODE
+             FROM  CONF_MATERIAL_MAP
+             WHERE MATERIAL_TYPE IN ('CANDYMAN', 'KANBAN', 'PACKAGING') AND STATUS = 'ACTIVE')
+         OR 
+         (SSCODE IN
+             (SELECT DISTINCT MATERIAL_CODE
+              FROM CONF_MATERIAL_MAP
+              WHERE MATERIAL_TYPE IN ('NORMAL') AND STATUS = 'ACTIVE')
+         AND UD_BACK_FLUSH = '1'
+         AND LOCATION IS NOT NULL
+         AND MOD_BOM_MO_QTY = 0)
+       );
+     
+    --update MO_PROCESS_STATUS
+    UPDATE MO_PULL_PRE_CHECK C SET MO_PROCESS_STATUS='HOLD'
+    FROM
+    (SELECT PRODUCTIONORDID,WERKS
+     FROM MO_PULL_PRE_CHECK 
+     WHERE SYS_TIMESTAMP=:i_sysdate
+     GROUP BY PRODUCTIONORDID,WERKS
+     HAVING MIN(CHECK_STATUS)='HOLD' ) S
+    WHERE C.PRODUCTIONORDID=S.PRODUCTIONORDID AND C.WERKS=S.WERKS AND C.SYS_TIMESTAMP=:i_sysdate; 
+    
+    UPDATE MO_PULL_PRE_CHECK C SET MO_PROCESS_STATUS=CHECK_STATUS 
+    WHERE MO_PROCESS_STATUS IS NULL AND SYS_TIMESTAMP=:i_sysdate;
+  
+    --update BE_PROCESS_STATUS
+    UPDATE MO_PULL_PRE_CHECK C SET BE_PROCESS_STATUS='HOLD'
+    FROM
+    (SELECT BUILD_ENTITY,WERKS
+     FROM MO_PULL_PRE_CHECK 
+     WHERE SYS_TIMESTAMP=:i_sysdate
+     GROUP BY BUILD_ENTITY,WERKS
+     HAVING MIN(CHECK_STATUS)='HOLD' ) S
+    WHERE C.BUILD_ENTITY=S.BUILD_ENTITY AND C.WERKS=S.WERKS AND C.SYS_TIMESTAMP=:i_sysdate; 
+    
+    UPDATE MO_PULL_PRE_CHECK C SET BE_PROCESS_STATUS=CHECK_STATUS 
+    WHERE MO_PROCESS_STATUS IS NULL AND SYS_TIMESTAMP=:i_sysdate;
+            
+  --end      
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'MXEBGVMI');      
+END;

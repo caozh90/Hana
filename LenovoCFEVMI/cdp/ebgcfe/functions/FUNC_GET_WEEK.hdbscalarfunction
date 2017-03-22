@@ -1,0 +1,19 @@
+FUNCTION "EBGCFE"."cdp.ebgcfe.functions::FUNC_GET_WEEK" (
+	IN p_in_date DATE
+)  
+	RETURNS result VARCHAR(200)
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+/************************************************************************
+*name       : FUNC_GET_WEEK               
+*function   : Get the Number of Week in Month For the Input Date
+*input      ：p_in_date : date
+*output     : result : number of week in month
+*author     : Leonard Ling
+*CreateDate : 2014-12-24
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+AS
+BEGIN
+  result := ceil(((to_char(p_in_date,'dd') - to_char(p_in_date,'d'))+7)/7 );
+END;

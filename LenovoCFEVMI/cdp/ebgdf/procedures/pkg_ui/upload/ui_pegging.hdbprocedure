@@ -1,0 +1,201 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_pegging" 
+(
+	IN newInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_PEGGING_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/***************************** 
+*name        :    ui_pegging
+*function    :               
+*input       :    
+*output      :              
+*author      :    bianzh1
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2015.08.19
+ *****************************/
+	AS
+	path varchar(100):='cdp.egbdf.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_pegging';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	ns int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'RPT_PEGGING';
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_pegging_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:MTM,:MTM_ABCD,:SBB,:SBB_DES,:SBB_ABCD,:SBB_ABCD_1,:SBB_ABCD_2,:SBB_ABCD_3,:SBB_ABCD_4,:SBB_ABCD_5);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_pegging_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:MTM,:MTM_ABCD,:SBB,:SBB_DES,:SBB_ABCD,:SBB_ABCD_1,:SBB_ABCD_2,:SBB_ABCD_3,:SBB_ABCD_4,:SBB_ABCD_5);
+    END; 
+       
+	--procedure begin
+
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_UTCTIMESTAMP INTO create_time FROM DUMMY;
+	
+	update_info = SELECT *
+				 	FROM :newInfo as a
+				 	WHERE EXISTS ( select 1 from "EBGDF"."RPT_PEGGING" 
+									where MTM = a.MTM
+									  and SBB = a.SBB );
+									
+	--validate key
+	SELECT count(1) into n
+	 	FROM :update_info;
+
+	if n>0 then
+		update "EBGDF"."RPT_PEGGING" a
+		set (a.ABCD_T,a.MTM_ABCD,a.SBB_DES,a.SBB_ABCD,a.SBB_ABCD_1,a.SBB_ABCD_2,a.SBB_ABCD_3,a.SBB_ABCD_4,a.SBB_ABCD_5,a.LAST_UPDATE_TS,a.LAST_UPDATE_USERID)=
+			(b.ABCD_T,b.MTM_ABCD,b.SBB_DES,b.SBB_ABCD,b.SBB_ABCD_1,b.SBB_ABCD_2,b.SBB_ABCD_3,b.SBB_ABCD_4,b.SBB_ABCD_5,:create_time,:currentUser)
+		FROM "EBGDF"."RPT_PEGGING" a,:update_info b
+		where a.MTM = b.MTM
+	  	and a.SBB = b.SBB; 
+	
+		--update操作需要写入日志
+		insert into "EBGDF"."RPT_PEGGING_LOG"(
+											ABCD_T,
+											MTM,
+											MTM_ABCD,
+											SBB,
+											SBB_DES,
+											SBB_ABCD,
+											SBB_ABCD_1,
+											SBB_ABCD_2,
+											SBB_ABCD_3,
+											SBB_ABCD_4,
+											SBB_ABCD_5,
+											CREATE_TS,
+											CREATE_USERID,
+											LAST_UPDATE_TS,
+											LAST_UPDATE_USERID,
+											AT_MODIFIED_BY,
+											AT_ACTION,
+											AT_MODIFIED_ON,
+											AT_MILLIS
+	 ) select ABCD_T,
+			MTM,
+			MTM_ABCD,
+			SBB,
+			SBB_DES,
+			SBB_ABCD,
+			SBB_ABCD_1,
+			SBB_ABCD_2,
+			SBB_ABCD_3,
+			SBB_ABCD_4,
+			SBB_ABCD_5,
+		    :create_time,
+		    :currentUser,
+		    :create_time,
+		    :currentUser,
+	 		:create_time,
+	 		'update',
+	 		:create_time,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3'))
+		from :update_info;
+			
+	END IF; 
+	
+	INSERT_INFO = SELECT *
+				 	FROM :newInfo as a
+				 	WHERE NOT EXISTS ( select 1 from "EBGDF"."RPT_PEGGING" 
+									where MTM = a.MTM
+									  and SBB = a.SBB);
+	SELECT count(1) into ns
+	 	FROM :INSERT_INFO;
+	if ns>0 then
+		INSERT INTO "EBGDF"."RPT_PEGGING"( ABCD_T,
+											MTM,
+											MTM_ABCD,
+											SBB,
+											SBB_DES,
+											SBB_ABCD,
+											SBB_ABCD_1,
+											SBB_ABCD_2,
+											SBB_ABCD_3,
+											SBB_ABCD_4,
+											SBB_ABCD_5,
+											CREATE_TS,
+											CREATE_USERID,
+											LAST_UPDATE_TS,
+											LAST_UPDATE_USERID )
+	 	select  ABCD_T,
+				MTM,
+				MTM_ABCD,
+				SBB,
+				SBB_DES,
+				SBB_ABCD,
+				SBB_ABCD_1,
+				SBB_ABCD_2,
+				SBB_ABCD_3,
+				SBB_ABCD_4,
+				SBB_ABCD_5,
+			    :create_time,
+			    :currentUser,
+			    :create_time,
+			    :currentUser
+		from :INSERT_INFO;
+	 	
+	 	--insert操作需要写入日志
+		insert into "EBGDF"."RPT_PEGGING_LOG"(
+											ABCD_T,
+											MTM,
+											MTM_ABCD,
+											SBB,
+											SBB_DES,
+											SBB_ABCD,
+											SBB_ABCD_1,
+											SBB_ABCD_2,
+											SBB_ABCD_3,
+											SBB_ABCD_4,
+											SBB_ABCD_5,
+											CREATE_TS,
+											CREATE_USERID,
+											LAST_UPDATE_TS,
+											LAST_UPDATE_USERID,
+											AT_MODIFIED_BY,
+											AT_ACTION,
+											AT_MODIFIED_ON,
+											AT_MILLIS
+	 ) select ABCD_T,
+			MTM,
+			MTM_ABCD,
+			SBB,
+			SBB_DES,
+			SBB_ABCD,
+			SBB_ABCD_1,
+			SBB_ABCD_2,
+			SBB_ABCD_3,
+			SBB_ABCD_4,
+			SBB_ABCD_5,
+		    :create_time,
+		    :currentUser,
+		    :create_time,
+		    :currentUser,
+	 		:create_time,
+	 		'update',
+	 		:create_time,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3'))
+		from :INSERT_INFO; 			 	
+	END IF;
+		
+		call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:ns,0,:table_name);
+END;

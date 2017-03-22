@@ -1,0 +1,52 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_daily::beforeCreateUiStdCostDaily" (
+        IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_STDCOST_DAILY_T"
+        ,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+    AS 
+	/************************************************************************
+	*name      :                     beforeCreateUiStdCostDaily
+	*function    :               
+	*input     ：               
+	*output     :                
+	*author     :                     li shunshun
+	*CreateDate    :                  2015.8.12
+	*UpdateDate  :        
+	*************************************************************************/  
+
+    validate integer;
+          
+BEGIN
+
+    --CYCLE
+    /*
+    select  count(1) into validate from  UI_CYCLE where CYCLE = (select CYCLE from :newInfo);
+    IF validate<=0 then
+        errorinfo = select 400 as http_status_code, 
+            'CYCLE: VALIDATION FAILED, NOT EXIST IN UI_CYCLE' error_message, 
+            '' detail from dummy;       
+        RETURN;
+    END IF;
+    */
+    
+   --PLANT
+    select  count(1) into validate from  UI_Plant where PLANT = (select plant from :newInfo);
+    IF validate<=0 then
+        errorinfo = select 400 as http_status_code, 
+            'PLANT: VALIDATION FAILED, NOT EXIST IN UI_PLANT' error_message, 
+            '' detail from dummy;       
+        RETURN;
+    END IF;
+    
+    --ITEM
+    select  count(1) into validate from  UI_ITEM where ITEM = (select item from :newInfo) and item_type in ('OPTION','COMPONENT');
+    IF validate<=0 then
+        errorinfo = select 400 as http_status_code, 
+            'ITEM: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;       
+        RETURN;
+    END IF;
+    
+END;

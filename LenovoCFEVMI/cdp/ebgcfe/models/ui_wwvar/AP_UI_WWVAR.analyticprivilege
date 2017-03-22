@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Privilege:analyticPrivilege xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Privilege="http://www.sap.com/ndb/BiModelPrivilege.ecore" schemaVersion="1.1" id="AP_UI_WWVAR">
+  <descriptions defaultDescription="AP_UI_WWVAR"/>
+  <securedModels allInformationModels="false">
+    <modelUri>/cdp.ebgcfe.models.ui_wwvar/calculationviews/CV_UI_WWVAR_SEARCH_DDL</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_wwvar/calculationviews/CV_UI_WWVAR_SEARCH_FAMILY</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_wwvar/calculationviews/CV_UI_WWVAR</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_wwvar/calculationviews/CV_UI_WWVAR_SEARCH_ASSEMBLY</modelUri>
+  </securedModels>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="PLANT">
+      <procedureFilter operator="IN" procedureName="&quot;SECURITY&quot;.cdp.security.procedures::getResourceUserByPLANT"/>
+    </filter>
+    <attributeName>PLANT</attributeName>
+    <originInformationModelUri>/cdp.ebgcfe.models.ui_wwvar/calculationviews/CV_UI_WWVAR</originInformationModelUri>
+  </restriction>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="SUBGEO">
+      <procedureFilter operator="IN" procedureName="&quot;SECURITY&quot;.cdp.security.procedures::getResourceUserByGEO"/>
+    </filter>
+    <attributeName>SUBGEO</attributeName>
+    <originInformationModelUri>/cdp.ebgcfe.models.ui_wwvar/calculationviews/CV_UI_WWVAR</originInformationModelUri>
+  </restriction>
+</Privilege:analyticPrivilege>

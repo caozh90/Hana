@@ -1,0 +1,218 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bak::PRC_TABLE_BAK_NORMAL" (
+  IN   P_IN_PRODUCT_GROUP  VARCHAR(20),
+  IN   P_IN_TABLE_NAME     VARCHAR(30),
+  OUT  P_OUT_EXITCODE      INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_TABLE_BAK_PROCESS        
+*function   : Table Backup Processing
+*input      ：  P_IN_PRODUCTGROUP : Product Group / P_IN_TABLE_NAME : Product Group
+*output     : P_OUT_EXITCODE : error code 
+*author     : Zhoubinbin
+*CreateDate : 2015-3-5
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+    -- DATA
+    DECLARE  v_g_pkg_name       VARCHAR(30)  := 'PKG_BAK';
+    DECLARE  v_prc_name         VARCHAR(50)  := 'PRC_TABLE_BAK_NORMAL';
+    DECLARE  v_full_name        VARCHAR(100) := :V_G_PKG_NAME || '.' || :V_PRC_NAME;
+
+    DECLARE  v_cycle_name       VARCHAR(30);
+    DECLARE  v_cycle_type       VARCHAR(30);
+        
+    DECLARE  v_tablename_his    VARCHAR(50);
+    DECLARE  v_part_flag        VARCHAR(10);
+    DECLARE  v_bak_column       VARCHAR(50);
+    DECLARE  v_bak_values       VARCHAR(100);
+        
+    DECLARE  v_cycle_pg         VARCHAR(30);
+    DECLARE  v_partition_name   VARCHAR(30);
+        
+    DECLARE  v_counter          INTEGER;
+    DECLARE  v_where_delete     VARCHAR(1000);
+    DECLARE  v_where_insert     VARCHAR(1000);
+        
+    DECLARE  v_insert_sql       VARCHAR(4000);
+    DECLARE  v_col_string       VARCHAR(1500);
+    DECLARE  v_append_cols      VARCHAR(100);
+    DECLARE  v_append_vals      VARCHAR(100);
+        
+    DECLARE  v_sql              VARCHAR(4000);
+    
+    DECLARE  v_size             INTEGER;
+    DECLARE  v_id               INTEGER;    
+    DECLARE  column_array       NVARCHAR(256) ARRAY;  
+    DECLARE  logidi             INTEGER := 0;  
+    DECLARE  logidj             INTEGER := 0;  
+    DECLARE  logidk             INTEGER := 0;  
+    DECLARE  logidl             INTEGER := 0;  
+    DECLARE  logidm             INTEGER := 0; 
+    DECLARE  V_CNT             INTEGER := 0; 
+    DECLARE  V_COLUMNS_IN_VALID VARCHAR(1000);     
+         
+        
+    -- EXCEPTION
+    DECLARE in_valid_column CONDITION FOR SQL_ERROR_CODE 10001;
+    DECLARE EXIT HANDLER FOR in_valid_column 
+    BEGIN     
+        P_OUT_EXITCODE := ::SQL_ERROR_CODE;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO', 
+                                                    I_LOGSID     => :logidj, 
+                                                    I_EVENT_NAME => :v_full_name, 
+                                                    I_MODULE     => 'EBGCFE',   
+                                                    I_MESSAGE    => 'ERROR TABLE NAME: ' || :P_IN_TABLE_NAME);           
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidi,
+                                                    I_EVENT_NAME => :v_full_name, 
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR', 
+                                                    I_DETAIl     => to_char(::SQL_ERROR_CODE) || ':' || 
+                                                                    substr(::SQL_ERROR_MESSAGE, 1, 500 ));  
+        RESIGNAL;                  
+    END; 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN     
+	    P_OUT_EXITCODE := ::SQL_ERROR_CODE;
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO', 
+	                                                I_LOGSID     => :logidj, 
+				                                    I_EVENT_NAME => :v_full_name, 
+				                                    I_MODULE     => 'EBGCFE',	
+				                                    I_MESSAGE    => 'ERROR TABLE NAME: ' || :P_IN_TABLE_NAME);           
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidi,
+									                I_EVENT_NAME => :v_full_name, 
+									                I_MODULE     => 'EBGCFE',
+									                I_MESSAGE    => 'ERROR', 
+									                I_DETAIl     => to_char(::SQL_ERROR_CODE) || ':' || 
+									                                substr(::SQL_ERROR_MESSAGE, 1, 500 ));	
+		RESIGNAL;				   
+    END;     
+  
+    -- PROCESS
+    P_OUT_EXITCODE := -1;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE',
+		                                        I_MESSAGE    => 'PRODUCT_GROUP:'||:p_in_product_group||',TABLE_NAME:'||:P_IN_TABLE_NAME); 
+		                                        
+    SELECT cycle_name, cycle_type, cycle_name||product_group
+      INTO v_cycle_name, v_cycle_type, v_cycle_pg
+      FROM ui_cycle
+     WHERE product_group = :p_in_product_group
+       AND cycle         = 'CURRENT';		
+       
+    SELECT table_name_his, ifnull(part_flag, 'N'), 
+           bak_column
+      INTO v_tablename_his, v_part_flag, 
+           v_bak_column
+      FROM conf_bak
+     WHERE product_group = :p_in_product_group
+       AND table_name    = :p_in_table_name;
+       
+    IF :v_bak_column = 'CYCLE_PRODUCTGROUP' 
+    THEN
+        v_bak_values   := :v_cycle_pg;
+        v_append_cols  := ', CYCLE, CYCLE_PRODUCTGROUP';
+        v_append_vals  := ','''||:v_cycle_name||''','''||:v_cycle_pg||'''';
+        v_where_insert := ' WHERE PRODUCT_GROUP = '''||:p_in_product_group||'''';
+    ELSEIF v_bak_column = 'CYCLE' 
+    THEN
+        v_bak_values   := :v_cycle_name;
+        v_append_cols  := ', CYCLE';
+        v_append_vals  := ','''||:v_cycle_name||'''';  
+    ELSEIF v_bak_column = 'PRODUCT_GROUP'
+    THEN
+        v_bak_values   := :p_in_product_group;  
+        v_where_insert := ' WHERE PRODUCT_GROUP = '''||:p_in_product_group||'''';        
+    END IF;       
+        
+           
+    v_where_delete := ' WHERE '|| v_bak_column || ' = ''' || 
+                                  v_bak_values ||''''; 
+        
+    v_sql := 'DELETE FROM '|| :v_tablename_his || 
+                              :v_where_delete;
+                              
+    EXECUTE IMMEDIATE v_sql;
+    EXEC 'commit';
+                              
+    --Create Partition
+    IF :v_part_flag = 'Y'
+    THEN
+        SELECT COUNT(0) INTO v_counter
+          FROM sys.m_cs_partitions
+         WHERE table_name     = :v_tablename_his
+           AND range          = :v_bak_values
+           AND schema_name='EBGCFE';
+            
+        IF :v_counter = 0 
+        THEN
+            v_sql := 'ALTER TABLE ' || v_tablename_his ||
+                     ' ADD PARTITION VALUES='''|| v_bak_values || '''';
+                    
+            EXECUTE IMMEDIATE v_sql;
+        END IF;
+    END IF; 
+    
+    column_tab = SELECT t.column_name FROM sys.table_columns T 
+                  WHERE t.table_name   = UPPER(:p_in_table_name) 
+                    AND t.column_name <> 'CYCLE'
+                    AND t.schema_name='EBGCFE';
+                    
+    /*Added by FangYuan*/
+
+    SELECT COUNT(A.COLUMN_NAME),STRING_AGG(A.COLUMN_NAME,',') INTO V_CNT,V_COLUMNS_IN_VALID FROM
+    :column_tab A
+    LEFT OUTER JOIN
+    (
+    SELECT t.column_name FROM sys.table_columns T 
+    WHERE t.table_name   = UPPER(:v_tablename_his) 
+    AND t.column_name <> 'CYCLE'
+    AND t.schema_name='EBGCFE') B
+    ON A.COLUMN_NAME=B.COLUMN_NAME
+    WHERE B.COLUMN_NAME IS NULL
+    ;
+    
+     IF V_CNT=1 THEN
+       signal in_valid_column SET MESSAGE_TEXT ='in valid column '||:V_COLUMNS_IN_VALID||' in table:'||:v_tablename_his;
+    ELSEIF V_CNT>1 THEN
+       signal in_valid_column SET MESSAGE_TEXT ='in valid columns '||:V_COLUMNS_IN_VALID||' in table:'||:v_tablename_his;
+    END IF;    
+
+    /*Added by FangYuan*/
+                    
+    column_array := ARRAY_AGG(:column_tab.column_name);
+    v_size       := CARDINALITY(:column_array);		
+    v_col_string := '';
+		     
+    FOR v_id IN 1 .. :v_size DO
+        v_col_string := :v_col_string || :column_array[:v_id] || ',';
+    END FOR;     
+                                 
+    v_col_string := rtrim(:v_col_string, ',');
+    
+    v_sql := 'INSERT INTO '|| v_tablename_his || '(' ||
+              v_col_string || v_append_cols || ')' ||
+             'SELECT ' || v_col_string || v_append_vals || ' FROM ' 
+             || p_in_table_name || IFNULL(v_where_insert, '');  
+             
+    EXECUTE IMMEDIATE v_sql;  
+    
+    P_OUT_EXITCODE := 0;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO', 
+	                                            I_LOGSID     => :logidm, 
+				                                I_EVENT_NAME => :v_full_name, 
+				                                I_MODULE     => 'EBGCFE',	
+				                                I_MESSAGE    => 'SUCCESS TABLE NAME:' || :P_IN_TABLE_NAME);     
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END', 
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');   
+END;

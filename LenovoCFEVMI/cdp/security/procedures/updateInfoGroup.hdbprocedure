@@ -1,0 +1,146 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::updateInfoGroup" (
+	IN	aGROUP_NAME NVARCHAR(256),
+	IN	aCOMMENT NVARCHAR(256),
+	IN	aGROUP_ID BIGINT,
+	IN	aGROUP_NAME_OLD NVARCHAR(256)
+   	--IN	aMODULE_NAME NVARCHAR(200)
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	groupExists Integer := 0;
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	 
+    aMODULE_ID NVARCHAR(10);       
+    aMODULE_NAME	NVARCHAR(256);
+    privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+/***************************** 
+	updateInfoGroup
+	
+
+	example:
+	
+
+)
+ *****************************/
+      
+    --exception     
+   DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到amodule_ID ,则返回，
+			aI_DETAIL :='cdp.security.procedures::updateGroup can not find the module : '||aMODULE_NAME ||' .';
+     
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::updateInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL); 
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::updateInfoGroup error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::updateInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);  	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityUserAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+  
+  if aGROUP_NAME_OLD='Public Group' or aGROUP_NAME='Public Group' then
+  aI_DETAIL :='cdp.security.procedures::updateGroupForOData error : can not change Public Group';
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::updateInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000010'
+     	,I_DETAIL=>:aI_DETAIL);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : W000000010' error_message, 
+     		aI_DETAIL detail from dummy;
+  return ;
+  end if;
+  
+   --aI_DETAIL := 'cdp.security.procedures::createUser can not find the MODULE_NAME : '||:aMODULE_NAME||' .';
+   
+   SELECT MODULE_ID into aMODULE_ID 
+    FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" 
+    WHERE "MODULE_NAME" = :aMODULE_NAME;
+     
+     
+     SELECT top 1 count(1) into groupExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" A    
+     WHERE A."MODULE_ID" = :aMODULE_ID
+          AND A."GROUP_ID" = :aGROUP_ID ;
+     if  :groupExists = 0 then
+    	 aI_DETAIL := 'cdp.security.procedures::updateGroup  find the GROUP_NAME : '||:aGROUP_NAME||' not exists .';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::updateInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000011'
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'GROUP NAME not exist' error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+     	return ;
+     end if;
+     
+    update "SECURITY"."cdp.security.data::userManagement.INFO_GROUP"
+ 	set GROUP_NAME = :aGROUP_NAME
+ 	, COMMENT = :aCOMMENT
+ 	where GROUP_ID = :aGROUP_ID;
+   		
+
+	    	
+	    --如果成功添加,则log添加成功！
+	    aI_DETAIL := 'cdp.security.procedures::updateInfoGroup ('||:aGroup_NAME||' ,) successfully executed . ';
+ 		
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::updateInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000009'
+     	,I_DETAIL=>:aI_DETAIL); 
+END;

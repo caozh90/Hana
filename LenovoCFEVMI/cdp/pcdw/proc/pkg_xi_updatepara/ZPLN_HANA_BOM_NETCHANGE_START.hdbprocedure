@@ -1,0 +1,172 @@
+PROCEDURE "PCDW"."cdp.pcdw.proc.pkg_xi_updatepara::ZPLN_HANA_BOM_NETCHANGE_START" (
+    IN iv_id  VARCHAR(12),OUT on_exitcode NUMBER ) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY INVOKER 
+    DEFAULT SCHEMA PCDW 
+    AS
+   /************************************************************************
+   *name        : ZPLN_HANA_BOM_NETCHANGE_END
+   *function    : 
+   *input       : 
+   *output      : 
+   *author      : FangYuan    
+   *CreateDate  : 20150120
+   *UpdateDate  :              
+   *************************************************************************/
+     v_prc_name    VARCHAR2 (30) := 'ZPLN_HANA_BOM_NETCHANGE_START';
+     
+     v_date        timestamp;
+     v_startdate   timestamp;
+     v_enddate     timestamp;
+     v_sysdate     timestamp := current_timestamp;
+     
+     vMsg      VARCHAR(1024);
+     vCode      int;
+BEGIN
+    --EXCEPTION
+     DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299;
+     
+     DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+     BEGIN
+     
+      on_exitcode := ::SQL_ERROR_CODE;
+
+      vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+      INSERT INTO PCDW_PROC_LOG
+         (EVENTTIME,
+          EVENTNAME,
+          SUBEVENT,
+          MSGCODE,
+          EVENTMSG,
+          EVENTTYPE,
+          DATASOURCE,
+          DATADEST,
+          EVENTDESCR)
+      VALUES
+         (CURRENT_TIMESTAMP,
+          :v_prc_name,
+          'OTHERS ERROR',
+          :vCode,
+          :vMsg,
+          '',
+          '',
+          '',
+          'END');
+      --exec 'COMMIT';     
+     END;
+     
+     --START
+   INSERT INTO PCDW_PROC_LOG
+   VALUES
+      (CURRENT_TIMESTAMP,
+       :v_prc_name,
+       '',
+       NULL,
+       '',
+       '',
+       '',
+       '',
+       'START');
+   --EXEC 'COMMIT';
+            
+      
+      SELECT   add_seconds(MAX (dataenddate), -3600)
+        INTO v_date
+        FROM pcdw_sosto_log
+       WHERE status = 'success' AND wfid = iv_id AND programname = 'BOM';
+      
+
+      IF v_date IS NULL
+      THEN
+	      INSERT INTO pcdw_sosto_log (wfstartdate,
+	                                         wfenddate,
+	                                         programname,
+	                                         wfid,
+	                                         datastartdate,
+	                                         dataenddate,
+	                                         status)
+	                  VALUES (v_sysdate,
+	                          NULL,
+	                          'BOM',
+	                          iv_id,
+	                          add_days(v_sysdate, -1),
+	                          v_sysdate,
+	                          'running');
+      
+      ELSE
+         INSERT INTO pcdw_sosto_log (wfstartdate,
+                                     wfenddate,
+                                     programname,
+                                     wfid,
+                                     datastartdate,
+                                     dataenddate,
+                                     status)
+              VALUES (v_sysdate,
+                      NULL,
+                      'BOM',
+                      iv_id,
+                      v_date,
+                      v_sysdate,
+                      'running');
+      END IF;
+           
+      SELECT   MAX (datastartdate), add_seconds(MAX (dataenddate), -3600)
+        INTO v_startdate, v_enddate
+        FROM pcdw_sosto_log
+       WHERE status = 'success' AND wfid = iv_id AND programname = 'BOM';
+           
+      -- zpln_pcdw_sosto_start 
+      IF v_startdate IS NULL OR v_enddate IS NULL
+      THEN
+        SELECT   MAX (datastartdate), add_seconds(MAX (dataenddate),-3600)
+           INTO v_startdate, v_enddate
+           FROM pcdw_sosto_log
+          WHERE status = 'running' AND wfid = iv_id AND programname = 'BOM';
+      END IF;
+      UPDATE CONF_PARAMETER
+         SET low = TO_CHAR (v_enddate, 'YYYYMMDD')
+       WHERE     progname = 'ZPLN_HANA_BOM_NETCHANGE'
+             AND paraclass = 'FRM_DATE'
+             AND buid = iv_id;
+      UPDATE CONF_PARAMETER
+         SET low = TO_CHAR (v_enddate, 'hh24miss')
+       WHERE     progname = 'ZPLN_HANA_BOM_NETCHANGE'
+             AND paraclass = 'FRM_TIME'
+             AND buid = iv_id;
+      UPDATE CONF_PARAMETER
+         SET low = TO_CHAR (v_sysdate, 'YYYYMMDD')
+       WHERE     progname = 'ZPLN_HANA_BOM_NETCHANGE'
+             AND paraclass = 'TO_DATE'
+             AND buid = iv_id;
+      UPDATE CONF_PARAMETER
+         SET low = TO_CHAR (v_sysdate, 'hh24miss')
+       WHERE     progname = 'ZPLN_HANA_BOM_NETCHANGE'
+             AND paraclass = 'TO_TIME'
+             AND buid = iv_id;
+      --COMMIT;
+      on_exitcode := 0;
+
+
+     --end
+    INSERT INTO PCDW_PROC_LOG
+      (EVENTTIME,
+       EVENTNAME,
+       SUBEVENT,
+       MSGCODE,
+       EVENTMSG,
+       EVENTTYPE,
+       DATASOURCE,
+       DATADEST,
+       EVENTDESCR)
+   VALUES
+      (CURRENT_TIMESTAMP,
+       :v_prc_name,
+       'SUCCESS',
+       :vCode,
+       :vMsg,
+       '',
+       '',
+       '',
+       'END');
+END;

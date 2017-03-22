@@ -1,0 +1,247 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRate" ( 
+    IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_T",
+    OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiPmSalesReport
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo            
+*author      :      zhaodan1
+*CreateDate  :      2016.5.20
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	rec_count int :=0;
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRate error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRate'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+   call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+   'ui_xoutfr_rate::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    	errorInfo = SELECT 400 as http_status_code, 
+             			  'SQL ERROR CODE : 0' error_message, 
+             			 privilegeExists detail FROM dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRate'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   
+--oldInfo = SELECT * FROM :oldInfo WHERE    FREIGHT_TYPE <> 'GEO_MIX';	
+deleted_rec = 
+   select A.* from  "EBGCFE"."UI_XOUTFR_RATE" AS A , :oldInfo AS B 
+          WHERE B.CYCLE = A.CYCLE AND
+                B.PRODUCT_GROUP = A.PRODUCT_GROUP AND
+                B.BRAND = A.BRAND AND
+                B.PLANT = A.PLANT AND
+                B.GEO = A.GEO AND
+                B.FAMILY = A.FAMILY AND
+                B.MACHINETYPE = A.MACHINETYPE;
+
+-- delete record from table	  	
+DELETE FROM "EBGCFE"."UI_XOUTFR_RATE" AS A
+  WHERE EXISTS ( SELECT 1 FROM :deleted_rec 
+                  WHERE CYCLE = A.CYCLE AND
+                        PRODUCT_GROUP = A.PRODUCT_GROUP AND
+                        BRAND = A.BRAND AND
+                        PLANT = A.PLANT AND
+                        --GEO_TYPE = A.GEO_TYPE AND
+                        GEO = A.GEO AND
+                        FAMILY = A.FAMILY AND
+                        MACHINETYPE = A.MACHINETYPE
+                      ); 
+  
+if ::rowcount <= 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';*/
+	 
+	 RETURN;
+	 
+end if;		
+/*
+prepare_update = 	  
+			    SELECT DISTINCT a.CYCLE,      a.BRAND, a.PRODUCT_GROUP,
+				       a.GEO_TYPE, a.GEO, a.PLANT,	      
+				       a.FAMILY,       a.MACHINETYPE,
+				       a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+				       a.m1, a.m2, a.m3, a.m4,
+				       a.m5, a.m6, a.m7, a.m8,
+				       a.m9, a.m10, a.m11, a.m12,
+				       a.m13, a.m14, a.m15, a.m16,
+		               a.m17, a.m18
+				  FROM "EBGCFE"."UI_XOUTFR_RATE" a,:oldInfo b 
+				WHERE a.CYCLE = b.CYCLE AND
+				      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+				      a.BRAND = b.BRAND AND
+				      a.PLANT = b.PLANT AND
+				      --a.GEO_TYPE = b.GEO_TYPE AND     
+				      a.GEO = b.GEO AND
+				      a.FAMILY = b.FAMILY AND
+				      a.MACHINETYPE = b.MACHINETYPE AND 
+				      a.FREIGHT_TYPE <> 'GEO_MIX';    
+
+select count(1) into rec_count from :prepare_update;
+
+geo_mix_new = 
+			   SELECT a.CYCLE, a.PRODUCT_GROUP, a.BRAND,a.PLANT, a.GEO_TYPE,
+		              a.GEO,   a.FAMILY,        a.MACHINETYPE,   'GEO_MIX' AS FREIGHT_TYPE,
+		              NULL AS GL_PERCENTAGE,    SUM(a.M1*a.GL_PERCENTAGE/100) AS UNIT_COST
+				 FROM :prepare_update a
+				 GROUP BY
+				      a.CYCLE, a.PRODUCT_GROUP, a.BRAND,a.PLANT, a.GEO_TYPE,
+		              a.GEO,   a.FAMILY,        a.MACHINETYPE;    
+	              
+IF :rec_count <= 0 THEN --user deleted all records
+
+
+	geo_mix_deleted =  SELECT a.*
+						 FROM "EBGCFE"."UI_XOUTFR_RATE" a,:oldInfo b 
+						WHERE a.CYCLE = b.CYCLE AND
+						      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+						      a.BRAND = b.BRAND AND
+						      a.PLANT = b.PLANT AND
+						      --a.GEO_TYPE = b.GEO_TYPE AND     
+						      a.GEO = b.GEO AND
+						      a.FAMILY = b.FAMILY AND
+						      a.MACHINETYPE = b.MACHINETYPE AND
+						      a.FREIGHT_TYPE = 'GEO_MIX';
+    
+	DELETE FROM "EBGCFE"."UI_XOUTFR_RATE" AS A
+	  WHERE EXISTS ( SELECT 1 FROM :geo_mix_deleted 
+	                  WHERE CYCLE = A.CYCLE AND
+	                        PRODUCT_GROUP = A.PRODUCT_GROUP AND
+	                        BRAND = A.BRAND AND
+	                        PLANT = A.PLANT AND
+	                        --GEO_TYPE = A.GEO_TYPE AND
+	                        GEO = A.GEO AND
+	                        FAMILY = A.FAMILY AND
+	                        MACHINETYPE = A.MACHINETYPE AND
+	                        FREIGHT_TYPE = A.FREIGHT_TYPE ); 
+	                        
+	INSERT INTO "EBGCFE"."UI_XOUTFR_RATE_LOG"(
+		  CYCLE,      BRAND,
+	      GEO_TYPE, GEO,PLANT,	      
+	      FAMILY,       MACHINETYPE,
+	      GL_PERCENTAGE,FREIGHT_TYPE,
+	      m1, m2, m3, m4,
+	      m5, m6, m7, m8,
+	      m9, m10, m11, m12,
+	      m13, m14, m15, m16,
+		  m17, m18,	
+		SYS_CREATED_BY,SYS_CREATED_DATE,
+		SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,
+		AT_ACTION,AT_MODIFIED_ON,AT_MILLIS
+	 )SELECT 
+		 a.CYCLE,      a.BRAND,
+	      a.GEO_TYPE, a.GEO,PLANT,	      
+	      a.FAMILY,       a.MACHINETYPE,
+	      a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		'delete',	CURRENT_TIMESTAMP ,TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+	  FROM :geo_mix_deleted a;    
+	  
+	                      
+ELSE	
+
+     update "EBGCFE"."UI_XOUTFR_RATE" a 
+     set    m1 = b.UNIT_COST, m2 =  b.UNIT_COST, m3 =  b.UNIT_COST, m4 =  b.UNIT_COST,
+            m5 = b.UNIT_COST, m6 =  b.UNIT_COST, m7 =  b.UNIT_COST, m8 =  b.UNIT_COST,
+            m9 = b.UNIT_COST, m10 =  b.UNIT_COST, m11 =  b.UNIT_COST, m12 =  b.UNIT_COST,
+            m13 = b.UNIT_COST, m14 =  b.UNIT_COST, m15 =  b.UNIT_COST, m16 =  b.UNIT_COST,
+            m17 = b.UNIT_COST, m18 =  b.UNIT_COST,
+            SYS_LAST_MODIFIED_BY = SESSION_USER ,SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+     from "EBGCFE"."UI_XOUTFR_RATE" a , :geo_mix_new b 
+     where  a.CYCLE = b.CYCLE AND
+	        a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+	        a.BRAND = b.BRAND AND
+	        a.PLANT = b.PLANT AND
+	        --a.GEO_TYPE = b.GEO_TYPE AND     
+	        a.GEO = b.GEO AND
+	        a.FAMILY = b.FAMILY AND
+	        a.MACHINETYPE = b.MACHINETYPE AND
+	        a.FREIGHT_TYPE = b.FREIGHT_TYPE;
+	
+END IF;                       
+
+*/
+--insert log table
+
+INSERT INTO "EBGCFE"."UI_XOUTFR_RATE_LOG"(
+		  CYCLE,      BRAND,
+	      GEO_TYPE, GEO,PLANT,	      
+	      FAMILY,       MACHINETYPE,
+	      GL_PERCENTAGE,FREIGHT_TYPE,
+	      m1, m2, m3, m4,
+	      m5, m6, m7, m8,
+	      m9, m10, m11, m12,
+	      m13, m14, m15, m16,
+	      m17, m18,
+		SYS_CREATED_BY,SYS_CREATED_DATE,
+		SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,
+		AT_ACTION,AT_MODIFIED_ON,AT_MILLIS
+	 )SELECT 
+		 a.CYCLE,      a.BRAND,
+	      a.GEO_TYPE, a.GEO,a.PLANT,	      
+	      a.FAMILY,       a.MACHINETYPE,
+	      a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		'delete',	CURRENT_TIMESTAMP ,TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+	  FROM :deleted_rec a;
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRate successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRate'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+END;

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cube:cube xmlns:Cube="http://www.sap.com/ndb/BiModelCube.ecore" schemaVersion="1.5" id="AN_SA_FOR_VMI" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled">
+  <descriptions defaultDescription="AN_SA_FOR_VMI"/>
+  <localVariables/>
+  <privateMeasureGroup id="MeasureGroup">
+    <attributes>
+      <attribute id="SA_NUMBER" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SA_NUMBER"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="SA_NUMBER"/>
+      </attribute>
+      <attribute id="SA_LINE_ID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SA_LINE_ID"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="SA_LINE_ID"/>
+      </attribute>
+      <attribute id="ORDER_TYPE" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ORDER_TYPE"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="ORDER_TYPE"/>
+      </attribute>
+      <attribute id="START_DATE001" hidden="true" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="START_DATE001"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="START_DATE"/>
+      </attribute>
+      <attribute id="END_DATE001" hidden="true" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="END_DATE001"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="END_DATE"/>
+      </attribute>
+      <attribute id="LIFNR" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LIFNR"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="LIFNR"/>
+      </attribute>
+      <attribute id="WERKS" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="WERKS"/>
+      </attribute>
+      <attribute id="CREATE_DATE001" hidden="true" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CREATE_DATE001"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="CREATE_DATE"/>
+      </attribute>
+      <attribute id="LINE_CHANGE_DATE001" hidden="true" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LINE_CHANGE_DATE001"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="LINE_CHANGE_DATE"/>
+      </attribute>
+      <attribute id="STATUS" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="STATUS"/>
+      </attribute>
+      <attribute id="PURCHASE_GROUP" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PURCHASE_GROUP"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="PURCHASE_GROUP"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="START_DATE" hidden="false" order="4" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="START_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;START_DATE001&quot;,1)) +'-' + lpad(string(component(&quot;START_DATE001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;START_DATE001&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="END_DATE" hidden="false" order="5" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="END_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;END_DATE001&quot;,1)) +'-' + lpad(string(component(&quot;END_DATE001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;END_DATE001&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="CREATE_DATE" hidden="false" order="10" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CREATE_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;CREATE_DATE001&quot;,1)) +'-' + lpad(string(component(&quot;CREATE_DATE001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;CREATE_DATE001&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="LINE_CHANGE_DATE" hidden="false" order="11" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LINE_CHANGE_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;LINE_CHANGE_DATE001&quot;,1)) +'-' + lpad(string(component(&quot;LINE_CHANGE_DATE001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;LINE_CHANGE_DATE001&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies>
+        <tableProxy centralTable="true">
+          <table schemaName="MXEBGVMI" columnObjectName="SA"/>
+        </tableProxy>
+      </tableProxies>
+      <joins/>
+      <layout>
+        <shapes>
+          <shape modelObjectName="SA" modelObjectNameSpace="MXEBGVMI" modelObjectType="catalog">
+            <upperLeftCorner x="70" y="30"/>
+          </shape>
+        </shapes>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="OPEN_QTY" order="16" aggregationType="count" measureType="simple">
+        <descriptions defaultDescription="OPEN_QTY"/>
+        <measureMapping schemaName="MXEBGVMI" columnObjectName="SA" columnName="OPEN_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <sharedDimensions/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="MEASURE_GROUP" modelObjectType="repository">
+          <upperLeftCorner x="300" y="200"/>
+        </shape>
+        <shape modelObjectName="LogicalView" modelObjectNameSpace="MeasureGroup" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateMeasureGroup>
+</Cube:cube>

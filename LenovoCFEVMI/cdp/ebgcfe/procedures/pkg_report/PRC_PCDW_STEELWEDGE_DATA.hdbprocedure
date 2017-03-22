@@ -1,0 +1,264 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_PCDW_STEELWEDGE_DATA" 
+(
+    --IN  P_CHANGE_ID       VARCHAR(100),
+    --IN  P_PRODUCT_GROUP   VARCHAR(20),
+    --IN  P_USER_ID         VARCHAR(64),
+    OUT P_OUT_EXITCODE    DECIMAL,
+    OUT P_OUT_EXITMESS    VARCHAR(500)
+  
+) 
+
+
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    --READS SQL DATA 
+    AS
+    /************************************************************************
+    *name       : PRC_PCDW_STEELWEDGE_DATA     
+    *function   : 
+    *input      ：
+    *output     : p_out_exitcode : error code 
+    *author     : LIUXT
+    *CreateDate : 2016-07-27
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    *************************************************************************/
+    V_PKG_NAME        VARCHAR(30)  := 'PKG_REPORT';
+    V_PRC_NAME        VARCHAR(50)  := 'PRC_PCDW_STEELWEDGE_DATA';
+    V_FULL_NAME       VARCHAR(100) := :v_pkg_name || '.' || :v_prc_name;  
+    LOGIDI            INTEGER      := 0;
+    V_VAR             NUMBER;
+    V_DEFAULT_COST    NUMBER;
+    V_RUNLVL          VARCHAR(20);
+BEGIN
+
+    -- exception
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+        P_OUT_EXITCODE :=::SQL_ERROR_CODE;    
+                
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :LOGIDI,
+                                                    I_EVENT_NAME => :V_FULL_NAME, 
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR', 
+                                                    I_DETAIL     => TO_CHAR(::SQL_ERROR_CODE) || ':' || 
+                                                                    SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+
+    P_OUT_EXITCODE := -1;
+    P_OUT_EXITMESS := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :LOGIDI,
+                                                I_EVENT_NAME => :V_FULL_NAME,
+                                                I_MODULE     => 'EBGCFE'); 
+    
+    ---------------------------------------------以下是forecost-------------------------------------------------------
+    --his_bak
+    DELETE FROM pcdw.pcdw_fcst_sw_ori_his
+    WHERE version=TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd');
+
+    INSERT INTO pcdw.pcdw_fcst_sw_ori_his
+    (planning_item_id,sbb,plant,start_date,fcst_qty,bom_type,geo,time_series,version)
+    SELECT t.*,TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd') FROM pcdw.pcdw_fcst_sw_ori t;
+
+    --del
+    DELETE FROM z_pcdw_sw_mtm_ori_mon;
+    DELETE FROM z_pcdw_sw_cto_ori_mon;
+
+    --3)区分option与CTO-SBB预测,4)从周到月汇总预测
+    INSERT INTO z_pcdw_sw_mtm_ori_mon
+    (planning_item_id,plant,month,year,fcst_qty,bom_type,geo,time_series)
+    SELECT a.planning_item_id,a.plant,b.rol_month,b.rol_year,SUM(a.fcst_qty),a.bom_type,a.geo,a.time_series
+      FROM pcdw.pcdw_fcst_sw_ori a,sw_calendar b
+     WHERE  a.start_date=b.start_date
+       AND a.bom_type = 'OPT'
+     GROUP BY  a.planning_item_id,a.plant,b.rol_month,b.rol_year,a.bom_type,a.geo,a.time_series;
+		
+    INSERT INTO z_pcdw_sw_cto_ori_mon
+    (planning_item_id,sbb,plant,month,year,fcst_qty,bom_type,geo,time_series)
+    SELECT a.planning_item_id,a.sbb,a.plant,b.rol_month,b.rol_year,SUM(a.fcst_qty),a.bom_type,a.geo,a.time_series
+      FROM pcdw.pcdw_fcst_sw_ori a, sw_calendar b
+     WHERE a.start_date=b.start_date
+       AND a.bom_type  = 'CTO'
+     GROUP BY a.planning_item_id,a.sbb,a.plant,b.rol_month,b.rol_year,a.bom_type,a.geo,a.time_series;
+				
+    --5)根据geo-subgeo mapping表（SW_CFE_GEO_MAP）到subgeo 级别
+    DELETE FROM rpt_sw_mtm_mon_subgeo;
+    DELETE FROM rpt_sw_cto_mon_subgeo;
+
+    INSERT INTO rpt_sw_mtm_mon_subgeo
+    (planning_item_id,plant,month,year,fcst_qty,bom_type,geo,subgeo,time_series)
+    SELECT a.planning_item_id,a.plant,a.month,a.year,round(a.fcst_qty*b.sub_percent),a.bom_type,b.cfe_geo,b.cfe_subgeo,a.time_series
+      FROM z_pcdw_sw_mtm_ori_mon a,sw_cfe_geo_map b
+     WHERE a.geo = b.pcdw_geo;
+
+    INSERT INTO rpt_sw_cto_mon_subgeo
+    (planning_item_id,sbb,plant,month,year,fcst_qty,bom_type,geo,subgeo,time_series)
+    SELECT a.planning_item_id,a.sbb,a.plant,a.month,a.year,round(a.fcst_qty*b.sub_percent),a.bom_type,b.cfe_geo,b.cfe_subgeo,a.time_series
+      FROM z_pcdw_sw_cto_ori_mon a, sw_cfe_geo_map b
+     WHERE a.geo = b.pcdw_geo;
+     
+     
+    --更新brand, family, item_type字段信息  
+    UPDATE rpt_sw_mtm_mon_subgeo a
+      SET a.brand     = b.brand,
+          a.family    = b.brand,
+          a.item_type = b.item_type
+     FROM biz_cost_model_list b
+    WHERE b.item       = a.planning_item_id
+      AND b.eol_status = 'OL';
+
+   UPDATE rpt_sw_cto_mon_subgeo a
+      SET a.brand     = b.brand,
+          a.family    = b.brand,
+          a.item_type = b.item_type
+     FROM biz_cost_model_list b
+    WHERE b.item       = a.planning_item_id
+      AND b.eol_status = 'OL';
+     
+    /* 
+    --更新brand, family, item_type字段信息  
+    UPDATE rpt_sw_mtm_mon_subgeo a
+    SET (a.brand, a.family, a.item_type) =
+        (SELECT DISTINCT b.brand, b.asp_prd_family,b.item_type
+           FROM biz_cost_model_list b
+          WHERE b.item = a.planning_item_id);
+
+    UPDATE rpt_sw_cto_mon_subgeo a
+    SET (a.brand, a.family, a.item_type) =
+        (SELECT DISTINCT b.brand, b.asp_prd_family, b.item_type
+        FROM biz_cost_model_list b
+        WHERE b.item = a.planning_item_id);  
+        */
+		 	 
+    --7)更新PLANT依次优先L070/X470/U470/FLEX,如果获取不到工厂，STATUS字段填NO BOM。
+    UPDATE rpt_sw_mtm_mon_subgeo a
+    SET (a.plant, a.status) =(SELECT plant, status FROM 
+                             (SELECT model,plant,status,pvalue,ptype,RANK() OVER(PARTITION BY model ORDER BY ptype) rn
+                                FROM (SELECT DISTINCT b.model,b.plant,b.status,c.pvalue,c.ptype
+                                        FROM biz_cbom_mtmsbb b,conf_parameters c
+                                       WHERE b.model   = a.planning_item_id
+                                         AND c.PDOMAIN = 'STEELWEDGE_VALUME'
+                                         AND b.plant   = c.PVALUE) b)
+                               WHERE rn = 1);
+          
+    UPDATE rpt_sw_cto_mon_subgeo a
+    SET (a.plant, a.status) =(SELECT plant, status FROM 
+                             (SELECT model,plant,status,pvalue,ptype,RANK() OVER(PARTITION BY model ORDER BY ptype) rn
+                                FROM (SELECT DISTINCT b.model,b.plant,b.status,c.pvalue,c.ptype
+                                        FROM biz_cbom_sbb b,conf_parameters c
+                                       WHERE b.model   = a.sbb
+                                         AND c.PDOMAIN = 'STEELWEDGE_VALUME'
+                                         AND b.plant   = c.PVALUE) b)
+                               WHERE rn = 1);         
+ 
+    UPDATE rpt_sw_mtm_mon_subgeo a
+    SET status='NO BOM'
+    WHERE plant IS NULL;
+ 
+    UPDATE rpt_sw_cto_mon_subgeo a
+    SET status='NO BOM'
+    WHERE plant IS NULL;
+ 
+    --8)his_bak
+    DELETE FROM rpt_sw_mtm_mon_subgeo_his
+    WHERE version=TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd');
+
+    INSERT INTO rpt_sw_mtm_mon_subgeo_his
+    SELECT t.*,TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd') FROM rpt_sw_mtm_mon_subgeo t;
+
+    DELETE FROM rpt_sw_cto_mon_subgeo_his
+    WHERE  version=TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd');
+
+    INSERT INTO rpt_sw_cto_mon_subgeo_his
+    SELECT t.*,TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd') FROM rpt_sw_cto_mon_subgeo t;
+    
+    ---------------------------------------------以上是forecost-------------------------------------------------------
+    
+    -----------------------------------------------以下是ship---------------------------------------------------------
+    DELETE FROM rpt_sw_ship_mon_subgeo;
+    
+    INSERT INTO rpt_sw_ship_mon_subgeo
+    (planning_item_id,cto,mtm,geo_id,ship_month,shipped_qty)
+    SELECT planning_item_id,cto,mtm,region,TO_DATE(TO_CHAR(ship_date,'yyyymm'),'yyyymm'),SUM(shipped_qty) 
+      FROM pcdw.PCDW_SHIP_SW_BAK   -----WO0000000291726 change the PCDW_SHIP_SW to PCDW_SHIP_SW_BAK----
+                               ----changed by yangyue6 2016-9-6----
+     WHERE TO_CHAR(ship_date,'yyyy')=TO_CHAR(CURRENT_TIMESTAMP,'yyyy')
+       AND cto is null
+     GROUP BY planning_item_id,cto,mtm,region,TO_DATE(TO_CHAR(ship_date,'yyyymm'),'yyyymm')
+     UNION 
+    SELECT planning_item_id,cto,mtm,region,TO_DATE(TO_CHAR(ship_date,'yyyymm'),'yyyymm'),SUM(shipped_qty)
+      FROM pcdw.PCDW_SHIP_SW_BAK   -----WO0000000291726 change the PCDW_SHIP_SW to PCDW_SHIP_SW_BAK----
+                               ----changed by yangyue6 2016-9-6----
+     WHERE TO_CHAR(ship_date,'yyyy')=TO_CHAR(CURRENT_TIMESTAMP,'yyyy')
+       AND cto IS NOT NULL
+       AND planning_item_id<>cto
+     GROUP BY PLANNING_ITEM_ID,CTO,MTM,region,TO_DATE(TO_CHAR(ship_date,'yyyymm'),'yyyymm');   
+     
+     
+     UPDATE rpt_sw_ship_mon_subgeo a
+     SET geo_id=(SELECT cfe_subgeo FROM sw_cfe_geo_map b WHERE a.geo_id=b.pcdw_subgeo);
+     
+     UPDATE rpt_sw_ship_mon_subgeo t2
+        SET (plant,status) =
+        (SELECT plant,status
+        FROM (SELECT DISTINCT t1.planning_item_id,t2.plant,CASE WHEN t2.plant IS NULL THEN 'NO BOM' END status
+               FROM rpt_sw_ship_mon_subgeo t1
+               LEFT JOIN (SELECT planning_item_id, plant
+                            FROM (SELECT t.*,RANK() OVER(PARTITION BY planning_item_id ORDER BY ptype) rn
+                                    FROM (SELECT DISTINCT a.planning_item_id,b.plant,b.status,c.pvalue,c.ptype
+                                            FROM rpt_sw_ship_mon_subgeo a,
+                                                 biz_cbom_mtmsbb        b,
+                                                 conf_parameters        c
+                                           WHERE a.cto IS NULL
+                                             AND a.planning_item_id = b.model
+                                             AND c.pdomain = 'STEELWEDGE_VALUME'
+                                             AND b.plant   = c.pvalue) t)
+                           WHERE rn = 1) t2
+               ON t1.planning_item_id = t2.planning_item_id) t1
+       WHERE t2.planning_item_id = t1.planning_item_id AND t2.cto IS NULL)
+       WHERE t2.cto IS NULL;
+       
+     UPDATE rpt_sw_ship_mon_subgeo t2
+        SET (plant,status) =
+        (SELECT plant,status
+        FROM (SELECT DISTINCT t1.planning_item_id,t2.plant,CASE WHEN t2.plant IS NULL THEN 'NO BOM' END status
+                FROM rpt_sw_ship_mon_subgeo t1
+                LEFT JOIN (SELECT planning_item_id, plant
+                            FROM (SELECT t.*,RANK() OVER(PARTITION BY planning_item_id ORDER BY ptype) rn
+                                    FROM (SELECT DISTINCT a.planning_item_id,b.plant,b.status,c.pvalue,c.ptype
+                                            FROM rpt_sw_ship_mon_subgeo a,
+                                                 biz_cbom_sbb        b,
+                                                 conf_parameters        c
+                                           WHERE a.cto IS NOT NULL
+                                             AND a.planning_item_id = b.model
+                                             AND c.pdomain = 'STEELWEDGE_VALUME'
+                                             AND b.plant   = c.pvalue) t)
+                           WHERE rn = 1) t2
+               ON t1.planning_item_id = t2.planning_item_id) t1
+       WHERE t2.planning_item_id = t1.planning_item_id AND t2.cto IS NOT NULL)
+       WHERE t2.cto IS NOT NULL;
+       
+       
+    UPDATE rpt_sw_ship_mon_subgeo t
+       SET status='NO BOM'
+       WHERE plant IS NULL;
+    
+    DELETE FROM rpt_sw_ship_mon_subgeo_his
+    WHERE version=TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd');
+
+    INSERT INTO rpt_sw_ship_mon_subgeo_his
+    SELECT t.*,TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd') FROM rpt_sw_ship_mon_subgeo t;
+    -----------------------------------------------以上是ship---------------------------------------------------------
+    
+    
+                                              
+    P_OUT_EXITCODE := 0;
+    P_OUT_EXITMESS := 'SUCCESS';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+                                                I_EVENT_NAME => :v_full_name,
+                                                I_MODULE     => 'EBGCFE'); 
+                                        
+END;

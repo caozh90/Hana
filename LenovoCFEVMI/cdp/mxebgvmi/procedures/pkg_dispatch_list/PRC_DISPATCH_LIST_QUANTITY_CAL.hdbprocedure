@@ -1,0 +1,89 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_dispatch_list::PRC_DISPATCH_LIST_QUANTITY_CAL" (
+	iv_id VARCHAR(10),  OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_DISPATCH_LIST_QUANTITY_CAL              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/03                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/ 
+	AS
+	v_logic_proc_name   VARCHAR2 (40) := 'PRC_DISPATCH_LIST_QUANTITY_CAL';
+	v_logidi INTEGER := 0;	
+	v_pkg_name          VARCHAR (40)            := 'PKG_DISPATCH_LIST';
+	v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+	v_difference_qty    DECIMAL (13, 3);
+    v_line_qty          DECIMAL (13, 3);
+    v_loi_qty           DECIMAL (13, 3);
+BEGIN
+DECLARE CURSOR CU FOR (SELECT a.pull_header_id, a.pull_line_id, a.dispatch_qty,
+                       b.confirmed_qty, c.pull_qty, c.full_box_qty
+                  FROM dispatch_list a, clear_diff b, pull_line c
+                 WHERE a.pull_line_id = b.pull_line_id
+                   AND b.pull_line_id = c.pull_line_id
+                   AND a.pull_line_id = c.pull_line_id
+                   AND a.status = 'XI_IN_PROCESS');
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- COMMIT;      --comment by Eric Zhou
+	END;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+on_exitcode := -20099;
+
+      FOR i AS CU 
+      DO
+         v_difference_qty := i.confirmed_qty - i.dispatch_qty;
+
+         IF (i.dispatch_qty < i.full_box_qty)
+         THEN
+            
+            IF (i.dispatch_qty > i.pull_qty)
+            THEN
+               v_line_qty := i.pull_qty;
+               v_loi_qty := i.dispatch_qty - i.pull_qty;
+            ELSE
+               
+               v_line_qty := i.dispatch_qty;
+               v_loi_qty := 0;
+            END IF;
+         ELSE
+            v_line_qty := i.pull_qty;
+            v_loi_qty := i.full_box_qty - i.pull_qty;
+         END IF;
+
+         UPDATE dispatch_list
+            SET difference_qty = v_difference_qty,
+                line_qty = v_line_qty,
+                loi_qty = v_loi_qty
+          WHERE pull_line_id = i.pull_line_id
+            AND pull_header_id = i.pull_header_id
+            AND status = 'XI_IN_PROCESS';
+      END FOR;
+
+      --COMMIT;                                 --COMMENT BY Eric Zhou
+      on_exitcode := 0;             
+             
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');            
+END;

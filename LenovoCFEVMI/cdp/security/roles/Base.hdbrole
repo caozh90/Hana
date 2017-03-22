@@ -1,0 +1,165 @@
+role cdp.security.roles::Base 
+extends role cdp.log.roles::Access
+{
+	//基础权利，可以访问、判断权利
+	catalog schema "_SYS_BIC": SELECT, EXECUTE;
+	catalog schema "SECURITY": SELECT,EXECUTE;	  -- add select privilege by xwu 2015/11/6
+				
+	analytic privilege: cdp.security.models:AP_ACCESS.analyticprivilege;	
+	analytic privilege: cdp.security.models:AP_ACCESSUSER.analyticprivilege;
+	analytic privilege: cdp.security.models:AP_SECURITY.analyticprivilege;	
+
+	sql object cdp.security.procedures:getPrivilege.hdbprocedure:EXECUTE;
+	
+		--,'securityBase'
+ 	--,'base role '
+ 	
+// 	sql object cdp.security.procedures:getAuthorizedModuleID.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:getAuthorizedModuleName.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:getSessionUser.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:getSessionModuleID.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:getSessionModuleIDForProc.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:setSessionModuleUser.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:setSessionModuleUserForOData.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:createDataSessionContext.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:getResourceUserByPLANT.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:getResourceUserByCOMMODITY.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:getResourceUserByGEO.hdbprocedure:EXECUTE;
+
+	--,'securityAccess'
+ 	--,'open user management view. '
+	--,'securityUserAdmin'
+ 	--,' user and user group management . '
+ 	
+// 	 sql object cdp.security.procedures:dropUser.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:addExistsUserToModule.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:createInfoUser.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteInfoUser.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:updateInfoUser.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:createInfoGroup.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteInfoGroup.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:updateInfoGroup.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:createMapGroupUser.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteMapGroupUser.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:createInfoUserForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteInfoUserForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:updateInfoUserForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:createInfoGroupForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteInfoGroupForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:updateInfoGroupForOData.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:createMapGroupUserForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteMapGroupUserForOData.hdbprocedure:EXECUTE;
+//	
+//	system privilege :ROLE ADMIN;	
+//	system privilege :USER ADMIN;
+	
+	
+	--,'securityRoleSetup'
+ 	--,' role and role group management . '
+ 	
+// 	 sql object cdp.security.procedures:createInfoRole.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteInfoRole.hdbprocedure:EXECUTE;
+//	--sql object cdp.security.procedures:updateInfoRole.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:createInfoRoleGroup.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteInfoRoleGroup.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:updateInfoRoleGroup.hdbprocedure:EXECUTE;
+//	
+//	
+//	sql object cdp.security.procedures:createMapRoleGroup.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteMapRoleGroup.hdbprocedure:EXECUTE;
+//	
+//	--sql object cdp.security.procedures:createInfoRoleForOData.hdbprocedure:EXECUTE;
+//	--sql object cdp.security.procedures:deleteInfoRoleForOData.hdbprocedure:EXECUTE;
+//	--sql object cdp.security.procedures:updateInfoRoleForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:createInfoRoleGroupForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteInfoRoleGroupForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:updateInfoRoleGroupForOData.hdbprocedure:EXECUTE;
+//	
+//	
+//	sql object cdp.security.procedures:createMapRoleGroupForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteMapRoleGroupForOData.hdbprocedure:EXECUTE;
+//	
+//	--sql object cdp.security.procedures:deleteMapRoleGroupA.hdbprocedure:EXECUTE;
+//	
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_USER" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" :SELECT ;	
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_ROLES" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" :SELECT ,INSERT,DELETE,UPDATE;	
+//	
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" :SELECT ,INSERT,DELETE ;
+//	
+//	catalog sql object "SECURITY"."cdp.security.data::infoRoleGroupSeqId" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::mapRoleGroupRoleSeqId" :SELECT ;
+//	
+//	system privilege :ROLE ADMIN;	
+//	system privilege :USER ADMIN;
+//	catalog sql object "SYS_REPO"."GRANT_ACTIVATED_ROLE": EXECUTE;
+//	catalog sql object "SYS_REPO"."REVOKE_ACTIVATED_ROLE": EXECUTE;
+ 	 
+	--,'securityRoleAdmin'
+ 	--,' grant activated role  . '
+ 	
+// 	 sql object cdp.security.procedures:createMapAll.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteMapAll.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:createMapResourceUser.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteMapResourceUser.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:updateMapResourceUser.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:createMapAllForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteMapAllForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:createMapResourceUserForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteMapResourceUserForOData.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:updateMapResourceUserForOData.hdbprocedure:EXECUTE;
+//	
+//	system privilege :ROLE ADMIN;	
+//	system privilege :USER ADMIN;
+//	
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_USER" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_ROLES" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.MAP_ALL" :SELECT ,INSERT,DELETE ;
+//	
+//	catalog sql object "SECURITY"."cdp.security.data::userManagement.MAP_RESOURCE_USER" :SELECT ,INSERT,DELETE ;
+//	
+//	catalog sql object "SECURITY"."cdp.security.data::mapResourceUserSeqId" :SELECT ;
+//	catalog sql object "SECURITY"."cdp.security.data::mapAllSeqId" :SELECT ;
+//	
+//	catalog sql object "SYS_REPO"."GRANT_ACTIVATED_ROLE": EXECUTE;
+//	catalog sql object "SYS_REPO"."REVOKE_ACTIVATED_ROLE": EXECUTE;
+ 	 
+ 	 --sysAdmin
+// 	 sql object cdp.security.procedures:createModule.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:createMapViewRole.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:createInfoRole.hdbprocedure:EXECUTE;
+//	
+//	sql object cdp.security.procedures:dropInfoRoleGroup.hdbprocedure:EXECUTE;
+//	sql object cdp.security.procedures:deleteInfoRoleByName.hdbprocedure:EXECUTE;
+//	
+//	system privilege :ROLE ADMIN;	
+//	system privilege :USER ADMIN;
+//	catalog sql object "SYS_REPO"."GRANT_ACTIVATED_ROLE": EXECUTE;
+//	catalog sql object "SYS_REPO"."REVOKE_ACTIVATED_ROLE": EXECUTE;	
+//	catalog schema "SECURITY": SELECT,INSERT;
+//		
+//	package cdp.log.service: REPO.READ, REPO.EDIT_NATIVE_OBJECTS, REPO.ACTIVATE_NATIVE_OBJECTS;
+	
+ 	 
+	--,'logAccess'
+ 	--,'to view the log information of related module.'
+	--,'logAdmin'
+ 	--,'can delete log information of related module.'
+}

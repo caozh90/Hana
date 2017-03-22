@@ -1,0 +1,49 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createInfoGroupForOData" (
+IN newInfo "SECURITY"."cdp.security.data::userManagement.InfoGroupT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	aGROUP_ID BIGINT; 
+    aMODULE_ID NVARCHAR(10);       
+    aGROUP_NAME NVARCHAR(200);
+    aCOMMENT NVARCHAR(200);     	
+    aMODULE_NAME NVARCHAR(200);
+BEGIN
+
+/***************************** 
+	create new user group
+	
+
+	example:
+	
+
+)
+ *****************************/
+      
+   
+  
+ select 
+ --	MODULE_ID
+    NAME
+  --  ,MODULE_NAME
+    ,COMMENT 
+  into 
+ 	--aMODULE_ID       
+    aGROUP_NAME
+    --,aMODULE_NAME
+    ,aCOMMENT 
+  from :newInfo;
+
+CALL "SECURITY"."cdp.security.procedures::createInfoGroup" (
+	--aGROUP_ID 
+	--,aMODULE_ID      
+	aGROUP_NAME
+	,aCOMMENT     	
+	--,aMODULE_NAME
+	,errorInfo);
+
+END;

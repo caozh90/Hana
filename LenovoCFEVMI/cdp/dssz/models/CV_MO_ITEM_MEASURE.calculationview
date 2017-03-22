@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_MO_ITEM_MEASURE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="SCRIPT_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_MO_ITEM_MEASURE"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="TARGET" length="64"/>
+        <viewAttribute datatype="VARCHAR" id="JOBNAME" length="64"/>
+        <viewAttribute datatype="VARCHAR" id="JOBRUNID" length="64"/>
+        <viewAttribute datatype="VARCHAR" id="MEASURE_NAME" length="30"/>
+        <viewAttribute datatype="INTEGER" id="MEASURE_VAL"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = select a.target,a.jobname,a.jobrunid,'MO_ITEM_NUM' measure_name,sum(b.mo_item_num) measure_val from 
+(select * from &quot;DS_INFO&quot;.&quot;DS_JOB_RUN_INFO&quot; a where jobname='JOB_X86_SCHEDULE_PULL_MEX') a join 
+(select a.sys_created_date,count(1) mo_item_num from &quot;MXEBGVMI&quot;.&quot;BAK_PCDW_DS_MO&quot; a join &quot;MXEBGVMI&quot;.&quot;MID_MO_BOM&quot; b 
+on a.work_ord_num=b.productionordid
+group by a.sys_created_date) b on b.sys_created_date between a.starttime and a.endtime
+group by a.target,a.jobname,a.jobrunid
+union all
+select a.target,a.jobname,a.jobrunid,'MO_ITEM_NUM' measure_name,sum(b.mo_item_num) measure_val from 
+(select * from &quot;DS_INFO_SZ&quot;.&quot;DS_JOB_RUN_INFO&quot; a where jobname='JOB_X86_SCHEDULE_PULL_SZ') a join 
+(select a.sys_created_date,count(1) mo_item_num from &quot;SZEBGVMI&quot;.&quot;BAK_PCDW_DS_MO&quot; a join &quot;SZEBGVMI&quot;.&quot;MID_MO_BOM&quot; b 
+on a.work_ord_num=b.productionordid
+group by a.sys_created_date) b on b.sys_created_date between a.starttime and a.endtime
+group by a.target,a.jobname,a.jobrunid; 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="TARGET" order="1">
+        <descriptions defaultDescription="TARGET"/>
+        <keyMapping columnObjectName="Script_View" columnName="TARGET"/>
+      </attribute>
+      <attribute id="JOBNAME" order="2">
+        <descriptions defaultDescription="JOBNAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="JOBNAME"/>
+      </attribute>
+      <attribute id="JOBRUNID" order="3">
+        <descriptions defaultDescription="JOBRUNID"/>
+        <keyMapping columnObjectName="Script_View" columnName="JOBRUNID"/>
+      </attribute>
+      <attribute id="MEASURE_NAME" order="4">
+        <descriptions defaultDescription="MEASURE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="MEASURE_NAME"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="MEASURE_VAL" order="5" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MEASURE_VAL"/>
+        <measureMapping columnObjectName="Script_View" columnName="MEASURE_VAL"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

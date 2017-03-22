@@ -1,0 +1,57 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_change_location::updateUiChangeLocation" (
+IN   MATNR NVARCHAR(18),
+IN   MATNR_DESCR NVARCHAR(40),
+IN   LINE_NUM NVARCHAR(10),
+IN   STORAGE_LOC NVARCHAR(40),
+IN   MO_NUM NVARCHAR(12),
+IN   STATUS NVARCHAR(40),
+OUT  result_status int,--0 for error, 1 for success
+OUT  error_message nvarchar(4096)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+	
+	currentUser varchar(60);
+	currentDATE TIMESTAMP;
+	lineNum int;
+	
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+  	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+ 	BEGIN
+ 	    result_status := 0;
+    	error_message := ::SQL_ERROR_MESSAGE;
+ 	END ;
+ 	
+ 	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into currentDATE from dummy;
+	
+	select count(1) into lineNum from "MXEBGVMI"."UI_CHANGE_SL"
+ 	where MATNR = :MATNR and MO_NUM = :MO_NUM and STORAGE_LOC = :STORAGE_LOC;
+ 	if lineNum > 0 then	--update
+ 		UPDATE "MXEBGVMI"."UI_CHANGE_SL" 
+ 		SET
+	 	 MATNR_DESCR = :MATNR_DESCR,
+	 	 LINE_NUM = :LINE_NUM,
+	 	 STATUS = :STATUS,
+	 	 SYS_LAST_MODIFIED_BY = :currentUser,
+	 	 SYS_LAST_MODIFIED_DATE = :currentDATE
+	 	where MATNR = :MATNR and MO_NUM = :MO_NUM and STORAGE_LOC = :STORAGE_LOC;
+ 		result_status := 1;
+ 		error_message := 'Data update successfully';
+ 	else	--insert
+ 	 	INSERT INTO "MXEBGVMI"."UI_CHANGE_SL"
+ 		(MATNR,MATNR_DESCR,LINE_NUM,STORAGE_LOC,MO_NUM,STATUS,SYS_CREATED_DATE,SYS_CREATED_BY)
+ 		VALUES
+ 		(:MATNR,:MATNR_DESCR,:LINE_NUM,:STORAGE_LOC,:MO_NUM,:STATUS,:currentDATE,:currentUser);
+ 		result_status := 1;
+ 		error_message := 'Data update successfully';
+ 	end if;
+	
+	
+END;

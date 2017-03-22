@@ -1,0 +1,138 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::updateUiXoutfrWeight"
+(
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_WEIGHT_T",
+		 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_WEIGHT_T",
+		 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      updateUiXoutfrWeight
+*function    :               
+*input       ：              newInfo&oldInfo
+*output      :      errorInfo            
+*author      :      chris
+*CreateDate  :      2016.5.19
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ;
+    v_WEIGHT			 DECIMAL(15,4);
+    v_resourceExists  BIGINT;
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+	BEGIN
+		aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::updateUiXoutfrWeight error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+		
+		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::updateUiXoutfrWeight'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+	END;
+
+--check the privilege
+	call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_xoutfr_weight::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' || :privilegeExists as  error_message, 
+              privilegeExists as detail from dummy;
+       RETURN ;
+    END IF;
+--start
+ 	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::updateUiXoutfrWeight'
+       ,I_MODULE=>'EBGCFE'
+   	);
+
+-- if no value changed   	
+SELECT COUNT(1) into v_resourceExists 
+FROM :oldInfo a,:newInfo b 
+where a.BRAND = b.BRAND
+and a.FAMILY = b.FAMILY
+and a.MT = b.MT
+and a.ITEM = b.ITEM
+and a.WEIGHT = b.WEIGHT
+;
+if v_resourceExists > 0
+then
+	 --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists'; 
+	 return;
+end if;		
+
+--update into UI_XOUTFR_WEIGHT table
+update "EBGCFE"."UI_XOUTFR_WEIGHT" a set (a.WEIGHT,a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY,a.ACTION) = 
+				(b.WEIGHT,CURRENT_TIMESTAMP,SESSION_USER,'update')
+		FROM :newInfo b 
+		where a.CYCLE = b.CYCLE
+		  and a.PRODUCT_GROUP = b.PRODUCT_GROUP
+		  and a.BRAND = b.BRAND
+		  and a.FAMILY = b.FAMILY 
+		  and a.MT = b.MT
+		  and a.ITEM = b.ITEM; 
+
+--insert log table
+--INSERT INTO PM_UI_SALES_PART_LOG TABLE
+--insert into log
+INSERT into  "EBGCFE"."UI_XOUTFR_WEIGHT_LOG"
+	("CYCLE",
+	"PRODUCT_GROUP",
+	"BRAND",
+	"FAMILY",
+	"MT",
+	"ITEM",
+	"WEIGHT",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+	)
+SELECT
+	'CURRENT',
+	'EBG',
+	a.BRAND,
+	a.FAMILY,
+	a.MT,
+	a.ITEM,
+	a.WEIGHT,
+	CURRENT_TIMESTAMP,
+	SESSION_USER,
+	CURRENT_TIMESTAMP,
+	SESSION_USER,
+	SESSION_USER,
+	'update',
+	CURRENT_TIMESTAMP,
+	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+from :oldInfo a;
+	   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::updateUiXoutfrWeight successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::updateUiXoutfrWeight'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);  
+END;
+

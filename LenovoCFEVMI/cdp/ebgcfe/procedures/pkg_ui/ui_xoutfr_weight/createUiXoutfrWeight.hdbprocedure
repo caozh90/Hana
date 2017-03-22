@@ -1,0 +1,190 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::createUiXoutfrWeight" 
+( 
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_WEIGHT_T"
+    ,OUT  errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA
+	AS  
+	   aI_DETAIL 	     NVARCHAR(300) :='';
+	   alogide 			 INTEGER :=0;
+	   privilegeExists   NVARCHAR(300)  ; 
+	   v_BRAND           NVARCHAR(40);
+	   v_FAMILY	         NVARCHAR(40);
+	   v_MT              NVARCHAR(40);
+	   v_ITEM             NVARCHAR(40);
+	   v_WEIGHT			 DECIMAL(15,4);
+	   v_resourceExists  BIGINT;
+	   VALIDATE0		 BIGINT;
+	   VALIDATE1		 BIGINT;
+	   VALIDATE2		 BIGINT;
+	    		
+BEGIN
+/***************************** 
+*name       :    createUiXoutfrWeight
+*function   :               
+*input      :    newInfo
+*output     :    errorInfo            
+*author     :    chris
+*DeleteDate :                  
+*UpdateDate :    
+*CreateDate :    2016.05.19
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+	BEGIN
+		aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::createUiXoutfrWeight error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+		
+		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::createUiXoutfrWeight'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+	END;
+
+--check the privilege
+	call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_xoutfr_weight::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' || :privilegeExists as  error_message, 
+              privilegeExists as detail from dummy;
+       RETURN ;
+    END IF;
+--start
+ 	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::createUiXoutfrWeight'
+       ,I_MODULE=>'EBGCFE'
+   	);
+
+ 
+	SELECT BRAND,FAMILY,MT,ITEM,WEIGHT
+ 		INTO v_BRAND,v_FAMILY,v_MT,v_ITEM,v_WEIGHT
+ 		FROM :newinfo;
+ 		
+-- check brand,family into VALIDATE0, VALIDATE1
+if v_MT = 'N/A'	and v_ITEM = 'N/A' then
+	SELECT COUNT(*) INTO VALIDATE0 
+ 	FROM   "EBGCFE"."UI_PRODFAMILY"
+ 	WHERE UPPER(BRAND) = UPPER(:v_BRAND);
+	 IF VALIDATE0 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'BRAND:' || :v_BRAND ||' NOT  EXIST IN UI_PRODFAMILY' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;
+     
+    SELECT COUNT(*) INTO VALIDATE1 
+ 	FROM   "EBGCFE"."UI_PRODFAMILY"
+ 	WHERE UPPER(PROD_FAMILY) = UPPER(:v_FAMILY) AND UPPER(BRAND) = UPPER(:v_BRAND);
+	 IF VALIDATE1 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'FAMILY:' || :v_FAMILY ||' NOT  EXIST IN UI_PRODFAMILY' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;
+end if;	
+
+-- check mt into VALIDATE0
+if v_BRAND = 'N/A'	and v_FAMILY = 'N/A' and v_ITEM = 'N/A' then
+	SELECT COUNT(*) INTO VALIDATE0 
+ 	FROM   "EBGCFE"."UI_MACHINETYPE"
+ 	WHERE UPPER(MACHINETYPE) = UPPER(:v_MT);
+	 IF VALIDATE0 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'MACHINE_TYPE:' || :v_MT ||' NOT  EXIST IN UI_MACHINETYPE' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;
+end if;	
+
+-- check item into VALIDATE0
+if v_BRAND = 'N/A'	and v_FAMILY = 'N/A' and v_MT = 'N/A' then
+	SELECT COUNT(*) INTO VALIDATE0 
+ 	FROM   "EBGCFE"."UI_ITEM"
+ 	WHERE UPPER(ITEM) = UPPER(:v_ITEM) AND ITEM_TYPE IN ('MTM','OPTION','BUNDLE','SBB') ;
+	 IF VALIDATE0 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'ITEM:' || :v_ITEM ||' NOT  EXIST IN UI_ITEM' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;
+end if;	
+
+ 
+--check the record EXIST  
+	SELECT count(*) INTO VALIDATE2
+ 		from  "EBGCFE"."UI_XOUTFR_WEIGHT"
+ 		WHERE BRAND = :v_BRAND AND FAMILY = :v_FAMILY AND MT = :v_MT AND ITEM = :v_ITEM;
+ 	IF	VALIDATE2 > 0
+ 	THEN
+   		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+   		--RETURN;
+   		-- errorinfo = select 400 as http_status_code, 
+          --  'the record exists' error_message, 
+            --'' detail from dummy;        
+        --RETURN;
+   	END IF;
+
+ ---INSERT INTO UI_XOUTFR_WEIGHT  
+
+	  insert into "EBGCFE"."UI_XOUTFR_WEIGHT"
+	            (CYCLE,PRODUCT_GROUP,BRAND,FAMILY,MT,ITEM,WEIGHT,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION)  
+	  	values ('CURRENT','EBG',:v_BRAND,:v_FAMILY,:v_MT,UPPER (:V_ITEM),:v_WEIGHT,CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER,'insert');
+--insert into log
+INSERT into  "EBGCFE"."UI_XOUTFR_WEIGHT_LOG"
+	("CYCLE",
+	"PRODUCT_GROUP",
+	"BRAND",
+	"FAMILY",
+	"MT",
+	"ITEM",
+	"WEIGHT",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+	)
+SELECT
+	'CURRENT',
+	'EBG',
+	a.BRAND,
+	a.FAMILY,
+	a.MT,
+	a.ITEM,
+	a.WEIGHT,
+	CURRENT_TIMESTAMP,
+	SESSION_USER,
+	CURRENT_TIMESTAMP,
+	SESSION_USER,
+	SESSION_USER,
+	'insert',
+	CURRENT_TIMESTAMP,
+	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+from :newinfo a;
+	   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::createUiXoutfrWeight successfully inserted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::createUiXoutfrWeight'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);  
+END;

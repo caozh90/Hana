@@ -1,0 +1,115 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_ECC_BOM" ( 
+  OUT PO_RETURNCODE DECIMAL 
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	AS
+   /************************************************************************
+   *name        : PRC_ECC_BOM
+   *function    : Insert BOM data (ECC_BOM and ECC_STKO)
+   *input       : -
+   *output      : PO_RETURNCODE : return code
+   *author      : Leonard Ling    
+   *CreateDate  : 2015-01-14
+   *UpdateDate  :              
+   *************************************************************************/
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+BEGIN
+	--exception
+	 DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	 BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      	vCode := ::SQL_ERROR_CODE;
+      INSERT INTO PCDW_PROC_LOG
+         (EVENTTIME,
+          EVENTNAME,
+          SUBEVENT,
+          MSGCODE,
+          EVENTMSG,
+          EVENTTYPE,
+          DATASOURCE,
+          DATADEST,
+          EVENTDESCR)
+      VALUES
+         (CURRENT_TIMESTAMP,
+          'PRC_ECC_BOM',
+          'OTHERS ERROR',
+          :vCode,
+          :vMsg,
+          '',
+          '',
+          '',
+          'END');
+      exec 'COMMIT'; 	 
+     END;
+
+   -- log process start
+   INSERT INTO PCDW_PROC_LOG
+   VALUES
+      (CURRENT_TIMESTAMP,
+       'PRC_ECC_BOM',
+       '',
+       NULL,
+       '',
+       '',
+       '',
+       '',
+       'START');
+   --EXEC 'COMMIT';
+   PO_RETURNCODE := 1;
+   
+   -- Process BOM data
+   DELETE FROM ecc_bom A WHERE EXISTS (SELECT 1 FROM  ecc_bom_global B
+                               WHERE A.name=B.name AND A.werks=B.werks );
+                               
+   --BACK UP
+   DELETE FROM BAK_ECC_BOM
+   WHERE DAYS_BETWEEN(SYS_CREATED_DATE,CURRENT_TIMESTAMP)>90;                               
+      
+   INSERT INTO BAK_ECC_BOM (name, stlnr, werks, idnrk, menge, sanko, datuv, datub, alpgr, alprf, ewahr,
+    sanka, od, stlst, value, text1, text2, sys_created_date, sys_created_by, sys_last_modified_by, sys_last_modified_date)
+    ( SELECT name, stlnr, werks, idnrk, menge, sanko, datuv, datub, alpgr, alprf, ewahr,
+    sanka, od, stlst, value, text1, text2, sys_created_date, sys_created_by, sys_last_modified_by, sys_last_modified_date 
+    FROM ecc_bom_global ); 
+                               
+   INSERT INTO ecc_bom (name, stlnr, werks, idnrk, menge, sanko, datuv, datub, alpgr, alprf, ewahr,
+    sanka, od, stlst, value, text1, text2, sys_created_date, sys_created_by, sys_last_modified_by, sys_last_modified_date)
+    ( SELECT name, stlnr, werks, idnrk, menge, sanko, datuv, datub, alpgr, alprf, ewahr,
+    sanka, od, stlst, value, text1, text2, sys_created_date, sys_created_by, sys_last_modified_by, sys_last_modified_date 
+    FROM ecc_bom_global );
+   --EXEC 'COMMIT';
+   
+   DELETE FROM ecc_stko where stlnr in (SELECT DISTINCT stlnr FROM ecc_stko_global);
+   INSERT INTO ecc_stko ( stlnr, datuv, datub, aennr, stlal, lkenz, loekz, andat, aedat, stlst, sys_created_date, 
+   sys_created_by, sys_last_modified_by, sys_last_modified_date)
+      ( SELECT DISTINCT stlnr, datuv, datub, aennr, stlal, lkenz, loekz, andat, aedat, stlst, sys_created_date, 
+      sys_created_by, sys_last_modified_by, sys_last_modified_date  FROM ecc_stko_global );
+   --EXEC 'COMMIT';   
+   
+   PO_RETURNCODE := 0;
+
+   -- log process end
+   INSERT INTO PCDW_PROC_LOG
+      (EVENTTIME,
+       EVENTNAME,
+       SUBEVENT,
+       MSGCODE,
+       EVENTMSG,
+       EVENTTYPE,
+       DATASOURCE,
+       DATADEST,
+       EVENTDESCR)
+   VALUES
+      (CURRENT_TIMESTAMP,
+       'PRC_ECC_BOM',
+       'SUCCESS',
+       :vCode,
+       :vMsg,
+       '',
+       '',
+       '',
+       'END');
+   --EXEC 'COMMIT';
+END;

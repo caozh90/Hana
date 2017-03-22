@@ -1,0 +1,75 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_frt_ph_err"
+(
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FRT_PH_E"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/***************************** 
+*name        :    ui_frt_ph_err
+*function    :               
+*input       :    
+*output      :              
+*author      :    bianzh1
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2017.02.8
+ *****************************/
+	AS
+	business_code varchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'UI_FRT_PH';
+	currentUser varchar(100);
+	create_DATE LONGDATE;
+	privilegeExists  NVARCHAR(300)  ;
+	wrongnums INT;
+BEGIN
+    --添加business信息
+    select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	--business_code := :SEQ;
+		
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_DATE INTO create_DATE FROM DUMMY;
+	
+	-- passing wrong total numbers
+	SELECT count(1) into wrongnums
+	 	FROM :newInfo;	
+	 	
+  	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+		:table_name || :business_code,:business_name,0,:wrongnums,:table_name);   
+			
+	--记录upload的错误
+    INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+    SELECT "EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+           :table_name || SEQ,
+           position,
+           error_message,
+           :table_name,
+           business_name
+    FROM :newInfo;
+     	
+    --详细记录upload的数据信息
+    insert into "EBGCFE"."UI_FRT_PH_ERR_DETAIL"( 
+                                                CODE,	POSITION,
+     											CYCLE,PRODUCT_GROUP,
+												PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+												M1,M2,M3,M4,M5,
+												M6,M7,M8,M9,M10,
+												M11,M12,M13,M14,M15,
+												M16,M17,M18,
+												SYS_CREATED_DATE,
+												SYS_CREATED_BY
+												)
+	SELECT :table_name || business_code,  position,
+			CYCLE,PRODUCT_GROUP,
+			PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+			M1,M2,M3,M4,M5,
+			M6,M7,M8,M9,M10,
+			M11,M12,M13,M14,M15,
+			M16,M17,M18,
+			:create_DATE,
+		    :currentUser  
+	FROM :newInfo;
+
+END;

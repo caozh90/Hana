@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cube:cube xmlns:Cube="http://www.sap.com/ndb/BiModelCube.ecore" schemaVersion="1.5" id="AN_CONF_SITEMASTER" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled">
+  <descriptions defaultDescription="AN_CONF_SITEMASTER"/>
+  <localVariables/>
+  <privateMeasureGroup id="MeasureGroup">
+    <attributes>
+      <attribute id="SITEID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SITEID"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="CONF_SITEMASTER" columnName="SITEID"/>
+      </attribute>
+      <attribute id="PHYSICALPLANT" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PHYSICALPLANT"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="CONF_SITEMASTER" columnName="PHYSICALPLANT"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies>
+        <tableProxy centralTable="true">
+          <table schemaName="MXEBGVMI" columnObjectName="CONF_SITEMASTER"/>
+        </tableProxy>
+      </tableProxies>
+      <joins/>
+      <layout>
+        <shapes>
+          <shape modelObjectName="CONF_SITEMASTER" modelObjectNameSpace="MXEBGVMI" modelObjectType="catalog">
+            <upperLeftCorner x="70" y="30"/>
+          </shape>
+        </shapes>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="SITEDESC" order="3" aggregationType="max" measureType="simple">
+        <descriptions defaultDescription="SITEDESC"/>
+        <measureMapping schemaName="MXEBGVMI" columnObjectName="CONF_SITEMASTER" columnName="SITEDESC"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <sharedDimensions/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="MEASURE_GROUP" modelObjectType="repository">
+          <upperLeftCorner x="300" y="200"/>
+        </shape>
+        <shape modelObjectName="LogicalView" modelObjectNameSpace="MeasureGroup" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateMeasureGroup>
+</Cube:cube>

@@ -1,0 +1,111 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures::PRC_DATA_SERVICE_EXE_CHECK" (
+	IN PROCESS_NAME NVARCHAR(100),
+	OUT p_out_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+/************************************************************************
+*name      : PRC_DATA_SERVICE_EXE_CHECK              --函数名
+*function    :               --函数功能
+*input     ：  p_wfname              --输入参数
+*output     : p_out_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2015/03/09                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+************************************************************************/	
+		v_prc_name VARCHAR(70) := 'PRC_DATA_SERVICE_EXE_CHECK';	
+		gv_logic_name    VARCHAR2 (40)  := 'cdp.szebgvmi.procedures';
+	    v_full_name VARCHAR(100) := gv_logic_name||'.'||v_prc_name;
+	    v_count INTEGER := 0;
+	    v_logidi INTEGER := 0;    
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+		 p_out_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||'Failure');                                                  
+      
+END;
+p_out_exitcode := -1;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>'Start');
+ 
+if PROCESS_NAME = 'CONFIRMED_PULL_J_SZ' or PROCESS_NAME = 'RESUBMIT_CONFIRMED_PULL_TO_ECC_SZ'
+then
+	select count(*) into v_count from Clear_diff where Status='COMPLETED' and DIFFERENCE_QTY <> 0.0;
+elseif PROCESS_NAME = 'MANUAL_PULL_SZ'	
+then
+	select count(*) into v_count from Pull_Line where STATUS='COMPLETED' and PULL_TYPE IN ('MANUAL',
+                              'NORMAL',
+                              'EXCESS',
+                              'SHIPPING',
+                              'SHIPPING_GROUP');
+    if v_count <= 0
+    then
+    	select count(*) into v_count from UI_MANUAL_PULL where STATUS = 'NEW' and pull_type in('MANUAL', 'SHIPPING_GROUP', 'MANUAL_PACKAGING');
+    end if;                              
+	
+elseif PROCESS_NAME = 'RESUBMIT_PULL_TO_ECC_SZ'
+then
+	select count(*) into v_count from Pull_Line where STATUS='COMPLETED' and PULL_TYPE IN ('MANUAL',
+                              'NORMAL',
+                              'EXCESS',
+                              'SHIPPING',
+                              'SHIPPING_GROUP');
+elseif PROCESS_NAME = 'BALANCE_PULL_TO_ECC_SZ'
+then
+   select count(*) into v_count from BALANCE_DISPATCH where Status='CONFIRM';                          
+elseif PROCESS_NAME = 'LINE_TO_EXCESS_TO_ECC_SZ'
+then
+   select count(*) into v_count from SPECIAL_DISPATCH where Status='CONFIRM'; 	
+elseif PROCESS_NAME = 'AUTO_CONFIRM_DL_SZ' or PROCESS_NAME = 'CONFIRMED_DISPATCH_P_SZ'
+then
+   select count(*) into v_count from DISPATCH_LIST where Status='CONFIRM' ;--and UPPER (PULL_TYPE) IN ('EXCESS', 'SHIPPING', 'SHIPPING_GROUP'); 	   
+elseif PROCESS_NAME = 'NORMAL_DL_P_SZ'
+then
+	select count(*) into v_count from DISPATCH_LIST where Status='XI_IN_PROCESS'
+		and sys_source in ('FP','CSE')
+        AND dest_storage_loc NOT IN (select storage_location from conf_wahrehouse_info where owner = 'FG')
+        AND pull_type <> 'PACKAGING';
+elseif PROCESS_NAME = 'OPTION_DL_P_SZ'
+then
+   select count(*) into v_count from DISPATCH_LIST where Status='XI_IN_PROCESS'
+   AND (  sys_source = 'CSO'
+                 OR sys_source = 'DF'
+                 OR dest_storage_loc IN (
+                    select storage_location from conf_wahrehouse_info 
+                    where owner='FG')
+                );
+elseif PROCESS_NAME = 'LOI_GR_SZ ' or PROCESS_NAME = 'LOI_GR_RESUBMIT_SZ'
+then
+   select count(*) into v_count from LOI_GR where Status= 'NEW';
+elseif PROCESS_NAME = 'SOI_GR_SZ  ' or PROCESS_NAME = 'SOI_GR_RESUBMIT_SZ'
+then
+   select count(*) into v_count from SOI_GR where Status= 'NEW';
+    elseif PROCESS_NAME = 'CHANGE_SL_SZ'	--2016.6.27 Change MO SL automatically by added
+then
+	select count(*) into v_count from UI_Change_SL where STATUS='NEW';    --2016.6.27 Change MO SL automatically  by added
+else
+	v_count := 0; --不存在传入参数所对应的流程   
+end if;
+             
+if v_count > 0
+then
+	p_out_exitcode := 1;
+else
+    p_out_exitcode := 0;
+end if;  
+--p_out_exitcode := 1;        
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>'Success');                    
+END;

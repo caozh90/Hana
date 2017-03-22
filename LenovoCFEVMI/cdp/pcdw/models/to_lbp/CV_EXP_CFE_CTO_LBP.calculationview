@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_EXP_CFE_CTO_LBP" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_EXP_CFE_CTO_LBP"/>
+  <defaultSchema schemaName="PCDW"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="VARIANT" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SALES_ORG" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SALES_OFFICE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCTHIER_1" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCTHIER_2" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCTHIER_3" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCTHIER_4" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="CURRENCY_NAME" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="PRICE_UNIT" length="20"/>
+        <viewAttribute datatype="DECIMAL" id="M1" length="15" scale="2"/>
+        <viewAttribute datatype="TIMESTAMP" id="SYS_CREATED_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCT_GROUP" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="FC" length="40"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+BEGIN
+DECLARE v_cycle_name VARCHAR(20); 
+--Modified by Zhoubinbin 20160921, output cost in USD for LAS subgeo
+SELECT cycle_name INTO v_cycle_name FROM ebgcfe.ui_control_point WHERE control_point='WRITE_BACK';
+ 	 var_out = 
+ 	 	SELECT 
+ 	 		m.variant,
+ 	 		m.sales_org,
+ 	 		m.sales_office,
+ 	 		m.producthier_1,
+ 	 		m.producthier_2,
+ 	 		m.producthier_3,
+ 	 		m.producthier_4,
+ 	 		MAP(r.subgeo, 'LAS', m.currency_name, e.currency_name) as currency_name,
+ 	 		m.price_unit,
+ 	 		MAP(r.subgeo, 'LAS', m.m1, m.m1*e.m1) AS m1,
+ 	 		m.sys_created_date,
+ 	 		m.product_group,
+ 	 		CASE WHEN LOCATE(f.fc, '_') > 0 THEN LEFT(f.fc, LOCATE(f.fc,'_')-1) ELSE f.fc END fc
+		FROM pcdw.exp_cto_salesoffice_pre m,
+		     pcdw.exp_cfe_exchange_rate_lastcycle e,
+		     (SELECT DISTINCT product_group, sales_org, sales_office, country, currency,SUBSTR(cycle,1,6) AS cycle 
+		        FROM ebgcfe.ui_country_salesorg_mapping_his) h,
+		     (SELECT DISTINCT varcond,fc FROM ebgcfe.biz_fcsbbmap_his
+		     	WHERE cycle = :v_cycle_name) f,
+		      ebgcfe.ui_region r
+		WHERE m.cost_type         = 'TOTL'
+		  AND m.variant           = f.varcond
+		  AND m.sales_org         = h.sales_org
+		  AND m.sales_office      = h.sales_office
+		  AND m.cycle             =  h.cycle
+		  AND m.product_group     = e.product_group
+		  AND h.currency          = e.currency_name
+		  AND h.product_group     = r.product_group
+		  AND h.country           = r.country;
+		  
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="VARIANT" order="1">
+        <descriptions defaultDescription="VARIANT"/>
+        <keyMapping columnObjectName="Script_View" columnName="VARIANT"/>
+      </attribute>
+      <attribute id="SALES_ORG" order="2">
+        <descriptions defaultDescription="SALES_ORG"/>
+        <keyMapping columnObjectName="Script_View" columnName="SALES_ORG"/>
+      </attribute>
+      <attribute id="SALES_OFFICE" order="3">
+        <descriptions defaultDescription="SALES_OFFICE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SALES_OFFICE"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_1" order="4">
+        <descriptions defaultDescription="PRODUCTHIER_1"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTHIER_1"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_2" order="5">
+        <descriptions defaultDescription="PRODUCTHIER_2"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTHIER_2"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_3" order="6">
+        <descriptions defaultDescription="PRODUCTHIER_3"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTHIER_3"/>
+      </attribute>
+      <attribute id="PRODUCTHIER_4" order="7">
+        <descriptions defaultDescription="PRODUCTHIER_4"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTHIER_4"/>
+      </attribute>
+      <attribute id="CURRENCY_NAME" order="8">
+        <descriptions defaultDescription="CURRENCY_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="CURRENCY_NAME"/>
+      </attribute>
+      <attribute id="PRICE_UNIT" order="9">
+        <descriptions defaultDescription="PRICE_UNIT"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRICE_UNIT"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="12">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="FC" order="13">
+        <descriptions defaultDescription="FC"/>
+        <keyMapping columnObjectName="Script_View" columnName="FC"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="M1" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M1"/>
+        <measureMapping columnObjectName="Script_View" columnName="M1"/>
+      </measure>
+      <measure id="SYS_CREATED_DATE" order="11" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <measureMapping columnObjectName="Script_View" columnName="SYS_CREATED_DATE"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

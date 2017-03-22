@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_RPT_COST_FLAG" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_RPT_COST_FLAG"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="RPT_COST_FLAG" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="RPT_COST_FLAG"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="VK"/>
+        <viewAttribute id="C"/>
+        <viewAttribute id="SBB"/>
+        <viewAttribute id="SBB_DESC"/>
+        <viewAttribute id="SBB_TYPE"/>
+        <viewAttribute id="SYS_CREATED_DATE"/>
+        <viewAttribute id="SYS_CREATED_BY"/>
+        <viewAttribute id="COST_FLAG"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#RPT_COST_FLAG">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VK" source="VK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="C" source="C"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SBB" source="SBB"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SBB_DESC" source="SBB_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SBB_TYPE" source="SBB_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_BY" source="SYS_CREATED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COST_FLAG" source="COST_FLAG"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="CYCLE" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="VK" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VK"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VK"/>
+      </attribute>
+      <attribute id="C" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="C"/>
+        <keyMapping columnObjectName="Projection_1" columnName="C"/>
+      </attribute>
+      <attribute id="SBB" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SBB"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SBB"/>
+      </attribute>
+      <attribute id="SBB_DESC" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SBB_DESC"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SBB_DESC"/>
+      </attribute>
+      <attribute id="SBB_TYPE" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SBB_TYPE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SBB_TYPE"/>
+      </attribute>
+      <attribute id="SYS_CREATED_DATE_RAW" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_DATE_RAW"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SYS_CREATED_DATE"/>
+      </attribute>
+      <attribute id="SYS_CREATED_BY" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_BY"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SYS_CREATED_BY"/>
+      </attribute>
+      <attribute id="COST_FLAG" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COST_FLAG"/>
+        <keyMapping columnObjectName="Projection_1" columnName="COST_FLAG"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="SYS_CREATED_DATE" hidden="false" order="9" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_CREATED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,394 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_sales_report"
+(
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.PM_UI_SALES_REPORT_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+/************************************************************************
+*name        :      ui_pm_sales_report
+*function    :      upload data ui_mfi_ppn          
+*input       ：              business_name etc
+*output      :                
+*author      :      leon Bian
+*CreateDate  :      2016.3.8
+*UpdateDate  :        
+*************************************************************************/ 
+
+	AS
+	path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_pm_sales_report';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	error_num int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'PM_UI_SALES_PART';
+	validate int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+    END; 
+       
+	--procedure begin
+	
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	PART_NO_ERROR = 
+	SELECT PROFIT_CENTER,
+		TIME_FENCE,
+		'CURRENT' "TIME_FENCE_TYPE",
+		FUNCTION_TYPE,
+		SALES_DATE,
+		OEM_NAME,
+		PART_NO,
+		PART_DESC,
+		SALES_QTY,
+		SALES_TOTAL_INCOMING,
+		SALES_TOTAL_COST,
+		SALES_TOTAL_MASK,
+ 		'"PART NO"::'||PART_NO||' not exist in ui_item' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE NOT EXISTS ( select 1 
+						from UI_ITEM 
+							where ITEM = PART_NO );
+	
+	
+	OEM_NAME_ERROR = 
+	SELECT PROFIT_CENTER,
+		TIME_FENCE,
+		'CURRENT' "TIME_FENCE_TYPE",
+		FUNCTION_TYPE,
+		SALES_DATE,
+		OEM_NAME,
+		PART_NO,
+		PART_DESC,
+		SALES_QTY,
+		SALES_TOTAL_INCOMING,
+		SALES_TOTAL_COST,
+		SALES_TOTAL_MASK,
+ 		'"OEM_NAME"::'||OEM_NAME||' is illegal' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE NOT EXISTS ( select 1 
+						from CONF_PARAMETERS 
+							where pdomain='PRICE_MASK' 
+							and pname='OEM_NAME' 
+							and pvalue = a.OEM_NAME );
+	
+	TIME_FENCE_ERROR = 
+	SELECT PROFIT_CENTER,
+		TIME_FENCE,
+		'CURRENT' "TIME_FENCE_TYPE",
+		FUNCTION_TYPE,
+		SALES_DATE,
+		OEM_NAME,
+		PART_NO,
+		PART_DESC,
+		SALES_QTY,
+		SALES_TOTAL_INCOMING,
+		SALES_TOTAL_COST,
+		SALES_TOTAL_MASK,
+ 		'"TIME_FENCE"::'||TIME_FENCE||' is illegal' "ERROR_MESSAGE",
+ 		business_name,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE NOT EXISTS ( select 1 
+						from PM_UI_TIME_FENCE 
+							where TIME_FENCE = a.TIME_FENCE 
+		                    AND OEM_NAME      = a.OEM_NAME
+		                    AND PROFIT_CENTER = a.PROFIT_CENTER
+		                    AND TIME_FENCE_TYPE = 'CURRENT'
+							 );
+	
+	FUNCTION_TYPE_ERROR = 
+	SELECT PROFIT_CENTER,
+		TIME_FENCE,
+		'CURRENT' "TIME_FENCE_TYPE",
+		FUNCTION_TYPE,
+		SALES_DATE,
+		OEM_NAME,
+		PART_NO,
+		PART_DESC,
+		SALES_QTY,
+		SALES_TOTAL_INCOMING,
+		SALES_TOTAL_COST,
+		SALES_TOTAL_MASK,
+ 		'"FUNCTION_TYPE"::'||FUNCTION_TYPE||' is illegal' "ERROR_MESSAGE",
+ 		business_name,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE NOT EXISTS ( select 1 
+						from CONF_PARAMETERS 
+							where pdomain='PRICE_MASK' 
+							and pname='FUNCTION_TYPE' 
+							and pvalue = a.FUNCTION_TYPE );
+	
+	PROFIT_CENTER_ERROR = 
+	SELECT PROFIT_CENTER,
+		TIME_FENCE,
+		'CURRENT' "TIME_FENCE_TYPE",
+		FUNCTION_TYPE,
+		SALES_DATE,
+		OEM_NAME,
+		PART_NO,
+		PART_DESC,
+		SALES_QTY,
+		SALES_TOTAL_INCOMING,
+		SALES_TOTAL_COST,
+		SALES_TOTAL_MASK,
+ 		'"PROFIT_CENTER"::'||PROFIT_CENTER||' is illegal' "ERROR_MESSAGE",
+ 		business_name,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE NOT EXISTS ( select 1 
+						from CONF_PARAMETERS 
+							where pdomain='PRICE_MASK' 
+							and pname='PROFIT_CENTER' 
+							and pvalue = a.PROFIT_CENTER );	
+							
+	ERROR_INFOR = 
+	SELECT PROFIT_CENTER,
+		TIME_FENCE,
+		FUNCTION_TYPE,
+		TIME_FENCE_TYPE,
+		SALES_DATE,
+		OEM_NAME,
+		PART_NO,
+		PART_DESC,
+		SALES_QTY,
+		SALES_TOTAL_INCOMING,
+		SALES_TOTAL_COST,
+		SALES_TOTAL_MASK,
+ 		STRING_AGG(ERROR_MESSAGE,',') "ERROR_MESSAGE",
+ 		business_name,
+ 		SEQ,
+ 		POSITION
+	FROM
+	(SELECT * 
+		FROM :OEM_NAME_ERROR
+	 UNION
+	 SELECT * 
+		FROM :TIME_FENCE_ERROR
+	 UNION
+	 SELECT * 
+		FROM :FUNCTION_TYPE_ERROR
+	 UNION
+	 SELECT * 
+		FROM :PROFIT_CENTER_ERROR
+	 UNION
+	 SELECT * 
+		FROM :PART_NO_ERROR)
+	GROUP BY PROFIT_CENTER,
+			TIME_FENCE,
+			FUNCTION_TYPE,
+			TIME_FENCE_TYPE,
+			SALES_DATE,
+			OEM_NAME,
+			PART_NO,
+			PART_DESC,
+			SALES_QTY,
+			SALES_TOTAL_INCOMING,
+			SALES_TOTAL_COST,
+			SALES_TOTAL_MASK,
+	 		business_name,
+	 		SEQ,
+	 		POSITION;
+
+	SELECT count(1) into error_num FROM :ERROR_INFOR;
+	
+	--remove error records
+	if error_num >0 then 
+	TMP_TABLE = SELECT 'EBG' "PRODUCT_GROUP",
+			   a.PROFIT_CENTER,
+			   a.TIME_FENCE,
+			   a.FUNCTION_TYPE,
+			   a.SALES_DATE,
+			   a.OEM_NAME,
+			   a.PART_NO,
+			   a.PART_DESC,
+			   a.SALES_QTY,
+			   a.SALES_TOTAL_INCOMING,
+			   a.SALES_TOTAL_COST,
+			   a.SALES_TOTAL_MASK,
+			   "EBGCFE"."cdp.ebgcfe.sequences::upload_pm_ui_sales_report".NEXTVAL "DUMMY_PK",
+			   :currentUser "SYS_CREATED_BY",
+			   :create_time "SYS_CREATED_DATE",
+			   :currentUser "SYS_LAST_MODIFIED_BY",
+			   :create_time "SYS_LAST_MODIFIED_DATE"
+		FROM :newInfo as a
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM :ERROR_INFOR
+			WHERE PROFIT_CENTER = a.PROFIT_CENTER
+			and TIME_FENCE = a.TIME_FENCE
+			and FUNCTION_TYPE = a.FUNCTION_TYPE
+			and SALES_DATE = a.SALES_DATE
+			and OEM_NAME = a.OEM_NAME
+			and PART_NO = a.PART_NO
+			and PART_DESC = a.PART_DESC
+			and SALES_QTY = a.SALES_QTY
+			and SALES_TOTAL_INCOMING = a.SALES_TOTAL_INCOMING
+			and SALES_TOTAL_COST = a.SALES_TOTAL_COST
+			and SALES_TOTAL_MASK = a.SALES_TOTAL_MASK
+		);
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_sales_report_err"(:ERROR_INFOR);
+	else
+		TMP_TABLE = SELECT 'EBG' "PRODUCT_GROUP",
+			   PROFIT_CENTER,
+			   TIME_FENCE,
+			   FUNCTION_TYPE,
+			   SALES_DATE,
+			   OEM_NAME,
+			   PART_NO,
+			   PART_DESC,
+			   SALES_QTY,
+			   SALES_TOTAL_INCOMING,
+			   SALES_TOTAL_COST,
+			   SALES_TOTAL_MASK,
+			   "EBGCFE"."cdp.ebgcfe.sequences::upload_pm_ui_sales_report".NEXTVAL "DUMMY_PK",
+			   :currentUser "SYS_CREATED_BY",
+			   :create_time "SYS_CREATED_DATE",
+			   :currentUser "SYS_LAST_MODIFIED_BY",
+			   :create_time "SYS_LAST_MODIFIED_DATE"
+		FROM :newInfo;
+	END IF;
+	
+	SELECT count(1) into n
+	 	FROM :TMP_TABLE;	 
+	if n > 0 then
+		DELETE FROM "EBGCFE"."PM_UI_SALES_PART" t1
+		 WHERE EXISTS(SELECT 1 FROM :TMP_TABLE t2
+		               WHERE t2.time_fence    = t1.time_fence
+		                 AND t2.oem_name      = t1.oem_name
+		                 AND t2.profit_center = t1.profit_center); 
+		
+		INSERT INTO "EBGCFE"."PM_UI_SALES_PART"(
+			PRODUCT_GROUP,
+			PROFIT_CENTER,
+			TIME_FENCE,
+			TIME_FENCE_TYPE,
+			FUNCTION_TYPE,
+			SALES_DATE,
+			OEM_NAME,
+			PART_NO,
+			PART_DESC,
+			SALES_QTY,
+			SALES_TOTAL_INCOMING,
+			SALES_TOTAL_COST,
+			SALES_TOTAL_MASK,
+			DUMMY_PK,
+			SYS_CREATED_BY,
+			SYS_CREATED_DATE,
+			SYS_LAST_MODIFIED_BY,
+			SYS_LAST_MODIFIED_DATE
+			)
+			SELECT a.PRODUCT_GROUP,
+				   a.PROFIT_CENTER,
+				   a.TIME_FENCE,
+				   'CURRENT',
+				   a.FUNCTION_TYPE,
+				   a.SALES_DATE,
+				   a.OEM_NAME,
+				   a.PART_NO,
+				   --a.PART_DESC,
+				   b.ITEM_DESC,
+				   a.SALES_QTY,
+				   a.SALES_TOTAL_INCOMING,
+				   a.SALES_TOTAL_COST,
+				   a.SALES_TOTAL_MASK,
+				   a.DUMMY_PK,
+				   a.SYS_CREATED_BY,
+			       a.SYS_CREATED_DATE,
+				   a.SYS_LAST_MODIFIED_BY,
+				   a.SYS_LAST_MODIFIED_DATE
+			FROM :TMP_TABLE as a
+			INNER JOIN UI_ITEM b --ADD join by zhaodan1 2016/08/30
+			ON a.PART_NO = b.ITEM;
+			
+	
+		 	
+		 	--insert操作需要写入日志
+	 	insert into "EBGCFE"."PM_UI_SALES_PART_LOG"(
+			PRODUCT_GROUP,
+			PROFIT_CENTER,
+			TIME_FENCE,
+			TIME_FENCE_TYPE,
+			FUNCTION_TYPE,
+			SALES_DATE,
+			OEM_NAME,
+			PART_NO,
+			PART_DESC,
+			SALES_QTY,
+			SALES_TOTAL_INCOMING,
+			SALES_TOTAL_COST,
+			SALES_TOTAL_MASK,
+			DUMMY_PK,
+			STATUS,
+			UPLOAD_ID,
+			SYS_CREATED_BY,
+			SYS_CREATED_DATE,
+			SYS_ENT_STATE,
+			SYS_LAST_MODIFIED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			AT_ACTION,
+			LOG_DATE
+		 )SELECT 
+			    'EBG',
+			    a.PROFIT_CENTER,
+				a.TIME_FENCE,
+				'CURRENT',
+				a.FUNCTION_TYPE,
+				a.SALES_DATE,
+				a.OEM_NAME,
+				a.PART_NO,
+				a.PART_DESC,
+				a.SALES_QTY,
+				a.SALES_TOTAL_INCOMING,
+				a.SALES_TOTAL_COST,
+				a.SALES_TOTAL_MASK,
+				a.DUMMY_PK,
+			    '',--STATUS
+			    '',--UPLOAD_ID
+			    :currentUser,
+			    :create_time,
+			    '',--SYS_ENT_STATE
+			    :currentUser,
+			    :create_time,
+		 		'update',
+		 		:create_time 
+		 		FROM :TMP_TABLE as a;
+		end if;
+			
+
+		-- passing successful total numbers
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:n,0,:table_name);
+
+END;

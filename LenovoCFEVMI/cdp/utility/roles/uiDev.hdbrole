@@ -1,0 +1,66 @@
+role cdp.utility.roles::uiDev 
+extends role sap.hana.xs.lm.roles::ExecuteTransport
+{
+		
+	--添加cdp.UI开发的读写权限
+		package cdp:	
+						REPO.READ;
+		package cdp.szebgvmi.models:	
+						REPO.READ, 
+						REPO.EDIT_NATIVE_OBJECTS,
+						REPO.EDIT_IMPORTED_OBJECTS,
+						REPO.ACTIVATE_IMPORTED_OBJECTS, 
+						REPO.ACTIVATE_NATIVE_OBJECTS, 
+						REPO.MAINTAIN_NATIVE_PACKAGES;
+		package cdp.ebgcfe.models:	
+						REPO.READ, 
+						REPO.EDIT_NATIVE_OBJECTS, 
+						REPO.EDIT_IMPORTED_OBJECTS,
+						REPO.ACTIVATE_IMPORTED_OBJECTS, 
+						REPO.ACTIVATE_NATIVE_OBJECTS, 
+						REPO.MAINTAIN_NATIVE_PACKAGES;
+						
+		-- 整个UI的包（存储过程的部分）都放出去，可以修改 				
+		package cdp.ebgcfe.procedures.pkg_ui:	
+						REPO.READ, 
+						REPO.EDIT_NATIVE_OBJECTS, 
+						REPO.EDIT_IMPORTED_OBJECTS,
+						REPO.ACTIVATE_IMPORTED_OBJECTS, 
+						REPO.ACTIVATE_NATIVE_OBJECTS, 
+						REPO.MAINTAIN_NATIVE_PACKAGES;			
+		package cdp.szebgvmi.procedures.pkg_ui:	
+						REPO.READ, 
+						REPO.EDIT_NATIVE_OBJECTS, 
+						REPO.EDIT_IMPORTED_OBJECTS,
+						REPO.ACTIVATE_IMPORTED_OBJECTS, 
+						REPO.ACTIVATE_NATIVE_OBJECTS, 
+						REPO.MAINTAIN_NATIVE_PACKAGES;
+		-- 整个UI的包（Web JS文件）都放出去，可以修改 	
+		package cdp.ui:	
+						REPO.READ, 
+						REPO.EDIT_NATIVE_OBJECTS, 
+						REPO.EDIT_IMPORTED_OBJECTS,
+						REPO.ACTIVATE_IMPORTED_OBJECTS, 
+						REPO.ACTIVATE_NATIVE_OBJECTS, 
+						REPO.MAINTAIN_NATIVE_PACKAGES;	
+
+		--使用CR所需的权限
+		system privilege :	REPO.MODIFY_CHANGE, 
+							REPO.MODIFY_OWN_CONTRIBUTION, 
+							REPO.MAINTAIN_DELIVERY_UNITS;	
+		
+		--Modeling所需权限
+		catalog schema "_SYS_BIC": SELECT;
+		catalog schema "_SYS_BI":  SELECT;
+		catalog sql object "SYS"."REPOSITORY_REST": EXECUTE;
+		
+		--Analytic privileges
+		catalog analytic privilege : "_SYS_BI_CP_ALL";
+		
+		--SCHEMA的权限:
+	    catalog schema "DS_INFO": 	SELECT;
+		catalog schema "PCDW":  	SELECT;
+		catalog schema "MXEBGVMI":  SELECT,EXECUTE;
+		catalog schema "SZEBGVMI":  SELECT,CREATE ANY,DELETE,INSERT ,EXECUTE,UPDATE,ALTER,DROP;
+		
+}

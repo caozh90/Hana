@@ -1,0 +1,91 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_balance_pull::PRC_BALANCE_PULL_RESPONSE" (
+	iv_id VARCHAR(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_BALANCE_PULL_RESPONSE              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/03                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	AS
+	  v_logidi INTEGER := 0;	
+	  v_pkg_name          VARCHAR (40)            := 'PKG_BALANCE_PULL';
+	  v_logic_proc_name   VARCHAR (40)            := 'PRC_BALANCE_PULL_RESPONSE';
+	  v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- COMMIT;      --comment by Eric Zhou
+	END;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+on_exitcode := -20099;
+
+      UPDATE balance_dispatch t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document) =
+                (SELECT DISTINCT 'OLD', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document
+                            FROM Z_PCDW_RSP_BALANCE_DISPATCH
+                           WHERE t.pull_line_id = pull_line_id
+                             AND t.pull_header_id = pull_header_id
+                             AND UPPER (status) = 'SUCCESS')
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_RSP_BALANCE_DISPATCH s
+                 WHERE s.pull_line_id = t.pull_line_id
+                   AND s.pull_header_id = t.pull_header_id
+                   AND UPPER (s.status) = 'SUCCESS')
+         AND werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE where ID = :iv_id)
+         AND status = 'SENT';       
+                                
+
+      UPDATE balance_dispatch t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document) =
+                (SELECT DISTINCT 'ERROR', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document
+                            FROM Z_PCDW_RSP_BALANCE_DISPATCH
+                           WHERE t.pull_line_id = pull_line_id
+                             AND t.pull_header_id = pull_header_id
+                             AND UPPER (status) = 'ERROR')
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_RSP_BALANCE_DISPATCH s
+                 WHERE s.pull_line_id = t.pull_line_id
+                   AND s.pull_header_id = t.pull_header_id
+                   AND UPPER (s.status) = 'ERROR')
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND status = 'SENT';                              --added @2007-11-12
+
+      --COMMIT;                                        --comment by Eric Zhou
+      on_exitcode := 0;  
+
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');
+END;

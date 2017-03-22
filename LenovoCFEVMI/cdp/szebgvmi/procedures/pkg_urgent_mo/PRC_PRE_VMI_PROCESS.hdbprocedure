@@ -1,0 +1,54 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_urgent_mo::PRC_PRE_VMI_PROCESS" (
+	OUT p_out_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+--	READS SQL DATA 
+	AS
+		v_prc_name VARCHAR(70) := 'PRC_PRE_VMI_PROCESS';
+		gv_logic_name    VARCHAR2 (40)  := 'PKG_URGENT_MO';
+		v_full_name VARCHAR(100) := gv_logic_name||'.'||v_prc_name;
+		v_logidi INTEGER := 0;
+		v_count INTEGER;
+BEGIN
+	/*DECLARE CURSOR CUR FOR SELECT "SZEBGVMI"."cdp.szebgvmi.sequences::DS_MO".NEXTVAL,LOGICAL_PLANT,DS_LINE,MO_ID,1,
+			QUANTITY,PLANNED_START_TIME,PLANNED_END_TIME,SYS_CREATED_BY,SYS_CREATED_DATE,
+			'1',STATUS FROM UI_URGENT_MO_PULL;
+			*/
+	DECLARE CURSOR CUR FOR SELECT LOGICAL_PLANT,DS_LINE,MO_ID,1,
+            QUANTITY,PLANNED_START_TIME,PLANNED_END_TIME,SYS_CREATED_BY,SYS_CREATED_DATE,
+            '1',STATUS FROM UI_URGENT_MO_PULL WHERE STATUS='RUNNING';
+	
+	p_out_exitcode := -1;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>'Start');
+             
+    FOR item AS CUR
+    DO
+    	--SELECT COUNT(1) INTO v_count FROM z_pcdw_ds_mo WHERE WORK_ORD_NUM = :item.MO_ID and WERKS = :item.LOGICAL_PLANT;
+    	SELECT COUNT(1) INTO v_count FROM z_pcdw_ds_mo WHERE WORK_ORD_NUM = :item.MO_ID and WERKS = :item.LOGICAL_PLANT and status='IN_PORCESS';
+        if v_count = 0 and item.status='RUNNING'
+    	
+    	--if v_count = 0 
+    	
+    	then
+    		update UI_URGENT_MO_PULL set status = 'IN_PROCESS' where MO_ID = item.MO_ID;
+    		INSERT INTO z_pcdw_ds_mo(ID,WERKS,RES_NAME,WORK_ORD_NUM,SEQ_NUM,QTY,PLANNED_STTM,
+					PLANNED_EDTM,SYS_CREATED_BY,SYS_CREATED_DATE,URGENCY_FLAG,STATUS)
+			values('UG'||"SZEBGVMI"."cdp.szebgvmi.sequences::DS_MO".NEXTVAL,item.LOGICAL_PLANT,item.DS_LINE,item.MO_ID,1,
+			item.QUANTITY,item.PLANNED_START_TIME,item.PLANNED_END_TIME,item.SYS_CREATED_BY,item.SYS_CREATED_DATE,
+			'1','IN_PROCESS');
+    		update UI_URGENT_MO_PULL set status = 'COMPLETED' where MO_ID = item.MO_ID;
+    	end if;
+    END FOR; 
+	         
+             
+    p_out_exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>'Success');
+END;

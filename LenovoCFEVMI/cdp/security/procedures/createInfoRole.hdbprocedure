@@ -1,0 +1,190 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createInfoRole" (
+	IN	 aROLEGROUP_NAME NVARCHAR(256),
+	IN   aCOMMENT_GROUP NVARCHAR(256),	      
+    IN	 aROLE_NAME NVARCHAR(256),
+    IN	 aDISPLAY_ROLE_NAME NVARCHAR(256),
+ 	IN   aCOMMENT NVARCHAR(200),
+	IN   aMODULE_NAME NVARCHAR(200)
+	  
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+,IN   aIS_SYSROLE NVARCHAR(5) default '' 
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	ROLEExists Integer := 0;
+	roleGroupExists Integer := 0;
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aROLE_ID BIGINT;
+	aMODULE_ID NVARCHAR(10);
+	aROLEGROUP_ID BIGINT; 
+	aREAL_ROLE_NAME NVARCHAR(256);
+	privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+/***************************** 
+	create new ROLE INFO
+	
+
+	example:
+	
+call "SECURITY"."cdp.security.procedures::createInfoRole"(
+	'001',
+	'comment001',     	
+    'CFE',?);
+)
+ *****************************/
+      
+    --exception     
+   DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到amodule_ID ,则返回，
+			aI_DETAIL :='cdp.security.procedures::createInfoRole can not find the module : '||aMODULE_NAME ||' .';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);  
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::createInfoRole error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);  	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+/*
+call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityRoleSetup'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+  */  
+--START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoRole"'
+	,I_MODULE=>:aMODULE_NAME); 
+	  
+    SELECT MODULE_ID into aMODULE_ID 
+    FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE" 
+    WHERE "MODULE_NAME" = :aMODULE_NAME;
+     
+     /*
+      SELECT ROLE_ID into aROLE_ID
+    FROM "SYS"."ROLES" 
+    WHERE "ROLE_NAME" = :aROLE_NAME ;
+     
+      */
+     SELECT top 1 count(1) into ROLEExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLES" A    
+     WHERE A."MODULE_ID" = :aMODULE_ID
+          AND A."ROLE_NAME" = :aROLE_NAME ;
+     if  :ROLEExists > 0 then
+    	 aI_DETAIL := 'cdp.security.procedures::createInfoRole  find the ROLE_NAME : '||:aROLE_NAME||' exists .';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000012'
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'ROLE NAME exist' error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+     	return ;
+     end if;
+    
+     
+     IF	aROLEGROUP_NAME ='' THEN
+     
+     SELECT ROLEGROUP_ID into aROLEGROUP_ID FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" A
+    	,"SECURITY"."cdp.security.data::userManagement.INFO_MODULE" B
+     WHERE A."MODULE_ID" = B."MODULE_ID"
+     AND B."MODULE_NAME" = :aMODULE_NAME
+     AND A."ROLEGROUP_NAME" = 'Other Roles' ;
+     ELSE
+     BEGIN
+     
+     SELECT top 1 count(1) into roleGroupExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" A    
+     WHERE A."MODULE_ID" = :aMODULE_ID
+          AND A."ROLEGROUP_NAME" = :aROLEGROUP_NAME ;
+     if  :roleGroupExists > 0 then
+		SELECT ROLEGROUP_ID  ,REAL_ROLE_NAME into aROLEGROUP_ID ,aREAL_ROLE_NAME FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" A
+	    	,"SECURITY"."cdp.security.data::userManagement.INFO_MODULE" B
+	     WHERE A."MODULE_ID" = B."MODULE_ID"
+	     AND B."MODULE_NAME" = :aMODULE_NAME
+	     AND A."ROLEGROUP_NAME" = :aROLEGROUP_NAME ;
+		else
+			begin
+			SELECT "SECURITY"."cdp.security.data::infoRoleGroupSeqId".NEXTVAL INTO aROLEGROUP_ID FROM DUMMY; 
+			   		aREAL_ROLE_NAME := 'cdp.security.cdr.rolegroup::' ||:aROLEGROUP_ID;
+			   		
+			insert into "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP"
+						("ROLEGROUP_ID", "MODULE_ID","ROLEGROUP_NAME" ,"COMMENT"
+						,"REAL_ROLE_NAME" ,"IS_SYSROLEGROUP" )
+						values(:aROLEGROUP_ID, :aMODULE_ID,:aROLEGROUP_NAME ,:aCOMMENT_GROUP
+						,  :aREAL_ROLE_NAME,'TRUE');
+			--**## exec 'CREATE ROLE "' ||:aREAL_ROLE_NAME ||'"';
+			end ;
+	   end if;
+
+--SELECT  :aROLE_NAME ,:aREAL_ROLE_NAME FROM DUMMY;
+--**## 	call _SYS_REPO.GRANT_ACTIVATED_ROLE (:aROLE_NAME,:aREAL_ROLE_NAME); 
+
+
+     
+     
+     
+     END ;
+     END IF;
+     
+    SELECT "SECURITY"."cdp.security.data::infoRoleSeqId".NEXTVAL  INTO aROLE_ID FROM DUMMY; 
+   		
+insert into "SECURITY"."cdp.security.data::userManagement.INFO_ROLES"
+			("ID","ROLE_ID", "MODULE_ID","ROLE_NAME" ,"COMMENT","DISPLAY_ROLE_NAME"  )
+			values(:aROLE_ID
+			,:aROLE_ID, :aMODULE_ID,:aROLE_NAME ,:aCOMMENT ,:aDISPLAY_ROLE_NAME );
+
+	insert into "SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"
+			("ID","ROLE_ID", "MODULE_ID","ROLEGROUP_ID"  )
+			values("SECURITY"."cdp.security.data::mapRoleGroupRoleSeqId".NEXTVAL 
+			,:aROLE_ID, :aMODULE_ID,:aROLEGROUP_ID  );
+	    	
+	    --如果成功添加,则log添加成功！
+	    aI_DETAIL := 'cdp.security.procedures::createInfoRole ('||:aROLE_NAME||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createInfoRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000010'
+     	,I_DETAIL=>:aI_DETAIL); 	
+    		
+END;

@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_INFO_ROLES" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true" hierarchiesSQLEnabled="false" translationRelevant="true">
+  <descriptions defaultDescription="CV_INFO_ROLES"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="DISPLAY_ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="COMMENT" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="IS_SYSROLE" length="5"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+
+ BEGIN 
+ /* view name
+--0.1 managementCenter
+--0.2 costBake
+--0.3 newCycle
+
+--1.1 
+*/
+ 
+ 	 var_out = 
+--SELECT 'cdp.mxebgvmi.roles::Access' AS ROLE_NAME,'MXEBGVMI Access' AS DISPLAY_ROLE_NAME,'base role' AS COMMENT ,'true' AS IS_SYSROLE  FROM DUMMY
+SELECT  'cdp.ebgdf.roles::Access' as ROLE_NAME,'EBGDF Access' AS DISPLAY_ROLE_NAME ,'base role ' AS COMMENT ,'TRUE' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles::Access' as ROLE_NAME,'DS Access' AS DISPLAY_ROLE_NAME ,'ds base role ' AS COMMENT ,'TRUE' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::Base' as ROLE_NAME,'securityBase' AS DISPLAY_ROLE_NAME ,'base role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::Access' as ROLE_NAME,'securityAccess' AS DISPLAY_ROLE_NAME ,'open user management view. ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::userAdmin' as ROLE_NAME,'securityUserAdmin' AS DISPLAY_ROLE_NAME ,' user and user group management . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleSetup' as ROLE_NAME,'securityRoleSetup' AS DISPLAY_ROLE_NAME ,' role and role group management . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleAdmin' as ROLE_NAME,'securityRoleAdmin' AS DISPLAY_ROLE_NAME ,' grant activated role  . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAccess' as ROLE_NAME,'logAccess' AS DISPLAY_ROLE_NAME ,'to view the log information of related module.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAdmin' as ROLE_NAME,'logAdmin' AS DISPLAY_ROLE_NAME ,'can delete log information of related module.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.dssz.roles.configuration::access' as ROLE_NAME,'configuration::access' AS DISPLAY_ROLE_NAME ,' DS Workflow Configuration  . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsjob::access' as ROLE_NAME,'dsjob::access' AS DISPLAY_ROLE_NAME ,'DS Job Configuration.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsmonitor::access' as ROLE_NAME,'dsmonitor::access' AS DISPLAY_ROLE_NAME ,'DS Job Monitor&amp;Resubmission.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsmonitor::admin' as ROLE_NAME,'dsmonitor::admin' AS DISPLAY_ROLE_NAME ,'DS Job Monitor&amp;Resubmission.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+
+/*MFI_PPN
+--1.1 step_1_mfi_ppn
+--1.2 costBake
+--1.3 newCycle
+*/
+
+--1.1 step_1_mfi_ppn
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::access' as ROLE_NAME,'ui_mfi_ppn::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::createable' as ROLE_NAME,'ui_mfi_ppn::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::deleteable' as ROLE_NAME,'ui_mfi_ppn::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::exportable' as ROLE_NAME,'ui_mfi_ppn::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::uploadable' as ROLE_NAME,'ui_mfi_ppn::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::executable' as ROLE_NAME,'ui_mfi_ppn::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_mfi_ppn::deleteallable' as ROLE_NAME,'ui_mfi_ppn::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--Step_2_Report_Interlock
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::access' as ROLE_NAME,'ui_report_interlock::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::createable' as ROLE_NAME,'ui_report_interlock::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::deleteable' as ROLE_NAME,'ui_report_interlock::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::editable' as ROLE_NAME,'ui_report_interlock::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::exportable' as ROLE_NAME,'ui_report_interlock::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::uploadable' as ROLE_NAME,'ui_report_interlock::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::executable' as ROLE_NAME,'ui_report_interlock::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_report_interlock::deleteallable' as ROLE_NAME,'ui_report_interlock::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--Step_3_Report_pn_class
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::access' as ROLE_NAME,'ui_pn_class::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::createable' as ROLE_NAME,'ui_pn_class::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::deleteable' as ROLE_NAME,'ui_pn_class::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::editable' as ROLE_NAME,'ui_pn_class::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::exportable' as ROLE_NAME,'ui_pn_class::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::uploadable' as ROLE_NAME,'ui_pn_class::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::executable' as ROLE_NAME,'ui_pn_class::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pn_class::deleteallable' as ROLE_NAME,'ui_pn_class::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--Step_4.1_Report_Pegging Report
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::access' as ROLE_NAME,'ui_pegging::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::createable' as ROLE_NAME,'ui_pegging::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::deleteable' as ROLE_NAME,'ui_pegging::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::editable' as ROLE_NAME,'ui_pegging::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::exportable' as ROLE_NAME,'ui_pegging::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::uploadable' as ROLE_NAME,'ui_pegging::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::executable' as ROLE_NAME,'ui_pegging::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_pegging::deleteallable' as ROLE_NAME,'ui_pegging::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--Step_4.2_Report_Rel_Config_Class
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::access' as ROLE_NAME,'ui_rel_config_class::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::createable' as ROLE_NAME,'ui_rel_config_class::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::deleteable' as ROLE_NAME,'ui_rel_config_class::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::editable' as ROLE_NAME,'ui_rel_config_class::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::exportable' as ROLE_NAME,'ui_rel_config_class::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::uploadable' as ROLE_NAME,'ui_rel_config_class::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::executable' as ROLE_NAME,'ui_rel_config_class::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_rel_config_class::deleteallable' as ROLE_NAME,'ui_rel_config_class::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--Step_4.3_Report_Lead Time
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::access' as ROLE_NAME,'ui_lead_time::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::createable' as ROLE_NAME,'ui_lead_time::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::deleteable' as ROLE_NAME,'ui_lead_time::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::editable' as ROLE_NAME,'ui_lead_time::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::exportable' as ROLE_NAME,'ui_lead_time::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::uploadable' as ROLE_NAME,'ui_lead_time::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::executable' as ROLE_NAME,'ui_lead_time::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_lead_time::deleteallable' as ROLE_NAME,'ui_lead_time::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--OPTION_Forecast
+UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::access' as ROLE_NAME,'ui_forecast_mid::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::createable' as ROLE_NAME,'ui_forecast_mid::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::deleteable' as ROLE_NAME,'ui_forecast_mid::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::editable' as ROLE_NAME,'ui_forecast_mid::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::exportable' as ROLE_NAME,'ui_forecast_mid::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::uploadable' as ROLE_NAME,'ui_forecast_mid::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_forecast_mid::executable' as ROLE_NAME,'ui_forecast_mid::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--OPTION_ClassPercent
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::access' as ROLE_NAME,'ui_class_percent::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::createable' as ROLE_NAME,'ui_class_percent::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::deleteable' as ROLE_NAME,'ui_class_percent::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::editable' as ROLE_NAME,'ui_class_percent::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::exportable' as ROLE_NAME,'ui_class_percent::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::uploadable' as ROLE_NAME,'ui_class_percent::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::executable' as ROLE_NAME,'ui_class_percent::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_class_percent::deleteallable' as ROLE_NAME,'ui_class_percent::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--OPTION_MaxClass
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::access' as ROLE_NAME,'ui_max_class::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::createable' as ROLE_NAME,'ui_max_class::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::deleteable' as ROLE_NAME,'ui_max_class::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::editable' as ROLE_NAME,'ui_max_class::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::exportable' as ROLE_NAME,'ui_max_class::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::uploadable' as ROLE_NAME,'ui_max_class::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::executable' as ROLE_NAME,'ui_max_class::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_max_class::deleteallable' as ROLE_NAME,'ui_max_class::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--OPTION_Attributes
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::access' as ROLE_NAME,'ui_attributes::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::createable' as ROLE_NAME,'ui_attributes::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::deleteable' as ROLE_NAME,'ui_attributes::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::editable' as ROLE_NAME,'ui_attributes::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::exportable' as ROLE_NAME,'ui_attributes::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::uploadable' as ROLE_NAME,'ui_attributes::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::executable' as ROLE_NAME,'ui_attributes::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_attributes::deleteallable' as ROLE_NAME,'ui_attributes::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+--UI_LTVALUE
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::access' as ROLE_NAME,'ui_ltvalue::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::createable' as ROLE_NAME,'ui_ltvalue::createable' AS DISPLAY_ROLE_NAME ,'create role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::deleteable' as ROLE_NAME,'ui_ltvalue::deleteable' AS DISPLAY_ROLE_NAME ,'delete role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::editable' as ROLE_NAME,'ui_ltvalue::editable' AS DISPLAY_ROLE_NAME ,'edit role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::exportable' as ROLE_NAME,'ui_ltvalue::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::uploadable' as ROLE_NAME,'ui_ltvalue::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+--UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::executable' as ROLE_NAME,'ui_ltvalue::executable' AS DISPLAY_ROLE_NAME ,'execute role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ebgdf.roles.ui_ltvalue::deleteallable' as ROLE_NAME,'ui_ltvalue::deleteallable' AS DISPLAY_ROLE_NAME ,'delete all role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+;
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="ROLE_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="DISPLAY_ROLE_NAME" order="2">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="DISPLAY_ROLE_NAME"/>
+      </attribute>
+      <attribute id="COMMENT" order="3">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="COMMENT"/>
+      </attribute>
+      <attribute id="IS_SYSROLE" order="4">
+        <descriptions defaultDescription="IS_SYS_ROLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="IS_SYSROLE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

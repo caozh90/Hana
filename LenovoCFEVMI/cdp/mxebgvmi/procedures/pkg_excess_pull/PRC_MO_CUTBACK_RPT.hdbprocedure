@@ -1,0 +1,181 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_excess_pull::PRC_MO_CUTBACK_RPT" ( 
+IN iv_id VARCHAR2(7),OUT on_exitcode DECIMAL
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_MO_CUTBACK_RPT              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141204                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+AS
+
+      v_logic_proc_name   VARCHAR2 (40)           := 'PRC_MO_CUTBACK_RPT';
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_EXCESS_PULL';    
+      logidi integer:=0;
+BEGIN
+      DECLARE CURSOR c_mo FOR
+      (SELECT DISTINCT mc.productionordid,
+                                   SUM (mc.cutback_qty) cutback_qty,
+                                   MAX (mc.sys_created_date) sys_timestamp,
+                                   mid.mo_qty
+                              FROM PCDW.ECC_MO_CUTBACK mc, mid_mo_bom mid
+                             WHERE mc.productionordid = mid.productionordid
+                               AND mc.werks = mid.werks
+                               AND mc.status IN ('PARTIAL', 'COMPLETED')
+                               AND NOT EXISTS (
+                                      SELECT 'x'
+                                        FROM rpt_mo_cutback rpt
+                                       WHERE rpt.productionordid =
+                                                            mc.productionordid
+                                                                              --and rpt.cutback_timestamp = mc.sys_timestamp
+                                   )
+                               AND EXISTS (
+                                      SELECT 'y'
+                                        FROM excess_pull ep
+                                       WHERE ep.productionordid =mc.productionordid
+                                         AND ep.werks = mc.werks
+                                         AND status = 'COMPLETED')
+                          GROUP BY mc.productionordid, mid.mo_qty);
+
+      DECLARE CURSOR c_mo2 FOR
+      (SELECT DISTINCT mc.productionordid,
+                                    SUM (mc.cutback_qty) cutback_qty,
+                                    MAX (mc.sys_created_date) sys_timestamp
+                               FROM PCDW.ECC_MO_CUTBACK mc
+                              WHERE mc.status IN ('PARTIAL', 'COMPLETED')
+                                AND EXISTS (
+                                       SELECT 'x'
+                                         FROM rpt_mo_cutback rpt
+                                        WHERE rpt.productionordid =
+                                                            mc.productionordid
+                                                                              --and rpt.cutback_timestamp = mc.sys_timestamp
+                                    )
+                                AND EXISTS (
+                                       SELECT 'y'
+                                         FROM excess_pull ep
+                                        WHERE ep.productionordid =
+                                                            mc.productionordid
+                                          AND ep.werks = mc.werks
+                                          AND status = 'COMPLETED')
+                           GROUP BY mc.productionordid);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN 
+         
+          on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+
+
+      on_exitcode := -20099;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');     
+
+      --delete from RPT_MO_CUTBACK ;
+      FOR c_mo_i as c_mo
+      DO
+
+         INSERT INTO rpt_mo_cutback
+                     (productionordid, original_qty, cutback_qty,
+                      original_pull_id, return_pull_id, cutback_timestamp,
+                      return_timestamp, plan_timestamp, production_line)
+            SELECT c_mo_i.productionordid productionordid,
+                   c_mo_i.mo_qty original_qty, c_mo_i.cutback_qty cutback_qty,
+                   CASE mid.min_id || ',' || mid.max_id
+                      WHEN ',' THEN ''
+                      ELSE mid.min_id || ',' || mid.max_id
+                   END orginal_pull_id,
+                   CASE pul.min_id || ',' || pul.max_id
+                      WHEN ','  THEN ''
+                      ELSE pul.min_id || ',' || pul.max_id
+                   END return_pull_id,
+                   c_mo_i.sys_timestamp cutback_timestamp,
+                                                        -- pul.SYS_TIMESTAMP     Return_TIMESTAMP,
+                   NULL, mid.sys_timestamp plan_timestamp,
+                   mid.production_line production_line
+              FROM (SELECT DISTINCT pul2.productionordid productionordid,
+
+                                    --mo2.QTY                 Original_QTY,
+                                    MIN (pul2.pull_header_id) OVER (PARTITION BY pul2.productionordid)  min_id,
+                                    MAX (pul2.pull_header_id) OVER (PARTITION BY pul2.productionordid)  max_id,
+                                    MAX (pul2.sys_timestamp) OVER (PARTITION BY pul2.productionordid)  sys_timestamp
+                               FROM excess_pull pul2             --, r3_mo mo2
+                              WHERE pul2.productionordid =
+                                                          c_mo_i.productionordid
+                                AND pul2.werks IN (SELECT siteid
+                                                     FROM CONF_site_schedule
+                                                    WHERE ID = iv_id)) pul,
+                   (SELECT DISTINCT productionordid,
+                                    MIN (pull_header_id) OVER (PARTITION BY productionordid)  min_id,
+                                    MAX (pull_header_id) OVER (PARTITION BY productionordid)  max_id,
+                                    MAX (production_line) OVER (PARTITION BY productionordid) production_line,
+                                    MAX (sys_timestamp) OVER (PARTITION BY productionordid) sys_timestamp
+                               FROM mid_mo_line mid2
+                              WHERE werks IN (SELECT siteid
+                                                FROM CONF_site_schedule
+                                               WHERE ID = iv_id)
+                                AND mid2.productionordid = c_mo_i.productionordid) mid
+             WHERE pul.productionordid = mid.productionordid;
+      END FOR;
+
+
+      FOR c_mo2_i as c_mo2
+      DO
+
+         UPDATE rpt_mo_cutback rpt
+            SET rpt.cutback_qty = c_mo2_i.cutback_qty,
+                rpt.cutback_timestamp = c_mo2_i.sys_timestamp,
+                rpt.return_pull_id =
+                   (SELECT DISTINCT    MIN (pul2.pull_header_id) OVER (PARTITION BY pul2.productionordid)
+                                    || ','
+                                    || MAX (pul2.pull_header_id) OVER (PARTITION BY pul2.productionordid)
+                                                                       max_id
+                               FROM excess_pull pul2             --, r3_mo mo2
+                              WHERE pul2.productionordid =
+                                                         c_mo2_i.productionordid
+                                AND pul2.werks IN (SELECT siteid
+                                                     FROM CONF_site_schedule
+                                                    WHERE ID = iv_id))
+                                                                     /*,
+			(rpt.original_pull_id,
+			rpt.production_line,
+			rpt.plan_timestamp)=(select distinct
+			     min(pull_header_id)    over (partition by productionordid) ||','||
+			     max(pull_header_id)    over (partition by productionordid) ,
+			     max(production_line) over (partition by productionordid) Production_Line,
+			     max(sys_timestamp)   over (partition by productionordid) sys_timestamp
+			from mid_mo_line mid2
+			where werks in (select siteid from ud_site_schedule where id=iv_id)
+			 and mid2.productionordid=c_mo2.productionordid)*/
+          WHERE rpt.productionordid = c_mo2_i.productionordid;
+      END FOR;
+
+      UPDATE excess_pull
+         SET status = 'IN_PROCESS'
+       WHERE status = 'COMPLETED' AND werks IN (SELECT siteid
+                                                  FROM CONF_site_schedule
+                                                 WHERE ID = iv_id);
+
+      on_exitcode := 0;
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!'); 
+
+END;

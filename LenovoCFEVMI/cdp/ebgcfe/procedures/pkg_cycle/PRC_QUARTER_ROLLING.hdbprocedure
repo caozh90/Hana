@@ -1,0 +1,346 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cycle::PRC_QUARTER_ROLLING" (
+   IN    p_in_product_group   VARCHAR(10),
+   OUT   p_out_exitcode       INTEGER,
+   OUT   p_out_exitmessage    VARCHAR(500)
+ )
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_QUARTER_ROLLING           
+*function   : Calculate Rolling Quarter
+*input      ：p_in_product_group : product group 
+*output     : p_out_exitcode : error code / p_out_exitmessage : error message 
+*author     : Leonard Ling
+*CreateDate : 2014-12-05
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+
+  -- data
+  DECLARE   v_pkg_name        VARCHAR(30) := 'PKG_CYCLE';   
+  DECLARE   V_PROC_NAME       VARCHAR(50) := 'PRC_QUARTER_ROLLING';
+  --   LOG_CREATE_CYCLE  TYPE_LOG_PROC := TYPE_LOG_PROC(V_PKG_NAME || '.' ||
+  --                                                    V_PROC_NAME);
+  DECLARE   V_QUARTER         VARCHAR(20);  --CONF_QUARTER.QAURTER%TYPE;
+  DECLARE   V_CURRENT_YEAR    VARCHAR(10);
+  DECLARE   V_PRE_YEAR        VARCHAR(10);
+  DECLARE   V_CURRENT_MONTH   VARCHAR(10);
+  DECLARE   V_CURRENT_QUARTER VARCHAR(20);
+  DECLARE   V_COUNT           INTEGER;
+  DECLARE   V_PRE_PRE_YEAR    VARCHAR(10);
+  DECLARE   V_NEXT_YEAR       VARCHAR(10);  
+  DECLARE   v_full_name       VARCHAR(60)  := :v_pkg_name ||'.'|| :v_proc_name;
+  DECLARE   logidi            INTEGER := 0;  
+    
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+       --ROLLBACK
+           	p_out_exitcode := ::SQL_ERROR_CODE;     
+       p_out_exitmessage := 'Internal error, please contact system administrator.';  
+ 	   CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+	                                    :p_out_exitmessage );       
+	   RESIGNAL;                                   
+  END;       
+  
+  -- process logic
+    P_OUT_EXITCODE    := -1;
+    P_OUT_EXITMESSAGE := 'Error Message';
+    -- LOG_CREATE_CYCLE.PROC_START;
+	logidi:=0;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+		
+    -- EXECUTE IMMEDIATE 'ALTER SESSION SET nls_date_language=American';   
+
+    -- SELECT TO_CHAR(TRUNC(SYSDATE, 'YYYY'), 'YYYY')
+    --   INTO V_CURRENT_YEAR
+    --   FROM DUAL;
+     SELECT SUBSTR(TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'),1,4) INTO V_CURRENT_YEAR FROM DUMMY;  
+     
+    -- SELECT TO_CHAR(TRUNC(SYSDATE, 'YYYY'), 'YYYY') - 1
+    --   INTO V_PRE_YEAR
+    --   FROM DUAL;
+     SELECT TO_CHAR(SUBSTR(TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'),1,4) - 1) INTO V_PRE_YEAR FROM DUMMY;
+
+    -- SELECT TO_CHAR(TRUNC(SYSDATE, 'YYYY'), 'YYYY') - 2
+    --   INTO V_PRE_PRE_YEAR
+    --   FROM DUAL;
+     SELECT TO_CHAR(SUBSTR(TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'),1,4) - 2) INTO V_PRE_PRE_YEAR FROM DUMMY;       
+   -- Q6 - Q9
+    --SELECT TO_CHAR(TRUNC(SYSDATE, 'YYYY'), 'YYYY') + 1
+    --   INTO V_NEXT_YEAR
+    --   FROM DUAL;
+     SELECT TO_CHAR(SUBSTR(TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'),1,4) + 1) INTO V_NEXT_YEAR FROM DUMMY; 
+
+   ---
+
+    -- SELECT TO_CHAR(TRUNC(SYSDATE, 'MM'), 'MON')
+    --   INTO V_CURRENT_MONTH
+    --   FROM DUAL;
+     SELECT SUBSTR(TO_CHAR(CURRENT_DATE, 'YYYY-MON-DD'),6,3) INTO V_CURRENT_MONTH FROM DUMMY;   
+
+     --SELECT DECODE(T.QAURTER, 'Q4', V_PRE_YEAR, V_CURRENT_YEAR) ||
+     SELECT MAP(T.QAURTER, 'Q4', :V_PRE_YEAR, :V_CURRENT_YEAR) ||
+            T.QAURTER
+       INTO V_CURRENT_QUARTER
+       FROM CONF_QUARTER T
+      WHERE T.MONTH = :V_CURRENT_MONTH
+        LIMIT 1 OFFSET 0;  --AND ROWNUM = 1;
+
+     SELECT COUNT(*)
+       INTO V_COUNT
+       FROM UI_QUARTER
+      WHERE PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+        AND CYCLE = 'CURRENT';
+
+     IF V_COUNT = 0 THEN
+
+       INSERT INTO UI_QUARTER
+         (PRODUCT_GROUP,
+          CYCLE,
+          CYCLE_CUR_QUARTER,
+          CYCLE_CUR_MONTH,
+          Q1,
+          Q2,
+          Q3,
+          Q4,
+          Q5,
+          Q6,
+          Q7,
+          Q8,
+          Q9)
+         SELECT :P_IN_PRODUCT_GROUP,
+                'CURRENT',
+                :V_CURRENT_QUARTER,
+                :V_CURRENT_MONTH || :V_CURRENT_YEAR,
+
+                (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN  :V_PRE_YEAR || 'Q1'
+                          WHEN T.QAURTER = 'Q2' THEN  :V_PRE_YEAR || 'Q2'
+                          WHEN T.QAURTER = 'Q3' THEN  :V_PRE_YEAR || 'Q3'
+                          WHEN T.QAURTER = 'Q4' THEN  :V_PRE_PRE_YEAR || 'Q4'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_PRE_YEAR || 'Q2'
+                          WHEN T.QAURTER = 'Q2' THEN :V_PRE_YEAR || 'Q3'
+                          WHEN T.QAURTER = 'Q3' THEN :V_PRE_YEAR || 'Q4'
+                          WHEN T.QAURTER = 'Q4' THEN :V_PRE_YEAR || 'Q1'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_PRE_YEAR || 'Q3'
+                          WHEN T.QAURTER = 'Q2' THEN :V_PRE_YEAR || 'Q4'
+                          WHEN T.QAURTER = 'Q3' THEN :V_CURRENT_YEAR || 'Q1'
+                          WHEN T.QAURTER = 'Q4' THEN :V_PRE_YEAR || 'Q2'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_PRE_YEAR || 'Q4'
+                          WHEN T.QAURTER = 'Q2' THEN :V_CURRENT_YEAR || 'Q1'
+                          WHEN T.QAURTER = 'Q3' THEN :V_CURRENT_YEAR || 'Q2'
+                          WHEN T.QAURTER = 'Q4' THEN :V_PRE_YEAR || 'Q3'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+                :V_CURRENT_QUARTER,
+              --Q6
+               (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_CURRENT_YEAR || 'Q2'
+                          WHEN T.QAURTER = 'Q2' THEN :V_CURRENT_YEAR || 'Q3'
+                          WHEN T.QAURTER = 'Q3' THEN :V_CURRENT_YEAR || 'Q4'
+                          WHEN T.QAURTER = 'Q4' THEN :V_NEXT_YEAR || 'Q1'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_CURRENT_YEAR || 'Q3'
+                          WHEN T.QAURTER = 'Q2' THEN :V_CURRENT_YEAR || 'Q4'
+                          WHEN T.QAURTER = 'Q3' THEN :V_NEXT_YEAR || 'Q1'
+                          WHEN T.QAURTER = 'Q4' THEN :V_NEXT_YEAR || 'Q2'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_CURRENT_YEAR || 'Q4'
+                          WHEN T.QAURTER = 'Q2' THEN :V_NEXT_YEAR || 'Q1'
+                          WHEN T.QAURTER = 'Q3' THEN :V_NEXT_YEAR || 'Q2'
+                          WHEN T.QAURTER = 'Q4' THEN :V_NEXT_YEAR || 'Q3'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                 (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_NEXT_YEAR || 'Q1'
+                          WHEN T.QAURTER = 'Q2' THEN :V_NEXT_YEAR || 'Q2'
+                          WHEN T.QAURTER = 'Q3' THEN :V_NEXT_YEAR || 'Q3'
+                          WHEN T.QAURTER = 'Q4' THEN :V_NEXT_YEAR || 'Q4'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0)  --AND ROWNUM = 1)
+           FROM DUMMY;  --DUAL;
+
+     ELSE
+       SELECT T.CYCLE_CUR_QUARTER
+         INTO V_QUARTER
+         FROM UI_QUARTER T
+        WHERE PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+          AND CYCLE = 'CURRENT';
+
+       IF :V_QUARTER = :V_CURRENT_QUARTER THEN
+
+         UPDATE UI_QUARTER
+            SET CYCLE_CUR_MONTH = :V_CURRENT_MONTH || :V_CURRENT_YEAR
+          WHERE PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+            AND CYCLE = 'CURRENT';
+
+         --COMMIT;
+         --EXEC 'COMMIT';
+
+       ELSE
+
+         UPDATE UI_QUARTER
+            SET CYCLE = 'HISTORY'
+          WHERE PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+            AND CYCLE = 'CURRENT';
+
+         INSERT INTO UI_QUARTER
+           (PRODUCT_GROUP,
+            CYCLE,
+            CYCLE_CUR_QUARTER,
+            CYCLE_CUR_MONTH,
+            Q1,
+            Q2,
+            Q3,
+            Q4,
+            Q5,
+            Q6,
+            Q7,
+            Q8,
+            Q9)
+           SELECT :P_IN_PRODUCT_GROUP,
+                  'CURRENT',
+                  :V_CURRENT_QUARTER,
+                  :V_CURRENT_MONTH || :V_CURRENT_YEAR,
+
+                  (SELECT CASE
+                            WHEN T.QAURTER = 'Q1' THEN :V_PRE_YEAR || 'Q1'
+                            WHEN T.QAURTER = 'Q2' THEN :V_PRE_YEAR || 'Q2'
+                            WHEN T.QAURTER = 'Q3' THEN :V_PRE_YEAR || 'Q3'
+                            WHEN T.QAURTER = 'Q4' THEN :V_PRE_PRE_YEAR || 'Q4'
+                          END
+                     FROM CONF_QUARTER T
+                    WHERE T.MONTH = :V_CURRENT_MONTH
+                      LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                  (SELECT CASE
+                            WHEN T.QAURTER = 'Q1' THEN :V_PRE_YEAR || 'Q2'
+                            WHEN T.QAURTER = 'Q2' THEN :V_PRE_YEAR || 'Q3'
+                            WHEN T.QAURTER = 'Q3' THEN :V_PRE_YEAR || 'Q4'
+                            WHEN T.QAURTER = 'Q4' THEN :V_PRE_YEAR || 'Q1'
+                          END
+                     FROM CONF_QUARTER T
+                    WHERE T.MONTH = :V_CURRENT_MONTH
+                      LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                  (SELECT CASE
+                            WHEN T.QAURTER = 'Q1' THEN :V_PRE_YEAR || 'Q3'
+                            WHEN T.QAURTER = 'Q2' THEN :V_PRE_YEAR || 'Q4'
+                            WHEN T.QAURTER = 'Q3' THEN :V_CURRENT_YEAR || 'Q1'
+                            WHEN T.QAURTER = 'Q4' THEN :V_PRE_YEAR || 'Q2'
+                          END
+                     FROM CONF_QUARTER T
+                    WHERE T.MONTH = :V_CURRENT_MONTH
+                      LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                  (SELECT CASE
+                            WHEN T.QAURTER = 'Q1' THEN :V_PRE_YEAR || 'Q4'
+                            WHEN T.QAURTER = 'Q2' THEN :V_CURRENT_YEAR || 'Q1'
+                            WHEN T.QAURTER = 'Q3' THEN :V_CURRENT_YEAR || 'Q2'
+                            WHEN T.QAURTER = 'Q4' THEN :V_PRE_YEAR || 'Q3'
+                          END
+                     FROM CONF_QUARTER T
+                    WHERE T.MONTH = :V_CURRENT_MONTH
+                      LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+                  :V_CURRENT_QUARTER,
+                  --Q6
+               (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_CURRENT_YEAR || 'Q2'
+                          WHEN T.QAURTER = 'Q2' THEN :V_CURRENT_YEAR || 'Q3'
+                          WHEN T.QAURTER = 'Q3' THEN :V_CURRENT_YEAR || 'Q4'
+                          WHEN T.QAURTER = 'Q4' THEN :V_NEXT_YEAR || 'Q1'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_CURRENT_YEAR || 'Q3'
+                          WHEN T.QAURTER = 'Q2' THEN :V_CURRENT_YEAR || 'Q4'
+                          WHEN T.QAURTER = 'Q3' THEN :V_NEXT_YEAR || 'Q1'
+                          WHEN T.QAURTER = 'Q4' THEN :V_NEXT_YEAR || 'Q2'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_CURRENT_YEAR || 'Q4'
+                          WHEN T.QAURTER = 'Q2' THEN :V_NEXT_YEAR || 'Q1'
+                          WHEN T.QAURTER = 'Q3' THEN :V_NEXT_YEAR || 'Q2'
+                          WHEN T.QAURTER = 'Q4' THEN :V_NEXT_YEAR || 'Q3'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0),  --AND ROWNUM = 1),
+
+                 (SELECT CASE
+                          WHEN T.QAURTER = 'Q1' THEN :V_NEXT_YEAR || 'Q1'
+                          WHEN T.QAURTER = 'Q2' THEN :V_NEXT_YEAR || 'Q2'
+                          WHEN T.QAURTER = 'Q3' THEN :V_NEXT_YEAR || 'Q3'
+                          WHEN T.QAURTER = 'Q4' THEN :V_NEXT_YEAR || 'Q4'
+                        END
+                   FROM CONF_QUARTER T
+                  WHERE T.MONTH = :V_CURRENT_MONTH
+                    LIMIT 1 OFFSET 0)  --AND ROWNUM = 1)
+
+             FROM DUMMY; --DUAL;
+
+         --COMMIT;
+         --EXEC 'COMMIT';
+       END IF;
+
+     END IF;
+
+     --COMMIT;
+     --EXEC 'COMMIT';
+     P_OUT_EXITCODE    := 0;
+     P_OUT_EXITMESSAGE := 'SUCCESS';
+     --LOG_CREATE_CYCLE.PROC_END;
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                 I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');        
+END;

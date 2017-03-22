@@ -1,0 +1,112 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_COSTBOM_PRE" ( 
+  IN  P_CHANGE_ID     VARCHAR(100),
+  IN  P_PRODUCT_GROUP VARCHAR(20),
+  IN  P_USER_ID       VARCHAR(64),
+  IN  p_MODEL         VARCHAR(1000),
+  IN  p_FAMILY        VARCHAR(1000),  
+  OUT P_EXIT_CODE       INTEGER,
+  OUT P_EXIT_MESSAGE    VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_ONDEMAND_COSTBOM_PRE         
+*function   : On-demand Cost BOM Pre-Process
+*input      ：p_change_id : change id / p_product_group : product group
+              p_user_id : user id
+*output     : p_exit_code : error code / p_exit_message : error message
+*author     : Leonard Ling
+*CreateDate : 2015-01-15
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+  -- data
+  DECLARE v_pkg_name          VARCHAR(30) := 'PKG_ONDEMAND';
+  DECLARE v_prc_name          VARCHAR(30) := 'PRC_ONDEMAND_COSTBOM_PRE';
+  DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  DECLARE v_subprc_exitcode   INTEGER;
+
+  DECLARE v_tmp_pra varchar(1000);
+  DECLARE v_tmp_pra_value varchar(1000);
+  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN 
+        p_exit_code := ::SQL_ERROR_CODE;
+        p_exit_message := ::SQL_ERROR_MESSAGE;  
+                   
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+ 
+  -- process logic
+  P_EXIT_CODE := -1;
+  P_EXIT_MESSAGE := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+
+  IF LENGTH(P_MODEL)>0 THEN
+    v_tmp_pra := :p_MODEL;
+    
+      while LOCATE(:v_tmp_pra,',') != 0
+      do 
+        v_tmp_pra_value := SUBSTR_BEFORE(:v_tmp_pra,',');
+        v_tmp_pra := SUBSTR_AFTER(:v_tmp_pra,',');
+        
+        INSERT INTO "UI_ONDEMAND_REFRESH"(PRODUCT_GROUP, ONDEMAND_TYPE, ITEM, PROD_FAMILY, EVENT_NAME, MESSAGE, SYS_CREATED_BY, SYS_CREATED_DATE)
+        VALUES ('EBG','COST_BOM',:v_tmp_pra_value,'',:P_CHANGE_ID,'SUCCESS',:P_USER_ID,CURRENT_TIMESTAMP);
+        
+      end while;
+      if LOCATE(:v_tmp_pra,',') = 0 and LENGTH(:v_tmp_pra) != 0
+      then
+        INSERT INTO "UI_ONDEMAND_REFRESH"(PRODUCT_GROUP, ONDEMAND_TYPE, ITEM, PROD_FAMILY, EVENT_NAME, MESSAGE, SYS_CREATED_BY, SYS_CREATED_DATE)
+        VALUES ('EBG','COST_BOM',:v_tmp_pra,'',:P_CHANGE_ID,'SUCCESS',:P_USER_ID,CURRENT_TIMESTAMP);
+      end if;
+   
+  ELSEIF LENGTH(P_FAMILY)>0 THEN
+        INSERT INTO "UI_ONDEMAND_REFRESH"(PRODUCT_GROUP, ONDEMAND_TYPE, ITEM, PROD_FAMILY, EVENT_NAME, MESSAGE, SYS_CREATED_BY, SYS_CREATED_DATE)
+        select distinct 'EBG','COST_BOM',item ,ASP_PRD_FAMILY,:P_CHANGE_ID,'SUCCESS',:P_USER_ID,CURRENT_TIMESTAMP
+        from EBGCFE.UI_ITEM where ASP_PRD_FAMILY=:P_FAMILY; 
+   
+  END IF;
+		                                       
+  -- Preparation for BOM calculation net change	
+  INSERT INTO biz_toplayer_ch
+              (product_group, plant, bom_plant, asp_prd_family, 
+               brand, subgeo, item, children, country, change_id, run_grp_id,
+               change_type, run_level, run_level_ori, event_name,
+               user_id, output_type, action, status, sys_created_date,
+               sys_created_by, sys_last_modified_date,
+               sys_last_modified_by)
+     SELECT product_group, plant, bom_plant, asp_prd_family, 
+            brand, subgeo, item, NULL, country, :p_change_id, :p_change_id, 
+            NULL, 'ONDEMAND', 'ONDEMAND', :v_full_name, 
+            :p_user_id, item_type AS output_type, 'INSERT', 'ACTIVE', CURRENT_TIMESTAMP,  
+            :v_full_name, CURRENT_TIMESTAMP, :v_full_name
+       FROM biz_cost_model_list m
+      WHERE EXISTS (
+               SELECT 1
+                 FROM ui_ondemand_refresh b
+                WHERE b.item = m.item
+                  AND b.event_name = :p_change_id
+                  AND b.product_group = m.product_group
+                  --AND b.status = 'CURRENT'
+                  )
+        AND m.product_group = :p_product_group
+        AND m.eol_status    = 'OL'
+        AND (BOM_PLANT<>'NO_BOM' 
+        OR exists 
+        (select 1 from z_pcdw_item c where m.item=c.item and c.beskz='F' and m.item_type='OPTION'))
+        ;
+  
+  p_exit_code := 0;
+  p_exit_message := 'SUCCESSFUL';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+	                                          I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  	 
+END;
+

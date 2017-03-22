@@ -1,0 +1,153 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_mo_destination_change::PRC_MO_DESTINATION_CHANGE" (
+    IN iv_id VARCHAR(10), OUT on_exitcode DECIMAL
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_MO_DESTINATION_CHANGE              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者 
+    *CreateDate : 20141203                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+
+	AS
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_MO_DESTINATION_CHANGE';    
+      v_logic_proc_name   VARCHAR2 (40) := 'PRC_MO_DESTINATION_CHANGE';
+      n_headers           INTEGER           := 0;
+      n_dl_confirmed      INTEGER           := 0;
+      
+      v_index integer;
+      logidi integer:=0;
+      
+      v_productionordid varchar(12);
+      v_matnr varchar(18);
+      v_werks varchar(4);
+      v_dest_storage_loc varchar(40);
+
+BEGIN
+    DECLARE CURSOR cur_mo FOR 
+    (SELECT DISTINCT a.productionordid, a.bomname, a.matnr,
+                          a.dest_storage_loc, a.werks, a.dept, a.posnr
+                     FROM mid_mo_line a -- , z_pcdw_mo_bom b   --comment by xwu 2016/1/26
+                    WHERE a.werks IN (SELECT siteid
+                                        FROM conf_site_schedule
+                                       WHERE ID = :iv_id)
+                      --AND a.productionordid = b.productionordid
+                      --AND a.bomname = b.bomname
+                      --AND a.matnr = b.matnr
+                      --AND b.qty > 0
+                      /*
+                      AND b.productionordid NOT IN (
+                              SELECT mo.productionordid
+                                FROM z_pcdw_mo mo
+                               WHERE mo.status =
+                                                'Deleted'
+                                                         --add by sky 20080728
+                                                         /*mo.QTY <= (SELECT sum(CUTBACK_QTY)
+                                                                            FROM r3_mo_cutback cut
+                                                                           WHERE cut.PRODUCTIONORDID = mo.PRODUCTIONORDID
+                                                                        GROUP BY PRODUCTIONORDID )*/
+                      --    )
+                      AND pull_type NOT IN
+                                    ('PACKAGING', 'CANDYMAN', 'KANBANREPORT')
+                      AND dest_change_status IS NULL
+                      AND pull_line_id IS NOT NULL
+                      AND pull_header_id IS NOT NULL
+                                                    /*
+                                                        select productionordid,  bomname, matnr,
+                                                               dest_storage_loc, werks,   dept,
+                                                               row_number() over (partition by productionordid,bomname,werks,dest_storage_loc,dept order by rownum) posnr
+                                                          from mid_mo_line
+                                                         where werks in (select siteid from ud_site_schedule where id='0010')
+                                                           and pull_type not in ('PACKAGING','CANDYMAN')
+                                                           and dest_change_status is null
+                                                         order by productionordid,  bomname, dest_storage_loc, posnr
+                                                         --for update of dest_change_status
+                                                    */
+         );
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         
+           on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+
+
+      on_exitcode := -20099;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');   
+
+      DELETE FROM "PCDW"."EXP_ECC_MO_DEST_CHANGE" t1
+            WHERE t1.werks IN (SELECT siteid
+                                 FROM CONF_SITE_SCHEDULE
+                                WHERE ID = iv_id);
+
+      --COMMIT;
+
+      FOR CUR_ITEM as cur_mo
+      DO
+    
+
+         SELECT COUNT (*)
+           INTO n_dl_confirmed
+           FROM mid_mo_line mo
+          WHERE mo.productionordid = CUR_ITEM.productionordid
+            AND mo.matnr = CUR_ITEM.matnr
+            AND mo.werks = CUR_ITEM.werks
+            AND mo.dest_storage_loc = CUR_ITEM.dest_storage_loc
+            AND NOT EXISTS (
+                   SELECT 'x'
+                     FROM dispatch_list dl
+                    WHERE mo.pull_line_id = dl.pull_line_id
+                      AND mo.pull_header_id = dl.pull_header_id
+                      AND dl.status = 'OLD');
+
+         IF (n_dl_confirmed > 0)
+         THEN
+            --GOTO next_mo;
+                 -- some pull of current MO not be confirmed in DISPATCH_LIST
+         ELSE
+            INSERT INTO mo_dest_change
+                        (productionordid, bomname,
+                         matnr, dest_storage_loc,
+                         werks, dept, posnr, status
+                        )
+                 VALUES (CUR_ITEM.productionordid, CUR_ITEM.bomname,
+                         CUR_ITEM.matnr, CUR_ITEM.dest_storage_loc,
+                         CUR_ITEM.werks, CUR_ITEM.dept, CUR_ITEM.posnr, 'COMPLETED'
+                        );
+
+            UPDATE mid_mo_line
+               SET dest_change_status = 'CHANGED'
+             WHERE productionordid = CUR_ITEM.productionordid
+               AND matnr = CUR_ITEM.matnr
+               AND werks = CUR_ITEM.werks
+               AND dest_storage_loc = CUR_ITEM.dest_storage_loc;
+         END IF;
+
+        --<<next_mo>>
+         --NULL;
+
+      END FOR;
+
+      on_exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!');       
+END;

@@ -1,0 +1,77 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_UPDATE_ITEMCLASS" ( ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW 
+	AS
+/************************************************************************
+*name      : PRC_UPDATE_ITEMCLASS              --函数名
+*function  :              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-1-8       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+BEGIN
+	
+	/*
+	1)	MTM
+	将PCDW_MID_ITEMSITEMASTER.MTART in ('ZREV','ZXSW') 的数据，
+	更新ITEMCLASS='MTM'
+	*/
+	UPDATE PCDW_MID_ITEMSITEMASTER
+       SET ITEMCLASS = 'MTM'
+     WHERE MTART in ('ZREV', 'ZXSW');
+
+	/*
+	2)	CTO
+	将PCDW_MID_ITEMSITEMASTER.MTART = ('ZXSW') 的数据，
+	更新ITEMCLASS='CTO'
+	*/
+	UPDATE PCDW_MID_ITEMSITEMASTER
+       SET ITEMCLASS = 'CTO'
+     WHERE MTART = 'ZXMT';--'ZXSW'
+  	
+  	/*
+  	3)	OPT
+	将PCDW_MID_ITEMSITEMASTER.MTART = ('ZITR') 的数据，
+	更新ITEMCLASS='OPT'
+  	*/
+  	
+    UPDATE PCDW_MID_ITEMSITEMASTER
+       SET ITEMCLASS = 'OPT'
+     WHERE MTART = 'ZITR';
+  	/*
+  	4)	SBB
+	将PCDW_MID_ITEMSITEMASTER.STRGR = ('ZS') 的数据，
+	更新ITEMCLASS='SBB'
+  	*/
+    UPDATE PCDW_MID_ITEMSITEMASTER
+       SET ITEMCLASS = 'SBB'
+     WHERE STRGR = 'ZS';
+     
+    /*
+    	5)	PHANTOM/SBB/COMPONENT
+		将PCDW_MID_ITEMSITEMASTER.MTART in ('ZPPN', 'ZIMG', 'ZPKG') 的数据，
+		更新ITEMCLASS='COMPONENT'
+		
+    	将SUBSTR (ZUCOD,1,4)= 'HCPH'的数据，更新ITEMCLASS='PHANTOM'
+    	
+	            将SUBSTR (ZUCOD,1,4)= 'HCSB'的数据，更新ITEMCLASS='SBB'	
+	*/ 
+      
+    UPDATE PCDW_MID_ITEMSITEMASTER
+       SET ITEMCLASS = 'COMPONENT'
+     WHERE MTART in ('ZPPN', 'ZIMG', 'ZPKG');
+    
+    UPDATE PCDW_MID_ITEMSITEMASTER
+    	SET ITEMCLASS = 'PHANTOM'
+    WHERE SUBSTR(ZUCOD,1,4)='HCPH';
+    
+    UPDATE PCDW_MID_ITEMSITEMASTER
+    	SET ITEMCLASS = 'SBB'
+    WHERE SUBSTR(ZUCOD,1,4)='HCSB';
+  
+
+
+END;

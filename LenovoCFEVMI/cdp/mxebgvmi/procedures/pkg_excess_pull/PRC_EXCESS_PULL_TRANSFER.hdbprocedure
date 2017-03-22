@@ -1,0 +1,150 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_excess_pull::PRC_EXCESS_PULL_TRANSFER" (
+IN iv_id VARCHAR(10),OUT on_exitcode DECIMAL
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_EXCESS_PULL_TRANSFER              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141204                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+AS
+
+      v_logic_proc_name   VARCHAR2 (40):= 'PRC_EXCESS_PULL_TRANSFER';
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_EXCESS_PULL'; 
+      logidi integer:=0; 
+      v_dept                VARCHAR(40);	  
+    
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         
+          on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+    
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');   
+
+      DELETE FROM "PCDW"."EXP_ECC_SPECIAL_DISPATCH"
+            WHERE werks IN (SELECT siteid
+                              FROM CONF_site_schedule
+                             WHERE ID = iv_id);
+
+      DELETE FROM Z_PCDW_rsp_special_dispatch;
+
+      --added by wenfei @2007-11-12
+      UPDATE special_dispatch
+         SET status = 'XI_IN_PROCESS'
+       WHERE werks IN (SELECT siteid
+                         FROM CONF_site_schedule
+                        WHERE ID = iv_id) AND status = 'CONFIRM';-- change by nancy wei for cse project
+
+/*
+   add by xwu. 2015/8/26
+*/ 
+     select top 1 dept into v_dept  from "MXEBGVMI"."CONF_SITE_SCHEDULE" as a;
+---------------------------
+
+      --COMMIT;
+
+      /*INSERT INTO Z_SPECIAL_DISPATCH (PRODUCTIONORDID,--here we added MO_ID for may release
+                                 WERKS,                 PULL_LINE_ID,          PULL_HEADER_ID,
+                                 SRC_STORAGE_TYPE,      SRC_STORAGE_LOC,       SRC_STORAGE_BIN,
+                                 DEST_STORAGE_TYPE,     DEST_STORAGE_LOC,      DEST_STORAGE_BIN,
+                                 WHS_NO,                QTY,                   DEPT,
+                                 MATNR,                 STATUS)
+                          SELECT PRODUCTIONORDID,
+                                 WERKS,                 PULL_LINE_ID,          PULL_HEADER_ID,
+                                 SRC_STORAGE_TYPE,      SRC_STORAGE_LOC,       SRC_STORAGE_BIN,
+                                 DEST_STORAGE_TYPE,     DEST_STORAGE_LOC,      DEST_STORAGE_BIN,
+                                 WHS_NO,                QTY,                   DEPT,
+                                 MATNR,                 STATUS
+                           FROM  SPECIAL_DISPATCH
+                           where WERKS in (select siteid from ud_site_schedule where id=iv_id)
+                             and STATUS='XI_IN_PROCESS';*/
+
+	  --BACK UP
+	  DELETE FROM "PCDW"."BAK_EXP_ECC_SPECIAL_DISPATCH"
+	  WHERE DAYS_BETWEEN(SYS_TIMESTAMP,CURRENT_TIMESTAMP)>90;
+	  
+      INSERT INTO "PCDW"."BAK_EXP_ECC_SPECIAL_DISPATCH"
+                  (productionordid,      --here we added MO_ID for may release
+                                   werks, pull_line_id, pull_header_id,
+                   src_storage_type, src_storage_loc, src_storage_bin,
+                   dest_storage_type, dest_storage_loc, dest_storage_bin,
+                   whs_no, qty, dept, matnr, status, ecc_step, tr_number,
+                   tr_item_number, material_document_year, material_document,SYS_TIMESTAMP)
+         SELECT productionordid, werks, pull_line_id, pull_header_id,
+                src_storage_type, src_storage_loc, src_storage_bin,
+                dest_storage_type, dest_storage_loc, dest_storage_bin, whs_no,
+                qty, :v_dept, matnr, status, ecc_step, tr_number, tr_item_number,     -- updated from dept to :dept 2015/8/26 by xwu.
+                material_document_year, material_document,CURRENT_TIMESTAMP
+           FROM special_dispatch
+          WHERE werks IN (SELECT siteid
+                            FROM CONF_site_schedule
+                           WHERE ID = iv_id) AND status = 'XI_IN_PROCESS';	  
+      
+      INSERT INTO "PCDW"."EXP_ECC_SPECIAL_DISPATCH"
+                  (productionordid,      --here we added MO_ID for may release
+                                   werks, pull_line_id, pull_header_id,
+                   src_storage_type, src_storage_loc, src_storage_bin,
+                   dest_storage_type, dest_storage_loc, dest_storage_bin,
+                   whs_no, qty, dept, matnr, status, ecc_step, tr_number,
+                   tr_item_number, material_document_year, material_document,SYS_TIMESTAMP)
+         SELECT productionordid, werks, pull_line_id, pull_header_id,
+                src_storage_type, src_storage_loc, src_storage_bin,
+                dest_storage_type, dest_storage_loc, dest_storage_bin, whs_no,
+                qty, :v_dept, matnr, status, ecc_step, tr_number, tr_item_number,  -- updated from dept to :dept 2015/8/26 by xwu.
+                material_document_year, material_document,CURRENT_TIMESTAMP
+           FROM special_dispatch
+          WHERE werks IN (SELECT siteid
+                            FROM CONF_site_schedule
+                           WHERE ID = iv_id) AND status = 'XI_IN_PROCESS'; 
+      
+                           
+      IF ::ROWCOUNT >= 1
+      THEN
+         UPDATE conf_cfg_xi_para xp
+            SET xp.low = 1
+          WHERE xp.progname = 'ZRFC_VMI_MEX_SPECDISP_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      ELSE
+         UPDATE conf_cfg_xi_para xp
+            SET xp.low = 0
+          WHERE xp.progname = 'ZRFC_VMI_MEX_SPECDISP_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      END IF;
+
+      UPDATE special_dispatch
+         SET status = 'SENT'
+       WHERE werks IN (SELECT siteid
+                         FROM CONF_site_schedule
+                        WHERE ID = iv_id) AND status = 'XI_IN_PROCESS';
+
+      --COMMIT;
+      on_exitcode := 0;
+      
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!');        
+END;

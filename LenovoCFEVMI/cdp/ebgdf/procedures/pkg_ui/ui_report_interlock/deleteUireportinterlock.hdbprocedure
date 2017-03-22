@@ -1,0 +1,191 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::deleteUireportinterlock"
+( 
+	IN oldInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_REPORTINTERLOCK_T" ,
+    OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError" 
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGDF
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUireportinterlock
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo
+*author      :      leon Bian
+*CreateDate  :      2015.8.14
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	V_ABCD_T NVARCHAR(15);
+	V_SBB_OPT NVARCHAR(12);
+	V_SBB_DES NVARCHAR(200);
+	V_MFI_FFI_FC_IND NVARCHAR(3);
+	V_GAD LONGDATE;
+	V_LOD LONGDATE;
+	V_PPN NVARCHAR(12);
+	V_PP_DES NVARCHAR(200);
+	V_SUPPLIER NVARCHAR(30);
+	V_LENOVO_PPN_OHQ Decimal(8,0);
+	V_PPN_HIQ Decimal(8,0);
+	V_SBB_3M_FORECAST Decimal(8,0);
+	V_SBB_3M_SHIPMENT Decimal(8,0);
+	V_PPN_3M_SHIPMENT Decimal(8,0);
+	V_PRIOR_ABCD NVARCHAR(1);
+	V_REC_ABCD NVARCHAR(1);
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::deleteUireportinterlock error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::deleteUireportinterlock'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_report_interlock::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+      RETURN ;
+   END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::deleteUireportinterlock'
+       ,I_MODULE=>'EBGDF'
+   	); 
+ 
+select TOP 1 ABCD_T,
+	   SBB_OPT,
+	   SBB_DES,
+	   MFI_FFI_FC_IND,
+	   GAD,
+	   LOD,
+	   PPN,
+	   PP_DES,
+	   SUPPLIER,
+	   LENOVO_PPN_OHQ,
+	   PPN_HIQ,
+	   SBB_3M_FORECAST,
+	   SBB_3M_SHIPMENT,
+	   PPN_3M_SHIPMENT,
+	   PRIOR_ABCD,
+	   REC_ABCD
+into   V_ABCD_T,
+	   V_SBB_OPT,
+	   V_SBB_DES,
+	   V_MFI_FFI_FC_IND,
+	   V_GAD,
+	   V_LOD,
+	   V_PPN,
+	   V_PP_DES,
+	   V_SUPPLIER,
+	   V_LENOVO_PPN_OHQ,
+	   V_PPN_HIQ,
+	   V_SBB_3M_FORECAST,
+	   V_SBB_3M_SHIPMENT,
+	   V_PPN_3M_SHIPMENT,
+	   V_PRIOR_ABCD,
+	   V_REC_ABCD
+ from :oldInfo; 
+	 
+-- delete record from table	  	
+delete from "EBGDF"."RPT_INTERLOCK" 
+  where SBB_OPT = :V_SBB_OPT
+  and MFI_FFI_FC_IND = :V_MFI_FFI_FC_IND
+  and PPN = :V_PPN 
+  AND SUPPLIER = :V_SUPPLIER; 
+  
+if ::rowcount < 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;*/
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';
+	 
+end if;		
+
+
+--INSERT INTO RPT_INTERLOCK_LOG TABLE
+insert into "EBGDF"."RPT_INTERLOCK_LOG"(
+									ABCD_T,
+								    SBB_OPT,
+								    SBB_DES,
+								    MFI_FFI_FC_IND,
+								    GAD,
+								    LOD,
+								    PPN,
+								    PP_DES,
+								    SUPPLIER,
+								    LENOVO_PPN_OHQ,
+								    PPN_HIQ,
+								    SBB_3M_FORECAST,
+								    SBB_3M_SHIPMENT,
+								    PPN_3M_SHIPMENT,
+								    PRIOR_ABCD,
+								    REC_ABCD,
+								    CREATE_TS,
+								    CREATE_USERID,
+								    LAST_UPDATE_TS,
+								    LAST_UPDATE_USERID,
+									AT_MODIFIED_BY,
+									AT_ACTION,
+									AT_MODIFIED_ON,
+									AT_MILLIS
+	 )SELECT 
+	        ABCD_T,
+		    SBB_OPT,
+		    SBB_DES,
+		    MFI_FFI_FC_IND,
+		    GAD,
+		    LOD,
+		    PPN,
+		    PP_DES,
+		    SUPPLIER,
+		    LENOVO_PPN_OHQ,
+		    PPN_HIQ,
+		    SBB_3M_FORECAST,
+		    SBB_3M_SHIPMENT,
+		    PPN_3M_SHIPMENT,
+		    PRIOR_ABCD,
+		    REC_ABCD,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+	 		CURRENT_UTCTIMESTAMP,
+	 		'delete',
+	 		CURRENT_UTCTIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a;  
+   	
+aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::deleteUireportinterlock successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::deleteUireportinterlock'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);    
+END;

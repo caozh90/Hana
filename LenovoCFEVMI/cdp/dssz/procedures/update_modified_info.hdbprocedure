@@ -1,0 +1,44 @@
+PROCEDURE "DS_INFO_SZ"."cdp.dssz.procedures::update_modified_info" ( 
+IN table_name nvarchar(100),
+IN assignment nvarchar(2048)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      : update_modified_info              --函数名
+*function  : 更新调用DS的页面对应的表，记录修改时间和修改者              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-2-10       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		currentUser nvarchar(200);
+		create_time nvarchar(100);	
+		update_modified nvarchar(1024);
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+    BEGIN      
+      	select 'NO data found!' error_message from dummy;
+    END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	select 'Error happened!' error_message from dummy;
+    END; 
+    --exception 
+ 
+ 	--更改SYS_LAST_MODIFIED_BY和SYS_LAST_MODIFIED_DATE字段
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+	
+	update_modified := 'update '||:table_name||' set SYS_LAST_MODIFIED_BY ='''||:currentUser||''',SYS_LAST_MODIFIED_DATE='''
+	||:create_time||''' where '||:assignment;
+	
+	select update_modified update_modified from dummy;
+	
+	exec :update_modified;
+END;

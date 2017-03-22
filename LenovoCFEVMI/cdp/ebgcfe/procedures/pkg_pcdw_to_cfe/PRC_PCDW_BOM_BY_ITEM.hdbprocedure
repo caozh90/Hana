@@ -1,0 +1,198 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_BOM_BY_ITEM" (
+     in   p_in_event_name nvarchar(100),
+     out p_out_exitcode    integer
+) 
+    language sqlscript sql security definer
+    default schema EBGCFE
+    AS
+ /*
+   name:  
+       PRC_PCDW_BOM_BY_ITEM
+   function:
+       1. 根据传入的event，找到item list, 刷新该item下面的所有节点数据
+       2. Note: 分seo-sbb, bundel-seo, ecc bom三种场景处理，
+           前2种单层结构，但注意ecc bom包含多节点数据.
+   intput: 
+       1. p_in_event_name  change id
+   output:
+       1. p_out_exitcode     exit code.
+   create/updated : 
+       xwu. 2015/8/21
+ */ 
+BEGIN
+
+    ------------------------------------------ variables -----------------------------------------------
+    declare v_g_pkg_name  varchar(30) := 'PKG_PCDW_TO_CFE';
+    declare v_prc_name      varchar(30) := 'PRC_PCDW_BOM_BY_ITEM';
+    declare v_full_name      varchar(60) := :v_g_pkg_name || '.' || :v_prc_name;
+    declare logidi                integer :=0;
+    declare v_init_date        timestamp;
+    declare n                      integer;
+    declare v_count            integer;
+    
+     ------------------------------------ // sql exception  //-------------------------------------------
+    declare exit handler for SQLEXCEPTION
+    begin
+         p_out_exitcode := ::sql_error_code;
+         call "EX_LOG"."cdp.log.procedures::logProc"(
+                                   I_TYPE                => 'PROC_ERROR',
+                                   I_LOGSID           => :logidi, 
+                                   I_EVENT_NAME  => :v_full_name, 
+                                   I_MODULE         => 'EBGCFE',
+                                   I_MESSAGE        => 'ERROR', 
+                                   I_DETAIL             => to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) ); 
+    end;
+
+     -- delete old pcdw bom data.
+     var_tmp1 = select distinct item from ui_ondemand_refresh where event_name = :p_in_event_name; 
+     delete from z_pcdw_bom where name in (select item from :var_tmp1 );
+
+
+     --------------------------- // 1. seo bom ( 单层结构 seo - sbb )  //---------------------------------
+     insert into z_pcdw_bom 
+         (name, stlnr, werks, idnrk, menge, sanko, datuv, datub, alpgr, alprf,
+          ewahr, sanka, character, value, text1, text2, od, stlst, action,
+          status, sys_created_date, sys_created_by, sys_last_modified_date,
+          sys_last_modified_by, product_group, oem, item_type_f, mtart_f,
+          beskz_f)
+     select distinct
+           ( case when length(a.seo) = 18 then right(a.seo, 10) else a.seo end ) as name,
+            '', b.plant,
+           ( case when length(a.sbb) = 18 then right(a.sbb,10) else a.sbb end ) as idnrk,          
+            a.qty, null, null,  null, null, null, null,
+            null, null, null, null, null, null, null, 'INSERT', 'ACTIVE',
+            current_timestamp, :v_full_name, current_timestamp,
+            :v_full_name, b.product_group, b.oem, c.item_type,
+            c.mtart, c.beskz
+     from   pcdw.pcdw_seo_bom as a,
+               conf_plant_bugrp_mapping as b, 
+               ui_item  as c,
+               :var_tmp1 as t
+     where  a.seo = c.item
+        and  b.product_group = c.product_group
+        and  a.seo = t.item;
+
+     ------------------------- // 2. bundel bom ( 单层结构 bundel - seo )//-------------------------------
+     insert into z_pcdw_bom
+         (name, stlnr, werks, idnrk, menge, sanko, datuv, datub, alpgr, alprf,
+          ewahr, sanka, character, value, text1, text2, od, stlst, action,
+          status, sys_created_date, sys_created_by, sys_last_modified_date,
+          sys_last_modified_by, product_group, oem, item_type_f, mtart_f,
+          beskz_f)
+     select distinct
+          ( case when length(a.bundle) =18 then right(a.bundle,10) else a.bundle end ) as name,
+            '', b.plant, 
+          ( case when length(a.seo) =18 then right(a.seo, 10) else a.seo end ) as idnrk,
+            a.qty, null, null,  null, null, null, null,
+            null, null, null, null, null, null, null, 'INSERT', 'ACTIVE',
+            current_timestamp, :v_full_name, current_timestamp,
+            :v_full_name, b.product_group, b.oem, c.item_type,
+            c.mtart, c.beskz
+     from pcdw.pcdw_bundle_bom as a, 
+              conf_plant_bugrp_mapping as b, 
+              ui_item as c,
+              :var_tmp1 as t
+     where a.bundle = c.item
+         and b.product_group = c.product_group
+         and a.bundle = t.item
+         and not exists ( select 1 from z_pcdw_bom as d
+                                  where d.product_group = b.product_group
+                                     and d.name = a.bundle
+                                     and d.werks = b.plant );
+
+     ------------------------------ // 3. ecc bom ( 多层结构 )//------------------------------------
+     -- 3.1: 先找本次item list在ecc bom中存在的记录
+     var_tmp2 =
+		     select distinct
+		              a.name as father, 
+		              a.idnrk as children
+		     from pcdw.ecc_bom as a,
+		              conf_plant_bugrp_mapping as b, 
+		              ui_item  as c,
+		              :var_tmp1 as t
+		     where a.werks = b.plant
+		        and a.name = c.item
+		        and b.product_group = c.product_group
+		        and a.name = t.item
+		        and current_timestamp >= datuv
+		        and current_timestamp < datub
+		        and not exists ( select 1 from z_pcdw_bom as d
+		                                 where d.product_group = b.product_group
+		                                    and d.name = a.name
+		                                    and d.werks = a.werks );
+
+     --3.2:  define temp table & records
+     select count(1) into v_count from :var_tmp2;
+     var_tmp3 = select * from :var_tmp2;
+     
+     --3.3:  递归name下层所有father, children节点
+     while :v_count > 0
+     do
+	     var_tmp2 = 
+			     select distinct 
+			           a.name as father,
+			           a.idnrk as children
+			     from pcdw.ecc_bom as a,
+			             conf_plant_bugrp_mapping as b, 
+			             ui_item  as c
+			     where a.werks = b.plant
+			        and a.name = c.item
+			        and b.product_group = c.product_group
+			        and current_timestamp >= datuv
+			        and current_timestamp < datub
+			        and a.name in (select distinct children from :var_tmp2);
+           
+           --3.4:  保存每次loop的中间结果
+	       var_tmp3 = 
+	              select * from :var_tmp3
+	              union
+	              select * from :var_tmp2;
+	              
+	       --3.5： set condition
+	      select count(1) into v_count from :var_tmp2;	
+     end while;
+     
+     --3.6:  如果找到记录，更新到z_pcdw_bom.
+     -----------------------------------------------------------------
+     select count(1) into v_count from :var_tmp3;
+     if v_count > 0 then
+           insert into z_pcdw_bom
+		        (name, stlnr, werks, idnrk, menge, sanko, datuv, datub, alpgr, alprf,
+		         ewahr, sanka, character, value, text1, text2, od, stlst, action,
+		         status, sys_created_date, sys_created_by, sys_last_modified_date,
+		         sys_last_modified_by, product_group, oem, item_type_f, mtart_f,
+		         beskz_f)
+		   select distinct
+		         ( case when length(a.name) = 18 then right(a.name,10) else a.name end ) as name,
+		          a.stlnr, a.werks,
+		         ( case when length(a.idnrk) = 18 then right(a.idnrk, 10) else a.idnrk end ) as idnrk,
+		           a.menge, a.sanko, a.datuv,
+		           a.datub, a.alpgr, a.alprf, a.ewahr, a.sanka, a.character,
+		           a.value, a.text1, a.text2, a.od, a.stlst, 'INSERT', 'ACTIVE',
+		           current_timestamp, :v_full_name, current_timestamp, :v_full_name,
+		           b.product_group, b.oem, c.item_type, c.mtart, c.beskz
+		   from pcdw.ecc_bom as a,
+		           conf_plant_bugrp_mapping as b, 
+		           ui_item  as c,
+		           :var_tmp3 as t
+		   where a.werks = b.plant
+		      and a.name = c.item
+		      and b.product_group = c.product_group
+		      and a.name = t.father		   
+		      and current_timestamp >= datuv
+		      and current_timestamp < datub
+		      and not exists( select 1 from z_pcdw_bom as d
+		                              where d.product_group = b.product_group
+		                                 and d.name = a.name
+		                                 and d.werks = a.werks );
+     end if;
+     
+     --------------------------------------- // end log  //---------------------------------------------
+    call "EX_LOG"."cdp.log.procedures::logProc"(
+                        I_TYPE               => 'PROC_END',
+                        I_LOGSID          => :logidi,
+                        I_EVENT_NAME => :v_full_name,
+                        I_MODULE        => 'EBGCFE');   
+    -- sucessful exit code=0
+    p_out_exitcode := 0;  
+END;

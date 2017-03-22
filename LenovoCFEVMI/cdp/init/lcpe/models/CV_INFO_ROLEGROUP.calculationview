@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_INFO_ROLEGROUP" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_INFO_ROLES"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLEGROUP_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="REAL_ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="COMMENT" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="IS_SYSROLEGROUP" length="5"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+
+ BEGIN 
+  /* view name
+--0.1 managementCenter
+--0.2 costBake
+--0.3 newCycle
+
+*/
+ 
+ 	 var_out = 
+ SELECT  'Other Roles' as ROLEGROUP_NAME,'' AS REAL_ROLE_NAME ,'Other Roles in EBGCFE' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'User Managerment' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000001' AS REAL_ROLE_NAME ,'User Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'LOG' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000002' AS REAL_ROLE_NAME ,'Log Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+UNION SELECT  'DS Workflow Configuration' as ROLEGROUP_NAME,'DS Workflow Configuration' AS REAL_ROLE_NAME ,'DS Workflow Configuration' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'DS Job Configuration' as ROLEGROUP_NAME,'DS Job Configuration' AS REAL_ROLE_NAME ,'DS Job Configuration' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'DS Job Monitor&amp;Resubmission' as ROLEGROUP_NAME,'DS Job Monitor&amp;Resubmission' AS REAL_ROLE_NAME ,'DS Job Monitor&amp;Resubmission' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+/*
+--0.1 managementCenter
+--0.2 costBake
+--0.3 newCycle
+UNION SELECT  'ui_management_center' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000042' AS REAL_ROLE_NAME ,'ui_management_center Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_cost_bake' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000043' AS REAL_ROLE_NAME ,'ui_cost_bake Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_cycle' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000044' AS REAL_ROLE_NAME ,'ui_cycle Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+*/
+;
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="ROLEGROUP_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLEGROUP_NAME"/>
+      </attribute>
+      <attribute id="REAL_ROLE_NAME" order="2">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="REAL_ROLE_NAME"/>
+      </attribute>
+      <attribute id="COMMENT" order="3">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="COMMENT"/>
+      </attribute>
+      <attribute id="IS_SYSROLEGROUP" order="4">
+        <descriptions defaultDescription="IS_SYS_ROLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="IS_SYSROLEGROUP"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

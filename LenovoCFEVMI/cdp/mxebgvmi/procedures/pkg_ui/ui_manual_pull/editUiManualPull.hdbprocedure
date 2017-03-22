@@ -1,0 +1,462 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_manual_pull::editUiManualPull" (
+IN   PULL_HEADER_ID NVARCHAR(20),
+IN   PULL_LINE_ID NVARCHAR(20),
+IN   DEST_STORAGE_LOC NVARCHAR(40),
+IN   DEST_STORAGE_TYPE NVARCHAR(40),
+IN   DEST_STORAGE_BIN NVARCHAR(40),
+IN   SRC_WERKS NVARCHAR(4),
+IN   PHYSICAL_PLANT NVARCHAR(40),
+IN   INVENTORY_TYPE NVARCHAR(40),
+IN   PRODUCTION_LINE NVARCHAR(40),
+IN   HEAD_SUPPLIERID NVARCHAR(10),
+IN   DELIVERY_DATE NVARCHAR(200),
+IN   MATNR NVARCHAR(18),
+IN   PULL_QTY DECIMAL(13,3), 
+IN   SRC_STORAGE_TYPE NVARCHAR(40),
+IN   SRC_STORAGE_BIN NVARCHAR(40),
+IN   SRC_STORAGE_LOC NVARCHAR(40),
+IN   LINE_SUPPLIERID NVARCHAR(40),
+IN   REMARK NVARCHAR(250),
+IN   PULL_TYPE NVARCHAR(40),
+IN	 IN_SYS_LAST_MODIFIED_DATE NVARCHAR(1024),
+IN   STATUS NVARCHAR(25),
+OUT  result_status int,--0 for error, 1 for success
+OUT  error_message NVARCHAR(4096)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+/************************************************************************
+*name      : editUiManualPull              --函数名
+*function  : create或者update数据至表ui_manual_pull并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-23       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.mxebgvmi.procedures.pkg_ui.ui_manual_pull';
+		proc_name varchar(100) :='editUiManualPull';
+	 	delta int;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time nvarchar(1024);
+		validate1 int;
+		validate2 int;
+		validate3 int;
+		validate4 int;
+		validate5 int;
+		PULL_CREATE_DATE nvarchar(1024);
+		--STATUS nvarchar(25):='DRAFT';--STATUS在create时默认'DRAFT'
+		MATNR_DESCR nvarchar(40);
+		FULL_BOX_QTY DECIMAL(13,3);
+		final_pull_line_id nvarchar(20);
+		SYS_SOURCE nvarchar(20):='CSE';
+		
+		privilegeExists  NVARCHAR(300) ;
+		
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN 
+     		--如果一条记录有错，则所有该次操作插入的记录全部作废
+     		--原则上，更新数据时不会出现不合法数据
+		 	DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		 	WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		 	AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		 	DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		 	WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		 	 AND  PULL_HEADER_ID = :PULL_HEADER_ID;
+ 	     	
+ 	     	result_status :=0;
+ 	     	error_message := 'cdp.mxebgvmi.procedures.pkg_ui.ui_manual_pull::editUiManualPull '
+ 	     		    	||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+ 	     	
+     		CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	    result_status :=0;
+    	    --如果一条记录有错，则所有该次操作插入的记录全部作废
+		 	DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		 	WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		 	AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		 	DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		 	WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		 	 AND  PULL_HEADER_ID = :PULL_HEADER_ID;
+    	
+     		CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);
+    END; 
+    --exception 
+ /*   
+    IF :PULL_TYPE = 'MANUAL' THEN
+        call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    	'manualpull::editable'		,privilegeExists           );
+    ELSEIF :PULL_TYPE = 'SHIPPING_GROUP' THEN
+         call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    	'pullfromsupplier::editable'		,privilegeExists           );
+    ELSEIF :PULL_TYPE = 'MANUAL_PACKAGING' THEN
+         call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    	'manualpackaging::editable'		,privilegeExists           );
+    END IF;
+
+    IF  :privilegeExists != 'OK' THEN
+   	 	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		:privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+  */  
+	--procedure begin
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'MXEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+	PULL_CREATE_DATE := :create_time;
+  
+   --验证特定字段的合法性
+	SELECT  count(1) into validate1
+	FROM ITEMSITEMASTER
+	WHERE (SITEID =:SRC_WERKS) AND (ITEM = :MATNR);
+	
+	IF validate1<=0 then
+			result_status :=0;
+			error_message :='"PART_NUMBER" is illegal';
+			--如果一条记录有错，则所有该次操作插入的记录全部作废
+		 	DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		 	WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		 	AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		 	DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		 	WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		 	 AND  PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 	
+ 		 	RETURN;
+ 	END IF;
+
+	validate2 := 0;
+	if(INVENTORY_TYPE='LOI' and LINE_SUPPLIERID = '3PL') then
+		 validate2 := 1;
+	elseif(INVENTORY_TYPE='SOI') then
+		SELECT count(1) into validate2 FROM "MXEBGVMI"."SUPITEM" WHERE ITEM= :MATNR AND SITEID=:SRC_WERKS AND SUPPLIERID=:LINE_SUPPLIERID;
+	end if;
+	IF validate2<=0 then
+		    result_status :=0;
+		    error_message :='"SUPPLIER" is illegal';
+			--如果一条记录有错，则所有该次操作插入的记录全部作废
+		 	DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		 	WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		 	AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		 	DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		 	WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		 	 AND  PULL_HEADER_ID = :PULL_HEADER_ID; 		 	
+ 		 	RETURN;
+	END IF;
+	
+	--添加Dropdown list的校验, 变量 validate3 重复使用
+	--前端无法修改的字段，不用校验
+/*	
+	--3PL_ID
+	if(PULL_TYPE = 'MANUAL' or PULL_TYPE = 'manual') then
+	 	if(INVENTORY_TYPE ='SOI') THEN
+	 		SELECT count(1) into validate3 FROM "MXEBGVMI"."CONF_PARAMETER" 
+			WHERE PTYPE='SOI_TPL_ID' and PVALUE = :HEAD_SUPPLIERID;
+	 	ELSEIF(INVENTORY_TYPE ='LOI') THEN
+	 		SELECT count(1) into validate3 FROM "MXEBGVMI"."CONF_PARAMETER" 
+			WHERE PTYPE='LOI_TPL_ID' and PVALUE = :HEAD_SUPPLIERID;
+	 	END IF;
+	elseif(PULL_TYPE = 'SHIPPING_GROUP' or PULL_TYPE = 'shipping_group') then
+	--Pull from suppler页面，在SUPITEM中验证
+		select count(1) into validate3 from "MXEBGVMI"."SUPITEM"
+		where SUPPLIERID = :HEAD_SUPPLIERID;
+	elseif(PULL_TYPE= 'MANUAL_PACKAGING') then
+	 	SELECT count(1) into validate3 FROM "MXEBGVMI"."CONF_PARAMETER" 
+		WHERE PTYPE='SOI_TPL_ID' and PVALUE = :HEAD_SUPPLIERID;
+	end if;
+	
+	if(validate3<=0) then
+	
+		result_status :=0;
+		error_message :='"3PL_ID"::'||:HEAD_SUPPLIERID||' is illegal';
+	    --如果一条记录有错，则所有该次操作插入的记录全部作废
+		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		AND  PULL_HEADER_ID = :PULL_HEADER_ID; 
+		return;
+	end if;
+	--LOGICAL_PLANT无法修改
+	select count(1) into validate3 from "MXEBGVMI"."CONF_SITEMASTER"
+	where SITEID = :SRC_WERKS;
+	if(validate3<=0) then
+	 	result_status :=0;
+		error_message :='"LOGICAL_PLANT"::'||:SRC_WERKS||' is illegal';
+	    --如果一条记录有错，则所有该次操作插入的记录全部作废
+		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		AND  PULL_HEADER_ID = :PULL_HEADER_ID; 
+		return;
+	end if;
+	--PHYSICAL_PLANT无法修改
+	select count(1) into validate3 from "MXEBGVMI"."CONF_SITEMASTER"
+	where PHYSICALPLANT = :PHYSICAL_PLANT;
+	if(validate3<=0) then
+		result_status :=0;
+		error_message :='"PHYSICAL_PLANT"::'||:PHYSICAL_PLANT||' is illegal';
+	    --如果一条记录有错，则所有该次操作插入的记录全部作废
+		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		AND  PULL_HEADER_ID = :PULL_HEADER_ID; 
+		return;
+	end if;
+	
+	--PRODUCTION_LINE无法修改
+	select count(1) into validate3 from "MXEBGVMI"."UI_LINE_FLOOR_MAPPING"
+	where DS_LINE = :PRODUCTION_LINE and PHYSICAL_PLANT = :PHYSICAL_PLANT;
+	if(validate3<=0) then
+		result_status :=0;
+		error_message :='"PRODUCTION_LINE"::'||:PRODUCTION_LINE||' is illegal';
+	    --如果一条记录有错，则所有该次操作插入的记录全部作废
+		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		AND  PULL_HEADER_ID = :PULL_HEADER_ID; 
+		return;
+	end if;
+*/	
+	--验证Dest打头的几个字段
+	if(PULL_TYPE = 'MANUAL') then
+	--Manual pull
+		select count(1) into validate3 from "MXEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :DEST_STORAGE_TYPE and STORAGE_LOCATION = :DEST_STORAGE_LOC and STORAGE_BIN = :DEST_STORAGE_BIN
+		 and TYPE = 'LOI' and werks = :SRC_WERKS  and IS_DEST = 'Y';	
+	elseif(PULL_TYPE = 'SHIPPING_GROUP') then
+	--Pull from supplier
+	select count(1) into validate3 from "MXEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :DEST_STORAGE_TYPE and STORAGE_LOCATION = :DEST_STORAGE_LOC and STORAGE_BIN = :DEST_STORAGE_BIN
+		 and TYPE = 'LOI' and werks = :SRC_WERKS  and IS_DEST = 'Y';
+ 	elseif (PULL_TYPE = 'MANUAL_PACKAGING') then
+ 	--Manual packaging
+ 		 select count(1) into validate3 from "MXEBGVMI"."CONF_WAHREHOUSE_INFO"
+			where STORAGE_TYPE = :DEST_STORAGE_TYPE and STORAGE_LOCATION = :DEST_STORAGE_LOC and STORAGE_BIN = :DEST_STORAGE_BIN
+			 and werks = :SRC_WERKS and IS_DEST = 'Y';	
+	end if;
+	
+	if validate3<=0 
+	then
+	 	result_status :=0;
+		--error_message :='"DEST_STORAGE_TYPE or DEST_STORAGE_LOC or DEST_STORAGE_BIN"::'||:DEST_STORAGE_TYPE||' or '||:DEST_STORAGE_LOC||' or '||:DEST_STORAGE_BIN||' is illegal';
+	    error_message :='"DEST_STORAGE_TYPE" or "DEST_STORAGE_LOC" or "DEST_STORAGE_BIN" is illegal';
+	    --如果一条记录有错，则所有该次操作插入的记录全部作废
+		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		AND  PULL_HEADER_ID = :PULL_HEADER_ID; 
+		return;
+	end if;
+	
+	--验证SRC打头的几个字段
+	if(PULL_TYPE = 'MANUAL') then
+	--Manual pull
+		select count(1) into validate3 from "MXEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :SRC_STORAGE_TYPE and STORAGE_LOCATION = :SRC_STORAGE_LOC and STORAGE_BIN = :SRC_STORAGE_BIN
+		 and OWNER = :HEAD_SUPPLIERID and TYPE = :INVENTORY_TYPE and werks = :SRC_WERKS and IS_SOURCE = 'Y';		
+	elseif(PULL_TYPE = 'SHIPPING_GROUP') then
+	--Pull from supplier
+		select count(1) into validate3 from "MXEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :SRC_STORAGE_TYPE and STORAGE_LOCATION = :SRC_STORAGE_LOC and STORAGE_BIN = :SRC_STORAGE_BIN
+		 and TYPE = 'SOI' and werks = :SRC_WERKS  and IS_SOURCE = 'Y';
+	elseif(PULL_TYPE = 'MANUAL_PACKAGING') then
+	--Manual packaging
+		select count(1) into validate3 from "MXEBGVMI"."CONF_WAHREHOUSE_INFO"
+		where STORAGE_TYPE = :SRC_STORAGE_TYPE and STORAGE_LOCATION = :SRC_STORAGE_LOC and STORAGE_BIN = :SRC_STORAGE_BIN
+		 and TYPE = 'SOI' and OWNER = :HEAD_SUPPLIERID and werks = :SRC_WERKS  and IS_SOURCE = 'Y';
+	end if;
+	
+	if validate3<=0 
+	then
+	 	result_status :=0;
+		--error_message :='"DEST_STORAGE_TYPE or DEST_STORAGE_LOC or DEST_STORAGE_BIN"::'||:DEST_STORAGE_TYPE||' or '||:DEST_STORAGE_LOC||' or '||:DEST_STORAGE_BIN||' is illegal';
+	    error_message :='"SRC_STORAGE_TYPE" or "SRC_STORAGE_LOC" or "SRC_STORAGE_BIN" is illegal';
+	    --如果一条记录有错，则所有该次操作插入的记录全部作废
+		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL"
+ 		WHERE SYS_CREATED_DATE =:IN_SYS_LAST_MODIFIED_DATE 
+ 		AND PULL_HEADER_ID = :PULL_HEADER_ID;
+ 		 		
+ 		DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL_LOG"
+ 		WHERE AT_ACTION = 'insert' AND AT_MODIFIED_TIME = :IN_SYS_LAST_MODIFIED_DATE
+ 		AND  PULL_HEADER_ID = :PULL_HEADER_ID; 
+		return;
+	end if;
+		      		
+	--赋值MATNR_DESCR,先判断是否存在
+	SELECT COUNT(1) INTO n FROM "MXEBGVMI"."ITEMSITEMASTER" WHERE ITEM=:MATNR AND SITEID=:SRC_WERKS; 
+	MATNR_DESCR := '';
+	if n>0 then 
+	
+		SELECT top 1 ITEMDESC into MATNR_DESCR FROM "MXEBGVMI"."ITEMSITEMASTER" WHERE ITEM=:MATNR AND SITEID=:SRC_WERKS; 
+	end if;
+
+	FULL_BOX_QTY := :PULL_QTY;
+	
+	--赋值PULL_LINE_ID。如果传入真实的PULL_LINE_ID值，代表数据库中肯定存在一条这样的数据，n赋值为1
+    --否则，生成PULL_LINE_ID，并将n设为0
+    n := 1;
+    final_pull_line_id := :PULL_LINE_ID;
+
+    if(:PULL_LINE_ID ='NEW') 
+    then
+    	--LINE_ID没有传入实际的数据，说明是需要新创建的数据，LINE_ID需要生成		
+		SELECT 'PL'||"MXEBGVMI"."cdp.mxebgvmi.sequences::SEQ_PULL_LINE_ID".NEXTVAL 
+		INTO final_pull_line_id FROM DUMMY;
+		
+		--避免主键冲突，sequence为LINE_ID迭代
+		select count(1) into n from "MXEBGVMI"."UI_MANUAL_PULL"
+		where PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :final_pull_line_id;
+		
+		WHILE n>0 DO
+			SELECT 'PL'||"MXEBGVMI"."cdp.mxebgvmi.sequences::SEQ_PULL_LINE_ID".NEXTVAL
+				INTO final_pull_line_id FROM DUMMY;	
+			select count(1) into n from "MXEBGVMI"."UI_MANUAL_PULL"
+			where PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :final_pull_line_id;
+		END WHILE;	
+		n := 0;
+    end if;
+	
+	if(validate1 >0 and validate2>0 and validate3>0 ) then
+		if (n>0) then
+			select count(1) into n from "MXEBGVMI"."UI_MANUAL_PULL"
+		 	 	where PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :final_pull_line_id
+				 	AND STATUS = 'DRAFT';
+			--只更新STATUS是'DRAFT'的记录
+			if n>0 then
+				UPDATE "MXEBGVMI"."UI_MANUAL_PULL"
+				SET 
+				 DEST_STORAGE_LOC = :DEST_STORAGE_LOC,
+				 DEST_STORAGE_TYPE = :DEST_STORAGE_TYPE,
+				 DEST_STORAGE_BIN =	:DEST_STORAGE_BIN,
+				 SRC_WERKS = :SRC_WERKS,
+				 PHYSICAL_PLANT = :PHYSICAL_PLANT,
+				 INVENTORY_TYPE = :INVENTORY_TYPE,
+				 PRODUCTION_LINE = :PRODUCTION_LINE,
+				 HEAD_SUPPLIERID = :HEAD_SUPPLIERID,
+				 DELIVERY_DATE = :DELIVERY_DATE,
+				 MATNR = :MATNR,
+				 PULL_QTY = :PULL_QTY,
+				 SRC_STORAGE_TYPE = :SRC_STORAGE_TYPE,
+				 SRC_STORAGE_BIN = :SRC_STORAGE_BIN,
+				 SRC_STORAGE_LOC = :SRC_STORAGE_LOC,
+				 LINE_SUPPLIERID = :LINE_SUPPLIERID,
+				 REMARK = :REMARK,
+				 SYS_LAST_MODIFIED_BY = :currentUser,
+				 SYS_LAST_MODIFIED_DATE = :IN_SYS_LAST_MODIFIED_DATE,
+				 SYS_SOURCE = :SYS_SOURCE,
+				 STATUS = :STATUS,
+				 PULL_TYPE = :PULL_TYPE
+				 --STATUS逻辑：save as draft按钮时，更新STATUS值为'DRAFT'的记录，更新为传入的值
+				 -- sent按钮时，更新'DRAFT'值为'NEW'
+				WHERE PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :final_pull_line_id
+					 	AND STATUS = 'DRAFT';
+			 	
+				--update操作需要写入日志
+				insert into "MXEBGVMI"."UI_MANUAL_PULL_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+					 	PULL_HEADER_ID,PULL_LINE_ID,
+						DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK,
+					 	STATUS,
+					 	PULL_TYPE,
+					 	
+					 	SYS_LAST_MODIFIED_BY,
+					 	SYS_LAST_MODIFIED_DATE
+					)
+				VALUES
+				(:currentUser,
+					 	'update',
+					 	:create_time,
+					 	:PULL_HEADER_ID,:final_pull_line_id,
+						:DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+					 	:STATUS,
+					 	:PULL_TYPE,
+					 	:currentUser,
+					 	:IN_SYS_LAST_MODIFIED_DATE
+				);	 	
+			end if;
+					 	
+			result_status :=1;
+		ELSEIF n<= 0 then
+			INSERT INTO "MXEBGVMI"."UI_MANUAL_PULL"(PULL_HEADER_ID,PULL_LINE_ID,
+				DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK,
+		 		SYS_SOURCE,STATUS,PULL_TYPE,
+		 		SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			 	)
+			 VALUES(:PULL_HEADER_ID,:final_pull_line_id,
+				 	 :DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+				 	 :SYS_SOURCE,:STATUS,:PULL_TYPE,
+				 	 :currentUser,
+				 	 :IN_SYS_LAST_MODIFIED_DATE,
+				 	 :currentUser,
+				 	 :IN_SYS_LAST_MODIFIED_DATE);
+			 	
+			--insert操作需要写入日志
+			insert into "MXEBGVMI"."UI_MANUAL_PULL_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				 	PULL_HEADER_ID,PULL_LINE_ID,
+					DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK,
+				 	STATUS,PULL_TYPE,
+				 	SYS_CREATED_BY,
+				 	SYS_CREATED_DATE
+				)
+			VALUES
+			(:currentUser,
+				 	'update',
+				 	:create_time,
+				 	:PULL_HEADER_ID,:final_pull_line_id,
+					:DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK,
+				 	:STATUS,:PULL_TYPE,
+				 	:currentUser,
+				 	:IN_SYS_LAST_MODIFIED_DATE
+			);	 			 	
+			result_status :=1;
+			
+		END IF;
+	
+	
+	END IF;
+	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'MXEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+END;

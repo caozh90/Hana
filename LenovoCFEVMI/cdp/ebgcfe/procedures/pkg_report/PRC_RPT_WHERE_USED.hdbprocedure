@@ -1,0 +1,408 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_WHERE_USED" ( 
+  IN V_CYCLE VARCHAR(40),
+  IN V_PartNumber VARCHAR(1000),
+  OUT p_out_exitcode  NUMBER
+--  OUT p_out_exitmessage VARCHAR(500)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_RPT_WHERE_USED         
+*function   : Build Where Used Table
+*input      ：v_cycle : cycle / v_partnumber : part
+*output     : p_out_exitcode : error code / p_out_exitmessage : error message
+*author     : Leonard Ling
+*CreateDate : 2015-01-23
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+--      v_plant_log     type_log_proc := type_log_proc('prc_rpt_where_used');
+--    v_cur_sql       VARCHAR(1000);
+--    v_where_clause  VARCHAR(512);
+--    v_auth_clause   VARCHAR(512);
+--    v_user_name     user_profile.login_name%TYPE ;
+    v_user_id       VARCHAR(64) := SESSION_USER;  --user_profile.ID%TYPE;
+--    v_upload_id     RPT_WHERE_USED.UPLOAD_ID%type;
+    v_product_group VARCHAR(20) := 'EBG';  --RPT_WHERE_USED.product_group%TYPE;
+--    v_cycle         UI_CYCLE.CYCLE%TYPE;
+--    v_brand         conf_grp_auth.brand%TYPE;
+--    v_part_number   UI_COST_TAPE%type;
+--    v_table_name    VARCHAR2(30);
+--    v_count         NUMBER;
+    --p_user_id       varchar2(50);
+    --p_in_cycle      varchar2(50);	
+    v_tmp_pra varchar(1000) := :V_PartNumber;
+    v_tmp_pra_value varchar(1000);
+BEGIN
+  -- data
+  DECLARE v_pkg_name          VARCHAR(30) := 'PKG_REPORT';
+  DECLARE v_prc_name          VARCHAR(30) := 'PRC_RPT_WHERE_USED';
+  DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN 
+          p_out_exitcode:=::SQL_ERROR_CODE;               
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+  -- process logic  
+  p_out_exitcode := -1;
+  --p_out_exitmessage := 'Failed';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  
+
+/*    --p_user_id   := PKG_BASE_FUNCS.GET_ATTR_VALUE(P_IN_ATTR_ARRAY,'USER_ID');
+
+    --p_in_cycle  := PKG_BASE_FUNCS.GET_ATTR_VALUE(P_IN_ATTR_ARRAY,'CYCLE');
+
+    --v_cycle     := p_in_cycle;
+
+    v_user_id   := SESSION_USER;  --p_user_id;
+
+    v_product_group := pkg_base_funcs.get_product_group (v_user_id);
+
+    v_auth_clause := ' where 1 = 1 ';
+
+    SELECT CASE IFNULL(:v_where_clause, 'NULL')
+             WHEN 'NULL' THEN
+              NULL
+             ELSE
+              ' and ' || v_where_clause
+           END FIELD
+      INTO v_where_clause
+      FROM DUAL;
+*/   
+-----------------------------------------------------------------------------------------------
+  delete from UI_WHERE_USED_MODEL where product_group = :v_product_group;
+  
+  while LOCATE(:v_tmp_pra,',') != 0
+  do 
+    v_tmp_pra_value := SUBSTR_BEFORE(:v_tmp_pra,',');
+    v_tmp_pra := SUBSTR_AFTER(:v_tmp_pra,',');
+  	insert into UI_WHERE_USED_MODEL(PRODUCT_GROUP,item,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY) 
+  	values ('EBG',:v_tmp_pra_value,CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER);
+  end while;
+  if LOCATE(:v_tmp_pra,',') = 0 and LENGTH(:v_tmp_pra) != 0
+  then
+  	insert into UI_WHERE_USED_MODEL(PRODUCT_GROUP,item,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY) 
+  	values ('EBG',:v_tmp_pra,CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER);
+  end if;
+--------------------------------------------------------------------------------------------------  	
+
+  DELETE FROM RPT_where_used t
+         WHERE t.product_group = :v_product_group;
+          
+    --commit;
+
+  IF :v_cycle = 'CURRENT' THEN
+
+---PART IN MTM
+     INSERT INTO RPT_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                'CURRENT',
+                b.model,
+                b.children,
+                s.children,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' '),
+                b.father,
+                b.Item_type_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM biz_cbom_mtmsbb b, biz_cbom_sbb s
+          WHERE s.children in (select a.item  from UI_WHERE_USED_MODEL a where a.sys_created_by=:v_user_id)
+            AND s.product_group = b.product_group
+            AND s.model = b.children
+            AND s.plant = b.plant
+            and b.product_group=:v_product_group
+            and s.product_group=:v_product_group;
+
+          --COMMIT;
+
+            ---SBB IN MTM
+            INSERT INTO RPT_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                'CURRENT',
+                b.model,
+                b.father,
+                b.children,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' '),
+                b.father,
+                b.Item_type_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM  BIZ_CBOM_MTMSBB b
+          WHERE b.children in (select s.item  from UI_WHERE_USED_MODEL s where s.sys_created_by=:v_user_id)            
+            and b.product_group=:v_product_group;
+
+           --COMMIT;
+
+        
+---PART IN CTO
+     INSERT INTO rpt_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                'CURRENT',
+                b.model,
+                b.children,
+                s.children,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' '),
+                b.father,
+                b.item_type_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM biz_cbom_ctosbb b, biz_cbom_sbb s
+          WHERE s.children in (select a.item from UI_WHERE_USED_MODEL a where a.sys_created_by=:v_user_id)
+            AND s.product_group = b.product_group
+            AND s.model = b.children
+            AND s.plant = b.plant
+            and b.product_group=:v_product_group
+            and s.product_group=:v_product_group;
+
+          --COMMIT;
+
+
+---SBB IN CTO
+     INSERT INTO RPT_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                'CURRENT',
+                B.model,
+                b.father,
+                b.children,
+                b.plant,
+                B.brand,
+                IFNULL(b.asp_prd_family,' '),
+                b.father,
+                b.Item_type_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM BIZ_CBOM_CTOSBB b
+          WHERE b.children in (select s.item from UI_WHERE_USED_MODEL s where s.sys_created_by=:v_user_id)           
+            and b.product_group=:v_product_group;
+
+            --COMMIT;
+
+--PART IN SBB
+    INSERT INTO RPT_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                'CURRENT',
+                b.model,
+                b.father,
+                b.children,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,'SBB'),
+                b.father,
+                b.ITEM_TYPE_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM BIZ_CBOM_SBB b
+          WHERE b.children in (select s.item  from UI_WHERE_USED_MODEL s where s.sys_created_by=:v_user_id)
+          and b.product_group=:v_product_group;
+
+  ELSE-- for history data
+
+    ---PART IN MTM HIS
+    INSERT INTO RPT_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                b.cycle,
+                b.model,
+                b.father,
+                b.children,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' '),
+                b.father,
+                B.item_type_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM BIZ_CBOM_MTMSBB_HIS b
+          WHERE b.children  in (select s.item from UI_WHERE_USED_MODEL s where s.sys_created_by=:v_user_id)         
+            AND b.cycle_productgroup=:v_cycle||:v_product_group;
+
+            --COMMIT;
+
+    ---SBB IN MTM HIS
+    INSERT INTO rpt_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                b.cycle,
+                b.model,
+                b.children,
+                s.children,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' '),
+                b.father,
+                b.item_type_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM biz_cbom_mtmsbb_his b, biz_cbom_sbb_his s
+          WHERE s.children  in (select a.item  from UI_WHERE_USED_MODEL a where a.sys_created_by=:v_user_id)
+            --AND s.product_group = b.product_group
+            AND s.model = b.children
+            AND s.plant = b.plant
+            AND b.cycle_productgroup=:v_cycle||:v_product_group
+            AND s.cycle_productgroup=:v_cycle||:v_product_group;
+
+          --COMMIT;
+
+    --Part IN CTO HIS
+    INSERT INTO RPT_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                b.cycle,
+                b.model,
+                b.children,
+                s.children,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' '),
+                b.father,
+                b.item_type_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM biz_cbom_ctosbb_his b, biz_cbom_sbb_his s
+          WHERE s.children in (select a.item  from UI_WHERE_USED_MODEL a where a.sys_created_by=:v_user_id)
+            --AND s.product_group = b.product_group
+            AND s.model = b.children
+            AND s.plant = b.plant
+            AND b.cycle_productgroup=:v_cycle||:v_product_group
+            AND s.cycle_productgroup=:v_cycle||:v_product_group;
+
+          --COMMIT;
+
+    --SBB IN CTO HIS
+    INSERT INTO rpt_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                b.cycle,
+                B.model,
+                b.father,
+                b.children,
+                b.plant,
+                B.brand,
+                IFNULL(b.asp_prd_family,' '),
+                b.father,
+                b.item_type_m,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM BIZ_CBOM_CTOSBB_HIS b
+          WHERE b.children in (select s.item  from UI_WHERE_USED_MODEL s where s.sys_created_by=:v_user_id)  
+            AND b.cycle_productgroup=:v_cycle||:v_product_group;
+
+            --COMMIT;
+
+/*    INSERT INTO rpt_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                b.cycle,
+                B.model,
+                b.father,
+                b.children,
+                b.plant,
+                B.brand,
+                IFNULL(b.asp_prd_family,' '),
+                b.father,
+                b.item_type_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM BIZ_CBOM_CTOSBB_HIS b
+          WHERE b.children in (select s.item   from UI_WHERE_USED_MODEL s where s.sys_created_by=:v_user_id)          
+            AND b.cycle_productgroup=:v_cycle||:v_product_group;
+    --COMMIT;
+*/
+    --PART IN SBB HIS
+    INSERT INTO RPT_where_used
+          (product_group,cycle,model,father,part_number,plant,brand,prod_family,top_level,top_level_type,description,
+          sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+          SELECT DISTINCT b.product_group,
+                b.CYCLE,
+                b.model,
+                b.father,
+                b.children,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,'SBB'),
+                b.father,
+                b.ITEM_TYPE_M,
+                b.item_desc,
+                CURRENT_TIMESTAMP,
+                :v_user_id,
+                CURRENT_TIMESTAMP,
+                :v_user_id
+          FROM BIZ_CBOM_SBB_HIS b
+          WHERE b.children in (select s.item  from UI_WHERE_USED_MODEL s where s.sys_created_by=:v_user_id)
+          and b.product_group=:v_product_group;
+  END IF;
+  
+/*  v_cur_sql := v_cur_sql || v_auth_clause
+                || v_where_clause
+                || ' and PART_NUMBER like ''' || '%' || v_part_number || '%'||''''
+            
+                || ' order by sys_last_modified_date DESC NULLS LAST';
+    v_plant_log.INFO('sql:',v_cur_sql);
+    v_plant_log.proc_end();
+*/
+
+  p_out_exitcode := 0;
+  --p_out_exitmessage := 'SUCCESSFUL';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+	                                          I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');   
+END;

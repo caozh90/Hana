@@ -1,0 +1,28 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_comp_cost_upload_delete" (
+IN business_code nvarchar(20)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_comp_cost_upload_delete              --函数名
+*function  : 清空中间表MID_UI_COST_TAPE_ORI中的数据            --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-03-04       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	select ::SQL_ERROR_MESSAGE SQL_ERROR_MESSAGE from dummy;
+    END; 
+    --exception 
+
+	delete from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where business_code = :business_code;
+
+END;

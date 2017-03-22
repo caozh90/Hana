@@ -1,0 +1,397 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_ITEM_NETCHG" ( 
+  IN p_in_lastrundate TIMESTAMP,
+  OUT p_out_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA  
+/************************************************************************
+*name       : PRC_PCDW_ITEM_NETCHG            
+*function   : Item Master Net Change
+*input      ：p_in_lastrundate : last run date
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2014-12-03
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+              --Modified by Zhoubinbin 20170209, Add ownpr and sysx_flag columns
+*************************************************************************/		
+	AS
+BEGIN
+  -- data
+  DECLARE    v_g_pkg_name    VARCHAR(30) := 'PKG_PCDW_TO_CFE';   
+  DECLARE    v_prc_name      VARCHAR(30) := 'PRC_PCDW_ITEM_NETCHG';
+  --    v_pspd_log type_log_proc
+  --          := type_log_proc (v_g_pkg_name || '.' || v_prc_name) ;
+  DECLARE    v_lastrundate   TIMESTAMP;
+  DECLARE    v_count         INTEGER;
+  DECLARE    v_full_name     VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+  DECLARE    v_logidi        INTEGER := 0;  
+  DECLARE    v_logidj        INTEGER := 0;    
+  DECLARE    v_logidk        INTEGER := 0;    
+  DECLARE    v_logidl        INTEGER := 0;   
+  DECLARE    v_logidm        INTEGER := 0;    
+  DECLARE    v_logidn        INTEGER := 0;   
+  DECLARE    v_step          INTEGER := 0;   
+  
+  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+      --   ROLLBACK;
+      /* originally commented out
+         UPDATE   conf_sync_lastrun
+            SET   ENDDATE = CURRENT_TIMESTAMP, returncode = -1
+          WHERE   pkgname = :v_g_pkg_name AND progname = :v_prc_name;
+         COMMIT;  */
+        p_out_exitcode := ::SQL_ERROR_CODE; 
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+				I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+	                                    substr(::SQL_ERROR_MESSAGE, 1, 500) );         
+       --  COMMIT;  
+  END;  
+  
+  -- process logic
+      p_out_exitcode := -1;
+      --v_pspd_log.proc_start;
+	  v_logidi:=0;
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+		I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');       
+      --COMMIT;
+      --EXEC 'COMMIT';
+
+      --EXECUTE IMMEDIATE 'TRUNCATE TABLE   z_mid_pcdwitemsit';
+      DELETE FROM mid_pcdwitemsit;
+
+      v_lastrundate := :p_in_lastrundate;
+
+      --v_pspd_log.info (
+      --   'step 1....' || TO_CHAR (SYSDATE, 'yyyy-mm-dd hh:mi:ss')
+      --);
+      v_step:=:v_step+1;
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"
+	    (I_TYPE=>'INFO',I_LOGSID=>:v_logidj,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+					    I_MESSAGE=>'step '||to_char(:v_step)||'....'|| TO_CHAR(CURRENT_TIMESTAMP));       
+  
+
+      INSERT INTO mid_PCDwITEMsit (ITEM,
+                                     SITEID,
+                                     MAKTX,
+                                     MMSTA,
+                                     MTART,
+                                     PRODFAMILY,
+                                     EXTWG,
+                                     ITEMCLASS,
+                                     STPRS,
+                                     PEINH,
+                                     MVGR1,
+                                     PRODH,
+                                     SVPRODH,
+                                     VERPR,
+                                     LVORM,
+                                     ZPRFA,
+                                     EM_COUNTRY,
+                                     EM_GEO,
+                                     EM_SUBGEO,
+                                     SYS_CREATED_DATE,
+                                     SYS_CREATED_BY,
+                                     SYS_LAST_MODIFIED_DATE,
+                                     SYS_LAST_MODIFIED_BY,
+                                     STRGR,
+                                     STAWN,
+                                     stdpd,
+                                     BESKZ,
+                                     SCHGT,
+                                     Bismt,
+                                     SOBSL,
+                                     Mfrgr,
+                                     EKGRP,
+                                     WAERS,
+                                     MATKL,
+                                     CCPRODH,
+                                     CUSTOMMODELFLAG,
+                                     BASEWARRANTY,
+                                     BRGEW,
+                                     GEWEI,
+                                     ZLCOD,
+                                     ZUCOD,
+                                     ISSBB,
+                                     ZEINR,
+                                     X_ENTITY_TYPE,
+                                     X_COFCAT,
+                                     X_SPECMODDESG,
+                                     X_WW_ANNC_DATE,
+                                     X_WW_WITHDRAW_DATE,
+                                     X_COFSUBCAT,
+                                     OWNPR)
+         SELECT   CASE WHEN LENGTH(ITEM) = 18 THEN RIGHT(ITEM, 10) ELSE ITEM END AS ITEM,
+                  SITEID,
+                  CASE                            --Added by Water for PBI000000026103
+                    WHEN MAKTX IS NOT NULL THEN MAKTX
+                    WHEN MAKTX_CH IS NOT NULL THEN MAKTX_CH
+                    ELSE MAKTX_TCH
+                  END
+                   AS MAKTX,
+                  MMSTA,
+                  MTART,
+                  PRODFAMILY,
+                  EXTWG,
+                   ifnull(UD_ITEMCATEGORY,itemclass) itemclass,
+                  STPRS,
+                  PEINH,
+                  MVGR1,
+                  case when length(PRODH)=0 then null else PRODH end,
+                  case when length(SVPRODH)=0 then null else SVPRODH end,
+                  VERPR,
+                  LVORM,
+                  ZPRFA,
+                  SUBSTR (EM_COUNTRY, 1, 8),
+                  EM_GEO,
+                  EM_SUBGEO,
+                  sys_created_date,
+                  v_g_pkg_name || '.' || v_prc_name,
+                  sys_last_modified_date,
+                  v_g_pkg_name || '.' || v_prc_name,
+                  STRGR,
+                  STAWN,
+                  STDPD,
+                  BESKZ,
+                  SCHGT,
+                  Bismt,
+                  SOBSL,
+                  Mfrgr,
+                  EKGRP,
+                  WAERS,
+                  MATKL,
+                  case when length(CCPRODH)=0 then null else CCPRODH end,
+                  CUSTOMMODELFLAG,
+                  BASEWARRANTY,
+                  BRGEW,
+                  GEWEI,
+                  ZLCOD,
+                  case when length(ZUCOD)=0 then null else ZUCOD end,
+                  ISSBB,
+                  ZEINR,
+                  X_ENTITY_TYPE,
+                  X_COFCAT,
+                  X_SPECMODDESG,
+                  CASE WHEN X_WW_ANNC_DATE IS NULL THEN MIN(X_WW_ANNC_DATE) OVER(PARTITION BY ITEM )  ELSE X_WW_ANNC_DATE END,
+                  CASE WHEN X_WW_WITHDRAW_DATE IS NULL THEN MAX(X_WW_WITHDRAW_DATE) OVER(PARTITION BY ITEM )  ELSE X_WW_WITHDRAW_DATE END,
+                  X_COFSUBCAT,
+                  OWNPR
+           FROM   "PCDW".PCDW_ITEMSITEMASTER A
+          WHERE   EXISTS (SELECT   NULL
+                            FROM   CONF_PLANT_BUGRP_MAPPING B
+                           WHERE   A.SITEID = B.PLANT)
+                  AND (A.SYS_LAST_MODIFIED_DATE > v_lastrundate
+                       OR A.SYS_CREATED_DATE > v_lastrundate);
+                -- AND not exists (select 1 from biz_item_refresh c where c.item = a.item and c.siteid = a.siteid );                
+          
+          --EXECUTE IMMEDIATE 'truncate table  z_biz_item_refresh';     
+          --DELETE FROM biz_item_refresh;
+         
+      --COMMIT;
+      --EXEC 'COMMIT';
+      
+      --v_pspd_log.info (
+      --   'step 2....' || TO_CHAR (SYSDATE, 'yyyy-mm-dd hh:mi:ss')
+      --);
+      v_step:=:v_step+1;     
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"
+	    (I_TYPE=>'INFO',I_LOGSID=>:v_logidk,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+					    I_MESSAGE=>'step '||to_char(:v_step)||'....'|| TO_CHAR(CURRENT_TIMESTAMP));   
+					
+	  --Use ZUCOD to filter PC data
+	  DELETE FROM mid_pcdwitemsit t1
+	  WHERE t1.zucod IS NOT NULL 
+	    AND NOT EXISTS(SELECT 1 FROM conf_itemtype t2
+	                    WHERE t2.zucod = t1.zucod)
+	    AND EXISTS(SELECT 1 FROM conf_plant_bugrp_mapping t3
+	                WHERE t3.plant        = t1.siteid
+	                  AND t3.zucod_filter = 'Y');     
+	                  
+	  --Added by Zhoubinbin 20170209
+	  --Set zeinr value to pubs, so these parts cost can be set to a low cost in bom cal logic
+	  UPDATE mid_pcdwitemsit t1
+	     SET t1.zeinr = 'PUBS'
+	   WHERE t1.mfrgr IN('LA' , 'ME', 'MA', 'LC', 'MF')
+	     AND t1.siteid IN(SELECT pvalue FROM conf_parameters
+	                       WHERE pdomain = 'SYSX'
+	                         AND pname   = 'PC_PLANT')
+	     AND NOT EXISTS(SELECT 1 FROM conf_parameters t2
+	                     WHERE t2.pdomain = 'BOM_CALCULATION'
+	                       AND t2.pname   = 'ZERO_BASIC_NAME'
+	                       AND t2.pvalue  = t1.zeinr);
+	  
+	  --Set sysx_flag value to X to recognize x86 items                     
+	  UPDATE mid_pcdwitemsit 
+	     SET sysx_flag = 'X'
+	   WHERE substr(prodh, 1, 1) = '7'
+	     AND substr(zlcod, 1, 1) = 'H'
+	     AND siteid IN(SELECT pvalue FROM conf_parameters
+	                    WHERE pdomain = 'SYSX'
+	                      AND pname   = 'PC_PLANT');
+
+      ---  exists pcdw_itemsitmaster  and   z_pcdw_item   date  delete  z_pcdw_item
+      DELETE FROM   Z_PCDW_ITEM z1
+            WHERE   EXISTS
+                       (SELECT   NULL
+                          FROM   mid_PCDWITEMSIT e1                   
+                         WHERE   z1.item = e1.item AND Z1.SITEID = E1.SITEID)
+                    AND INSTR (z1.SYS_CREATED_BY, 'PKG_PCDW_TO_CFE') > 0
+                    AND INSTR (z1.SYS_LAST_MODIFIED_BY, 'PKG_PCDW_TO_CFE') >
+                          0;
+      v_step:=:v_step+1;     
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+        (I_TYPE=>'INFO',I_LOGSID=>:v_logidl,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+                        I_MESSAGE=>'step '||to_char(:v_step)||'....'|| TO_CHAR(CURRENT_TIMESTAMP));
+
+
+      ---pcdw_itemsitemaster  date  insert  into  z+pcdw_item
+      INSERT INTO Z_PCDW_ITEM (ITEM,
+                               SITEID,
+                               MAKTX,
+                               MMSTA,
+                               MTART,
+                               PRODFAMILY,
+                               EXTWG,
+                               ITEMCLASS,
+                               STPRS,
+                               PEINH,
+                               MVGR1,
+                               PRODH,
+                               SVPRODH,
+                               VERPR,
+                               LVORM,
+                               ZPRFA,
+                               EM_COUNTRY,
+                               EM_GEO,
+                               EM_SUBGEO,
+                               SYS_CREATED_DATE,
+                               SYS_CREATED_BY,
+                               SYS_LAST_MODIFIED_DATE,
+                               SYS_LAST_MODIFIED_BY,
+                               STRGR,
+                               STAWN,
+                               Stdpd,
+                               BESKZ,
+                               SCHGT,
+                               ACTION,
+                               STATUS,
+                               Bismt,
+                               SOBSL,
+                               Mfrgr,
+                               EKGRP,
+                               WAERS,
+                               MATKL,
+                               CCPRODH,
+                               CUSTOMMODELFLAG,
+                               BASEWARRANTY,
+                               BRGEW,
+                               GEWEI,
+                               ZLCOD,
+                               ZUCOD,
+                               ISSBB,
+                               ZEINR,
+                               X_ENTITY_TYPE,
+                               X_COFCAT,
+                               X_SPECMODDESG,
+                               X_WW_ANNC_DATE,
+                               X_WW_WITHDRAW_DATE,
+                               X_COFSUBCAT,
+                               OWNPR,
+                               SYSX_FLAG)
+         SELECT   item,
+                  SITEID,
+                  MAKTX,
+                  MMSTA,
+                  MTART,
+                  PRODFAMILY,
+                  --Modified by Zhoubinbin 20150915, fix 247 error
+                  --EXTWG,
+                  TRIM(TO_NVARCHAR(EXTWG)),
+                  ITEMCLASS,
+                  STPRS,
+                  PEINH,
+                  MVGR1,
+                  case when length(PRODH)=0 then null else PRODH end,
+                  case when length(SVPRODH)=0 then null else SVPRODH end,
+                  VERPR,
+                  LVORM,
+                  ZPRFA,
+                  SUBSTR (EM_COUNTRY, 1, 8),
+                  EM_GEO,
+                  EM_SUBGEO,
+                  SYS_CREATED_DATE,
+                  v_g_pkg_name || '.' || v_prc_name,
+                  sys_last_modified_date,
+                  v_g_pkg_name || '.' || v_prc_name,
+                  STRGR,
+                  STAWN,
+                  stdpd,
+                  BESKZ,
+                  SCHGT,
+                  ACTION,
+                  STATUS,
+                  Bismt,
+                  SOBSL,
+                  Mfrgr,
+                  EKGRP,
+                  WAERS,
+                  MATKL,
+                  case when length(CCPRODH)=0 then null else CCPRODH end,
+                  CUSTOMMODELFLAG,
+                  BASEWARRANTY,
+                  BRGEW,
+                  GEWEI,
+                  ZLCOD,
+                  case when length(ZUCOD)=0 then null else ZUCOD end,
+                  ISSBB,
+                  ZEINR,
+                  X_ENTITY_TYPE,
+                  X_COFCAT,
+                  X_SPECMODDESG,
+                  X_WW_ANNC_DATE,
+                  X_WW_WITHDRAW_DATE,
+                  X_COFSUBCAT,
+                  OWNPR,
+                  SYSX_FLAG
+           FROM   mid_PCDWITEMSIT A
+          WHERE   NOT EXISTS
+                     (SELECT   NULL
+                        FROM   z_pcdw_item c
+                       WHERE   c.item = a.item AND a.siteid = c.siteid);
+                       
+      v_step:=:v_step+1;     
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+        (I_TYPE=>'INFO',I_LOGSID=>:v_logidm,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+                        I_MESSAGE=>'step '||to_char(:v_step)||'....'|| TO_CHAR(CURRENT_TIMESTAMP));
+
+      UPDATE   z_pcdw_item a
+         SET   --Modified at 2013-4-22 for VAO
+               --itemclass = 'COMPONENT'
+               itemclass = 'SBB'
+       WHERE   EXISTS (SELECT   NULL
+                         FROM   ui_part_selected b
+                        WHERE   b.part_number = a.item);
+     
+      v_step:=:v_step+1;     
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+        (I_TYPE=>'INFO',I_LOGSID=>:v_logidn,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+                        I_MESSAGE=>'step '||to_char(:v_step)||'....'|| TO_CHAR(CURRENT_TIMESTAMP));           
+      
+      p_out_exitcode := 0;
+      --v_pspd_log.proc_end ();
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');         
+      --COMMIT;
+      --EXEC 'COMMIT';
+   /* originally commented out
+                           UPDATE   conf_sync_lastrun c1
+            SET   lastrundate = startdate, returncode = 0, ENDDATE = SYSDATE
+          WHERE   pkgname = v_g_pkg_name AND progname = v_prc_name;
+         COMMIT;*/  
+    
+END;

@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_EXP_CFE_EXCHANGE_RATE_PSAT" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_EXP_CFE_EXCHANGE_RATE_PSAT"/>
+  <defaultSchema schemaName="PCDW"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="PRODUCT_GROUP" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="CYCLE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="CURRENCY_NAME" length="20"/>
+        <viewAttribute datatype="DECIMAL" id="M1" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M2" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M3" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M4" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M5" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M6" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M7" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M8" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M9" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M10" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M11" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M12" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M13" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M14" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M15" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M16" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M17" length="15" scale="4"/>
+        <viewAttribute datatype="DECIMAL" id="M18" length="15" scale="4"/>
+        <viewAttribute datatype="VARCHAR" id="ACTION" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="STATUS" length="40"/>
+        <viewAttribute datatype="TIMESTAMP" id="SYS_CREATED_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_CREATED_BY" length="100"/>
+        <viewAttribute datatype="TIMESTAMP" id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_BY" length="100"/>
+        <viewAttribute datatype="INTEGER" id="PRESICION"/>
+        <viewAttribute datatype="VARCHAR" id="CHANGE_ID" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="CHANGE_ACTION" length="40"/>
+        <viewAttribute datatype="TIMESTAMP" id="SYS_BAK_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="CYCLE_PRODUCTGROUP" length="50"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 
+ 	 var_out = 
+ 	 	SELECT 
+			product_group,
+			cycle,
+			currency_name,
+			m1,
+			m2,
+			m3,
+			m4,
+			m5,
+			m6,
+			m7,
+			m8,
+			m9,
+			m10,
+			m11,
+			m12,
+			m13,
+			m14,
+			m15,
+			m16,
+			m17,
+			m18,
+			action,
+			status,
+			sys_created_date,
+			sys_created_by,
+			sys_last_modified_date,
+			sys_last_modified_by,
+			presicion,
+			change_id,
+			change_action,
+			sys_bak_date,
+			cycle_productgroup
+		FROM pcdw.exp_cfe_exchange_rate_lastcycle; 
+		
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="PRODUCT_GROUP" order="1">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="CYCLE" order="2">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="CURRENCY_NAME" order="3">
+        <descriptions defaultDescription="CURRENCY_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="CURRENCY_NAME"/>
+      </attribute>
+      <attribute id="ACTION" order="22">
+        <descriptions defaultDescription="ACTION"/>
+        <keyMapping columnObjectName="Script_View" columnName="ACTION"/>
+      </attribute>
+      <attribute id="STATUS" order="23">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping columnObjectName="Script_View" columnName="STATUS"/>
+      </attribute>
+      <attribute id="SYS_CREATED_BY" order="25">
+        <descriptions defaultDescription="SYS_CREATED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_CREATED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="27">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="CHANGE_ID" order="29">
+        <descriptions defaultDescription="CHANGE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="CHANGE_ID"/>
+      </attribute>
+      <attribute id="CHANGE_ACTION" order="30">
+        <descriptions defaultDescription="CHANGE_ACTION"/>
+        <keyMapping columnObjectName="Script_View" columnName="CHANGE_ACTION"/>
+      </attribute>
+      <attribute id="CYCLE_PRODUCTGROUP" order="32">
+        <descriptions defaultDescription="CYCLE_PRODUCTGROUP"/>
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE_PRODUCTGROUP"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="M1" order="4" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M1"/>
+        <measureMapping columnObjectName="Script_View" columnName="M1"/>
+      </measure>
+      <measure id="M2" order="5" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M2"/>
+        <measureMapping columnObjectName="Script_View" columnName="M2"/>
+      </measure>
+      <measure id="M3" order="6" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M3"/>
+        <measureMapping columnObjectName="Script_View" columnName="M3"/>
+      </measure>
+      <measure id="M4" order="7" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M4"/>
+        <measureMapping columnObjectName="Script_View" columnName="M4"/>
+      </measure>
+      <measure id="M5" order="8" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M5"/>
+        <measureMapping columnObjectName="Script_View" columnName="M5"/>
+      </measure>
+      <measure id="M6" order="9" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M6"/>
+        <measureMapping columnObjectName="Script_View" columnName="M6"/>
+      </measure>
+      <measure id="M7" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M7"/>
+        <measureMapping columnObjectName="Script_View" columnName="M7"/>
+      </measure>
+      <measure id="M8" order="11" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M8"/>
+        <measureMapping columnObjectName="Script_View" columnName="M8"/>
+      </measure>
+      <measure id="M9" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M9"/>
+        <measureMapping columnObjectName="Script_View" columnName="M9"/>
+      </measure>
+      <measure id="M10" order="13" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M10"/>
+        <measureMapping columnObjectName="Script_View" columnName="M10"/>
+      </measure>
+      <measure id="M11" order="14" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M11"/>
+        <measureMapping columnObjectName="Script_View" columnName="M11"/>
+      </measure>
+      <measure id="M12" order="15" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M12"/>
+        <measureMapping columnObjectName="Script_View" columnName="M12"/>
+      </measure>
+      <measure id="M13" order="16" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M13"/>
+        <measureMapping columnObjectName="Script_View" columnName="M13"/>
+      </measure>
+      <measure id="M14" order="17" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M14"/>
+        <measureMapping columnObjectName="Script_View" columnName="M14"/>
+      </measure>
+      <measure id="M15" order="18" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M15"/>
+        <measureMapping columnObjectName="Script_View" columnName="M15"/>
+      </measure>
+      <measure id="M16" order="19" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M16"/>
+        <measureMapping columnObjectName="Script_View" columnName="M16"/>
+      </measure>
+      <measure id="M17" order="20" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M17"/>
+        <measureMapping columnObjectName="Script_View" columnName="M17"/>
+      </measure>
+      <measure id="M18" order="21" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M18"/>
+        <measureMapping columnObjectName="Script_View" columnName="M18"/>
+      </measure>
+      <measure id="SYS_CREATED_DATE" order="24" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <measureMapping columnObjectName="Script_View" columnName="SYS_CREATED_DATE"/>
+      </measure>
+      <measure id="SYS_LAST_MODIFIED_DATE" order="26" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <measureMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </measure>
+      <measure id="PRESICION" order="28" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="PRESICION"/>
+        <measureMapping columnObjectName="Script_View" columnName="PRESICION"/>
+      </measure>
+      <measure id="SYS_BAK_DATE" order="31" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="SYS_BAK_DATE"/>
+        <measureMapping columnObjectName="Script_View" columnName="SYS_BAK_DATE"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

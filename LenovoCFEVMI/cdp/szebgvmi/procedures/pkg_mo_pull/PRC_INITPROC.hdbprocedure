@@ -1,0 +1,128 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_mo_pull::PRC_INITPROC" (
+  IN  iv_id VARCHAR(10),OUT on_exitcode NUMBER
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "SZEBGVMI"
+    --READS SQL DATA 
+    /************************************************************************
+    *name       : PRC_INITPROC                      --函数名
+    *function   : Process Initialization            --函数功能
+    *input      : iv_id : site schedule id          --输入参数
+    *output     : -                                 --输出参数
+    *author     : Leonard Ling                      --作者
+    *CreateDate : 20141215                          --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）    
+    *************************************************************************/
+    AS         
+     gv_logic_name    VARCHAR(40)  := 'PKG_MO_PULL';    
+     gv_sys_source       VARCHAR(40) := 'FP';
+     gv_dept             VARCHAR(40) := 'SZEBG';  -- modify devtp from MEX to SZEBG 2016/1/13
+     v_logic_proc_name   VARCHAR(40) := 'PRC_INITPROC';
+     V_FUNC_FULL_NAME      VARCHAR(100) := :gv_logic_name || '.' || :v_logic_proc_name;       
+     logidi integer := 0;    
+     
+BEGIN
+   -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+    on_exitcode := ::SQL_ERROR_CODE; 
+		CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'SZEBGVMI',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+	                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+    END; 
+    
+  -- process logic  
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'SZEBGVMI');
+		
+     /*
+                   delete from PULL_LINE
+           where werks in (select siteid from ud_site_schedule where id=iv_id)
+             and sys_source = gv_sys_source
+             and dept = gv_dept
+             and status = 'IN_PROCESS';
+          delete from MID_MO_LINE
+           where werks in (select siteid from ud_site_schedule where id=iv_id)
+             and sys_source='FP';
+          delete from MID_CANCEL_MO_LINE
+           where werks in (select siteid from ud_site_schedule where id=iv_id)
+             and sys_source='FP';
+      */
+
+      /*
+                            delete from pull_line   where nvl(mo_type,'MO')='MO' and status = gv_status;
+          delete from mid_mo_line where status = 'OLD';
+          delete from mid_cancel_mo_line where status = gv_status;
+      */
+
+      /*
+                            delete from pull_line pl
+           where pull_line_id in (
+              select mo.pull_line_id
+                from mid_mo_line mo,
+                     pull_line   pl,
+                     ui_process_report upr
+               where pl.pull_header_id  = mo.pull_header_id
+                 and pl.pull_line_id    = mo.pull_line_id
+                 and mo.productionordid = upr.work_ord_num);
+          delete from mid_mo_line
+           where productionordid in (select work_ord_num from ui_process_report);
+          delete from mid_cancel_mo_line
+           where productionordid in (select work_ord_num from ui_process_report);
+      */
+      DELETE FROM   mid_supplier_priority;
+
+      DELETE FROM   full_box_remain;
+
+      --EXECUTE IMMEDIATE 'truncate table mid_mo_bom';   --added by wenfei for clearing the mid table which is used for LINE TO EXCESS
+
+      /*
+                            delete from inventory;
+        --delete from inventory where werks in (select siteid from ud_site_schedule where id=iv_id);
+      */
+      --BEGIN
+      --   EXECUTE IMMEDIATE 'truncate table inventory';
+      --END;
+      DELETE FROM inventory;
+
+      INSERT INTO inventory (matnr,
+                             whs_no,
+                             werks,
+                             lifnr,
+                             qty_available,
+                             qty_consumed,
+                             storage_location,
+                             storage_bin,
+                             storage_type,
+                             hold_type,
+                             sys_source,
+                             dept)
+         SELECT   matnr,
+                  whs_no,
+                  werks,
+                  lifnr,
+                  qty,
+                  0,
+                  storage_location,
+                  storage_bin,
+                  storage_type,
+                  hold_type,
+                  gv_sys_source,
+                  gv_dept
+           FROM   z_pcdw_inventory  --r3_inventory
+          WHERE       qty > 0
+                  AND werks IN (SELECT   siteid
+                                  FROM   conf_site_schedule  --ud_site_schedule
+                                 WHERE   ID = :iv_id)     --Added on 2007-08-08
+                  AND (special_stock = 'K' OR special_stock IS NULL OR special_stock=''); 
+      
+      exec 'commit';    -- add by xwu 2016/3/9
+      --COMMIT;     --commented by Leonard
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'SZEBGVMI'); 
+END;

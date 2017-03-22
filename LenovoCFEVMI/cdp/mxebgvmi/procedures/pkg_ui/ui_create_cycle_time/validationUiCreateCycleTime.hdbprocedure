@@ -1,0 +1,42 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_create_cycle_time::validationUiCreateCycleTime" ( 
+    IN "TPL_ID" VARCHAR(40),
+    IN "PULL_TYPE" VARCHAR(20),
+    IN "EVENT_TYPE" VARCHAR(64),
+    IN "CYCLE_TIME" DECIMAL(10,2),
+    IN OPER_TYPE VARCHAR(10),
+    OUT errorInfo NVARCHAR(100)
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA
+	/************************************************************************
+	*name      :                     validationUiCreateCycleTime
+	*function    :               
+	*input     ：               
+	*output     :                
+	*author     :                     FangYuan
+	*CreateDate    :                  2015.1.4
+	*UpdateDate  :        
+	*************************************************************************/ 
+	AS
+       cnt integer;
+	
+BEGIN
+    select count(1) into cnt
+    from UI_CREATE_CYCLETIME 
+    WHERE  TPL_ID = :TPL_ID AND PULL_TYPE = :PULL_TYPE AND EVENT_TYPE = :EVENT_TYPE;
+    
+    if :OPER_TYPE='INSERT' and  :cnt>0 then
+	        errorInfo:='Dulpicated primary key!';
+	        return ;
+
+    elseif :OPER_TYPE='UPDATE' and :cnt<=0 then
+            errorInfo:='Invalid primary key!';
+            return ;
+
+    end if;
+    
+    errorInfo:='';
+    
+END;

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_SBB_COSTBOM_SBB_FAMILY_SEARCH_DDL" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="false">
+  <descriptions defaultDescription="CV_UI_SBB_COSTBOM_SBB_SEARCH_DDL"/>
+  <localVariables>
+    <variable id="INPUT_CYCLE" parameter="true">
+      <descriptions defaultDescription="INPUT_CYCLE"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="0" length="40" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="INPUT_MODEL" parameter="true">
+      <descriptions defaultDescription="INPUT_MODEL"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="0" length="20" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="FAMILY" length="40"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#INPUT_CYCLE</localVariable>
+      <localVariable>#INPUT_MODEL</localVariable>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = SELECT DISTINCT ASP_PRD_FAMILY as &quot;FAMILY&quot; from &quot;EBGCFE&quot;.UI_ITEM 
+ 	 		  
+ 	 			WHERE ITEM = :INPUT_MODEL AND CYCLE = :INPUT_CYCLE
+ 	 			
+ 	 			UNION (SELECT DISTINCT ASP_PRD_FAMILY as &quot;FAMILY&quot; from &quot;EBGCFE&quot;.UI_ITEM_HIS 
+ 	 		  
+ 	 			WHERE ITEM = :INPUT_MODEL AND CYCLE = :INPUT_CYCLE);
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="FAMILY" order="1">
+        <descriptions defaultDescription="FAMILY"/>
+        <keyMapping columnObjectName="Script_View" columnName="FAMILY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

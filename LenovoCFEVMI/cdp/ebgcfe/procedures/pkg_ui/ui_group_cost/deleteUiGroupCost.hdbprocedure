@@ -1,0 +1,161 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::deleteUiGroupCost" (
+	IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_GROUP_COST_T"
+	,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER  
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA
+/************************************************************************
+*name      :                     deleteUiGroupCost
+*function    :               
+*input     ：               newInfo
+*output     :    errorInfo            
+*author     :                     Eric Zhou
+*CreateDate    :                  2014.12.18
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	   aI_DETAIL NVARCHAR(300) :='';
+	   alogide INTEGER :=0;
+	   v_product_group NVARCHAR(10);
+	   v_prod_family NVARCHAR(100); 
+	   v_mt NVARCHAR(10);	   
+	   v_item NVARCHAR(40);
+	   v_type NVARCHAR(40);
+	   v_brand NVARCHAR(40);
+	   v_plant NVARCHAR(50);
+	   v_cycle NVARCHAR(40);
+	   
+	   privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::deleteUiGroupCost error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::deleteUiGroupCost'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_group_cost::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+    
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::deleteUiGroupCost'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+ 
+select 'CURRENT',
+	 "PRODUCT_GROUP",
+	 "PROD_FAMILY",
+	 "MT",
+	 "ITEM",
+	 "TYPE",
+	 "BRAND",
+	 "PLANT" into v_cycle,v_product_group,v_prod_family,v_mt,v_item,v_type,v_brand,v_plant from :oldInfo; 
+	 
+-- delete record from table	  	
+delete from "EBGCFE"."UI_GROUP_COST" where CYCLE = :v_cycle
+		and PRODUCT_GROUP = :v_product_group and 
+		PROD_FAMILY = :v_prod_family and MT = :v_MT and ITEM = :v_ITEM and TYPE = :v_type
+		and BRAND = :v_brand and PLANT = :v_plant; 
+if ::rowcount < 0
+then
+	errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;
+end if;		
+	
+--insert log table
+insert into "EBGCFE"."UI_GROUP_COST_LOG"(
+	"CYCLE",
+	 "PRODUCT_GROUP",
+	 "PROD_FAMILY",
+	 "MT",
+	 "ITEM",
+	 "TYPE",
+	 "BRAND",
+	 "M1",
+	 "M2",
+	 "M3",
+	 "M4",
+	 "M5",
+	 "M6",
+	 "M7",
+	 "M8",
+	 "M9",
+	 "M10",
+	 "M11",
+	 "M12",
+	 "M13",
+	 "M14",
+	 "M15",
+	 "M16",
+	 "M17",
+	 "M18",
+	 "PLANT",
+	 "ACTION",
+	 "SYS_CREATED_DATE",
+	 "SYS_CREATED_BY",
+	 "AT_MODIFIED_ON",
+	 "AT_MILLIS"
+	 )SELECT 'CURRENT',
+	 		a."PRODUCT_GROUP",
+	 		a."PROD_FAMILY",
+	 		a."MT",
+	 		a."ITEM",
+	 		a."TYPE",
+	 		a."BRAND",
+	 		a."M1",
+	 		a."M2",
+	 		a."M3",
+	 		a."M4",
+	 		a."M5",
+	 		a."M6",
+	 		a."M7",
+	 		a."M8",
+	 		a."M9",
+	 		a."M10",
+	 		a."M11",
+		 	a."M12",
+		 	a."M13",
+	 		a."M14",
+	 		a."M15",
+	 		a."M16",
+	 		a."M17",
+		 	a."M18",
+	 		a."PLANT",
+	 		'delete',
+	 		CURRENT_TIMESTAMP,
+	 		SESSION_USER,
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a; 
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::deleteUiGroupCost successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_group_cost::deleteUiGroupCost'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);    	
+END;

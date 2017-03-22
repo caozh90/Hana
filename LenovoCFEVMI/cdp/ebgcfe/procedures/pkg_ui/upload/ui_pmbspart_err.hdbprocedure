@@ -1,0 +1,63 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pmbspart_err" 
+( 
+	IN error_message	varchar(4096),
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int	,
+	
+	IN PRODUCT_GROUP NVARCHAR(10),
+	IN OEM_NAME NVARCHAR(400),
+	IN BS_PART NVARCHAR(400),
+	IN COMMODITY NVARCHAR(200),
+	IN PART_DESC NVARCHAR(200)
+	
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS
+/************************************************************************
+*name      : ui_pm_bs_part              --函数名
+*function  : 保存在上传数据至表ui_pm_bs_part时产生的错误信息              --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Justin               --作者
+*CreateDate    : 2015-10-10       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+
+		business_code varchar(20);
+		table_name varchar(1000) := 'UI_PM_BS_PART';
+		PRODUCT_GROUP NVARCHAR(20) :='EBG';
+		currentUser varchar(100);
+		create_DATE LONGDATE;
+		privilegeExists  NVARCHAR(300)  ;
+
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+   --添加business信息
+		business_code := :SEQ;
+		
+		SELECT SESSION_USER INTO currentUser FROM DUMMY;
+		SELECT CURRENT_DATE INTO create_DATE FROM DUMMY;
+		
+  		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,0,1,:table_name);   
+			
+			--记录upload的错误
+     	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || :business_code,:position,:error_message,:table_name,:business_name); 
+     	
+     	--详细记录upload的数据信息
+      
+       insert into "EBGCFE"."UI_PM_BS_PART_ERR_DETAIL"(CODE,POSITION,PRODUCT_GROUP,OEM_NAME,
+     			BS_PART,COMMODITY,PART_DESC,SYS_CREATED_BY,SYS_CREATED_DATE)
+			
+		VALUES(:table_name || :business_code,:position,
+				:PRODUCT_GROUP,:OEM_NAME,:BS_PART,:COMMODITY,:PART_DESC,:currentUser,:create_DATE);
+	
+END;

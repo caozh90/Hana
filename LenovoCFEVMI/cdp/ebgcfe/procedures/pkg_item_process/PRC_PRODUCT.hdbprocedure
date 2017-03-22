@@ -1,0 +1,85 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_item_process::PRC_PRODUCT" (
+  IN  p_in_lastrundate   TIMESTAMP,
+  OUT p_out_exitcode     INTEGER
+ ) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    --READS SQL DATA 
+/************************************************************************
+*name       : PRC_PRODUCT            
+*function   : Process Product
+*input      ：p_in_lastrundate : last run timestamp
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-01-20
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/      
+    AS
+BEGIN
+  -- DATA
+  DECLARE    v_g_pkg_name        VARCHAR(30) := 'PKG_ITEM_PROCESS';      
+  DECLARE    v_prc_name          VARCHAR(50) := 'PRC_PRODUCT';
+  DECLARE    v_prc_full_name     VARCHAR(100) := v_g_pkg_name || '.' || v_prc_name;
+  DECLARE    v_last_runtime      TIMESTAMP;
+  DECLARE    v_subprc_name       VARCHAR(100);
+  DECLARE    v_subprc_exitcode   NUMBER;
+  DECLARE    exit_message        VARCHAR(100);
+  DECLARE    logidi              INTEGER := 0;  
+   
+  -- EXCEPTION
+  DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;    
+  DECLARE EXIT HANDLER FOR exp_procedure   
+    BEGIN
+        p_out_exitcode := ::SQL_ERROR_CODE;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+                                                  I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                                                  I_MESSAGE=>'ERROR', I_DETAIL=>:exit_message);                        
+    END;             
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+    --ROLLBACK;
+    p_out_exitcode := ::SQL_ERROR_CODE;
+    exit_message := substr(::SQL_ERROR_MESSAGE, 1, 500);
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+                                    I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                                    I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || :exit_message ); 
+    --COMMIT;                                  
+  END;    
+  
+  -- PROCESS LOGIC  
+  p_out_exitcode := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_prc_full_name,I_MODULE=>'EBGCFE');     
+  --COMMIT;     
+  v_last_runtime := p_in_lastrundate;
+  v_subprc_name := 'pkg_item_process.prc_product_item_lastrun';
+  CALL "cdp.ebgcfe.procedures.pkg_item_process::PRC_PRODUCT_ITEM_LASTRUN"(p_in_lastrundate=>:v_last_runtime, p_out_exitcode=>:v_subprc_exitcode);
+  IF :v_subprc_exitcode <> 0
+  THEN
+     exit_message := 'Error occured in ' || :v_subprc_name;
+     SIGNAL exp_procedure SET MESSAGE_TEXT = :exit_message; 
+  END IF;
+v_subprc_name := 'pkg_item_process.PRC_GET_SERIES';
+  CALL "cdp.ebgcfe.procedures.pkg_item_process::PRC_GET_SERIES"(p_in_lastrundate=>:v_last_runtime, p_out_exitcode=>:v_subprc_exitcode);
+  IF :v_subprc_exitcode <> 0
+  THEN
+     exit_message := 'Error occured in ' || :v_subprc_name;
+     SIGNAL exp_procedure SET MESSAGE_TEXT = :exit_message; 
+  END IF;
+
+  p_out_exitcode := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_prc_full_name,I_MODULE=>'EBGCFE');  
+  v_subprc_name := 'pkg_item_process.prc_product_item_process';
+  CALL "cdp.ebgcfe.procedures.pkg_item_process::PRC_PRODUCT_ITEM_PROCESS"(p_out_exitcode=>:v_subprc_exitcode);
+  IF :v_subprc_exitcode <> 0
+  THEN
+     exit_message := 'Error occured in ' || :v_subprc_name;
+     SIGNAL exp_procedure SET MESSAGE_TEXT = :exit_message; 
+  END IF;
+
+
+   
+  --COMMIT;    
+END;

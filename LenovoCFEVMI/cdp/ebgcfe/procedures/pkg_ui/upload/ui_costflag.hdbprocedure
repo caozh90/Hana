@@ -1,0 +1,196 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_costflag" 
+( 
+	IN SBB_TYPE NVARCHAR(30),
+	IN VK NVARCHAR(30),
+	IN COST_FLAG NVARCHAR(10),
+	IN business_name nvarchar(200),
+	IN SEQ	int,
+	IN position int	
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+	AS
+		path 					varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+		proc_name 				varchar(100) :='ui_costflag';
+		sys_last_modified_date 	TIMESTAMP;
+		log_detail 				NVARCHAR(300) :='';
+		logid0 					INTEGER :=0;
+		n 						int;
+		currentUser 			varchar(100);
+		create_DATE 			LONGDATE;
+		business_code 			nvarchar(20);
+		table_name 				varchar(1000) := 'UI_COSTFLAG';
+		validate1 				int;
+		validate2 				int;
+		validate3				int;
+		PRODUCT_GROUP 			NVARCHAR(20) :='EBG';
+		privilegeExists  		NVARCHAR(300)  ;
+	 	ZEINR 					NVARCHAR(40);
+	 	V_VK 					NVARCHAR(40);
+	 	V_SBB_TYPE 				NVARCHAR(40);
+BEGIN
+/***************************** 
+*name      : ui_costflag              --函数名
+*function  : upload数据至表ui_costflag并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : CHENWH3              --作者
+*UploadDate    : 2015-07-26       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+ *****************************/
+	
+--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_costflag_err"(::SQL_ERROR_MESSAGE,:business_name,
+              :SBB_TYPE,:VK,:COST_FLAG,:SEQ,:position);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_costflag_err"(::SQL_ERROR_MESSAGE,:business_name,
+              :SBB_TYPE,:VK,:COST_FLAG,:SEQ,:position);
+    END; 
+    business_code := :SEQ;
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_DATE FROM DUMMY;
+	sys_last_modified_date := create_DATE;
+	--SELECT CURRENT_TIMESTAMP INTO sys_last_modified_date FROM DUMMY;
+	--CHECK SBB_TYPE VK VALID
+	ZEINR := 'L1 '|| :SBB_TYPE;
+	
+
+
+	--CHECK V_SBB_TYPE VK  CAN NOT BOTH BE N/A 	
+ 	IF ( SBB_TYPE = 'N/A' AND VK = 'N/A') THEN
+ 		 call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_costflag_err"
+			('VK/SBB_type cannot both be N/A.',:business_name,
+			 	 :SBB_TYPE,:VK,:COST_FLAG,:SEQ,:position);
+ 		return;
+ 	END IF;
+	
+	
+	--CHECK V_SBB_TYPE VK  CAN NOT BOTH BE NULL 	
+ 	IF (SBB_TYPE = '' or SBB_TYPE is null or SBB_TYPE = 'N/A') AND (VK = '' or VK is null or VK = 'N/A') THEN
+ 		 call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_costflag_err"
+			('VK/SBB_type cannot both be empty.',:business_name,
+			 	 :SBB_TYPE,:VK,:COST_FLAG,:SEQ,:position);
+ 		return;
+ 	END IF;
+
+	--CHECK V_SBB_TYPE VK  NOT BOTH BE NOT NULL 	
+ 	IF (SBB_TYPE != '' and SBB_TYPE is not null and SBB_TYPE != 'N/A') AND (VK != '' and VK is not null and VK != 'N/A') THEN
+        call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_costflag_err"
+			('Either VK or SBB_type should be N/A.',:business_name,
+			 	 :SBB_TYPE,:VK,:COST_FLAG,:SEQ,:position);   
+ 		return;
+ 	END IF; 	
+ 	
+
+--CHECK VK VALID
+/*
+IF VK != '' and VK is not null and VK != 'N/A' THEN
+	SELECT COUNT(1) INTO VALIDATE1
+		FROM  "EBGCFE"."BIZ_FCSBBMAP"
+		WHERE VARCOND = :VK;
+	IF	VALIDATE1 <= 0
+	THEN
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_costflag_err"
+			('VK :  VALIDATION FAILED, NOT EXIST IN BIZ_FCSBBMAP',:business_name,
+			 	 :SBB_TYPE,:VK,:COST_FLAG,:SEQ,:position);   
+ 		return;
+	END IF;
+end if;
+--comment by zhengyl ,20160225
+*/
+
+--CHECK SBB_TYPE VALID
+IF SBB_TYPE != '' and SBB_TYPE is not null and SBB_TYPE != 'N/A' THEN
+	
+ 	SELECT COUNT(1) INTO VALIDATE1
+ 		FROM "EBGCFE"."UI_ITEM"
+ 		WHERE ZEINR = :ZEINR;
+	IF	VALIDATE1 <= 0
+	THEN
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_costflag_err"
+			('SBB_TYPE :  VALIDATION FAILED, NOT EXIST IN UI_ITEM',:business_name,
+			 	 :SBB_TYPE,:VK,:COST_FLAG,:SEQ,:position);   
+ 		return;
+	END IF;
+end if;
+
+--CHECK COST_FLAG VALID   
+
+	
+ 	SELECT COUNT(1) INTO VALIDATE1
+ 		FROM "EBGCFE"."CONF_PARAMETERS"
+ 		WHERE PDOMAIN='UI_COSTFLAG' AND PNAME='COST_FLAG' AND PVALUE = :COST_FLAG;
+	IF	VALIDATE1 <= 0
+	THEN
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_costflag_err"
+			('COST_FLAG :  VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS',:business_name,
+			 	 :SBB_TYPE,:VK,:COST_FLAG,:SEQ,:position);   
+ 		return;
+	END IF;
+
+	
+	V_VK := VK;
+	IF  VK = '' or VK is null THEN
+   		V_VK := 'N/A';
+   	END IF ;
+   	
+   	V_SBB_TYPE := SBB_TYPE;
+   	IF  SBB_TYPE = '' or SBB_TYPE is null THEN
+   		V_SBB_TYPE := 'N/A';
+   	END IF ;
+	
+	
+		SELECT COUNT(1) INTO N 
+			FROM "EBGCFE"."UI_COSTFLAG"
+			WHERE SBB_TYPE = :V_SBB_TYPE AND VK = :V_VK;
+		IF N > 0 THEN
+			UPDATE "EBGCFE"."UI_COSTFLAG"
+			SET COST_FLAG = :COST_FLAG,
+				SYS_LAST_MODIFIED_DATE = :sys_last_modified_date,
+				SYS_LAST_MODIFIED_BY = :currentUser,
+				ACTION = 'update'
+				WHERE SBB_TYPE = :V_SBB_TYPE AND VK = :V_VK;
+				
+			 --INSERT INTO UI_COSTFLAG_LOG TABLE
+    		insert into "EBGCFE"."UI_COSTFLAG_LOG"(PRODUCT_GROUP,SBB_TYPE,VK,COST_FLAG,AT_ACTION,AT_MODIFIED_BY,AT_MODIFIED_ON,AT_MILLIS)
+    		values(
+		    'EBG',
+		    :SBB_TYPE,
+		    :VK,
+		    :COST_FLAG,
+		    'update',
+	 		SESSION_USER,
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))); 	
+	 		
+	 		
+		ELSE
+			INSERT INTO  "EBGCFE"."UI_COSTFLAG" (PRODUCT_GROUP,SBB_TYPE,VK,COST_FLAG,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION)
+			VALUES ('EBG',:V_SBB_TYPE,:V_VK,:COST_FLAG,create_DATE,currentUser,create_DATE,currentUser,'insert');
+			
+		    --INSERT INTO UI_COSTFLAG_LOG TABLE
+			insert into "EBGCFE"."UI_COSTFLAG_LOG"(PRODUCT_GROUP,SBB_TYPE,VK,COST_FLAG,AT_ACTION,AT_MODIFIED_BY,AT_MODIFIED_ON,AT_MILLIS) 
+	       values(
+		    'EBG',
+		    :SBB_TYPE,
+		    :VK,
+		    :COST_FLAG,
+		    'insert',
+	 		SESSION_USER,
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))); 	
+		END IF;
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+
+	
+	
+END;

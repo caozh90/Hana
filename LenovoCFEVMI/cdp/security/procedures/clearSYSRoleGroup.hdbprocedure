@@ -1,0 +1,110 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::clearSYSRoleGroup" ( 
+	) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	RTName String; 
+	userExists Integer := 0;
+	groupExists Integer := 0;
+	
+BEGIN
+/***************************** 
+
+	call "SECURITY"."cdp.security.procedures::clearSYSRoleGroup"();
+	
+ *****************************/
+ /*
+ exec 'DROP ROLE "cdp.security.cdr.group::1000000003"';
+ exec 'DROP ROLE "cdp.security.cdr.group::1000000013"';
+ exec 'DROP ROLE "cdp.security.cdr.group::1000000014"';
+ exec 'DROP ROLE "cdp.security.cdr.group::1000000015"';
+ exec 'DROP ROLE "cdp.security.cdr.group::1000000017"';
+exec 'DROP ROLE "cdp.security.cdr.group::12433"';
+*/
+
+-- exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000017"';
+-- -exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000018"';
+-- exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000020"';
+-- exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000021"';
+-- exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000022"';
+ --exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000058"';
+ --exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000059"';
+ 
+exec 'DROP ROLE "cdp.security.cdr.group::1000000002"';
+exec 'DROP ROLE "cdp.security.cdr.group::1000000003"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000001"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000002"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000004"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000005"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000006"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000007"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000008"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000009"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000010"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000011"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000012"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000014"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000015"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000016"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000017"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000018"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000019"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000020"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000021"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000022"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000023"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000024"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000025"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000026"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000027"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000028"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000029"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000030"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000031"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000032"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000033"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000034"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000035"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000036"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000037"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000038"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000039"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000040"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000041"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000042"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000043"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000044"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000045"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000046"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000047"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000048"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000049"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000050"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000051"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000052"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000053"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000054"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000055"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000056"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000057"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000058"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000059"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000060"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000061"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000062"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000063"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000064"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000065"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000066"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000067"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000068"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000069"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000070"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000071"';
+exec 'DROP ROLE "cdp.security.cdr.rolegroup::1000000072"';
+
+END;

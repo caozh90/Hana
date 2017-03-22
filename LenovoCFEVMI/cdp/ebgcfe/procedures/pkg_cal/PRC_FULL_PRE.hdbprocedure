@@ -1,0 +1,155 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cal::PRC_FULL_PRE" ( 
+  IN  P_CHANGE_ID     VARCHAR(100),
+  IN  P_PRODUCT_GROUP VARCHAR(20),
+  IN  P_USER_ID       VARCHAR(64),
+  OUT P_EXIT_CODE       INTEGER,
+  OUT P_EXIT_MESSAGE    VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_FULL_PRE         
+*function   : Full Calculation Pre-Process
+*input      ：p_change_id : change id / p_product_group : product group
+              p_user_id : user id
+*output     : p_exit_code : error code / p_exit_message : error message
+*author     : Leonard Ling
+*CreateDate : 2015-01-15
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+  -- data
+  DECLARE v_pkg_name          VARCHAR(30) := 'PKG_CAL';
+  DECLARE v_prc_name          VARCHAR(30) := 'PRC_FULL_PRE';
+  DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  DECLARE v_subprc_exitcode   INTEGER;
+  DECLARE V_CUTOFF_BOM_STATUS  VARCHAR(20);
+  DECLARE V_CUTOFF_MODEL_STATUS  VARCHAR(20);
+  
+  -- exception
+  DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;   
+  DECLARE EXIT HANDLER FOR exp_procedure   
+    BEGIN
+        p_exit_code := ::SQL_ERROR_CODE;
+        p_exit_message := ::SQL_ERROR_MESSAGE;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>:p_exit_message); 			           
+    END;    
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+        p_exit_code := ::SQL_ERROR_CODE;
+        p_exit_message := ::SQL_ERROR_MESSAGE;                
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+  -- process logic
+  P_EXIT_CODE := -1;
+  P_EXIT_MESSAGE := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  
+
+  -- BOM initialization
+  SELECT CONTROL_POINT_STATUS
+      INTO V_CUTOFF_BOM_STATUS
+      FROM UI_CONTROL_POINT
+     WHERE CONTROL_POINT = 'Cutoff BOM Refresh'
+       AND PRODUCT_GROUP = :P_PRODUCT_GROUP;
+  
+  --Call BOM and FC sync procedures at net change  
+  /*IF :V_CUTOFF_BOM_STATUS = 'NEW CYCLE'  THEN
+      CALL "cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_BOM_INIT"(:P_PRODUCT_GROUP, :V_SUBPRC_EXITCODE);
+      IF :V_SUBPRC_EXITCODE <> 0  THEN
+        P_EXIT_MESSAGE := 'Error occurred in pkg_pcdw_to_cfe::PRC_PCDW_BOM_INIT';
+        SIGNAL exp_procedure SET MESSAGE_TEXT = :P_EXIT_MESSAGE;   
+      END IF;    
+
+
+      CALL "cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_FCSBBMAP_INIT"(:P_PRODUCT_GROUP, :V_SUBPRC_EXITCODE);
+      IF :V_SUBPRC_EXITCODE <> 0  THEN
+        P_EXIT_MESSAGE := 'Error occurred in pkg_pcdw_to_cfe::PRC_PCDW_FCSBBMAP_INIT';
+        SIGNAL exp_procedure SET MESSAGE_TEXT = :P_EXIT_MESSAGE;   
+      END IF;      
+  END IF; */ 
+  
+  -- generate cost model list
+  SELECT CONTROL_POINT_STATUS
+      INTO V_CUTOFF_MODEL_STATUS
+      FROM UI_CONTROL_POINT
+     WHERE CONTROL_POINT = 'Cutoff Model List'
+       AND PRODUCT_GROUP = :P_PRODUCT_GROUP;
+
+  IF :V_CUTOFF_MODEL_STATUS = 'NEW CYCLE' THEN         
+  	  CALL "cdp.ebgcfe.procedures.pkg_cost_model_list::PRC_FULL_COST_MODEL_LIST"(:V_SUBPRC_EXITCODE);	                                 
+      IF :V_SUBPRC_EXITCODE <> 0  THEN
+        P_EXIT_MESSAGE := 'Error occurred in pkg_cost_model_list::PRC_FULL_COST_MODEL_LIST';
+        SIGNAL exp_procedure SET MESSAGE_TEXT = :P_EXIT_MESSAGE;   
+      END IF;          
+  END IF;
+  
+  DELETE FROM BIZ_TOPLAYER_CH;
+  INSERT INTO BIZ_TOPLAYER_CH
+      (PRODUCT_GROUP,
+       PLANT,
+       BOM_PLANT,
+       ASP_PRD_FAMILY,
+       BRAND,
+       SUBGEO,
+       ITEM,
+       CHILDREN,
+       COUNTRY,
+       CHANGE_ID,
+       RUN_GRP_ID,
+       CHANGE_TYPE,
+       RUN_LEVEL,
+       RUN_LEVEL_ORI,
+       EVENT_NAME,
+       USER_ID,
+       OUTPUT_TYPE,
+       ACTION,
+       STATUS,
+       SYS_CREATED_DATE,
+       SYS_CREATED_BY,
+       SYS_LAST_MODIFIED_DATE,
+       SYS_LAST_MODIFIED_BY)
+      SELECT PRODUCT_GROUP,
+             PLANT,
+             BOM_PLANT,
+             ASP_PRD_FAMILY,
+             BRAND,
+             SUBGEO,
+             ITEM,
+             NULL,
+             COUNTRY,
+             :P_CHANGE_ID,
+             :P_CHANGE_ID,
+             NULL,
+             'FULL',
+             'FULL',
+             :V_FULL_NAME,
+             :P_USER_ID,
+             ITEM_TYPE AS OUTPUT_TYPE,
+             'INSERT',
+             'ACTIVE',
+             CURRENT_TIMESTAMP,  
+             :V_FULL_NAME,
+             CURRENT_TIMESTAMP,  
+             :V_FULL_NAME
+        FROM BIZ_COST_MODEL_LIST M
+       WHERE M.PRODUCT_GROUP = :P_PRODUCT_GROUP
+         AND M.EOL_STATUS    = 'OL'
+         AND (BOM_PLANT<>'NO_BOM' 
+              OR exists (select 1 from z_pcdw_item c where m.item=c.item and c.beskz='F' and m.item_type='OPTION'))
+       ; 
+    		                                      
+  p_exit_code := 0;
+  p_exit_message := 'SUCCESSFUL';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+	                                          I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');     
+END;

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_GETMAP_RESOURCE_USER" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_GETMAP_RESOURCE_USER"/>
+  <attributes>
+    <attribute id="RESOURCE_ID" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="RESOURCE_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER" columnName="RESOURCE_ID"/>
+    </attribute>
+    <attribute id="MODULE_ID" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MODULE_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER" columnName="MODULE_ID"/>
+    </attribute>
+    <attribute id="RESOURCE_TYPE" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="RESOURCE_TYPE"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER" columnName="RESOURCE_TYPE"/>
+    </attribute>
+    <attribute id="VALUE" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="VALUE"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER" columnName="VALUE"/>
+    </attribute>
+    <attribute id="GROUP_ID" key="true" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="GROUP_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER" columnName="GROUP_ID"/>
+    </attribute>
+    <attribute id="USER_ID" key="true" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="USER_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER" columnName="USER_ID"/>
+    </attribute>
+    <attribute id="MODULE_NAME" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MODULE_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE" columnName="MODULE_NAME"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes>
+    <calculatedAttribute id="CDP_PRIVILEGE_NAME" hidden="false" order="8" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CDP_PRIVILEGE_NAME"/>
+      <keyCalculation datatype="NVARCHAR" length="300">
+        <formula>'securityAccess'</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+  </calculatedAttributes>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE"/>
+        <leftColumns>
+          <columnName>MODULE_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MODULE_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="4" y="44"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_MODULE" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="484" y="30"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

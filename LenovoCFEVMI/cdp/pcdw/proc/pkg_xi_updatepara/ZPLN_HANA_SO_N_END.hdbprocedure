@@ -1,0 +1,60 @@
+PROCEDURE "PCDW"."cdp.pcdw.proc.pkg_xi_updatepara::ZPLN_HANA_SO_N_END" (IN iv_id  VARCHAR(12),OUT on_exitcode INTEGER ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+	DEFAULT SCHEMA PCDW
+	--READS SQL DATA 
+	AS
+   /************************************************************************
+   *name        : ZPLN_HANA_SO_N_END
+   *function    : 
+   *input       : 
+   *output      : 
+   *author      : XieChao    
+   *CreateDate  : 20150916
+   *UpdateDate  :              
+   *************************************************************************/
+	 v_prc_name    VARCHAR2 (30) := 'ZPLN_HANA_SO_N_END';
+     v_date       timestamp;
+     
+     vMsg      VARCHAR(1024);
+     vCode      int;
+BEGIN
+     DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+     BEGIN
+     
+      on_exitcode := ::SQL_ERROR_CODE;
+
+      vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+      
+      INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr) 
+      VALUES
+          (current_timestamp, :v_prc_name, 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+      --exec 'COMMIT';     
+     END;
+     
+     --START
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, :v_prc_name, '', NULL, '', '', '', '', 'START');
+
+      SELECT MAX(wfstartdate)
+        INTO v_date
+        FROM pcdw_sosto_log
+       WHERE wfid = iv_id
+             AND programname = 'SO_N';
+      
+      UPDATE pcdw_sosto_log
+         SET wfenddate = current_timestamp, status = 'success'
+       WHERE wfstartdate = v_date
+             AND wfid = iv_id
+             AND programname = 'SO_N';
+
+      --COMMIT;
+      on_exitcode := 0;
+     --end
+   INSERT INTO pcdw_proc_log
+     (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+   VALUES
+     (current_timestamp, :v_prc_name, 'SUCCESS', :vcode, :vmsg, '', '', '', 'END');
+     
+END;

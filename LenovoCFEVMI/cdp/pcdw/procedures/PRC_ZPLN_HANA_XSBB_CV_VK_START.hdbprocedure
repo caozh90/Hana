@@ -1,0 +1,166 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_ZPLN_HANA_XSBB_CV_VK_START" ( 
+    IN iv_id  VARCHAR(120),
+    OUT on_exitcode INTEGER
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY INVOKER 
+    DEFAULT SCHEMA PCDW 
+    AS
+   /************************************************************************
+   *name        : ZPLN_HANA_XSBB_CV_VK_START
+   *function    : 
+   *input       : 
+   *output      : 
+   *author      : Frankie    
+   *CreateDate  : 20150130
+   *UpdateDate  :              
+   *************************************************************************/
+     v_prc_name    varchar(30) := 'ZPLN_HANA_XSBB_CV_VK_START';     
+     v_date        timestamp;
+     v_startdate   timestamp;
+     v_enddate     timestamp;
+     v_sysdate     timestamp := current_timestamp;     
+     vMsg          varchar(1024);
+     vCode         integer;
+BEGIN
+  --EXCEPTION
+  --DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1300;
+     
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+     BEGIN     
+      on_exitcode := ::SQL_ERROR_CODE;
+
+      vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+      INSERT INTO PCDW_PROC_LOG
+         (EVENTTIME,
+          EVENTNAME,
+          SUBEVENT,
+          MSGCODE,
+          EVENTMSG,
+          EVENTTYPE,
+          DATASOURCE,
+          DATADEST,
+          EVENTDESCR)
+      VALUES
+         (CURRENT_TIMESTAMP,
+          :v_prc_name,
+          'OTHERS ERROR',
+          :vCode,
+          :vMsg,
+          '',
+          '',
+          '',
+          'END');
+      --exec 'COMMIT';     
+  END;
+     
+  
+  --START
+  INSERT INTO PCDW_PROC_LOG
+   VALUES
+      (CURRENT_TIMESTAMP,
+       :v_prc_name,
+       '',
+       NULL,
+       '',
+       '',
+       '',
+       '',
+       'START');
+   --EXEC 'COMMIT';            
+      
+      SELECT   add_seconds(MAX (dataenddate), -86400)
+        INTO v_date
+        FROM pcdw_fcsbb_log
+       WHERE status = 'success' AND wfid = :iv_id AND programname = 'FCSBBMAPPING';
+      
+
+      IF v_date IS NULL
+      THEN
+          INSERT INTO pcdw_fcsbb_log (wfstartdate,
+                                             wfenddate,
+                                             programname,
+                                             wfid,
+                                             datastartdate,
+                                             dataenddate,
+                                             status)
+                      VALUES (:v_sysdate,
+                              NULL,
+                              'FCSBBMAPPING',
+                              iv_id,
+                              add_days(:v_sysdate, -1),
+                              :v_sysdate,
+                              'running');
+      
+      ELSE
+         INSERT INTO pcdw_fcsbb_log (wfstartdate,
+                                     wfenddate,
+                                     programname,
+                                     wfid,
+                                     datastartdate,
+                                     dataenddate,
+                                     status)
+              VALUES (:v_sysdate,
+                      NULL,
+                      'FCSBBMAPPING',
+                      :iv_id,
+                      :v_date,
+                      :v_sysdate,
+                      'running');
+      END IF;
+           
+      SELECT   MAX (datastartdate), add_seconds(MAX (dataenddate), -86400)
+        INTO v_startdate, v_enddate
+        FROM pcdw_fcsbb_log
+       WHERE status = 'success' AND wfid = :iv_id AND programname = 'FCSBBMAPPING';
+           
+      -- zpln_pcdw_sosto_start 
+      IF v_startdate IS NULL OR v_enddate IS NULL
+      THEN
+        SELECT   MAX (datastartdate), add_seconds(MAX (dataenddate), -86400)
+           INTO v_startdate, v_enddate
+           FROM pcdw_fcsbb_log
+          WHERE status = 'running' AND wfid = :iv_id AND programname = 'FCSBBMAPPING';
+      END IF;
+      
+      --Comment by Zhoubinbin 20150820, Ignore the start date
+      /*UPDATE CONF_PARAMETER
+         SET low = TO_CHAR (:v_enddate, 'YYYYMMDD')
+       WHERE     progname = 'ZPLN_HANA_XSBB_CV_VK'
+             AND paraclass = 'I_FROMDATE'
+             AND buid = :iv_id;*/
+             
+      UPDATE CONF_PARAMETER
+         SET low = TO_CHAR (:v_sysdate, 'YYYYMMDD')
+       WHERE     progname = 'ZPLN_HANA_XSBB_CV_VK'
+             AND paraclass = 'I_TODATE'
+             AND buid = :iv_id;
+    
+      --COMMIT;
+      on_exitcode := 0;
+
+
+     --end
+    INSERT INTO PCDW_PROC_LOG
+      (EVENTTIME,
+       EVENTNAME,
+       SUBEVENT,
+       MSGCODE,
+       EVENTMSG,
+       EVENTTYPE,
+       DATASOURCE,
+       DATADEST,
+       EVENTDESCR)
+   VALUES
+      (CURRENT_TIMESTAMP,
+       :v_prc_name,
+       'SUCCESS',
+       :vCode,
+       :vMsg,
+       '',
+       '',
+       '',
+       'END');
+END;
+

@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_MAP_VIEW_ROLE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_INFO_ROLES"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="VIEW_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="MAP_TYPE" length="50"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+BEGIN 
+
+ 
+ 	 var_out = 
+SELECT  'cdp.security.roles::Access' as ROLE_NAME,'user' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.security.roles::userAdmin' as ROLE_NAME,'user' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleSetup' as ROLE_NAME,'user' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleAdmin' as ROLE_NAME,'user' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAccess' as ROLE_NAME,'log' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAdmin' as ROLE_NAME,'log' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+/*
+--Monitor\Search
+--view name
+--1.   receipts          receipts             'Receipts'
+2.   pullSignals       pullsignals          'Pull Signals'
+3.   pullLines         pulllines            'Pull Lines'
+4.   dispatches        dispatches           'Dispatches'
+5.   events            events               'Events'
+6.   sa                sa                   'SA'
+*/
+UNION SELECT  'cdp.szebgvmi.roles.receipts::access' as ROLE_NAME,'receipts' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.receipts::exportable' as ROLE_NAME,'receipts' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pullsignals::access' as ROLE_NAME,'pullSignals' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pullsignals::exportable' as ROLE_NAME,'pullSignals' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pulllines::access' as ROLE_NAME,'pullLines' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pulllines::exportable' as ROLE_NAME,'pullLines' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.dispatches::access' as ROLE_NAME,'dispatches' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.dispatches::exportable' as ROLE_NAME,'dispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.events::access' as ROLE_NAME,'events' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.events::exportable' as ROLE_NAME,'events' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.sa::access' as ROLE_NAME,'sa' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.sa::exportable' as ROLE_NAME,'sa' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--end monitor
+
+/*Excute\Manage
+view name
+1. balanceFailedDispatches					balancefaileddispatches					'Balance Failed Dispatches'
+2. confirmBalanceDispatches					confirmbalancedispatches				'Confirm Balance Dispatches'
+3. confirmDispatches						confirmdispatches						'Confirm Dispatches'
+4. confirmLinetoExcessDispatches			confirmlinetoexcessdispatches			'Confirm Line to Excess Dispatches'
+5. createCycleTime							createcyceltime							'Create Cycel Time'
+6. failedDispatches							faileddispatches						'Failed Dispatches'
+7. failedPullConfirmationResubmission		failedpullconfirmationresubmission		'Failed Pull Confirmation &amp; Resubmission'
+8. failedPullResubmission					failedpullresubmission					'Failed Pull Resubmission'
+9. linetoExcessFailedDispatches				linetoexcessfaileddispatches			'Line to Excess Failed Dispatches'
+10. loiFailedGR								loifailed								'LOI Failed'
+11. soiFailedGR								soifailed								'SOI Failed'
+*/
+UNION SELECT  'cdp.szebgvmi.roles.balancefaileddispatches::access' as ROLE_NAME,'balanceFailedDispatches' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.balancefaileddispatches::exportable' as ROLE_NAME,'balanceFailedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.balancefaileddispatches::confirm' as ROLE_NAME,'balanceFailedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.balancefaileddispatches::deleteable' as ROLE_NAME,'balanceFailedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.confirmbalancedispatches::access' as ROLE_NAME,'confirmBalanceDispatches' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmbalancedispatches::exportable' as ROLE_NAME,'confirmBalanceDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmbalancedispatches::confirm' as ROLE_NAME,'confirmBalanceDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmbalancedispatches::deleteable' as ROLE_NAME,'confirmBalanceDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.confirmdispatches::access' as ROLE_NAME,'confirmDispatches' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmdispatches::exportable' as ROLE_NAME,'confirmDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmdispatches::confirm' as ROLE_NAME,'confirmDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmdispatches::deleteable' as ROLE_NAME,'confirmDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.confirmlinetoexcessdispatches::access' as ROLE_NAME,'confirmLinetoExcessDispatches' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmlinetoexcessdispatches::exportable' as ROLE_NAME,'confirmLinetoExcessDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmlinetoexcessdispatches::confirm' as ROLE_NAME,'confirmLinetoExcessDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmlinetoexcessdispatches::deleteable' as ROLE_NAME,'confirmLinetoExcessDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.createcyceltime::access' as ROLE_NAME,'createCycleTime' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.createcyceltime::exportable' as ROLE_NAME,'createCycleTime' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.createcyceltime::createable' as ROLE_NAME,'createCycleTime' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.createcyceltime::deleteable' as ROLE_NAME,'createCycleTime' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.createcyceltime::editable' as ROLE_NAME,'createCycleTime' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.faileddispatches::access' as ROLE_NAME,'failedDispatches' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.faileddispatches::exportable' as ROLE_NAME,'failedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.faileddispatches::confirm' as ROLE_NAME,'failedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.faileddispatches::editable' as ROLE_NAME,'failedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.faileddispatches::deleteable' as ROLE_NAME,'failedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.failedpullconfirmationresubmission::access' as ROLE_NAME,'failedPullConfirmationResubmission' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.failedpullconfirmationresubmission::exportable' as ROLE_NAME,'failedPullConfirmationResubmission' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.failedpullconfirmationresubmission::confirm' as ROLE_NAME,'failedPullConfirmationResubmission' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.failedpullconfirmationresubmission::deleteable' as ROLE_NAME,'failedPullConfirmationResubmission' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.failedpullresubmission::access' as ROLE_NAME,'failedPullResubmission' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.failedpullresubmission::exportable' as ROLE_NAME,'failedPullResubmission' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.failedpullresubmission::confirm' as ROLE_NAME,'failedPullResubmission' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.failedpullresubmission::deleteable' as ROLE_NAME,'failedPullResubmission' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.linetoexcessfaileddispatches::access' as ROLE_NAME,'linetoExcessFailedDispatches' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.linetoexcessfaileddispatches::exportable' as ROLE_NAME,'linetoExcessFailedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.linetoexcessfaileddispatches::confirm' as ROLE_NAME,'linetoExcessFailedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.linetoexcessfaileddispatches::deleteable' as ROLE_NAME,'linetoExcessFailedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.loifailed::access' as ROLE_NAME,'loiFailedGR' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.loifailed::exportable' as ROLE_NAME,'loiFailedGR' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.loifailed::confirm' as ROLE_NAME,'loiFailedGR' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.loifailed::editable' as ROLE_NAME,'loiFailedGR' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.loifailed::deleteable' as ROLE_NAME,'loiFailedGR' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.soifailed::access' as ROLE_NAME,'soiFailedGR' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.soifailed::exportable' as ROLE_NAME,'soiFailedGR' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.soifailed::confirm' as ROLE_NAME,'soiFailedGR' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.soifailed::editable' as ROLE_NAME,'soiFailedGR' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.soifailed::deleteable' as ROLE_NAME,'soiFailedGR' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--end Excute\Manage
+
+/*
+
+Excute\ create pull
+view name
+1. manualPull						manualpull					'Manual Pull'
+2. manualPackaging					manualpackaging				'Manual Packaging'
+3. pullFromSupplier					pullfromsupplier			'Pull From Supplier'
+
+*/
+UNION SELECT  'cdp.szebgvmi.roles.manualpull::access' as ROLE_NAME,'manualPull' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpull::uploadable' as ROLE_NAME,'manualPull' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpull::exportable' as ROLE_NAME,'manualPull' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpull::createable' as ROLE_NAME,'manualPull' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpull::deleteable' as ROLE_NAME,'manualPull' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpull::editable' as ROLE_NAME,'manualPull' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpackaging::access' as ROLE_NAME,'manualPackaging' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpackaging::createable' as ROLE_NAME,'manualPackaging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpackaging::editable' as ROLE_NAME,'manualPackaging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpackaging::deleteable' as ROLE_NAME,'manualPackaging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.manualpackaging::exportable' as ROLE_NAME,'manualPackaging' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pullfromsupplier::access' as ROLE_NAME,'pullFromSupplier' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pullfromsupplier::exportable' as ROLE_NAME,'pullFromSupplier' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pullfromsupplier::uploadable' as ROLE_NAME,'pullFromSupplier' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pullfromsupplier::createable' as ROLE_NAME,'pullFromSupplier' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pullfromsupplier::deleteable' as ROLE_NAME,'pullFromSupplier' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pullfromsupplier::editable' as ROLE_NAME,'pullFromSupplier' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+-- end Excute\ create pull
+/*Execute\ change location*/
+UNION SELECT  'cdp.szebgvmi.roles.changelocation::access' as ROLE_NAME,'changeLocation' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.changelocation::createable' as ROLE_NAME,'changeLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.changelocation::editable' as ROLE_NAME,'changeLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.changelocation::deleteable' as ROLE_NAME,'changeLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.changelocation::exportable' as ROLE_NAME,'changeLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.changelocation::uploadable' as ROLE_NAME,'changeLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+/*end Execute\ change location*/
+
+/*ARCH_SEARCH
+view name --- ROLE NAME --- COMMENTS
+1. archivedPullSignals                  archivedpullsignals        'Archived Pull Signals '
+2. archivedPullLines                    archivedpulllines                 'Archived Pull Lines '
+3. archivedDispatches                   archiveddispatches                'Archived Dispatches '
+4. archivedReceipts                     archivedreceipts                  'Archived Receipts '
+*/
+UNION SELECT  'cdp.szebgvmi.roles.archivedpullsignals::access' as ROLE_NAME,'archivedPullSignals' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.archivedpullsignals::exportable' as ROLE_NAME,'archivedPullSignals' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.archivedpulllines::access' as ROLE_NAME,'archivedPullLines' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.archivedpulllines::exportable' as ROLE_NAME,'archivedPullLines' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.archiveddispatches::access' as ROLE_NAME,'archivedDispatches' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.archiveddispatches::exportable' as ROLE_NAME,'archivedDispatches' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.archivedreceipts::access' as ROLE_NAME,'archivedReceipts' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.archivedreceipts::exportable' as ROLE_NAME,'archivedReceipts' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+-- end ARCH_SEARCH
+
+/*Control\Mapping
+view name
+1.controlcycle					controlCycle					Control Cycle
+2.destinationmapping			destinationMapping				Destination Mapping
+3.optiondestinationmapping		optionDestinationMapping		Option Destination
+4.vmipurchaseproportion			vmiPurchaseProportion			VMI Purchase Proportion
+5.sourcingpriority				sourcingPriority				Sourcing Priority
+6.urgentmomaintaince			urgentMOMaintaince				Urgent MO Maintaince
+7.nocutsopriority				nocutSoPriority					Nocut SO Priority
+8.fullBoxSize					fullboxsize						Full Box Size
+
+*/
+UNION SELECT  'cdp.szebgvmi.roles.controlcycle::access' as ROLE_NAME,'controlCycle' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.controlcycle::uploadable' as ROLE_NAME,'controlCycle' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.controlcycle::exportable' as ROLE_NAME,'controlCycle' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.controlcycle::createable' as ROLE_NAME,'controlCycle' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.controlcycle::deleteable' as ROLE_NAME,'controlCycle' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.controlcycle::editable' as ROLE_NAME,'controlCycle' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.mobomlocation::access' as ROLE_NAME,'mobomLocation' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.mobomlocation::uploadable' as ROLE_NAME,'mobomLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.mobomlocation::createable' as ROLE_NAME,'mobomLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.mobomlocation::deleteable' as ROLE_NAME,'mobomLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.mobomlocation::editable' as ROLE_NAME,'mobomLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.mobomlocation::exportable' as ROLE_NAME,'mobomLocation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.destinationmapping::access' as ROLE_NAME,'destinationMapping' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.destinationmapping::createable' as ROLE_NAME,'destinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.destinationmapping::editable' as ROLE_NAME,'destinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.destinationmapping::deleteable' as ROLE_NAME,'destinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.destinationmapping::uploadable' as ROLE_NAME,'destinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.destinationmapping::exportable' as ROLE_NAME,'destinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.optiondestinationmapping::access' as ROLE_NAME,'optionDestinationMapping' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.optiondestinationmapping::exportable' as ROLE_NAME,'optionDestinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.optiondestinationmapping::uploadable' as ROLE_NAME,'optionDestinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.optiondestinationmapping::createable' as ROLE_NAME,'optionDestinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.optiondestinationmapping::deleteable' as ROLE_NAME,'optionDestinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.optiondestinationmapping::editable' as ROLE_NAME,'optionDestinationMapping' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.vmipurchaseproportion::access' as ROLE_NAME,'vmiPurchaseProportion' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.vmipurchaseproportion::exportable' as ROLE_NAME,'vmiPurchaseProportion' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.vmipurchaseproportion::uploadable' as ROLE_NAME,'vmiPurchaseProportion' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.vmipurchaseproportion::createable' as ROLE_NAME,'vmiPurchaseProportion' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.vmipurchaseproportion::deleteable' as ROLE_NAME,'vmiPurchaseProportion' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.vmipurchaseproportion::editable' as ROLE_NAME,'vmiPurchaseProportion' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.sourcingpriority::access' as ROLE_NAME,'sourcingPriority' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.sourcingpriority::exportable' as ROLE_NAME,'sourcingPriority' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.sourcingpriority::createable' as ROLE_NAME,'sourcingPriority' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.sourcingpriority::deleteable' as ROLE_NAME,'sourcingPriority' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.sourcingpriority::editable' as ROLE_NAME,'sourcingPriority' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.urgentmomaintaince::access' as ROLE_NAME,'urgentMOMaintaince' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.urgentmomaintaince::exportable' as ROLE_NAME,'urgentMOMaintaince' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.urgentmomaintaince::uploadable' as ROLE_NAME,'urgentMOMaintaince' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.urgentmomaintaince::createable' as ROLE_NAME,'urgentMOMaintaince' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.urgentmomaintaince::deleteable' as ROLE_NAME,'urgentMOMaintaince' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.urgentmomaintaince::editable' as ROLE_NAME,'urgentMOMaintaince' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.urgentmomaintaince::trigger' as ROLE_NAME,'urgentMOMaintaince' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.urgentmomaintaince::confirm' as ROLE_NAME,'urgentMOMaintaince' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.nocutsopriority::access' as ROLE_NAME,'nocutSoPriority' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.nocutsopriority::exportable' as ROLE_NAME,'nocutSoPriority' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.nocutsopriority::uploadable' as ROLE_NAME,'nocutSoPriority' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.nocutsopriority::createable' as ROLE_NAME,'nocutSoPriority' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.nocutsopriority::deleteable' as ROLE_NAME,'nocutSoPriority' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.fullboxsize::access' as ROLE_NAME,'fullBoxSize' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.fullboxsize::exportable' as ROLE_NAME,'fullBoxSize' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.fullboxsize::uploadable' as ROLE_NAME,'fullBoxSize' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.fullboxsize::createable' as ROLE_NAME,'fullBoxSize' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.fullboxsize::deleteable' as ROLE_NAME,'fullBoxSize' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.fullboxsize::editable' as ROLE_NAME,'fullBoxSize' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--add by chenjb1 for szvmi change asn status
+UNION SELECT  'cdp.szebgvmi.roles.changeasnpull::access' as ROLE_NAME,'changeASNPull' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.changeasnpull::exportable' as ROLE_NAME,'changeASNPull' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.changeasnpull::editable' as ROLE_NAME,'changeASNPull' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.modifyasnstatus::access' as ROLE_NAME,'updateASNStatus' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.modifyasnstatus::exportable' as ROLE_NAME,'updateASNStatus' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.modifyasnstatus::editable' as ROLE_NAME,'updateASNStatus' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+--end Control\Mapping
+/*
+
+PM Report
+view name --- ROLE NAME --- COMMENTS
+1.confirmedPullShortage               confirmedpullshortage                 'Confirmed Pull Shortage'
+2.dispatchShortage                    dispatchshortage                      'Dispatch Shortage'
+3.inventoryComparisonReport           inventorycomparisonreport             'Inventory Comparison Report'
+4.moCutbackMaterialReturnReport       mocutbackmaterialreturnreport         'MO Cutback Material Return Report'
+5.moCutbackReport                     mocutbackreport                       'MO Cutback Report'
+6.moDestinationChangeError            modestinationchangeerror              'MO Destination Change Error'
+7.moPullSignalSummary                 mopullsignalsummary                   'MO pull signal Summary'
+8.moPulledInformation                 mopulledinformation                   'MO Pulled Information'
+9.onHoldMOLines                       onholdmolines                         'ON HOLD MO LINES'
+10.poComparisonReport                 pocomparisonreport                    'PO Comparison Report'
+11.saForVMI                           saformexicovmi                        'SA for Mexico VMI'
+*/
+
+UNION SELECT  'cdp.szebgvmi.roles.confirmedpullshortage::access' as ROLE_NAME,'confirmedPullShortage' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.confirmedpullshortage::exportable' as ROLE_NAME,'confirmedPullShortage' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.dispatchshortage::access' as ROLE_NAME,'dispatchShortage' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.dispatchshortage::exportable' as ROLE_NAME,'dispatchShortage' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.inventorycomparisonreport::access' as ROLE_NAME,'inventoryComparisonReport' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.inventorycomparisonreport::exportable' as ROLE_NAME,'inventoryComparisonReport' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.mocutbackmaterialreturnreport::access' as ROLE_NAME,'moCutbackMaterialReturnReport' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.mocutbackmaterialreturnreport::exportable' as ROLE_NAME,'moCutbackMaterialReturnReport' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.mocutbackreport::access' as ROLE_NAME,'moCutbackReport' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.mocutbackreport::exportable' as ROLE_NAME,'moCutbackReport' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.modestinationchangeerror::access' as ROLE_NAME,'moDestinationChangeError' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.modestinationchangeerror::exportable' as ROLE_NAME,'moDestinationChangeError' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.mopullsignalsummary::access' as ROLE_NAME,'moPullSignalSummary' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.mopullsignalsummary::exportable' as ROLE_NAME,'moPullSignalSummary' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.mopulledinformation::access' as ROLE_NAME,'moPulledInformation' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.mopulledinformation::exportable' as ROLE_NAME,'moPulledInformation' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.onholdmolines::access' as ROLE_NAME,'onHoldMOLines' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.onholdmolines::exportable' as ROLE_NAME,'onHoldMOLines' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.pocomparisonreport::access' as ROLE_NAME,'poComparisonReport' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.pocomparisonreport::exportable' as ROLE_NAME,'poComparisonReport' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+UNION SELECT  'cdp.szebgvmi.roles.saformexicovmi::access' as ROLE_NAME,'saForVMI' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.saformexicovmi::exportable' as ROLE_NAME,'saForVMI' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+
+--end PM report
+
+UNION SELECT  'cdp.dssz.roles.configuration::access' as ROLE_NAME,'configuration' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.configuration::access' as ROLE_NAME,'configuration' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsjob::access' as ROLE_NAME,'DSJob' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsjob::access' as ROLE_NAME,'DSJob' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsmonitor::access' as ROLE_NAME,'dsMonitor' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsmonitor::access' as ROLE_NAME,'dsMonitor' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.dssz.roles.dsmonitor::admin' as ROLE_NAME,'dsMonitor' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.receipts::access' as ROLE_NAME,'receipts' AS VIEW_NAME ,'view' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.receipts::exportable' as ROLE_NAME,'receipts' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+UNION SELECT  'cdp.szebgvmi.roles.sourcingpriority::uploadable' as ROLE_NAME,'sourcingPriority' AS VIEW_NAME ,'controllor' AS MAP_TYPE FROM DUMMY
+ 
+ 
+ ;
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="ROLE_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="VIEW_NAME" order="2">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="VIEW_NAME"/>
+      </attribute>
+      <attribute id="MAP_TYPE" order="3">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MAP_TYPE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

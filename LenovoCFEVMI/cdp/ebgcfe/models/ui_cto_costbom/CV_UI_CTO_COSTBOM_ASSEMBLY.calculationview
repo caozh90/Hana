@@ -1,0 +1,1088 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_UI_CTO_COSTBOM_ASSEMBLY" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_CTOCOSTBOM&#xD;&#xA;father"/>
+  <localVariables>
+    <variable id="input_cycle" parameter="true">
+      <descriptions defaultDescription="input_cycle"/>
+      <variableProperties datatype="NVARCHAR" length="30" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="BIZ_CBOM_CTOSBB" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="BIZ_CBOM_CTOSBB"/>
+    </DataSource>
+    <DataSource id="BIZ_COSTADDER_CTO" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="BIZ_COSTADDER_CTO"/>
+    </DataSource>
+    <DataSource id="BIZ_CBOM_CTOSBB_HIS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="BIZ_CBOM_CTOSBB_HIS"/>
+    </DataSource>
+    <DataSource id="BIZ_COSTADDER_CTO_HIS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="BIZ_COSTADDER_CTO_HIS"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="MODEL"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="SUBGEO"/>
+        <viewAttribute id="COUNTRY"/>
+        <viewAttribute id="FATHER"/>
+        <viewAttribute id="CHILDREN"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="ASP_PRD_FAMILY"/>
+        <viewAttribute id="QTYPER"/>
+        <viewAttribute id="ALTGRUP"/>
+        <viewAttribute id="ALTPRI"/>
+        <viewAttribute id="ALTPERCENT"/>
+        <viewAttribute id="ITEM_TYPE_M"/>
+        <viewAttribute id="ITEM_TYPE_C"/>
+        <viewAttribute id="M1"/>
+        <viewAttribute id="M2"/>
+        <viewAttribute id="M3"/>
+        <viewAttribute id="M4"/>
+        <viewAttribute id="M5"/>
+        <viewAttribute id="M6"/>
+        <viewAttribute id="M7"/>
+        <viewAttribute id="M8"/>
+        <viewAttribute id="M9"/>
+        <viewAttribute id="M10"/>
+        <viewAttribute id="M11"/>
+        <viewAttribute id="M12"/>
+        <viewAttribute id="LM1"/>
+        <viewAttribute id="LM2"/>
+        <viewAttribute id="LM3"/>
+        <viewAttribute id="LM4"/>
+        <viewAttribute id="LM5"/>
+        <viewAttribute id="LM6"/>
+        <viewAttribute id="LM7"/>
+        <viewAttribute id="LM8"/>
+        <viewAttribute id="LM9"/>
+        <viewAttribute id="LM10"/>
+        <viewAttribute id="LM11"/>
+        <viewAttribute id="LM12"/>
+        <viewAttribute id="M18"/>
+        <viewAttribute id="M17"/>
+        <viewAttribute id="LM17"/>
+        <viewAttribute id="LM16"/>
+        <viewAttribute id="M15"/>
+        <viewAttribute id="M14"/>
+        <viewAttribute id="LM13"/>
+        <viewAttribute id="LM15"/>
+        <viewAttribute id="LM18"/>
+        <viewAttribute id="M16"/>
+        <viewAttribute id="M13"/>
+        <viewAttribute id="LM14"/>
+        <viewAttribute id="BRAND"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#BIZ_CBOM_CTOSBB">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PRD_FAMILY" source="ASP_PRD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTGRUP" source="ALTGRUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPRI" source="ALTPRI"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPERCENT" source="ALTPERCENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_M" source="ITEM_TYPE_M"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_C" source="ITEM_TYPE_C"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M1" source="M1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M2" source="M2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M3" source="M3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M4" source="M4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M5" source="M5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M6" source="M6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M7" source="M7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M8" source="M8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M9" source="M9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M10" source="M10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M11" source="M11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M12" source="M12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM1" source="LM1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM2" source="LM2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM3" source="LM3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM4" source="LM4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM5" source="LM5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM6" source="LM6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM7" source="LM7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM8" source="LM8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM9" source="LM9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM10" source="LM10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM11" source="LM11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM12" source="LM12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M18" source="M18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M17" source="M17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM17" source="LM17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM16" source="LM16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M15" source="M15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M14" source="M14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM13" source="LM13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM15" source="LM15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM18" source="LM18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M16" source="M16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M13" source="M13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM14" source="LM14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+      </input>
+      <input node="#BIZ_COSTADDER_CTO">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+      </input>
+      <joinAttribute name="CYCLE"/>
+      <joinAttribute name="PRODUCT_GROUP"/>
+      <joinAttribute name="MODEL"/>
+      <joinAttribute name="PLANT"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="CUR_CBOM_CTOSBB">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="MODEL"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="SUBGEO"/>
+        <viewAttribute id="COUNTRY"/>
+        <viewAttribute id="FATHER"/>
+        <viewAttribute id="CHILDREN"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="ASP_PRD_FAMILY"/>
+        <viewAttribute id="QTYPER"/>
+        <viewAttribute id="ALTGRUP"/>
+        <viewAttribute id="ALTPRI"/>
+        <viewAttribute id="ALTPERCENT"/>
+        <viewAttribute id="ITEM_TYPE_M"/>
+        <viewAttribute id="ITEM_TYPE_C"/>
+        <viewAttribute id="M1"/>
+        <viewAttribute id="M2"/>
+        <viewAttribute id="M3"/>
+        <viewAttribute id="M4"/>
+        <viewAttribute id="M5"/>
+        <viewAttribute id="M6"/>
+        <viewAttribute id="M7"/>
+        <viewAttribute id="M8"/>
+        <viewAttribute id="M9"/>
+        <viewAttribute id="M10"/>
+        <viewAttribute id="M11"/>
+        <viewAttribute id="M12"/>
+        <viewAttribute id="LM1"/>
+        <viewAttribute id="LM2"/>
+        <viewAttribute id="LM3"/>
+        <viewAttribute id="LM4"/>
+        <viewAttribute id="LM5"/>
+        <viewAttribute id="LM6"/>
+        <viewAttribute id="LM7"/>
+        <viewAttribute id="LM8"/>
+        <viewAttribute id="LM9"/>
+        <viewAttribute id="LM10"/>
+        <viewAttribute id="LM11"/>
+        <viewAttribute id="LM12"/>
+        <viewAttribute id="M18"/>
+        <viewAttribute id="M17"/>
+        <viewAttribute id="LM17"/>
+        <viewAttribute id="LM16"/>
+        <viewAttribute id="M15"/>
+        <viewAttribute id="M14"/>
+        <viewAttribute id="LM13"/>
+        <viewAttribute id="LM15"/>
+        <viewAttribute id="LM18"/>
+        <viewAttribute id="M16"/>
+        <viewAttribute id="M13"/>
+        <viewAttribute id="LM14"/>
+        <viewAttribute id="BRAND"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PRD_FAMILY" source="ASP_PRD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTGRUP" source="ALTGRUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPRI" source="ALTPRI"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPERCENT" source="ALTPERCENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_M" source="ITEM_TYPE_M"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_C" source="ITEM_TYPE_C"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M1" source="M1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M2" source="M2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M3" source="M3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M4" source="M4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M5" source="M5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M6" source="M6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M7" source="M7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M8" source="M8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M9" source="M9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M10" source="M10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M11" source="M11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M12" source="M12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM1" source="LM1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM2" source="LM2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM3" source="LM3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM4" source="LM4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM5" source="LM5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM6" source="LM6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM7" source="LM7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM8" source="LM8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM9" source="LM9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM10" source="LM10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM11" source="LM11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM12" source="LM12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M18" source="M18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M17" source="M17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM17" source="LM17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM16" source="LM16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M15" source="M15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M14" source="M14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM13" source="LM13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM15" source="LM15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM18" source="LM18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M16" source="M16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M13" source="M13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM14" source="LM14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="MODEL"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="SUBGEO"/>
+        <viewAttribute id="COUNTRY"/>
+        <viewAttribute id="FATHER"/>
+        <viewAttribute id="CHILDREN"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="ASP_PRD_FAMILY"/>
+        <viewAttribute id="QTYPER"/>
+        <viewAttribute id="ALTPERCENT"/>
+        <viewAttribute id="ITEM_TYPE_C"/>
+        <viewAttribute id="M1"/>
+        <viewAttribute id="M2"/>
+        <viewAttribute id="M3"/>
+        <viewAttribute id="M4"/>
+        <viewAttribute id="M5"/>
+        <viewAttribute id="M6"/>
+        <viewAttribute id="M7"/>
+        <viewAttribute id="M8"/>
+        <viewAttribute id="M9"/>
+        <viewAttribute id="M10"/>
+        <viewAttribute id="M11"/>
+        <viewAttribute id="M12"/>
+        <viewAttribute id="LM1"/>
+        <viewAttribute id="LM2"/>
+        <viewAttribute id="LM3"/>
+        <viewAttribute id="LM4"/>
+        <viewAttribute id="LM5"/>
+        <viewAttribute id="LM6"/>
+        <viewAttribute id="LM7"/>
+        <viewAttribute id="LM8"/>
+        <viewAttribute id="LM9"/>
+        <viewAttribute id="LM10"/>
+        <viewAttribute id="LM11"/>
+        <viewAttribute id="LM12"/>
+        <viewAttribute id="WEIGHTED_AVERAGE"/>
+        <viewAttribute id="LATTEST_PROCUR"/>
+        <viewAttribute id="LM18"/>
+        <viewAttribute id="M18"/>
+        <viewAttribute id="LM15"/>
+        <viewAttribute id="M16"/>
+        <viewAttribute id="LM14"/>
+        <viewAttribute id="LM17"/>
+        <viewAttribute id="LM16"/>
+        <viewAttribute id="M17"/>
+        <viewAttribute id="LM13"/>
+        <viewAttribute id="M14"/>
+        <viewAttribute id="M15"/>
+        <viewAttribute id="M13"/>
+        <viewAttribute id="BRAND"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#BIZ_CBOM_CTOSBB_HIS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PRD_FAMILY" source="ASP_PRD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPERCENT" source="ALTPERCENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_C" source="ITEM_TYPE_C"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M1" source="M1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M2" source="M2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M3" source="M3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M4" source="M4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M5" source="M5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M6" source="M6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M7" source="M7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M8" source="M8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M9" source="M9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M10" source="M10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M11" source="M11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M12" source="M12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM1" source="LM1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM2" source="LM2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM3" source="LM3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM4" source="LM4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM5" source="LM5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM6" source="LM6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM7" source="LM7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM8" source="LM8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM9" source="LM9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM10" source="LM10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM11" source="LM11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM12" source="LM12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEIGHTED_AVERAGE" source="WEIGHTED_AVERAGE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LATTEST_PROCUR" source="LATTEST_PROCUR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM18" source="LM18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M18" source="M18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM15" source="LM15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M16" source="M16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM14" source="LM14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM17" source="LM17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM16" source="LM16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M17" source="M17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM13" source="LM13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M14" source="M14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M15" source="M15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M13" source="M13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+      </input>
+      <input node="#BIZ_COSTADDER_CTO_HIS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+      </input>
+      <joinAttribute name="CYCLE"/>
+      <joinAttribute name="PRODUCT_GROUP"/>
+      <joinAttribute name="MODEL"/>
+      <joinAttribute name="PLANT"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="HIS_CBOM_CTOSBB">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="MODEL"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="SUBGEO"/>
+        <viewAttribute id="COUNTRY"/>
+        <viewAttribute id="FATHER"/>
+        <viewAttribute id="CHILDREN"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="ASP_PRD_FAMILY"/>
+        <viewAttribute id="QTYPER"/>
+        <viewAttribute id="ALTPERCENT"/>
+        <viewAttribute id="ITEM_TYPE_C"/>
+        <viewAttribute id="M1"/>
+        <viewAttribute id="M2"/>
+        <viewAttribute id="M3"/>
+        <viewAttribute id="M4"/>
+        <viewAttribute id="M5"/>
+        <viewAttribute id="M6"/>
+        <viewAttribute id="M7"/>
+        <viewAttribute id="M8"/>
+        <viewAttribute id="M9"/>
+        <viewAttribute id="M10"/>
+        <viewAttribute id="M11"/>
+        <viewAttribute id="M12"/>
+        <viewAttribute id="LM1"/>
+        <viewAttribute id="LM2"/>
+        <viewAttribute id="LM3"/>
+        <viewAttribute id="LM4"/>
+        <viewAttribute id="LM5"/>
+        <viewAttribute id="LM6"/>
+        <viewAttribute id="LM7"/>
+        <viewAttribute id="LM8"/>
+        <viewAttribute id="LM9"/>
+        <viewAttribute id="LM10"/>
+        <viewAttribute id="LM11"/>
+        <viewAttribute id="LM12"/>
+        <viewAttribute id="WEIGHTED_AVERAGE"/>
+        <viewAttribute id="LATTEST_PROCUR"/>
+        <viewAttribute id="LM18"/>
+        <viewAttribute id="M18"/>
+        <viewAttribute id="LM15"/>
+        <viewAttribute id="M16"/>
+        <viewAttribute id="LM14"/>
+        <viewAttribute id="LM17"/>
+        <viewAttribute id="LM16"/>
+        <viewAttribute id="M17"/>
+        <viewAttribute id="LM13"/>
+        <viewAttribute id="M14"/>
+        <viewAttribute id="M15"/>
+        <viewAttribute id="M13"/>
+        <viewAttribute id="BRAND"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ASP_PRD_FAMILY" source="ASP_PRD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPERCENT" source="ALTPERCENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_C" source="ITEM_TYPE_C"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M1" source="M1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M2" source="M2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M3" source="M3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M4" source="M4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M5" source="M5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M6" source="M6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M7" source="M7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M8" source="M8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M9" source="M9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M10" source="M10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M11" source="M11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M12" source="M12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM1" source="LM1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM2" source="LM2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM3" source="LM3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM4" source="LM4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM5" source="LM5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM6" source="LM6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM7" source="LM7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM8" source="LM8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM9" source="LM9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM10" source="LM10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM11" source="LM11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM12" source="LM12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEIGHTED_AVERAGE" source="WEIGHTED_AVERAGE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LATTEST_PROCUR" source="LATTEST_PROCUR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM18" source="LM18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M18" source="M18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM15" source="LM15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M16" source="M16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM14" source="LM14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM17" source="LM17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM16" source="LM16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M17" source="M17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM13" source="LM13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M14" source="M14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M15" source="M15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M13" source="M13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="MODEL"/>
+        <viewAttribute id="FATHER"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="MODEL_FAMILY"/>
+        <viewAttribute id="CHILDREN"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="SUBGEO"/>
+        <viewAttribute id="COUNTRY"/>
+        <viewAttribute id="ITEM_TYPE_C"/>
+        <viewAttribute id="QTYPER"/>
+        <viewAttribute id="ALTPERCENT"/>
+        <viewAttribute id="M1"/>
+        <viewAttribute id="M2"/>
+        <viewAttribute id="M3"/>
+        <viewAttribute id="M4"/>
+        <viewAttribute id="M5"/>
+        <viewAttribute id="M6"/>
+        <viewAttribute id="M7"/>
+        <viewAttribute id="M8"/>
+        <viewAttribute id="M9"/>
+        <viewAttribute id="M10"/>
+        <viewAttribute id="M11"/>
+        <viewAttribute id="M12"/>
+        <viewAttribute id="LM1"/>
+        <viewAttribute id="LM2"/>
+        <viewAttribute id="LM3"/>
+        <viewAttribute id="LM4"/>
+        <viewAttribute id="LM5"/>
+        <viewAttribute id="LM6"/>
+        <viewAttribute id="LM7"/>
+        <viewAttribute id="LM8"/>
+        <viewAttribute id="LM9"/>
+        <viewAttribute id="LM10"/>
+        <viewAttribute id="LM11"/>
+        <viewAttribute id="LM12"/>
+        <viewAttribute id="WEIGHTED_AVERAGE"/>
+        <viewAttribute id="LATTEST_PROCUR"/>
+        <viewAttribute id="M13"/>
+        <viewAttribute id="M14"/>
+        <viewAttribute id="M15"/>
+        <viewAttribute id="M16"/>
+        <viewAttribute id="M17"/>
+        <viewAttribute id="M18"/>
+        <viewAttribute id="LM13"/>
+        <viewAttribute id="LM14"/>
+        <viewAttribute id="LM15"/>
+        <viewAttribute id="LM16"/>
+        <viewAttribute id="LM17"/>
+        <viewAttribute id="LM18"/>
+        <viewAttribute id="BRAND"/>
+        <viewAttribute id="ALTGRUP"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#CUR_CBOM_CTOSBB">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL_FAMILY" source="ASP_PRD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_C" source="ITEM_TYPE_C"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPERCENT" source="ALTPERCENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M1" source="M1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M2" source="M2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M3" source="M3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M4" source="M4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M5" source="M5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M6" source="M6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M7" source="M7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M8" source="M8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M9" source="M9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M10" source="M10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M11" source="M11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M12" source="M12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM1" source="LM1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM2" source="LM2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM3" source="LM3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM4" source="LM4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM5" source="LM5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM6" source="LM6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM7" source="LM7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM8" source="LM8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM9" source="LM9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM10" source="LM10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM11" source="LM11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM12" source="LM12"/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="WEIGHTED_AVERAGE" null="true" value=""/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="LATTEST_PROCUR" null="true" value=""/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M13" source="M13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M14" source="M14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M15" source="M15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M16" source="M16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M17" source="M17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M18" source="LM18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM13" source="LM13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM14" source="LM14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM15" source="LM15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM16" source="LM16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM17" source="LM17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM18" source="M18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTGRUP" source="ALTGRUP"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#HIS_CBOM_CTOSBB">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL_FAMILY" source="ASP_PRD_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_C" source="ITEM_TYPE_C"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPERCENT" source="ALTPERCENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M1" source="M1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M2" source="M2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M3" source="M3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M4" source="M4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M5" source="M5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M6" source="M6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M7" source="M7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M8" source="M8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M9" source="M9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M10" source="M10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M11" source="M11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M12" source="M12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM1" source="LM1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM2" source="LM2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM3" source="LM3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM4" source="LM4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM5" source="LM5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM6" source="LM6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM7" source="LM7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM8" source="LM8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM9" source="LM9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM10" source="LM10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM11" source="LM11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM12" source="LM12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEIGHTED_AVERAGE" source="WEIGHTED_AVERAGE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LATTEST_PROCUR" source="LATTEST_PROCUR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M13" source="M13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M14" source="M14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M15" source="M15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M16" source="M16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M17" source="M17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M18" source="M18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM13" source="LM13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM14" source="LM14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM15" source="LM15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM16" source="LM16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM17" source="LM17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM18" source="LM18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="ALTGRUP" null="true" value=""/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="CYCLE"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="MODEL"/>
+        <viewAttribute id="FATHER"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="MODEL_FAMILY"/>
+        <viewAttribute id="CHILDREN"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="SUBGEO"/>
+        <viewAttribute id="COUNTRY"/>
+        <viewAttribute id="ITEM_TYPE_C"/>
+        <viewAttribute id="QTYPER"/>
+        <viewAttribute id="ALTPERCENT"/>
+        <viewAttribute id="M1"/>
+        <viewAttribute id="M2"/>
+        <viewAttribute id="M3"/>
+        <viewAttribute id="M4"/>
+        <viewAttribute id="M5"/>
+        <viewAttribute id="M6"/>
+        <viewAttribute id="M7"/>
+        <viewAttribute id="M8"/>
+        <viewAttribute id="M9"/>
+        <viewAttribute id="M10"/>
+        <viewAttribute id="M11"/>
+        <viewAttribute id="M12"/>
+        <viewAttribute id="LM1"/>
+        <viewAttribute id="LM2"/>
+        <viewAttribute id="LM3"/>
+        <viewAttribute id="LM4"/>
+        <viewAttribute id="LM5"/>
+        <viewAttribute id="LM6"/>
+        <viewAttribute id="LM7"/>
+        <viewAttribute id="LM8"/>
+        <viewAttribute id="LM9"/>
+        <viewAttribute id="LM10"/>
+        <viewAttribute id="LM11"/>
+        <viewAttribute id="LM12"/>
+        <viewAttribute id="WEIGHTED_AVERAGE"/>
+        <viewAttribute id="LATTEST_PROCUR"/>
+        <viewAttribute id="M13"/>
+        <viewAttribute id="M14"/>
+        <viewAttribute id="M15"/>
+        <viewAttribute id="M16"/>
+        <viewAttribute id="M17"/>
+        <viewAttribute id="M18"/>
+        <viewAttribute id="LM13"/>
+        <viewAttribute id="LM14"/>
+        <viewAttribute id="LM15"/>
+        <viewAttribute id="LM16"/>
+        <viewAttribute id="LM17"/>
+        <viewAttribute id="LM18"/>
+        <viewAttribute id="BRAND"/>
+        <viewAttribute id="ALTGRUP"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Union_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FATHER" source="FATHER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODEL_FAMILY" source="MODEL_FAMILY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHILDREN" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUBGEO" source="SUBGEO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTRY" source="COUNTRY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE_C" source="ITEM_TYPE_C"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTPERCENT" source="ALTPERCENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M1" source="M1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M2" source="M2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M3" source="M3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M4" source="M4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M5" source="M5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M6" source="M6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M7" source="M7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M8" source="M8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M9" source="M9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M10" source="M10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M11" source="M11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M12" source="M12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM1" source="LM1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM2" source="LM2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM3" source="LM3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM4" source="LM4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM5" source="LM5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM6" source="LM6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM7" source="LM7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM8" source="LM8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM9" source="LM9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM10" source="LM10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM11" source="LM11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM12" source="LM12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEIGHTED_AVERAGE" source="WEIGHTED_AVERAGE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LATTEST_PROCUR" source="LATTEST_PROCUR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M13" source="M13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M14" source="M14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M15" source="M15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M16" source="M16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M17" source="M17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="M18" source="M18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM13" source="LM13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM14" source="LM14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM15" source="LM15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM16" source="LM16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM17" source="LM17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LM18" source="LM18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BRAND" source="BRAND"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ALTGRUP" source="ALTGRUP"/>
+      </input>
+      <filter>&quot;CYCLE&quot; ='$$input_cycle$$'</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="CYCLE" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="MODEL" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODEL"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MODEL"/>
+      </attribute>
+      <attribute id="FATHER" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FATHER"/>
+        <keyMapping columnObjectName="Projection_1" columnName="FATHER"/>
+      </attribute>
+      <attribute id="PLANT" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLANT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PLANT"/>
+      </attribute>
+      <attribute id="MODEL_FAMILY" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODEL_FAMILY"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MODEL_FAMILY"/>
+      </attribute>
+      <attribute id="CHILDREN" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CHILDREN"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CHILDREN"/>
+      </attribute>
+      <attribute id="ITEM_DESC" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_DESC"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ITEM_DESC"/>
+      </attribute>
+      <attribute id="SUBGEO" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUBGEO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SUBGEO"/>
+      </attribute>
+      <attribute id="COUNTRY" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COUNTRY"/>
+        <keyMapping columnObjectName="Projection_1" columnName="COUNTRY"/>
+      </attribute>
+      <attribute id="ITEM_TYPE_C" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_TYPE_C"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ITEM_TYPE_C"/>
+      </attribute>
+      <attribute id="BRAND" order="59" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="BRAND"/>
+        <keyMapping columnObjectName="Projection_1" columnName="BRAND"/>
+      </attribute>
+      <attribute id="ALTGRUP" order="60" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ALTGRUP"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ALTGRUP"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="LVL" hidden="false" order="1" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LVL"/>
+        <keyCalculation datatype="INTEGER">
+          <formula>1</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="COST_LVL" hidden="false" order="2" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COST_LVL"/>
+        <keyCalculation datatype="NVARCHAR" length="20">
+          <formula>0</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="COST_GEO_LVL" hidden="false" order="3" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COST_GEO_LVL"/>
+        <keyCalculation datatype="NVARCHAR" length="40">
+          <formula>'SUBGEO'</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="COST_TYPE" hidden="false" order="4" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COST_TYPE"/>
+        <keyCalculation datatype="NVARCHAR" length="20">
+          <formula>'SBB-COST'</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="COST_NAME" hidden="false" order="5" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COST_NAME"/>
+        <keyCalculation datatype="NVARCHAR" length="20">
+          <formula>'SBB-COST'</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="ALTPRI" hidden="false" order="6" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ALTPRI"/>
+        <keyCalculation datatype="NVARCHAR" length="2">
+          <formula>NULL</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="PATH" hidden="false" order="7" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PATH"/>
+        <keyCalculation datatype="NVARCHAR" length="200">
+          <formula>'/' + &quot;MODEL&quot; + '/' + &quot;CHILDREN&quot;</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="QTYPER" order="19" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTYPER"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTYPER"/>
+      </measure>
+      <measure id="ALTPERCENT" order="20" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="ALTPERCENT"/>
+        <measureMapping columnObjectName="Projection_1" columnName="ALTPERCENT"/>
+      </measure>
+      <measure id="M1" order="21" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M1"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M1"/>
+      </measure>
+      <measure id="M2" order="22" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M2"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M2"/>
+      </measure>
+      <measure id="M3" order="23" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M3"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M3"/>
+      </measure>
+      <measure id="M4" order="24" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M4"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M4"/>
+      </measure>
+      <measure id="M5" order="25" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M5"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M5"/>
+      </measure>
+      <measure id="M6" order="26" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M6"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M6"/>
+      </measure>
+      <measure id="M7" order="27" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M7"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M7"/>
+      </measure>
+      <measure id="M8" order="28" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M8"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M8"/>
+      </measure>
+      <measure id="M9" order="29" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M9"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M9"/>
+      </measure>
+      <measure id="M10" order="30" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M10"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M10"/>
+      </measure>
+      <measure id="M11" order="31" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M11"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M11"/>
+      </measure>
+      <measure id="M12" order="32" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M12"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M12"/>
+      </measure>
+      <measure id="LM1" order="33" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM1"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM1"/>
+      </measure>
+      <measure id="LM2" order="34" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM2"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM2"/>
+      </measure>
+      <measure id="LM3" order="35" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM3"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM3"/>
+      </measure>
+      <measure id="LM4" order="36" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM4"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM4"/>
+      </measure>
+      <measure id="LM5" order="37" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM5"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM5"/>
+      </measure>
+      <measure id="LM6" order="38" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM6"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM6"/>
+      </measure>
+      <measure id="LM7" order="39" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM7"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM7"/>
+      </measure>
+      <measure id="LM8" order="40" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM8"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM8"/>
+      </measure>
+      <measure id="LM9" order="41" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM9"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM9"/>
+      </measure>
+      <measure id="LM10" order="42" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM10"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM10"/>
+      </measure>
+      <measure id="LM11" order="43" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM11"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM11"/>
+      </measure>
+      <measure id="LM12" order="44" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM12"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM12"/>
+      </measure>
+      <measure id="WEIGHTED_AVERAGE" order="45" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="WEIGHTED_AVERAGE"/>
+        <measureMapping columnObjectName="Projection_1" columnName="WEIGHTED_AVERAGE"/>
+      </measure>
+      <measure id="LATTEST_PROCUR" order="46" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LATTEST_PROCUR"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LATTEST_PROCUR"/>
+      </measure>
+      <measure id="M13" order="47" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M13"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M13"/>
+      </measure>
+      <measure id="M14" order="48" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M14"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M14"/>
+      </measure>
+      <measure id="M15" order="49" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M15"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M15"/>
+      </measure>
+      <measure id="M16" order="50" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M16"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M16"/>
+      </measure>
+      <measure id="M17" order="51" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M17"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M17"/>
+      </measure>
+      <measure id="M18" order="52" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="M18"/>
+        <measureMapping columnObjectName="Projection_1" columnName="M18"/>
+      </measure>
+      <measure id="LM13" order="53" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM13"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM13"/>
+      </measure>
+      <measure id="LM14" order="54" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM14"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM14"/>
+      </measure>
+      <measure id="LM15" order="55" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM15"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM15"/>
+      </measure>
+      <measure id="LM16" order="56" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM16"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM16"/>
+      </measure>
+      <measure id="LM17" order="57" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM17"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM17"/>
+      </measure>
+      <measure id="LM18" order="58" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="LM18"/>
+        <measureMapping columnObjectName="Projection_1" columnName="LM18"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="160" y="70"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="70" y="490"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="CUR_CBOM_CTOSBB" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="70" y="407"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="250" y="490"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="HIS_CBOM_CTOSBB" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="250" y="406"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="160" y="260"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="160" y="170"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

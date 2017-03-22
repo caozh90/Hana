@@ -1,0 +1,124 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cost_model_list::PRC_ITEM_COUNTRY_LIST" ( 
+  OUT P_OUT_EXITCODE INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_ITEM_COUNTRY_LIST            
+*function   : Cost Model Country List
+*input      ：-
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2014-12-29
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+  -- data
+  DECLARE   V_PKG_NAME       VARCHAR(100) := 'PKG_COST_MODEL_LIST';   
+  DECLARE   V_PRC_NAME       VARCHAR(100) := 'prc_item_mtm_list:';
+  DECLARE   V_FUNC_FULL_NAME VARCHAR(100) := :V_PKG_NAME || '.' || :V_PRC_NAME; 
+  DECLARE   logidi           INTEGER := 0;
+       
+   -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+            P_OUT_EXITCODE := -1;  
+			CALL "EX_LOG"."cdp.log.procedures::logProc"
+					(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+					I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'EBGCFE',
+					I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+		                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+		    RESIGNAL;     
+    END; 
+       
+   -- process logic  
+   P_OUT_EXITCODE := -1;
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGCFE');      
+   
+   --EXECUTE IMMEDIATE 'truncate table mid_item_mtm_ol';
+   --EXECUTE IMMEDIATE 'truncate table mid_cost_model_list_country';
+
+   DELETE FROM  mid_cost_model_list_country;
+   
+   --COMMIT;
+   
+   --insert item master with type SEO, OPTION
+/*   INSERT INTO MID_ITEM_MTM_OL (PRODUCT_GROUP,
+                                        ITEM,
+                                        PROD_FAMILY,
+                                        BRAND,
+                                        ITEM_TYPE)
+            SELECT PRODUCT_GROUP,
+                   ITEM,
+                   PROD_FAMILY,
+                   BRAND,
+                   ITEM_TYPE
+              FROM MID_ITEM_OL A
+             WHERE     ITEM_TYPE IN ('MTM', 'OPTION')
+                   AND EOL_STATUS IN ('OL', 'TEMP')
+                   AND PRODUCT_GROUP = 'EBG'
+                   AND PROD_H IS NOT NULL;
+*/                                                                     
+/*   --extend country attributes from UI_REGION, COUNTRY_CODE
+   INSERT INTO MID_COST_MODEL_LIST_COUNTRY (PRODUCT_GROUP,
+                                                 ITEM,
+                                                 PROD_FAMILY,
+                                                 BRAND,
+                                                 ITEM_TYPE,
+                                                 SUBGEO,
+                                                 COUNTRY)
+         SELECT A.PRODUCT_GROUP,
+                A.ITEM,
+                A.PROD_FAMILY,
+                A.BRAND,
+                A.ITEM_TYPE,
+                B.SUBGEO,
+                B.COUNTRY
+           FROM MID_ITEM_MTM_OL A, UI_REGION B
+          WHERE     A.COUNTRY = B.COUNTRY 
+                AND A.PRODUCT_GROUP = 'EBG'
+                AND A.PRODUCT_GROUP = B.PRODUCT_GROUP
+                AND A.ITEM_TYPE IN ('SEO', 'OPTION')
+                AND EXISTS
+                       (SELECT 1
+                          FROM BIZ_COUNTRY_CODE C
+                         WHERE     A.PRODUCT_GROUP = C.PRODUCT_GROUP
+                               AND C.COUNTRY = B.COUNTRY
+                               AND C.POSTFIX = RIGHT(A.ITEM, 1)   --SUBSTR (A.ITEM, -1)
+                               AND C.BRAND = A.BRAND); 
+*/
+    --extend country attributes from UI_REGION, BIZ_MVKE
+    INSERT INTO MID_COST_MODEL_LIST_COUNTRY (PRODUCT_GROUP,
+                                                 ITEM,
+                                                 PROD_FAMILY,
+                                                 BRAND,
+                                                 ITEM_TYPE,
+                                                 SUBGEO,
+                                                 COUNTRY)
+         SELECT A.PRODUCT_GROUP,
+                A.ITEM,
+                A.PROD_FAMILY,
+                A.BRAND,
+                A.ITEM_TYPE,
+                C.SUBGEO,
+                C.COUNTRY
+           FROM MID_ITEM_OL A, UI_REGION C
+          WHERE     EXISTS
+                       (SELECT NULL
+                          FROM  BIZ_MVKE B, UI_COUNTRY_SALESORG_MAPPING D
+                         WHERE     A.ITEM = B.MATNR
+                               AND B.VKORG = D.SALES_ORG
+                               AND C.COUNTRY = D.COUNTRY)
+                AND C.PRODUCT_GROUP = 'EBG';                           
+    
+
+    P_OUT_EXITCODE := 0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGCFE');     
+END;

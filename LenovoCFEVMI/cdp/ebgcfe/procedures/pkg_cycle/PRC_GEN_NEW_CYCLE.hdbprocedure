@@ -1,0 +1,216 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cycle::PRC_GEN_NEW_CYCLE" ( 
+   IN    p_product_group     VARCHAR(10),
+   IN    p_cycle_name        VARCHAR(50),
+   IN    p_cycle_type        VARCHAR(20),   
+   IN    p_cycle_cur_mon     VARCHAR(100),
+   IN    p_cycle_fcst_mon    VARCHAR(100),
+   IN    p_user_id       VARCHAR(64),   
+   OUT   p_exitcode          INTEGER,
+   OUT   p_exitmess          VARCHAR(500) 
+ ) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER  
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_GEN_NEW_CYCLE           
+*function   : Generate New Cycle
+*input      ：p_product_group : product group / p_cycle_name : cycle name
+              p_cycle_type : cycle type / p_cycle_cur_mon : cycle of current
+              month, format 'MM/DD/YYYY' / p_cycle_fcst_mon : cycle of forecast 
+              month, format 'MM/DD/YYYY'
+*output     : p_exitcode : error code / p_exitmess : error message 
+*author     : Leonard Ling
+*CreateDate : 2015-01-04
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+  -- data
+  DECLARE      v_pkg_name        VARCHAR(30) := 'PKG_CYCLE';   
+  DECLARE      v_proc_name       VARCHAR(50) := 'PRC_GEN_NEW_CYCLE';
+  DECLARE      v_full_name       VARCHAR(60)  := :v_pkg_name ||'.'|| :v_proc_name;
+  DECLARE      v_cycle_mon_date_format VARCHAR(20);
+  DECLARE      V_LAST_CYCLE_NAME VARCHAR(50);   
+  DECLARE      v_cycle_current   VARCHAR(20);
+  DECLARE      v_cycle_name      VARCHAR(20);
+  DECLARE      v_cycle_cur_mon   DATE;
+  DECLARE      v_cycle_fcst_mon  DATE;  
+  DECLARE      v_count           INTEGER;
+  DECLARE      logidi            INTEGER := 0;  
+  DECLARE      logidj            INTEGER := 0;  
+  DECLARE      logidk            INTEGER := 0;
+  DECLARE      v_init_cycle	     INTEGER;
+  DECLARE      v_is_bak_cycle    INTEGER;
+
+  
+  -- exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+   		p_exitcode := ::SQL_ERROR_CODE;     
+	    p_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );     
+ 	   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );         
+   END;    
+
+  -- process logic
+    p_exitcode := -1;
+    p_exitmess := 'Error';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                        I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+
+  SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().CYCLE_CURRENT INTO v_cycle_current FROM dummy;		   
+  -- check that BAKE process must be completed before generating new cycle
+  SELECT count(1) INTO v_count FROM ui_control_point WHERE control_point = 'BAKE' AND product_group = :p_product_group
+                               AND control_point_status = 'COMPLETED';
+  IF :v_count < 1 THEN
+    p_exitmess := 'BAKE process must be completed before generating new cycle';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'WARN', I_LOGSID=>:logidj, 
+                  I_EVENT_NAME=>:V_FULL_NAME, I_MODULE=>'EBGCFE', I_MESSAGE=>:p_exitmess);     
+    RETURN;
+  END IF;
+  
+  SELECT COUNT(0) INTO v_count 
+    FROM ui_cycle
+   WHERE product_group = :p_product_group
+     AND cycle_name    = :p_cycle_name;
+     
+  IF v_count > 0
+  THEN
+      p_exitmess := 'Cycle name '||'"'||:p_cycle_name||'" already been used.';
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE         => 'WARN', 
+                                                  I_LOGSID       => :logidj, 
+                                                  I_EVENT_NAME   => :V_FULL_NAME, 
+                                                  I_MODULE       => 'EBGCFE', 
+                                                  I_MESSAGE      => :p_exitmess);     
+      RETURN;  
+  END IF;
+  
+  /* -- check that last new cycle process is completed (commented due to conflict with initial cycle creation)
+  SELECT count(1) INTO v_count FROM ui_control_point WHERE control_point = 'NEW CYCLE' AND product_group = :p_product_group
+                               AND control_point_status = 'COMPLETED';
+  IF :v_count < 1 THEN
+    p_exitmess := 'Last new cycle process must be completed before generating new cycle';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'WARN', I_LOGSID=>:logidj, 
+                  I_EVENT_NAME=>:V_FULL_NAME, I_MODULE=>'EBGCFE', I_MESSAGE=>:p_exitmess);     
+    RETURN;
+  END IF; */
+    
+  -- check that forecast month must be later than current month (input format: MM/DD/YYYY)
+  SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().CYCLE_MON_DATE_FORMAT INTO v_cycle_mon_date_format FROM dummy; --'MONYYYY'
+  v_cycle_fcst_mon := to_date(TO_CHAR(TO_DATE(:p_cycle_fcst_mon,'MM/DD/YYYY' ),'MONYYYY'), :v_cycle_mon_date_format); 
+  v_cycle_cur_mon := to_date(TO_CHAR(TO_DATE(:p_cycle_cur_mon,'MM/DD/YYYY' ),'MONYYYY'), :v_cycle_mon_date_format);
+  IF :v_cycle_cur_mon > :v_cycle_fcst_mon THEN
+    p_exitmess := 'Forecast month is not later than current month, no new cycle will be generated';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'WARN', I_LOGSID=>:logidk, 
+                  I_EVENT_NAME=>:V_FULL_NAME, I_MODULE=>'EBGCFE', I_MESSAGE=>:p_exitmess);     
+    RETURN;  
+  END IF; 
+      
+  SELECT COUNT(*) INTO v_init_cycle FROM  ui_cycle WHERE cycle=:v_cycle_current;
+  
+  IF v_init_cycle = 0 THEN 
+  
+      --current cycle not found
+      -- create the initial current cycle
+      INSERT INTO ui_cycle (product_group, cycle, last_cycle, cycle_status, cycle_name, cycle_type, cycle_cur_month, cycle_fcst_month,
+                  m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, action, status, sys_created_date, sys_created_by,sys_last_modified_date, 
+               sys_last_modified_by) 
+             VALUES (:p_product_group, :v_cycle_current, '', :v_cycle_current, :p_cycle_name, :p_cycle_type,
+             to_char(:v_cycle_cur_mon, :v_cycle_mon_date_format), to_char(:v_cycle_fcst_mon,:v_cycle_mon_date_format),
+             to_char(:v_cycle_cur_mon, :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 1), :v_cycle_mon_date_format),
+             to_char(add_months(:v_cycle_cur_mon, 2), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 3), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 4), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 5), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 6), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 7), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 8), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 9), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 10), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 11), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 12), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 13), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 14), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 15), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 16), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 17), :v_cycle_mon_date_format),
+	         'INSERT', 'ACTIVE', CURRENT_TIMESTAMP,:v_proc_name,CURRENT_TIMESTAMP,:v_proc_name
+             );
+  ELSE
+
+	  SELECT CYCLE_NAME INTO V_LAST_CYCLE_NAME
+	    FROM UI_CYCLE
+	    WHERE PRODUCT_GROUP = :p_product_group
+	      AND CYCLE = :v_cycle_current;   
+	  
+	  -- update current cycle to the new cycle name
+	    UPDATE ui_cycle
+	       SET last_cycle = :V_LAST_CYCLE_NAME,
+	           cycle_name = :p_cycle_name,
+	           cycle_type = :p_cycle_type,
+	           cycle_cur_month = to_char(:v_cycle_cur_mon, :v_cycle_mon_date_format),
+	           cycle_fcst_month = to_char(:v_cycle_fcst_mon,:v_cycle_mon_date_format),
+	           m1 = to_char(:v_cycle_cur_mon, :v_cycle_mon_date_format),
+	           m2 = to_char(add_months(:v_cycle_cur_mon, 1), :v_cycle_mon_date_format),
+	           m3 = to_char(add_months(:v_cycle_cur_mon, 2), :v_cycle_mon_date_format),
+	           m4 = to_char(add_months(:v_cycle_cur_mon, 3), :v_cycle_mon_date_format),
+	           m5 = to_char(add_months(:v_cycle_cur_mon, 4), :v_cycle_mon_date_format),
+	           m6 = to_char(add_months(:v_cycle_cur_mon, 5), :v_cycle_mon_date_format),
+	           m7 = to_char(add_months(:v_cycle_cur_mon, 6), :v_cycle_mon_date_format),
+	           m8 = to_char(add_months(:v_cycle_cur_mon, 7), :v_cycle_mon_date_format),
+	           m9 = to_char(add_months(:v_cycle_cur_mon, 8), :v_cycle_mon_date_format),
+	           m10= to_char(add_months(:v_cycle_cur_mon, 9), :v_cycle_mon_date_format),
+	           m11= to_char(add_months(:v_cycle_cur_mon, 10), :v_cycle_mon_date_format),
+	           m12= to_char(add_months(:v_cycle_cur_mon, 11), :v_cycle_mon_date_format),
+	           m13= to_char(add_months(:v_cycle_cur_mon, 12), :v_cycle_mon_date_format),
+	           m14= to_char(add_months(:v_cycle_cur_mon, 13), :v_cycle_mon_date_format),
+	           m15= to_char(add_months(:v_cycle_cur_mon, 14), :v_cycle_mon_date_format),
+	           m16= to_char(add_months(:v_cycle_cur_mon, 15), :v_cycle_mon_date_format),
+	           m17= to_char(add_months(:v_cycle_cur_mon, 16), :v_cycle_mon_date_format),
+	           m18= to_char(add_months(:v_cycle_cur_mon, 17), :v_cycle_mon_date_format),
+	           action = 'INSERT',
+	           status = 'ACTIVE',
+	           sys_created_date = CURRENT_TIMESTAMP, 
+	           sys_created_by = :v_proc_name,
+	           sys_last_modified_date = CURRENT_TIMESTAMP, 
+	           sys_last_modified_by = :v_proc_name
+	     WHERE product_group = :p_product_group
+	       AND cycle_status = :v_cycle_current;  
+  END IF;
+  
+	 SELECT last_cycle INTO v_cycle_name FROM ui_cycle 
+	  WHERE cycle         = :v_cycle_current
+	    AND product_group = :p_product_group;
+
+	 IF v_cycle_name IS NOT NULL THEN
+	 	SELECT COUNT(*) INTO v_is_bak_cycle FROM ui_cycle WHERE cycle=:v_cycle_name and product_group = :p_product_group;
+	 	IF v_is_bak_cycle = 0 THEN
+			-- move current cycle to history
+			CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_cycle::PRC_CYCLE_CLOSURE"(:v_cycle_name,:p_product_group,:p_exitcode,:p_exitmess);
+	 			IF :p_exitcode <> 0 THEN
+  	     			RETURN;
+  	 			END IF;
+  	 	END IF;
+  	 END IF;	  
+
+
+	UPDATE UI_CONTROL_POINT a
+	   SET a.CONTROL_POINT_STATUS = 'NEW',
+	       a.CYCLE_NAME = b.cycle_name,
+	       a.CYCLE_TYPE = b.cycle_type,
+	       a.SYS_LAST_MODIFIED_BY = :p_user_id,
+	       a.SYS_LAST_MODIFIED_Date = CURRENT_TIMESTAMP
+	 FROM UI_CYCLE b
+	WHERE b.cycle = :v_cycle_current
+	  AND a.control_point = 'BAKE'
+	  AND a.product_group = :p_product_group;  
+	  
+  CALL "cdp.ebgcfe.procedures.pkg_cycle::PRC_MONTH_ROLLING"(:p_product_group,:p_cycle_cur_mon,:p_exitcode,:p_exitmess);	  	  
+  IF :p_exitcode <> 0 THEN
+  	RETURN;
+  END IF;
+
+  CALL "cdp.ebgcfe.procedures.pkg_cycle::PRC_GEN_NEW_QUARTER"(:p_product_group,:p_cycle_cur_mon,:p_exitcode,:p_exitmess);	  	  
+  IF :p_exitcode <> 0 THEN
+  	RETURN;
+  END IF;  
+  
+  p_exitcode := 0;
+  p_exitmess := 'SUCCESS'; 
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');    
+END;

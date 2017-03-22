@@ -1,0 +1,118 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_BUNDLE_BOM" (
+OUT PO_RETURNCODE DECIMAL ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW  
+	AS
+   /************************************************************************
+   *name        : PRC_BUNDLE_BOM
+   *function    : Insert SEO-SBB data into PCDW
+   *input       : -
+   *output      : PO_RETURNCODE : return code
+   *author      : Leonard Ling    
+   *CreateDate  : 2015-01-13
+   *UpdateDate  :              
+   *************************************************************************/
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+BEGIN
+	--exception
+	 DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	 BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      	vCode := ::SQL_ERROR_CODE;
+      	PO_RETURNCODE := :vCode;
+      INSERT INTO PCDW_PROC_LOG
+         (EVENTTIME,
+          EVENTNAME,
+          SUBEVENT,
+          MSGCODE,
+          EVENTMSG,
+          EVENTTYPE,
+          DATASOURCE,
+          DATADEST,
+          EVENTDESCR)
+      VALUES
+         (CURRENT_TIMESTAMP,
+          'PRC_BUNDLE_BOM',
+          'OTHERS ERROR',
+          :vCode,
+          :vMsg,
+          '',
+          '',
+          '',
+          'END');
+      exec 'COMMIT'; 	 
+     END;
+
+
+   -- log process start
+   INSERT INTO PCDW_PROC_LOG
+   VALUES
+      (CURRENT_TIMESTAMP,
+       'PRC_BUNDLE_BOM',
+       '',
+       NULL,
+       '',
+       '',
+       '',
+       '',
+       'START');
+   EXEC 'COMMIT';
+   PO_RETURNCODE := 1;
+   
+   
+   -- Delete the old data from target table according to Bundle+Country
+   DELETE FROM PCDW_BUNDLE_BOM WHERE (BUNDLE, COUNTRY)    
+                           IN ( SELECT DISTINCT BUNDLE, COUNTRY FROM IPC_BUNDLE_BOM);
+   
+   --BACK UP
+   DELETE FROM "PCDW"."BAK_IPC_BUNDLE_BOM"
+   WHERE DAYS_BETWEEN(SYS_CREATED_DATE,CURRENT_TIMESTAMP)>90; 
+   
+   INSERT INTO  "PCDW"."BAK_IPC_BUNDLE_BOM"(BUNDLE, COUNTRY, SEO, QTY, IPC_CREATED_DATE, SYS_CREATED_DATE,
+							 SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY)
+          (SELECT BUNDLE, COUNTRY, SEO, QTY, IPC_CREATED_DATE, CURRENT_TIMESTAMP,
+							 SESSION_USER, NULL, NULL  
+				  FROM IPC_BUNDLE_BOM );
+                           
+   -- Insert the new value to the target table
+   INSERT INTO PCDW_BUNDLE_BOM (BUNDLE, COUNTRY, SEO, QTY, IPC_CREATED_DATE, SYS_CREATED_DATE,
+							 SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY)
+          SELECT BUNDLE, COUNTRY, SEO, SUM(QTY), MAX(IPC_CREATED_DATE), CURRENT_TIMESTAMP,
+							 SESSION_USER, NULL, NULL  
+				  FROM (select * from IPC_BUNDLE_BOM
+							where (BUNDLE, COUNTRY,SYS_CREATED_DATE ) in (
+                                      SELECT BUNDLE, COUNTRY,MAX(SYS_CREATED_DATE) 
+				                        FROM IPC_BUNDLE_BOM 
+			                              WHERE LENGTH(SEO)>0 AND LENGTH(COUNTRY)>0 AND LENGTH(BUNDLE)>0--防止inser null
+			                                 GROUP BY BUNDLE,COUNTRY))
+			GROUP BY BUNDLE,COUNTRY,SEO ;--added by water to avoid ELOIS data repeat
+   EXEC 'COMMIT';
+
+   PO_RETURNCODE := 0;
+
+   -- log process end
+   INSERT INTO PCDW_PROC_LOG
+      (EVENTTIME,
+       EVENTNAME,
+       SUBEVENT,
+       MSGCODE,
+       EVENTMSG,
+       EVENTTYPE,
+       DATASOURCE,
+       DATADEST,
+       EVENTDESCR)
+   VALUES
+      (CURRENT_TIMESTAMP,
+       'PRC_BUNDLE_BOM',
+       'SUCCESS',
+       :vCode,
+       :vMsg,
+       '',
+       '',
+       '',
+       'END');
+   EXEC 'COMMIT';
+   
+END;

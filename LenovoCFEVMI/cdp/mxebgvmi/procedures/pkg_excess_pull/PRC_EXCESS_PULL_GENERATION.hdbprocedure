@@ -1,0 +1,210 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_excess_pull::PRC_EXCESS_PULL_GENERATION" ( 
+IN iv_id VARCHAR2(10),OUT on_exitcode DECIMAL
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_EXCESS_PULL_GENERATION              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141204                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+AS
+
+      v_logic_proc_name   VARCHAR2 (40)           := 'PRC_EXCESS_PULL_GENERATION';
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_EXCESS_PULL';    
+      logidi integer:=0;
+      
+      v_dst               VARCHAR(18):= ' ';
+      v_dsl               VARCHAR(18):= ' ';
+      v_dsb               VARCHAR(18):= ' ';
+      v_werks             VARCHAR(40);
+      v_moid              VARCHAR(12):= ' ';
+      v_p_header          INTEGER;
+      v_p_line            INTEGER;
+      
+      
+      
+      v_src_storage_loc varchar(40);
+      v_ssl VARCHAR(40);
+BEGIN
+     DECLARE CURSOR cur FOR (SELECT   productionordid, src_storage_type,
+                           src_storage_loc, src_storage_bin, werks,
+                           dest_storage_type, dest_storage_loc,
+                           dest_storage_bin, SUM (pull_qty) qty, dept, matnr,MATNR_DESCR        --2013.7.16 MEX CSE Projec baiying Updated
+                      FROM excess_pull
+                     WHERE werks IN (SELECT siteid
+                                       FROM CONF_site_schedule
+                                      WHERE ID = :iv_id)
+                       AND status = 'COMPLETED'
+                  GROUP BY productionordid,
+                           src_storage_type,
+                           src_storage_loc,
+                           src_storage_bin,
+                           werks,
+                           dest_storage_type,
+                           dest_storage_loc,
+                           dest_storage_bin,
+                           dept,
+                           matnr,
+                           status,MATNR_DESCR      --2013.7.16 MEX CSE Projec baiying Updated
+                    HAVING SUM (pull_qty) > 0
+                  ORDER BY productionordid,
+                           dest_storage_type,
+                           dest_storage_loc,
+                           dest_storage_bin,
+                           werks,
+                           matnr);
+                           
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         
+          on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+
+
+      on_exitcode := -20099;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');                           
+                           
+      FOR CUR_ITEM as cur
+      DO
+           IF ( v_dst <> CUR_ITEM.dest_storage_type
+             OR v_dsl <> CUR_ITEM.dest_storage_loc
+             OR v_dsb <> CUR_ITEM.dest_storage_bin
+             OR v_werks <> CUR_ITEM.werks
+             OR v_moid <> CUR_ITEM.productionordid
+            )
+         THEN
+           v_dst := CUR_ITEM.dest_storage_type;
+            v_dsl := CUR_ITEM.dest_storage_loc;
+            v_dsb := CUR_ITEM.dest_storage_bin;
+            v_werks := CUR_ITEM.werks;
+            v_moid := CUR_ITEM.productionordid;
+            v_ssl:=CUR_ITEM.src_storage_loc;
+            
+           SELECT "MXEBGVMI"."cdp.mxebgvmi.sequences::SEQ_PULL_LINE_ID".NEXTVAL
+              INTO v_p_header
+              FROM dummy;
+
+            SELECT "MXEBGVMI"."cdp.mxebgvmi.sequences::SEQ_PULL_LINE_ID".NEXTVAL
+              INTO v_p_line
+              FROM dummy;
+              
+            SELECT RESULT INTO v_src_storage_loc FROM "MXEBGVMI"."cdp.mxebgvmi.functions::FUNC_GET_WHS_NO"(:v_ssl) LIMIT 1;
+
+            INSERT INTO special_dispatch
+                        (productionordid, werks, pull_line_id,
+                         pull_header_id, src_storage_type,
+                         src_storage_loc, src_storage_bin,
+                         dest_storage_type, dest_storage_loc,
+                         dest_storage_bin,
+                         whs_no, qty, dept,
+                         matnr, status,MATNR_DESCR,SYS_CREATED_BY,SYS_CREATED_DATE,SYS_AUTH_ID --2013.7.16 MEX CSE Projec baiying Updated
+                        )
+                 VALUES (CUR_ITEM.productionordid, CUR_ITEM.werks, v_p_line,
+                         v_p_header, CUR_ITEM.src_storage_type,
+                         CUR_ITEM.src_storage_loc, CUR_ITEM.src_storage_bin,
+                         CUR_ITEM.dest_storage_type, CUR_ITEM.dest_storage_loc,
+                         CUR_ITEM.dest_storage_bin,
+                         :v_src_storage_loc, CUR_ITEM.qty, CUR_ITEM.dept,
+                         CUR_ITEM.matnr, 'IN_PROCESS',CUR_ITEM.MATNR_DESCR,v_logic_proc_name,current_timestamp,CUR_ITEM.Werks --2013.7.16 MEX CSE Projec baiying Updated
+                        );
+
+            --COMMIT;
+        ELSE
+            v_ssl:=CUR_ITEM.src_storage_loc;
+        
+        
+            SELECT "MXEBGVMI"."cdp.mxebgvmi.sequences::SEQ_PULL_LINE_ID".NEXTVAL
+              INTO v_p_line
+              FROM DUMMY;
+            
+            SELECT RESULT INTO v_src_storage_loc FROM "MXEBGVMI"."cdp.mxebgvmi.functions::FUNC_GET_WHS_NO"(:v_ssl) LIMIT 1;
+            
+            INSERT INTO special_dispatch
+                        (productionordid, werks, pull_line_id,
+                         pull_header_id, src_storage_type,
+                         src_storage_loc, src_storage_bin,
+                         dest_storage_type, dest_storage_loc,
+                         dest_storage_bin,
+                         whs_no, qty, dept,
+                         matnr, status,MATNR_DESCR,SYS_CREATED_BY,SYS_CREATED_DATE,SYS_AUTH_ID --2013.7.16 MEX CSE Projec baiying Updated
+                        )
+                 VALUES (CUR_ITEM.productionordid, CUR_ITEM.werks, v_p_line,
+                         v_p_header, CUR_ITEM.src_storage_type,
+                         CUR_ITEM.src_storage_loc, CUR_ITEM.src_storage_bin,
+                         CUR_ITEM.dest_storage_type, CUR_ITEM.dest_storage_loc,
+                         CUR_ITEM.dest_storage_bin,
+                         :v_src_storage_loc, CUR_ITEM.qty, CUR_ITEM.dept,
+                         CUR_ITEM.matnr, 'IN_PROCESS',CUR_ITEM.MATNR_DESCR,v_logic_proc_name,current_timestamp,CUR_ITEM.Werks --2013.7.16 MEX CSE Projec baiying Updated
+                        );
+
+           -- COMMIT;         
+         END IF;
+      END FOR;
+      
+         UPDATE excess_pull t
+         SET (pull_line_id, pull_header_id) =
+                (SELECT DISTINCT pull_line_id, pull_header_id
+                            FROM special_dispatch sd
+                           WHERE    sd.productionordid
+                                 || sd.src_storage_type
+                                 || sd.src_storage_loc
+                                 || sd.src_storage_bin
+                                 || sd.dest_storage_type
+                                 || sd.dest_storage_loc
+                                 || sd.dest_storage_bin
+                                 || sd.matnr
+                                 || sd.werks
+                                 || sd.dept =
+                                       t.productionordid
+                                    || t.src_storage_type
+                                    || t.src_storage_loc
+                                    || t.src_storage_bin
+                                    || t.dest_storage_type
+                                    || t.dest_storage_loc
+                                    || t.dest_storage_bin
+                                    || t.matnr
+                                    || t.werks
+                                    || t.dept
+                             AND sd.status = 'IN_PROCESS')
+       WHERE t.status = 'COMPLETED' AND t.werks IN (SELECT siteid
+                                                      FROM conf_site_schedule
+                                                     WHERE ID = iv_id);
+      
+     -- COMMIT;
+
+      /*DELETE FROM EXCESS_PULL WHERE WERKS in (select siteid from ud_site_schedule where id=iv_id);
+
+      COMMIT;          */ 
+
+      /******************************************
+          move this part to MO_CUTBACK_RPT!!!
+      ******************************************/
+
+      /*UPDATE EXCESS_PULL set STATUS='IN_PROCESS'
+        WHERE STATUS='COMPLETED'
+          AND WERKS in (select siteid from ud_site_schedule where id=iv_id);*/
+      --COMMIT;
+      on_exitcode := 0;      
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!');         
+END;

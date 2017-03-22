@@ -1,0 +1,307 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_report::PRC_RPT_MO_PULL_INFO" (
+	iv_id VARCHAR2(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA
+/************************************************************************
+*name      : PRC_RPT_MO_PULL_INFO              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/05                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	 
+	AS
+	  v_logidi INTEGER := 0;	
+	  v_pkg_name          VARCHAR (40)            := 'PKG_REPORT';
+	  v_logic_proc_name   VARCHAR (40)            := 'PRC_RPT_MO_PULL_INFO';
+	  v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+	  v_normal_pulls       VARCHAR2 (4000);
+      v_excess_pulls       VARCHAR2 (4000);
+      v_shipping_pulls     VARCHAR2 (4000);
+      v_candyman_pulls     VARCHAR2 (4000);
+      v_kanban_pulls       VARCHAR2 (4000);
+      v_packaging_pulls    VARCHAR2 (4000);
+      v_remark             VARCHAR2 (4000);
+      v_production_line    VARCHAR2 (40);
+      v_productionord_id   VARCHAR2 (20000);
+BEGIN
+DECLARE CURSOR CUR_MO_T FOR (SELECT DISTINCT ml.productionordid, mo.qty,
+                                       ml.delivery_date, ml.werks,
+                                       ml.bomname mtm,
+                                       ism.prodfamilydescr family,
+
+                                       --ml.production_line,
+                                       -- ml.remark,
+                                       mo.order_type,
+                                       ism.matkl mrp_controller
+                                  FROM mid_mo_line ml,
+                                       Z_PCDW_MO mo,
+                                       ITEMSITEMASTER ism,
+                                       Z_PCDW_DS_MO ui
+                                 WHERE mo.productionordid = ml.productionordid
+                                   AND ui.work_ord_num = mo.productionordid
+                                   AND ui.werks = mo.werks
+                                   AND ui.status = 'IN_PROCESS'
+                                   AND mo.werks = ml.werks
+                                   AND mo.bomname = ml.bomname
+                                   AND ism.item = ml.bomname
+                                   AND ism.siteid = ml.werks
+                                   AND ml.werks IN (SELECT siteid
+                                                      FROM conf_site_schedule
+                                                     WHERE ID = :iv_id));
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- --COMMIT                      --comment by Eric Zhou;      --comment by Eric Zhou
+	END;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+on_exitcode := -20099;
+
+
+      --DELETE FROM rpt_pull_info;
+      FOR cur_mo_t AS CUR_MO_T
+      DO
+      	 DECLARE v_productionordid VARCHAR(12) := cur_mo_t.productionordid;
+      	 DECLARE v_werks VARCHAR(4) := cur_mo_t.werks;
+      	 DECLARE v_mtm VARCHAR(18) := cur_mo_t.mtm;
+      	 DECLARE v_order_type VARCHAR(4) := cur_mo_t.order_type;
+         v_logic_proc_name := '';
+         v_normal_pulls := '';
+         v_excess_pulls := '';
+         v_shipping_pulls := '';
+         v_candyman_pulls := '';
+         v_kanban_pulls := '';
+         v_packaging_pulls := '';
+         v_remark := '';
+         v_production_line := '';
+         v_productionord_id :=
+         v_productionord_id || ',' || cur_mo_t.productionordid;
+         BEGIN
+      	 DECLARE CURSOR CUR_MO FOR (SELECT DISTINCT ml.productionordid, mo.qty,
+                                        ml.delivery_date, ml.werks,
+                                        ml.bomname mtm, ml.pull_header_id,
+                                        ism.prodfamilydescr family,
+                                        mo.order_type, ml.production_line,
+
+                                        --ml.remark,
+                                        ism.matkl mrp_controller,
+                                        ml.pull_type
+                                   FROM mid_mo_line ml,
+                                        Z_PCDW_MO mo,
+                                        ITEMSITEMASTER ism,
+                                        Z_PCDW_DS_MO ui
+                                  WHERE mo.productionordid =
+                                                            ml.productionordid
+                                    AND ui.work_ord_num = mo.productionordid
+                                    AND ui.werks = mo.werks
+                                    AND ui.status = 'IN_PROCESS'
+                                    AND mo.werks = ml.werks
+                                    AND mo.bomname = ml.bomname
+                                    AND ism.item = ml.bomname
+                                    AND ism.siteid = ml.werks
+                                    AND mo.productionordid = :v_productionordid
+                                    AND mo.werks = :v_werks
+                                    AND mo.bomname = :v_mtm
+                                    AND mo.order_type = :v_order_type
+                                    AND ml.werks IN (SELECT siteid
+                                                       FROM conf_site_schedule
+                                                      WHERE ID = :iv_id));
+
+         FOR cur_mo AS CUR_MO
+         DO
+            IF cur_mo.pull_type = 'NORMAL'
+            THEN
+               v_production_line := cur_mo.production_line;
+               v_normal_pulls :=
+                               v_normal_pulls || cur_mo.pull_header_id || ',';
+            ELSEIF cur_mo.pull_type = 'EXCESS'
+            THEN
+               v_excess_pulls :=
+                               v_excess_pulls || cur_mo.pull_header_id || ',';
+            ELSEIF cur_mo.pull_type = 'SHIPPING'
+            THEN
+               v_shipping_pulls :=
+                             v_shipping_pulls || cur_mo.pull_header_id || ',';
+            ELSEIF cur_mo.pull_type = 'CANDYMAN'
+            THEN
+               v_candyman_pulls :=
+                             v_candyman_pulls || cur_mo.pull_header_id || ',';
+            ELSEIF cur_mo.pull_type = 'KANBANREPORT'
+            THEN
+               v_kanban_pulls :=
+                               v_kanban_pulls || cur_mo.pull_header_id || ',';
+            ELSEIF cur_mo.pull_type = 'PACKAGING'
+            THEN
+               v_packaging_pulls :=
+                            v_packaging_pulls || cur_mo.pull_header_id || ',';
+            END IF;
+         --v_remark := v_remark || ',' || cur_mo.remark;
+         END FOR;
+         END;
+
+		 BEGIN
+		 DECLARE CURSOR CUR_MO_R FOR (SELECT DISTINCT ml.productionordid, mo.qty,
+                                          ml.delivery_date, ml.werks,
+                                          ml.bomname mtm, ml.pull_header_id,
+                                          ism.prodfamilydescr family,
+                                          mo.order_type, ml.production_line,
+                                          ml.remark, ism.matkl mrp_controller,
+                                          ml.pull_type
+                                     FROM mid_mo_line ml,
+                                          Z_PCDW_MO mo,
+                                          ITEMSITEMASTER ism,
+                                          Z_PCDW_DS_MO ui
+                                    WHERE mo.productionordid =
+                                                            ml.productionordid
+                                      AND ui.work_ord_num = mo.productionordid
+                                      AND ui.werks = mo.werks
+                                      AND ui.status = 'IN_PROCESS'
+                                      AND mo.werks = ml.werks
+                                      AND mo.bomname = ml.bomname
+                                      AND ism.item = ml.bomname
+                                      AND ism.siteid = ml.werks
+                                      AND mo.productionordid = :v_productionordid
+                                      AND mo.werks = :v_werks
+                                      AND mo.bomname = :v_mtm
+                                      AND mo.order_type = :v_order_type
+                                      AND ml.werks IN (SELECT siteid
+                                                         FROM conf_site_schedule
+                                                        WHERE ID = :iv_id));
+         FOR cur_mo_r AS CUR_MO_R 
+         DO
+            v_remark := :v_remark || ',' || cur_mo_r.remark;
+         END FOR;
+         END;
+
+         v_normal_pulls := LTRIM (RTRIM (v_normal_pulls, ','), ',');
+         v_excess_pulls := LTRIM (RTRIM (v_excess_pulls, ','), ',');
+         v_shipping_pulls := LTRIM (RTRIM (v_shipping_pulls, ','), ',');
+         v_candyman_pulls := LTRIM (RTRIM (v_candyman_pulls, ','), ',');
+         v_kanban_pulls := LTRIM (RTRIM (v_kanban_pulls, ','), ',');
+         v_packaging_pulls := LTRIM (RTRIM (v_packaging_pulls, ','), ',');
+         v_remark := LTRIM (RTRIM (v_remark, ','), ',');
+
+         INSERT INTO rpt_pull_info
+                     (productionordid, bom_qty, delivery_date, normal_pulls,
+                      excess_pulls, shipping_pulls, candyman_pulls,
+                      kanban_pulls, packaging_pulls, mtm, family, order_type,
+                      remark, production_line, mrp_controller, logical_plant,STATUS)
+            SELECT DISTINCT ml.productionordid, cur_mo_t.qty,
+                            cur_mo_t.delivery_date, :v_normal_pulls,
+                            :v_excess_pulls, :v_shipping_pulls,
+                            :v_candyman_pulls, :v_kanban_pulls,
+                            :v_packaging_pulls, cur_mo_t.mtm, cur_mo_t.family,
+                            cur_mo_t.order_type,
+                                                --cur_mo_t.remark,
+                                                --cur_mo_t.production_line,
+                                                v_remark, v_production_line,
+                            cur_mo_t.mrp_controller, ml.werks,'NEW'
+                       FROM mid_mo_line ml,
+                            Z_PCDW_MO mo,
+                            ITEMSITEMASTER ism,
+                            Z_PCDW_DS_MO ui
+                      WHERE mo.productionordid = ml.productionordid
+                        AND ui.work_ord_num = mo.productionordid
+                        AND ui.werks = mo.werks
+                        AND ui.status = 'IN_PROCESS'
+                        AND mo.werks = ml.werks
+                        AND mo.bomname = ml.bomname
+                        AND ism.item = ml.matnr
+                        AND ism.siteid = ml.werks
+                        AND mo.productionordid = cur_mo_t.productionordid
+                        AND mo.werks = cur_mo_t.werks
+                        AND mo.bomname = cur_mo_t.mtm
+                        AND mo.order_type = cur_mo_t.order_type
+                        --AND ism.matkl = cur_mo_t.mrp_controller
+                        --AND ml.production_line IS NOT NULL
+                        --AND ml.remark IS NOT NULL
+                        AND ml.werks IN (SELECT siteid
+                                           FROM conf_site_schedule
+                                          WHERE ID = :iv_id)
+                        AND ml.productionordid NOT IN (
+                                  SELECT r.productionordid
+                                    FROM rpt_pull_info r
+                                   WHERE r.productionordid =
+                                                            ml.productionordid);
+
+         UPDATE rpt_pull_info r
+            SET normal_pulls = :v_normal_pulls,
+                excess_pulls = :v_excess_pulls,
+                shipping_pulls = :v_shipping_pulls,
+                candyman_pulls = :v_candyman_pulls,
+                kanban_pulls = :v_kanban_pulls,
+                packaging_pulls = :v_packaging_pulls,
+                remark = :v_remark,
+                production_line = :v_production_line
+          WHERE r.productionordid = cur_mo_t.productionordid;
+
+         --COMMIT                      --comment by Eric Zhou;
+      END FOR;
+
+ DELETE FROM   RPT_PULL_INFO_RUN;
+
+      INSERT INTO RPT_PULL_INFO_RUN (PRODUCTIONORDID,
+                                     BOM_QTY,
+                                     DELIVERY_DATE,
+                                     NORMAL_PULLS,
+                                     EXCESS_PULLS,
+                                     SHIPPING_PULLS,
+                                     CANDYMAN_PULLS,
+                                     KANBAN_PULLS,
+                                     PACKAGING_PULLS,
+                                     MTM,
+                                     FAMILY,
+                                     ORDER_TYPE,
+                                     REMARK,
+                                     PRODUCTION_LINE,
+                                     MRP_CONTROLLER,
+                                     SYS_TIMESTAMP,
+                                     LOGICAL_PLANT)
+         SELECT   PRODUCTIONORDID,
+                  BOM_QTY,
+                  DELIVERY_DATE,
+                  ''''||NORMAL_PULLS AS NORMAL_PULLS,
+                  ''''||EXCESS_PULLS AS EXCESS_PULLS,
+                  ''''||SHIPPING_PULLS AS SHIPPING_PULLS,
+                  ''''||CANDYMAN_PULLS AS CANDYMAN_PULLS,
+                  ''''||KANBAN_PULLS AS KANBAN_PULLS,
+                  ''''||PACKAGING_PULLS AS PACKAGING_PULLS,
+                  MTM,
+                  FAMILY,
+                  ORDER_TYPE,
+                  REMARK,
+                  PRODUCTION_LINE,
+                  MRP_CONTROLLER,
+                  SYS_TIMESTAMP,
+                  LOGICAL_PLANT
+           FROM   RPT_PULL_INFO
+          WHERE   STATUS = 'NEW';
+
+
+      UPDATE   RPT_PULL_INFO
+         SET   STATUS = 'COMPLETED'
+       WHERE   STATUS = 'NEW';
+
+      --COMMIT                      --comment by Eric Zhou;
+   on_exitcode := 0;          
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success'); 
+			              
+END;

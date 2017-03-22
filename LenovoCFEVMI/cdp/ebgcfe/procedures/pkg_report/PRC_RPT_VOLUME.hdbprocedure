@@ -1,0 +1,359 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_VOLUME" 
+(
+    --IN  P_CHANGE_ID       VARCHAR(100),
+    --IN  P_PRODUCT_GROUP   VARCHAR(20),
+    --IN  P_USER_ID         VARCHAR(64),
+    OUT P_OUT_EXITCODE    DECIMAL,
+    OUT P_OUT_EXITMESS    VARCHAR(500)
+    
+  
+) 
+
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    --READS SQL DATA 
+    AS
+    /************************************************************************
+    *name       : PRC_RPT_VOLUME     
+    *function   : 
+    *input      ：
+    *output     : p_out_exitcode : error code 
+    *author     : LIUXT
+    *CreateDate : 2016-07-27
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    *************************************************************************/
+    V_PKG_NAME        VARCHAR(30)  := 'PKG_REPORT';
+    V_PRC_NAME        VARCHAR(50)  := 'PRC_RPT_VOLUME';
+    V_FULL_NAME       VARCHAR(100) := :v_pkg_name || '.' || :v_prc_name;  
+    LOGIDI            INTEGER      := 0;
+    V_VAR             NUMBER;
+    V_DEFAULT_COST    NUMBER;
+    V_RUNLVL          VARCHAR(20);
+    tmp_start_month   VARCHAR(20);
+BEGIN
+    -- exception
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+        P_OUT_EXITCODE :=::SQL_ERROR_CODE;    
+                
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :LOGIDI,
+                                                    I_EVENT_NAME => :V_FULL_NAME, 
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR', 
+                                                    I_DETAIL     => TO_CHAR(::SQL_ERROR_CODE) || ':' || 
+                                                                    SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+
+    P_OUT_EXITCODE := -1;
+    P_OUT_EXITMESS := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :LOGIDI,
+                                                I_EVENT_NAME => :V_FULL_NAME,
+                                                I_MODULE     => 'EBGCFE'); 
+   
+    
+    
+    
+    ----------------------------------------------------以下是 forecast---------------------------------------------------
+    DELETE FROM  rpt_forecast_volume;	
+    DELETE FROM  mid_rpt_forecast_volume;	 
+    
+    --start_month
+    SELECT start_month INTO tmp_start_month FROM 
+    (SELECT start_month,RANK() OVER(ORDER BY TO_DATE(start_month,'monyyyy')) rn FROM 
+    (SELECT DISTINCT month||year start_month FROM rpt_sw_mtm_mon_subgeo
+    UNION
+    SELECT DISTINCT month||year start_month FROM rpt_sw_cto_mon_subgeo))
+    WHERE rn=1; 
+    -------------------以下为rpt_sw_mtm_mon_subgeo-------------------------
+    --(sbb-comp)
+    INSERT INTO mid_rpt_forecast_volume
+    (cycle,product_group,part_number,description,plant,subgeo,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,start_month,sys_created_date)
+    SELECT t1.cycle,t1.product_group,t1.children part_number,t2.item_desc description,t1.plant,t.subgeo,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=TO_DATE(:tmp_start_month,'monyyyy') THEN FCST_QTY ELSE 0 END)*t1.QTYPER) m1,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),1) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m2,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),2) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m3,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),3) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m4,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),4) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m5,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),5) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m6,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),6) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m7,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),7) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m8,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),8) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m9,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),9) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m10,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),10) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m11,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),11) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m12,
+           :tmp_start_month start_month,
+           CURRENT_TIMESTAMP sys_created_date
+           FROM biz_cbom_sbb t1, 
+                ui_item t2,
+                biz_cbom_mtmsbb t3,
+                rpt_sw_mtm_mon_subgeo t
+    WHERE t.planning_item_id = t3.model
+      AND t.plant              = t3.plant
+      AND t3.children          = t1.model
+      AND t3.plant             = t1.plant
+      AND T1.children          = T2.item
+    GROUP BY t1.cycle,t1.product_group,t1.children,t2.item_desc,t1.plant,t.subgeo,t1.QTYPER;
+    
+    --(sbb)
+    INSERT INTO mid_rpt_forecast_volume
+    (cycle,product_group,part_number,description,plant,subgeo,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,start_month,sys_created_date)
+    SELECT t1.cycle,t1.product_group,t1.children part_number,t2.item_desc description,t1.plant,t.subgeo,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=TO_DATE(:tmp_start_month,'monyyyy') THEN FCST_QTY ELSE 0 END)*t1.QTYPER) m1,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),1) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m2,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),2) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m3,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),3) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m4,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),4) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m5,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),5) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m6,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),6) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m7,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),7) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m8,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),8) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m9,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),9) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m10,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),10) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m11,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),11) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m12,
+           :tmp_start_month start_month,
+           CURRENT_TIMESTAMP sys_created_date
+      FROM biz_cbom_mtmsbb t1,
+           ui_item t2,
+           rpt_sw_mtm_mon_subgeo t
+     WHERE t.planning_item_id = t1.model
+       AND t.plant            = t1.plant
+       AND T1.children        = T2.item
+       AND NOT EXISTS(SELECT 1 FROM biz_cbom_sbb t2 WHERE t1.children=t2.model)
+     GROUP BY t1.cycle,t1.product_group,t1.children,t2.item_desc,t1.plant,t.subgeo,t1.QTYPER;
+    
+    --------------------以上为rpt_sw_mtm_mon_subgeo-------------------------
+    
+    --------------------以下为rpt_sw_cto_mon_subgeo-------------------------
+   
+    INSERT INTO mid_rpt_forecast_volume
+    (cycle,product_group,part_number,description,plant,subgeo,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,start_month,sys_created_date)
+    SELECT t1.cycle, t1.PRODUCT_GROUP,t1.children part_number,t2.item_desc DESCRIPTION,t1.plant,t.subgeo,
+           ROUND(SUM(CASE WHEN TO_DATE(month||YEAR,'monyyyy')=TO_DATE(:tmp_start_month,'monyyyy') THEN FCST_QTY ELSE 0 END)*t1.QTYPER) m1,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),1) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m2,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),2) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m3,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),3) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m4,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),4) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m5,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),5) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m6,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),6) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m7,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),7) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m8,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),8) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m9,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),9) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m10,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),10) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m11,
+           ROUND(SUM(CASE WHEN TO_DATE(month||year,'monyyyy')=ADD_MONTHS(TO_DATE(:tmp_start_month,'monyyyy'),11) THEN fcst_qty ELSE 0 END)*t1.QTYPER) m12,
+           :tmp_start_month start_month,
+           CURRENT_TIMESTAMP sys_created_date  
+      FROM biz_cbom_sbb t1,       
+           ui_item t2,  
+           rpt_sw_cto_mon_subgeo t
+     WHERE t1.model    = t.sbb
+       AND t1.plant    = t.plant 
+       AND t1.children = t2.item
+     GROUP BY t1.cycle,t1.product_group,t1.children,t2.item_desc,t1.plant,t.subgeo,t1.QTYPER;
+    --------------------以上为rpt_sw_cto_mon_subgeo-------------------------
+    
+    UPDATE mid_rpt_forecast_volume a
+       SET plant=(SELECT plant FROM 
+   (SELECT DISTINCT part_number,b.plant,c.ptype,RANK() OVER(PARTITION BY b.part_number ORDER BY ptype) rn   
+      FROM mid_rpt_forecast_volume b,
+           conf_parameters c
+     WHERE b.plant=c.pvalue
+       AND c.pdomain = 'STEELWEDGE_VALUME') c
+     WHERE rn=1 AND a.part_number=c.part_number);    
+    
+    INSERT INTO rpt_forecast_volume
+    (cycle,product_group,part_number,commodity_code,description,plant,subgeo,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,start_month,sys_created_date)
+    SELECT cycle,product_group,part_number,commodity_code,description,plant,subgeo,SUM(m1),SUM(m2),SUM(m3),SUM(m4),SUM(m5),SUM(m6),SUM(m7),SUM(m8),SUM(m9),SUM(m10),SUM(m11),SUM(m12),start_month,sys_created_date
+      FROM mid_rpt_forecast_volume
+     GROUP BY cycle,product_group,part_number,commodity_code,description,plant,subgeo,start_month,sys_created_date;
+       
+    UPDATE rpt_forecast_volume t1
+       SET commodity_code=(SELECT commodity_code FROM 
+                          (SELECT distinct a.part_number,a.plant,a.commodity commodity_code,c.ptype,RANK() OVER(PARTITION BY a.part_number ORDER BY ptype,a.commodity) rn 
+                             FROM (SELECT DISTINCT a.part_number,a.plant,a.commodity FROM ui_cost_tape a) a,conf_parameters c
+                            WHERE a.plant=c.pvalue
+                              AND a.commodity IS NOT NULL 
+                              AND c.pdomain = 'STEELWEDGE_VALUME') t4
+                            WHERE rn=1 AND t1.part_number = t4.part_number
+                              AND t1.plant      = t4.plant);
+    --his_bak
+    DELETE FROM  rpt_forecast_volume_his
+    WHERE version=TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'YYYY-MM-DD'),'YYYY-MM-DD');
+
+    INSERT INTO  rpt_forecast_volume_his
+    SELECT t.*,TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'YYYY-MM-DD'),'YYYY-MM-DD') FROM rpt_forecast_volume t;
+    
+ ----------------------------------------------------以上是 forecast------------------------------------------------------
+ -----------------------------------------------以下是 rpt_sw_ship_mon_subgeo---------------------------------------------  
+    
+ --------------------------------------------------------以下为mtm-------------------------------------------------------
+    --mtm(sbb-comp)
+    DELETE FROM rpt_actual_volume;
+    DELETE FROM mid_rpt_actual_volume1;
+   
+    --start_month
+    SELECT TO_CHAR(TO_DATE(ship_month,'yyyy-mm-dd'),'yyyymm') INTO tmp_start_month  
+      FROM (SELECT DISTINCT ship_month,RANK() OVER(ORDER BY ship_month) rn 
+            FROM (SELECT DISTINCT ship_month FROM rpt_sw_ship_mon_subgeo))
+    WHERE rn=1;
+    
+    INSERT INTO mid_rpt_actual_volume1
+    (cycle,product_group,part_number,description,plant,subgeo,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,start_month,sys_created_date)
+    SELECT t1.cycle,t1.product_group,t1.children part_number,t2.item_desc description,t1.plant,t.geo_id,
+           ROUND(SUM(CASE WHEN t.ship_month=TO_DATE(:tmp_start_month,'yyyymm') THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m1,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),1) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m2,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),2) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m3,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),3) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m4,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),4) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m5,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),5) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m6,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),6) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m7,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),7) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m8,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),8) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m9,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),9) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m10,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),10) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m11,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),11) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m12,
+           :tmp_start_month start_month,
+           CURRENT_TIMESTAMP sys_created_date
+      FROM biz_cbom_sbb t1, 
+           ui_item t2,
+           biz_cbom_mtmsbb t3,
+           rpt_sw_ship_mon_subgeo t
+     WHERE t.planning_item_id = t3.model
+       AND t.plant=t3.plant
+       AND t3.children        = t1.model
+       AND t3.plant           = t1.plant
+       AND t1.children        = T2.item
+       AND t.cto IS NULL
+     GROUP BY t1.cycle,t1.product_group,t1.children,t2.item_desc,t1.plant,t.geo_id,t1.QTYPER;
+                      
+    UPDATE mid_rpt_actual_volume1 a
+       SET (a.plant) =(SELECT plant FROM 
+                      (SELECT children,plant,status,pvalue,ptype,RANK() OVER(PARTITION BY children ORDER BY ptype) rn
+                         FROM (SELECT DISTINCT b.children,b.plant,b.status,c.pvalue,c.ptype
+                                 FROM biz_cbom_sbb b,conf_parameters c
+                                WHERE b.children   = a.part_number
+                                  AND c.pdomain = 'STEELWEDGE_VALUME'
+                                  AND b.plant   = c.pvalue) b)
+                        WHERE rn = 1);
+ 
+    --mtm(sbb)
+    DELETE FROM mid_rpt_actual_volume2;
+    
+    INSERT INTO mid_rpt_actual_volume2
+    (cycle,product_group,part_number,description,plant,subgeo,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,start_month,sys_created_date)
+    SELECT t1.cycle,t1.product_group,t1.children part_number,t2.item_desc description,t1.plant,t.geo_id,
+           ROUND(SUM(CASE WHEN t.ship_month=TO_DATE(:tmp_start_month,'yyyymm') THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m1,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),1) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m2,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),2) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m3,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),3) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m4,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),4) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m5,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),5) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m6,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),6) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m7,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),7) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m8,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),8) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m9,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),9) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m10,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),10) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m11,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),11) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m12,
+           :tmp_start_month start_month,
+           CURRENT_TIMESTAMP sys_created_date
+      FROM biz_cbom_mtmsbb t1,
+           ui_item t2,
+           rpt_sw_ship_mon_subgeo t
+     WHERE t.planning_item_id=t1.model
+       AND t.plant=t1.plant
+       AND t1.children        = t2.item
+       AND t.cto IS NULL
+       AND NOT EXISTS(SELECT 1 FROM biz_cbom_sbb t2 WHERE t1.children=t2.model)
+     GROUP BY t1.cycle,t1.product_group,t1.children,t2.item_desc,t1.plant,t.geo_id,t1.QTYPER;  
+     
+    UPDATE mid_rpt_actual_volume2 a
+       SET (a.plant) =(SELECT plant FROM 
+                      (SELECT children,plant,status,pvalue,ptype,RANK() OVER(PARTITION BY children ORDER BY ptype) rn
+                         FROM (SELECT DISTINCT b.children,b.plant,b.status,c.pvalue,c.ptype
+                                 FROM biz_cbom_mtmsbb b,conf_parameters c
+                                WHERE b.children   = a.part_number
+                                  AND c.pdomain = 'STEELWEDGE_VALUME'
+                                  AND b.plant   = c.pvalue) b)
+                        WHERE rn = 1);
+     
+     ------------------------------------------以上为mtm-------------------------------------------
+     ------------------------------------------以下为cto-------------------------------------------
+    DELETE FROM mid_rpt_actual_volume3;
+    
+    INSERT INTO mid_rpt_actual_volume3
+    (cycle,product_group,part_number,description,plant,subgeo,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,start_month,sys_created_date)
+    SELECT t1.cycle,t1.product_group,t1.children part_number,t2.item_desc description,t1.plant,t.geo_id,
+           ROUND(SUM(CASE WHEN t.ship_month=TO_DATE(:tmp_start_month,'yyyymm') THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m1,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),1) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m2,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),2) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m3,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),3) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m4,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),4) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m5,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),5) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m6,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),6) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m7,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),7) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m8,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),8) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m9,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),9) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m10,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),10) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m11,
+           ROUND(SUM(CASE WHEN t.ship_month=ADD_MONTHS(TO_DATE(:tmp_start_month,'yyyymm'),11) THEN SHIPPED_QTY ELSE 0 END)*t1.QTYPER) m12,
+           :tmp_start_month start_month,
+           CURRENT_TIMESTAMP sys_created_date
+      FROM biz_cbom_sbb t1,
+           ui_item t2,
+           rpt_sw_ship_mon_subgeo t
+     WHERE t1.model=t.planning_item_id
+       AND t1.plant=t.plant
+       AND T1.children        = T2.item
+       AND T.cto IS NOT NULL
+     GROUP BY t1.cycle,t1.product_group,t1.children,t2.item_desc,t1.plant,t.geo_id,t1.QTYPER;
+    
+    UPDATE mid_rpt_actual_volume3 a
+    SET (a.plant) =(SELECT plant FROM 
+                   (SELECT children,plant,status,pvalue,ptype,RANK() OVER(PARTITION BY children ORDER BY ptype) rn
+                      FROM (SELECT DISTINCT b.children,b.plant,b.status,c.pvalue,c.ptype
+                              FROM biz_cbom_sbb b,conf_parameters c
+                             WHERE b.children   = a.part_number
+                               AND c.pdomain = 'STEELWEDGE_VALUME'
+                               AND b.plant   = c.pvalue) b)
+                             WHERE rn = 1); 
+                              
+    INSERT INTO rpt_actual_volume
+    (cycle,product_group,part_number,commodity_code,description,plant,subgeo,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,start_month,sys_created_date)
+    SELECT t1.cycle,t1.product_group,t1.part_number,t1.commodity_code,t1.description,t1.plant,t1.subgeo,SUM(t1.m1),SUM(t1.m2),SUM(t1.m3),
+           SUM(t1.m4),SUM(t1.m5),SUM(t1.m6),SUM(t1.m7),SUM(t1.m8),SUM(t1.m9),SUM(t1.m10),SUM(t1.m11),SUM(t1.m12),t1.start_month,t1.sys_created_date
+      FROM (SELECT * FROM mid_rpt_actual_volume1 t1
+            UNION ALL
+            SELECT * FROM mid_rpt_actual_volume2 t2
+            UNION ALL
+            SELECT * FROM mid_rpt_actual_volume3 t3) T1
+     GROUP BY t1.cycle,t1.product_group,t1.part_number,t1.commodity_code,t1.description,t1.plant,t1.subgeo,
+           t1.start_month,t1.sys_created_date;
+           
+    UPDATE rpt_actual_volume t1
+       SET commodity_code=(SELECT commodity_code FROM 
+                          (SELECT DISTINCT a.part_number,a.plant,a.commodity commodity_code,c.ptype,RANK() OVER(PARTITION BY a.part_number ORDER BY ptype,a.commodity) rn 
+                             FROM (SELECT DISTINCT a.part_number,a.plant,a.commodity FROM ui_cost_tape a) a,conf_parameters c
+                            WHERE a.plant=c.pvalue
+                              AND a.commodity IS NOT NULL 
+                              AND c.pdomain = 'STEELWEDGE_VALUME') t4
+                            WHERE rn=1 
+                              AND t1.part_number = t4.part_number
+                              AND t1.plant       = t4.plant);
+           
+   --------------------------------------------以上是 rpt_sw_ship_mon_subgeo---------------------------------------------   
+    
+    DELETE FROM rpt_actual_volume_his
+    WHERE version=TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd');
+
+    INSERT INTO rpt_actual_volume_his
+    SELECT t.*,TO_DATE(TO_CHAR(CURRENT_TIMESTAMP,'yyyy-mm-dd'),'yyyy-mm-dd') FROM rpt_actual_volume t;
+                                           
+    P_OUT_EXITCODE := 0;
+    P_OUT_EXITMESS := 'SUCCESS';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+                                                I_EVENT_NAME => :v_full_name,
+                                                I_MODULE     => 'EBGCFE'); 
+                                        
+END;

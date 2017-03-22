@@ -1,0 +1,164 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_country_salesorg_mapping" (
+IN PRODUCT_GROUP NVARCHAR(20),
+IN  COUNTRY NVARCHAR(20),
+IN  SALES_ORG NVARCHAR(20),
+IN  CURRENCY NVARCHAR(20),
+IN  SALES_OFFICE NVARCHAR(20),
+IN 	SALES_OFFICE_PCT  DECIMAL(10,4),
+IN  COUNTRY_SALESORG_TYPE NVARCHAR(20),
+IN 	 	table_name varchar(100),
+IN 	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER,
+IN      CYCLE varchar(20)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_country_salesorg_mapping              --函数名
+*function  : upload数据至表ui_country_salesorg_mapping并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Eric               --作者
+*CreateDate    : 2015-02-02       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_country_salesorg_mapping';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate int;
+		var_oper VARCHAR(10);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_country_salesorg_mapping_err"(
+			:PRODUCT_GROUP,:COUNTRY,:SALES_ORG,:CURRENCY,:SALES_OFFICE,:SALES_OFFICE_PCT,:COUNTRY_SALESORG_TYPE,
+			:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE,:CYCLE);
+     	
+    END; 
+    --exception 
+	
+
+	--procedure begin 
+	
+	
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     	
+	select  count(1) into validate from UI_REGION where COUNTRY = :COUNTRY; 
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_country_salesorg_mapping_err"(
+			:PRODUCT_GROUP,:COUNTRY,:SALES_ORG,:CURRENCY,:SALES_OFFICE,:SALES_OFFICE_PCT,:COUNTRY_SALESORG_TYPE
+			,:table_name,:business_name,:business_code,:position,'"COUNTRY"::'||:COUNTRY||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+	
+	select  count(1) into validate from UI_EXCHANGE_RATE where  CURRENCY = :CURRENCY; 
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_country_salesorg_mapping_err"(
+			:PRODUCT_GROUP,:COUNTRY,:SALES_ORG,:CURRENCY,:SALES_OFFICE,:SALES_OFFICE_PCT,:COUNTRY_SALESORG_TYPE
+			,:table_name,:business_name,:business_code,:position,'"CURRENCY"::'||:CURRENCY||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+
+	
+
+	select  count(1) into validate from CONF_PARAMETERS where pdomain='UI_COUNTRY_SALESORG_MAPPING' and 
+		pname='COUNTRY_SALESORG_TYPE' and ptype='UI' and pvalue = :COUNTRY_SALESORG_TYPE;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_country_salesorg_mapping_err"(
+			:PRODUCT_GROUP,:COUNTRY,:SALES_ORG,:CURRENCY,:SALES_OFFICE,:SALES_OFFICE_PCT,:COUNTRY_SALESORG_TYPE
+			,:table_name,:business_name,:business_code,:position,'"COUNTRY_SALESORG_TYPE"::'||:COUNTRY_SALESORG_TYPE||' is illegal',:CYCLE);
+		
+		return;
+	end if;
+
+	
+	
+	SELECT top 1 count(1) into validate from "EBGCFE"."UI_COUNTRY_SALESORG_MAPPING" 
+	where COUNTRY=:COUNTRY and SALES_ORG=:SALES_ORG and SALES_OFFICE=:SALES_OFFICE;
+				
+	if validate = 0
+	then
+		    insert into "EBGCFE"."UI_COUNTRY_SALESORG_MAPPING"(CYCLE,
+									PRODUCT_GROUP,
+									COUNTRY,
+									SALES_ORG,
+									CURRENCY,
+									SALES_OFFICE,
+									SALES_OFFICE_PCT,
+									COUNTRY_SALESORG_TYPE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,
+				ACTION
+									) 
+	values ('CURRENT',:PRODUCT_GROUP,:COUNTRY,
+									:SALES_ORG,
+									:CURRENCY,
+									:SALES_OFFICE,
+									:SALES_OFFICE_PCT,
+									:COUNTRY_SALESORG_TYPE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time,
+			 	 'create');
+  		var_oper := 'create';
+  	else
+  		update "EBGCFE"."UI_COUNTRY_SALESORG_MAPPING"  set (CURRENCY,SALES_OFFICE_PCT,COUNTRY_SALESORG_TYPE,
+				SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION) = 
+				(:CURRENCY,:SALES_OFFICE_PCT,:COUNTRY_SALESORG_TYPE,CURRENT_TIMESTAMP,SESSION_USER,'update')
+		 where COUNTRY = :COUNTRY and SALES_ORG = :SALES_ORG 
+					and SALES_OFFICE = :SALES_OFFICE;  
+        var_oper := 'update';
+  	end if;
+
+insert into "EBGCFE"."UI_COUNTRY_SALESORG_MAPPING_LOG"(
+									CYCLE,
+									PRODUCT_GROUP,
+									COUNTRY,
+									SALES_ORG,
+									CURRENCY,
+									SALES_OFFICE,
+									SALES_OFFICE_PCT,
+									COUNTRY_SALESORG_TYPE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,
+									AT_ACTION,
+									AT_MODIFIED_ON,
+    								AT_MILLIS 
+									)
+	values (:CYCLE,:PRODUCT_GROUP,
+									:COUNTRY,
+									:SALES_ORG,
+									:CURRENCY,
+									:SALES_OFFICE,
+									:SALES_OFFICE_PCT,
+									:COUNTRY_SALESORG_TYPE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time,
+			 	 :var_oper,current_timestamp,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+			
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+	
+	
+END;

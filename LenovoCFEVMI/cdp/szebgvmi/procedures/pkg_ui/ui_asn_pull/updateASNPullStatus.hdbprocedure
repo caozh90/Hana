@@ -1,0 +1,92 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_asn_pull::updateASNPullStatus" ( 
+	        IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_ASN_PULL_T",
+	        IN OLDINFO "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_ASN_PULL_T",
+			OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER --INVOKER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA
+	AS
+/************************************************************************
+*name      : updateASNPullStatus
+*author     : chenjb1
+*CreateDate    : 2015-08-14
+*UpdateDate  :      
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.ui_asn_pul';
+		proc_name varchar(100) :='updateASNPullStatus';
+		logid0 INTEGER :=0;
+		n2 int;
+	 		 DEST_STORAGE_TYPE   varchar(40);
+			 DEST_STORAGE_BIN   varchar(40);
+			 DEST_STORAGE_LOC   varchar(40);
+			 WERKS   varchar(4);
+			 PHYSICAL_PLANT   varchar(40);
+			 PRODUCTION_LINE   varchar(40);
+			 DELIVERY_DATE   NVARCHAR(200);
+			 MATNR   varchar(18);
+			 NOTES   varchar(200);
+			 error_message nvarchar(400);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+ 	 select  DEST_STORAGE_TYPE ,
+			 DEST_STORAGE_BIN ,
+			 DEST_STORAGE_LOC ,
+			 WERKS ,
+			 PHYSICAL_PLANT ,
+			 PRODUCTION_LINE ,
+			 DELIVERY_DATE ,
+			 MATNR ,
+			 NOTES
+ 	 INTO 		
+ 			 DEST_STORAGE_TYPE ,
+			 DEST_STORAGE_BIN ,
+			 DEST_STORAGE_LOC ,
+			 WERKS ,
+			 PHYSICAL_PLANT ,
+			 PRODUCTION_LINE ,
+			 DELIVERY_DATE ,
+			 MATNR ,
+			 NOTES
+	 from :newInfo;
+	select count(1) into n2 from "SZEBGVMI"."RPT_ASN_PULL"
+	 	where DEST_STORAGE_TYPE = :DEST_STORAGE_TYPE
+		and   DEST_STORAGE_BIN = :DEST_STORAGE_BIN
+		and   DEST_STORAGE_LOC = :DEST_STORAGE_LOC
+		and	  WERKS = :WERKS
+		and	  PHYSICAL_PLANT = :PHYSICAL_PLANT
+		and	  PRODUCTION_LINE = :PRODUCTION_LINE
+		and	  DELIVERY_DATE = :DELIVERY_DATE
+		and   MATNR = :MATNR;
+	 if n2 <= 0 then
+	     	error_message := 'The record does not exist in DB';
+		 	errorInfo = select 400 as http_status_code, 
+	     		:error_message ERROR_MESSAGE, 
+	     		:error_message DETAIL from dummy;
+	     	--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);	     		
+	     	return;
+	 end if;
+	 UPDATE "SZEBGVMI"."RPT_ASN_PULL"
+				SET 
+             NOTES = :NOTES
+		WHERE DEST_STORAGE_TYPE = :DEST_STORAGE_TYPE
+		and   DEST_STORAGE_BIN = :DEST_STORAGE_BIN
+		and   DEST_STORAGE_LOC = :DEST_STORAGE_LOC
+		and	  WERKS = :WERKS
+		and	  PHYSICAL_PLANT = :PHYSICAL_PLANT
+		and	  PRODUCTION_LINE = :PRODUCTION_LINE
+		and	  DELIVERY_DATE = :DELIVERY_DATE
+		and   MATNR = :MATNR;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+END;

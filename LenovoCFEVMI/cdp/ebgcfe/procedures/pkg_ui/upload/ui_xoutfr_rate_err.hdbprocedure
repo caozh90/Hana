@@ -1,0 +1,289 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xoutfr_rate_err" 
+( 
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_E"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/***************************** 
+*name        :    ui_xoutfr_rate_err
+*function    :               
+*input       :    
+*output      :              
+*author      :    zhaodan1
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2016.05.20
+ *****************************/
+	AS
+	business_code varchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'UI_XOUTFR_RATE';
+	currentUser varchar(100);
+	create_DATE LONGDATE;
+	privilegeExists  NVARCHAR(300)  ;
+	wrongnums INT := 0;
+
+
+BEGIN
+    --添加business信息
+    select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	--business_code := :SEQ;
+		
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_DATE INTO create_DATE FROM DUMMY;
+	newInfo_xsjs = SELECT *  from :newInfo where source = 'xsjs';
+	newInfo_pro = SELECT *   from :newInfo where source = 'procedure';
+
+    -- 	Percentage check------------------------	
+	percentCheck = 
+				    SELECT CYCLE ,PRODUCT_GROUP,BRAND,PLANT,FAMILY,MACHINETYPE,GEO
+				    FROM :newInfo_pro
+				    GROUP BY CYCLE ,PRODUCT_GROUP,BRAND,PLANT,FAMILY,MACHINETYPE,GEO
+				    HAVING SUM(CAST(GL_PERCENTAGE AS DECIMAL(15,4))) <> 100;
+	
+	newInfo_pro_percent = SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+						     GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+						     UNIT_COST, 	                         
+	                         'Percentage is not 100'  error_message,
+	                         BUSINESS_NAME, SEQ, POSITION,SOURCE  
+					 	FROM :newInfo_pro as a 
+					 	WHERE  EXISTS (SELECT 1 FROM :percentCheck
+					 	                        WHERE CYCLE = a.CYCLE and
+	                                                  PRODUCT_GROUP = a.PRODUCT_GROUP and
+	                                                  BRAND = a.BRAND and
+	                                                  PLANT = a.PLANT and
+	                                                  FAMILY =a.FAMILY and
+	                                                  MACHINETYPE = a.MACHINETYPE and
+	                                                  GEO = a.GEO	);	
+    -- 	duplicate check------------------------
+   duplicateCheck = 
+   	SELECT CYCLE ,PRODUCT_GROUP,BRAND,PLANT,FAMILY,MACHINETYPE,GEO
+	    FROM :newInfo_pro 
+	    GROUP BY CYCLE ,PRODUCT_GROUP,BRAND,PLANT,FAMILY,MACHINETYPE,GEO
+	    HAVING COUNT(1) > 1;
+	    
+  newInfo_dup = 
+	   SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+			  GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+			  UNIT_COST, 	                         
+	          'Duplicate data'  error_message,
+	          BUSINESS_NAME, SEQ, POSITION,SOURCE  
+	    FROM :newInfo_pro a
+	   WHERE  NOT EXISTS (SELECT 1 FROM :duplicateCheck WHERE CYCLE = a.CYCLE and
+	                                                       PRODUCT_GROUP = a.PRODUCT_GROUP and
+	                                                       BRAND = a.BRAND and
+	                                                       PLANT = a.PLANT and
+	                                                       FAMILY =a.FAMILY and
+	                                                       MACHINETYPE = a.MACHINETYPE and
+	                                                       GEO = a.GEO);	                                                  		    
+	-- 	BRAND------------------------	 	
+	newInfo_pro_brand = SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+						     GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+						     UNIT_COST, 	                         
+	                         'Brand not exist '  error_message,
+	                         BUSINESS_NAME, SEQ, POSITION,SOURCE  
+					 	FROM :newInfo_pro as a 
+					 	WHERE a.BRAND NOT IN(  	
+					 	                      SELECT DISTINCT BRAND FROM "EBGCFE"."UI_PRODFAMILY"
+										 	)  ;	 	
+		 	
+
+				 	
+    -- 	FAMILY------------------------	 	
+	newInfo_pro_family = SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+						     GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+						     UNIT_COST,
+	                         'Family not exist' error_message,
+	                         BUSINESS_NAME, SEQ, POSITION,SOURCE
+					 	FROM :newInfo_pro as a
+					 	WHERE a.FAMILY NOT IN(  	
+					 	                       SELECT DISTINCT PROD_FAMILY FROM "EBGCFE"."UI_PRODFAMILY"
+										 	 ) AND
+							  a.FAMILY <> 'ALL'			 	  ;	 	
+		 	
+
+			
+	-- 	MACHINETYPE------------------------	
+	newInfo_pro_machinetype = SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+						     GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+							      UNIT_COST, 
+		                          'Machine Type not exist' error_message,
+		                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+						 	FROM :newInfo_pro as a
+						 	WHERE a.MACHINETYPE NOT IN(  	
+						 	                           SELECT DISTINCT MACHINETYPE FROM "EBGCFE"."UI_MACHINETYPE"
+											 	    ) AND
+								   a.MACHINETYPE <> ''  AND
+								   a.MACHINETYPE <> 'N/A'  ;	 		
+		
+			
+
+	-- 	PLANT------------------------	
+	newInfo_pro_plant = SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+						     GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+						      UNIT_COST, 
+	                          'Plant not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+					 	FROM :newInfo_pro as a
+					 	WHERE a.PLANT NOT IN(  	
+					 	                          SELECT DISTINCT PLANT FROM "EBGCFE"."UI_PLANT"
+										 	    ) ;	
+	
+			
+				
+	-- 	GEO_TYPE------------------------
+	newInfo_pro_geo_type = SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+						     GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+						      UNIT_COST, 
+	                          'GEO Type not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+						 	FROM :newInfo_pro as a
+						 	WHERE a.GEO_TYPE NOT IN (  	
+						 	                            SELECT PVALUE FROM "EBGCFE"."CONF_PARAMETERS" 
+           						                        WHERE PDOMAIN ='XOUTFR_RATE' AND PNAME='GEO_TYPE'
+											 			 )	 ;	
+	-- 	GEO------------------------
+	newInfo_pro_geo = SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+						     GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+						      UNIT_COST, 
+	                          'GEO  Code not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+						 	FROM :newInfo_pro as a
+						 	WHERE a.GEO_TYPE = 'SUBGEO' AND
+						 	      a.GEO NOT IN (SELECT DISTINCT SUBGEO FROM  "EBGCFE"."UI_REGION")
+					 UNION ALL
+					   SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+						     GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+						      UNIT_COST, 
+	                          'GEO  Code not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+						 	FROM :newInfo_pro as a
+						 	WHERE a.GEO_TYPE = 'COUNTRY' AND
+						 	      a.GEO NOT IN (SELECT DISTINCT COUNTRY FROM  "EBGCFE"."UI_REGION");	 	      
+						 	
+						 	
+						 	
+						 									 			 
+		-- 	FREIGHT_TYPE------------------------
+	newInfo_pro_freight_type = SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+						     GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+						      UNIT_COST,
+	                          'Freight Type Type not exist' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION,SOURCE
+						 	FROM :newInfo_pro as a
+						 	WHERE a.FREIGHT_TYPE 
+						 	    NOT IN (  	
+						 	            SELECT PVALUE FROM "EBGCFE"."CONF_PARAMETERS" 
+           					            WHERE PDOMAIN ='XOUTFR_RATE' AND PNAME='FREIGHT_TYPE'
+											 			 )	 ;
+
+			
+	---------------------------------记录upload的错误----------------------------------------
+	error_table = 
+	    SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_dup UNION ALL
+		SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_pro_percent UNION ALL
+		SELECT  CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_xsjs UNION ALL
+		SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_pro_brand UNION ALL
+		SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_pro_family UNION ALL
+		SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_pro_machinetype UNION ALL
+		SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_pro_plant UNION ALL 
+		SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_pro_geo_type UNION ALL
+		SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_pro_geo UNION  ALL
+		SELECT CYCLE,  PRODUCT_GROUP,  BRAND, PLANT, GEO_TYPE,
+				GEO, FAMILY, MACHINETYPE, FREIGHT_TYPE,   GL_PERCENTAGE,
+				UNIT_COST,
+				error_message,
+				BUSINESS_NAME, SEQ, POSITION,SOURCE FROM :newInfo_pro_freight_type;
+		
+						
+		
+	
+	error_info = 
+		SELECT 
+           :table_name || SEQ CODE,
+           position,
+           error_message,
+           :table_name table_name,
+           business_name
+    FROM :error_table;
+           
+	
+	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+	SELECT "EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+	        CODE,POSITION,STRING_AGG(ERROR_MESSAGE,','),table_name,business_name
+	FROM  :error_info
+	GROUP BY CODE,POSITION,table_name,business_name;
+	
+	wrongnums := ::ROWCOUNT;
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+		:table_name || :business_code,:business_name,0,:wrongnums,:table_name);
+	
+    -----------------------------------------------------------------------------------------
+    
+     	
+    --详细记录upload的数据信息
+    INSERT INTO  "EBGCFE"."UI_XOUTFR_RATE_ERR_DETAIL"( CODE , 
+												 POSITION , 
+												  CYCLE,  BRAND,  PRODUCT_GROUP, GEO_TYPE,
+			      								GEO,   PLANT, FAMILY, MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+			      								 M1	, M2, M3, M4,
+			      								 M5, M6, M7, M8,
+			      								 M9, M10, M11, M12,	
+			      								 m13, m14, m15, m16,
+		  										 m17, m18,										 
+												 SYS_CREATED_DATE ,
+												 SYS_CREATED_BY )
+	SELECT :table_name || business_code,
+			  position,
+			   CYCLE,  BRAND,  PRODUCT_GROUP, GEO_TYPE,
+			   GEO,   PLANT, FAMILY, MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+			   UNIT_COST,UNIT_COST,UNIT_COST,UNIT_COST,
+			   UNIT_COST,UNIT_COST,UNIT_COST,UNIT_COST,
+			   UNIT_COST,UNIT_COST,UNIT_COST,UNIT_COST,
+			   UNIT_COST,UNIT_COST,UNIT_COST,UNIT_COST,
+			   UNIT_COST,UNIT_COST,
+			  :create_DATE,
+			  :currentUser
+	FROM :error_table;											 
+
+
+END;

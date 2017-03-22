@@ -1,0 +1,49 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_force_item_type_v2_err" (
+IN  PRODUCT_GROUP nvarchar(10),
+IN	ITEM nvarchar(40),
+IN	USER_ITEM_DESC nvarchar(200),
+IN  USER_ITEM_TYPE nvarchar(20),
+IN  USER_EOL_STATUS nvarchar(20),
+IN 	 	table_name varchar(100),
+IN 	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER,
+IN 	 	error_message	varchar(4096),
+IN CYCLE varchar(20)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_force_item_type_v2_err              --函数名
+*function  : 保存在上传数据至表UI_ITEM时产生的错误信息              --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2015-02-10       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/*	call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_froce_item_type::uploadable'           ,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;*/
+	    call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || to_varchar(:business_code),:business_name,0,1,:table_name); 
+
+     	--记录upload的错误
+     	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || to_varchar(:business_code),:position,:error_message,:table_name,:business_name); 
+     	--详细记录upload的数据信息
+     	insert into "EBGCFE"."UI_ITEM_ERR_DETAIL"(CODE,POSITION,
+			PRODUCT_GROUP,ITEM,USER_ITEM_DESC,USER_ITEM_TYPE,CYCLE,USER_EOL_STATUS,SYS_CREATED_BY,SYS_CREATED_DATE,SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE)
+		VALUES(:table_name || to_varchar(:business_code),:position,
+			:PRODUCT_GROUP,:ITEM,:USER_ITEM_DESC,:USER_ITEM_TYPE,:CYCLE,:USER_EOL_STATUS,session_user,to_varchar(current_timestamp),session_user,to_varchar(current_timestamp));
+END;

@@ -1,0 +1,84 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteMapResourceUser" ( 
+			IN	aRESOURCE_ID NVARCHAR(10)
+			--,IN	aModule_ID  BIGINT,
+			,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+		
+		aMODULE_NAME NVARCHAR(256);
+		aMODULE_ID	NVARCHAR(10);
+		alogidk INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+ DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+			aI_DETAIL :='cdp.security.procedures::deleteMapResourceUser can not find the value : '||:aRESOURCE_ID ||' in this resource : '||:aModule_ID||'.';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapResourceUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL); 	
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::deleteMapResourceUser error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapResourceUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL); 	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityRoleAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+ CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+   
+--SELECT "MODULE_NAME" INTO aMODULE_NAME FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE"
+ -- WHERE "MODULE_ID" = :aModule_ID; 
+  
+  	delete from "SECURITY"."cdp.security.data::userManagement.MAP_RESOURCE_USER"
+  		where RESOURCE_ID = :aRESOURCE_ID
+  			and MODULE_ID = :aMODULE_ID;
+  		
+  aI_DETAIL := 'cdp.security.procedures::deleteMapResourceUser ('||:aRESOURCE_ID||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapResourceUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000020'
+     	,I_DETAIL=>:aI_DETAIL); 	 			
+END;

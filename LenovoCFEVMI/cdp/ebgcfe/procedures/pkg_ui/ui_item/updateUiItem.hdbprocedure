@@ -1,0 +1,160 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_item::updateUiItem" (
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.CFE_UI_ITEMS"
+		,IN oldInfo  "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.CFE_UI_ITEMS"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER  
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      :                     updateUiItem
+*function    :               
+*input     ：               
+*output     :                
+*author     :                     shangqian
+*CreateDate    :                  2014.12.2
+*UpdateDate  :        
+*************************************************************************/	
+		aItem NVARCHAR(40);
+		aItem_desc NVARCHAR(200);
+		aEol_status NVARCHAR(20);
+		aProduct_group NVARCHAR(10);
+		aEol_startdate TIMESTAMP;
+		aEol_enddate TIMESTAMP;
+		resourceExists BIGINT;
+		
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;  
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures::updateUiItem error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures::updateUiItem'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_item::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures::updateUiItem'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+ select
+    --ITEM_DESC,
+    --EOL_STATUS,
+    EOL_STARTDATE,
+    EOL_ENDDATE      
+  into  	
+	--aItem_desc,
+	--aEol_status,
+	aEol_startdate,
+	aEol_enddate	
+  from :newInfo;
+ 
+ 
+ select
+    ITEM,
+    PRODUCT_GROUP    
+  into  	
+ 	aItem,
+	aProduct_group
+  from :oldInfo;
+  
+  	SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_ITEM" A    
+     WHERE --A.ITEM_DESC = :aItem_desc
+          --AND A.EOL_STATUS = :aEol_status 
+          A.EOL_STARTDATE = :aEol_startdate
+          AND A.EOL_ENDDATE = :aEol_enddate
+          AND A.ITEM = :aItem
+          AND A.PRODUCT_GROUP = :aProduct_group;
+   
+    if  :resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;*/
+     	return;--SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before';    	
+    end if;
+
+/*judge time type, if the date is '1899-12-31 16:00:00.0000000', set the time column null*/
+	/*errorInfo = select 110 as http_status_code, 
+	     		'the time format1:'||:aEol_startdate||'' error_message, 
+	     		'the time format2:'||:aEol_startdate||'' DETAIL from dummy;*/
+     
+    update "EBGCFE"."UI_ITEM" set
+    	--ITEM_DESC = :aItem_desc,
+    	--EOL_STATUS = :aEol_status,
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user,
+    	EOL_STARTDATE = case when :aEol_startdate = TO_TIMESTAMP('1899-12-31 16:00:00.0000000') then null else :aEol_startdate end,
+    	EOL_ENDDATE = case when :aEol_enddate = TO_TIMESTAMP('1899-12-31 16:00:00.0000000') then null else :aEol_enddate end
+    where
+    	ITEM = :aItem and
+    	PRODUCT_GROUP = :aProduct_group;
+    	
+    /*put operation to log table*/
+    insert into "EBGCFE"."UI_ITEM_LOG"
+    (
+    	PRODUCT_GROUP,
+    	ITEM,
+    	SYS_LAST_MODIFIED_DATE,
+    	EOL_STARTDATE,
+    	EOL_ENDDATE,
+    	ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    values
+    (
+    	:aProduct_group,
+    	:aItem,
+    	current_date,
+    	case when :aEol_startdate = TO_TIMESTAMP('1899-12-31 16:00:00.0000000') then null else :aEol_startdate end,
+    	case when :aEol_enddate = TO_TIMESTAMP('1899-12-31 16:00:00.0000000') then null else :aEol_enddate end,
+    	'update',
+    	session_user,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    );
+    	
+/*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures::updateUiItem ('||:aItem||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures::updateUiItem'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

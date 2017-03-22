@@ -1,0 +1,78 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_ZPLN_HANA_SUPRATE" (
+    OUT p_out_exitcode INTEGER
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA PCDW 
+    AS 
+
+/***************************** 
+-- Author:      Zhangxj
+-- Create date: 2015-12-14
+-- Description: suprate data into pcdw  
+-- Modify [1]:  
+ *****************************/
+ 
+ 
+     
+     vMsg                 VARCHAR(1024);
+     vCode                INTEGER;
+     v_prc_name           VARCHAR(30)       := 'PRC_ZPLN_HANA_SUPRATE';   
+     v_logidi             INTEGER           := 0;
+     
+BEGIN
+
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+   p_out_exitcode := ::SQL_ERROR_CODE;
+   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE		=>'PROC_ERROR',
+										       I_LOGSID		=>:v_logidi,
+									    	   I_EVENT_NAME =>:v_prc_name,
+											   I_MODULE		=>'PCDW',
+											   I_MESSAGE	=>'ERROR',
+											   I_DETAIL		=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512));                                                  
+  
+   vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+   vCode := ::SQL_ERROR_CODE;
+   
+   INSERT INTO PCDW_PROC_LOG (EVENTTIME,EVENTNAME,SUBEVENT,MSGCODE,EVENTMSG,EVENTTYPE,DATASOURCE,DATADEST,EVENTDESCR)
+   VALUES (CURRENT_TIMESTAMP,:v_prc_name,'OTHERS ERROR',:vCode,:vMsg,'','','','END');  
+   
+  END;
+
+  CALL "EX_LOG"."cdp.log.procedures::logProc"( I_TYPE		=>'PROC_START',
+  											   I_LOGSID	  	=>:v_logidi,
+											   I_EVENT_NAME =>:v_prc_name,
+											   I_MODULE		=>'PCDW',
+										       I_DETAIL		=>:v_prc_name||':'||'Start');
+			    
+     
+
+     
+
+  INSERT INTO PCDW_PROC_LOG (EVENTTIME,EVENTNAME,SUBEVENT,MSGCODE,EVENTMSG,EVENTTYPE,DATASOURCE,DATADEST,EVENTDESCR)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,null,null,null,null,'ECC_SUPRATAE','PCDW_SUPRATAE',null);     
+                     
+  --start
+  DELETE FROM BAK_ECC_SUPRATE 
+  WHERE DAYS_BETWEEN(SYS_LAST_MODIFIED_DATE,CURRENT_TIMESTAMP)>90;
+  --back up
+  insert into BAK_ECC_SUPRATE(LIFNR,LAND1,SPLER,LANDX50,RAGRP,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY) 
+  select LIFNR,LAND1,SPLER,LANDX50,RAGRP,SYS_CREATED_DATE,SYS_CREATED_BY,CURRENT_TIMESTAMP,SESSION_USER from ECC_SUPRATE;
+  
+  --into pcdw, Last version data will be trundated by data services job
+  insert into PCDW_SUPRATE(LIFNR,LAND1,SPLER,LANDX50,RAGRP,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY) 
+  select LIFNR,LAND1,SPLER,LANDX50,RAGRP,SYS_CREATED_DATE,SYS_CREATED_BY,CURRENT_TIMESTAMP,SESSION_USER from ECC_SUPRATE;
+ 
+  --end
+  INSERT INTO PCDW_PROC_LOG (EVENTTIME,EVENTNAME,SUBEVENT,MSGCODE,EVENTMSG,EVENTTYPE,DATASOURCE,DATADEST,EVENTDESCR)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,'SUCCESS',:vCode,:vMsg,'','','','END');     
+   
+  CALL "EX_LOG"."cdp.log.procedures::logProc" (I_TYPE       =>'PROC_END',
+  											   I_LOGSID     =>:v_logidi,
+			 								   I_EVENT_NAME =>:v_prc_name,
+			 								   I_MODULE     =>'PCDW',
+											   I_DETAIL     =>:v_prc_name||':'||'Success');
+END;
+ 
+ 

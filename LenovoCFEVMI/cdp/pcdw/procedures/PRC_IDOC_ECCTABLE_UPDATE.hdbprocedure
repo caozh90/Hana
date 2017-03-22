@@ -1,0 +1,120 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_IDOC_ECCTABLE_UPDATE" (
+OUT PO_RETURNCODE DECIMAL) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW 
+	AS
+   /************************************************************************
+   *name        :               PRC_IDOC_ECCTABLE_UPDATE
+   *function    :               master data update Accordding to ECC table
+   *input       :
+   *output      :
+   *author      :               qinying   
+   *CreateDate  :               2013-08-13
+   *UpdateDate  :               
+   *************************************************************************/
+   vProcStartTime TIMESTAMP := CURRENT_TIMESTAMP;
+   v_DelteStr     NVARCHAR(1024);
+   vMsg           NVARCHAR(1024) := '';
+   vCode          DECIMAL := 0;
+BEGIN
+
+	 --exception
+	 DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	 BEGIN
+	   --vMsg  := SUBSTR(DBMS_UTILITY.format_error_backtrace, 1, 512);
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      	vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG
+         (EVENTTIME,
+          EVENTNAME,
+          SUBEVENT,
+          MSGCODE,
+          EVENTMSG,
+          EVENTTYPE,
+          DATASOURCE,
+          DATADEST,
+          EVENTDESCR)
+      VALUES
+         (CURRENT_TIMESTAMP,
+          'PRC_IDOC_ECCTABLE_UPDATE',
+          'OTHERS ERROR',
+          :vCode,
+          :vMsg,
+          '',
+          '',
+          '',
+          'END');
+      exec 'COMMIT';
+ 	 
+     END;
+	-- exception
+
+   INSERT INTO PCDW_PROC_LOG
+   VALUES
+      (:vProcStartTime,
+       'PRC_IDOC_ECCTABLE_UPDATE',
+       '',
+       NULL,
+       '',
+       '',
+       '',
+       '',
+       'START');
+   EXEC 'COMMIT';
+
+   PO_RETURNCODE := 1;
+
+   UPDATE ECC_ZDATES_QD a
+      SET flag = 1
+    WHERE flag = 0
+      AND EXISTS
+    (SELECT 1 FROM PCDW_ITEMSITEMASTER B WHERE A.MATNR = B.ITEM);
+
+   EXEC 'COMMIT';
+   UPDATE PCDW_ITEMSITEMASTER a
+      SET QUADATE               =
+          (SELECT MAP(ATTRIBUTE_VALUE,'00000000',NULL,TO_DATE(ATTRIBUTE_VALUE,'YYYYMMDD'))--Modified by qinying on 2013/11/15
+             FROM ECC_ZDATES_QD c
+            WHERE c.matnr = a.item
+              AND c.ATTRIBUTE_NAME = 'QD'
+              AND c.flag = 1),
+          SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+          SYS_LAST_MODIFIED_BY   = 'PRC_IDOC_ECCTABLE_UPDATE'
+    WHERE EXISTS (SELECT 1
+             FROM ECC_ZDATES_QD b
+            WHERE b.MATNR = a.item
+              AND b.flag = 1);
+   EXEC 'COMMIT';
+
+   UPDATE ECC_ZDATES_QD a SET flag = 2 WHERE flag = 1;
+
+   EXEC 'COMMIT';
+
+   PO_RETURNCODE := 0;
+
+   INSERT INTO PCDW_PROC_LOG
+      (EVENTTIME,
+       EVENTNAME,
+       SUBEVENT,
+       MSGCODE,
+       EVENTMSG,
+       EVENTTYPE,
+       DATASOURCE,
+       DATADEST,
+       EVENTDESCR)
+   VALUES
+      (CURRENT_TIMESTAMP,
+       'PRC_IDOC_ECCTABLE_UPDATE',
+       'SUCCESS',
+       :vCode,
+       :vMsg,
+       '',
+       '',
+       '',
+       'END');
+   EXEC 'COMMIT';	
+	
+
+END;

@@ -1,0 +1,30 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteMapResourceUserForOData" ( 
+			IN newInfo "SECURITY"."cdp.security.data::userManagement.MapResourceUserT",
+			OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+		aRESOURCE_ID BIGINT;
+		aModule_ID  BIGINT;
+		
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+ select
+ 	RESOURCE_ID, 
+	MODULE_ID 	--//userid /usergroup id	
+  into 
+  	aRESOURCE_ID,
+ 	aModule_ID  --//module id
+  from :newInfo;
+  
+CALL "SECURITY"."cdp.security.procedures::deleteMapResourceUser" ( 
+				aRESOURCE_ID 
+			--,	aModule_ID  ,
+			 ,errorInfo ); 
+
+END;

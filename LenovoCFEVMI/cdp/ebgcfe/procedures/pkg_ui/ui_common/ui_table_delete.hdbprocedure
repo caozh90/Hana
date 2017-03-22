@@ -1,0 +1,20 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_common::ui_table_delete" ( 	
+IN TABLE_NAME NVARCHAR(100)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+	AS
+	currentUser varchar(100);
+	
+BEGIN
+	DECLARE  v_sql              VARCHAR(4000);
+	
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+
+	v_sql := 'DELETE FROM '|| :TABLE_NAME;
+                              
+    EXECUTE IMMEDIATE v_sql;
+
+END;

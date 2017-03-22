@@ -1,0 +1,107 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_seo_costbom_batch_upload"
+(
+IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTO_COSTBOM_S",
+IN TYPE NVARCHAR(40)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+	currentUser varchar(100);
+	
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+
+    END; 
+       
+	--procedure begin
+	 --赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+
+	FILTER_TABLE = 
+	SELECT CYCLE,
+			ITEM,
+			PLANT,
+			COUNTRY
+	FROM :newInfo a
+	WHERE CYCLE IN (SELECT DISTINCT CYCLE FROM EBGCFE.UI_CYCLE)
+							AND ITEM IN (
+										(SELECT DISTINCT ITEM FROM EBGCFE.UI_ITEM WHERE ITEM_TYPE IN ('MTM','OPTION','BUNDLE')) 
+										UNION 
+										(SELECT DISTINCT ITEM FROM EBGCFE.UI_ITEM_HIS WHERE ITEM_TYPE IN ('MTM','OPTION','BUNDLE'))
+										)
+							AND PLANT IN (
+										(SELECT DISTINCT COST_PLANT FROM EBGCFE.UI_PLANT_COSTPLANT) 
+										UNION 
+										(SELECT '' "PLANT" FROM DUMMY)
+										)
+							AND COUNTRY IN (
+										(SELECT DISTINCT COUNTRY FROM EBGCFE.UI_REGION) 
+										UNION 
+										(SELECT '' "COUNTRY" FROM DUMMY)
+										)	
+	;
+	
+	IF(:TYPE = 'NONE') THEN
+	RIGHT_TABLE = 
+	SELECT CYCLE,
+			ITEM,
+			PLANT,
+			COUNTRY
+	FROM :FILTER_TABLE;
+	END IF;
+	
+	IF(:TYPE = 'BOTH') THEN
+	
+	RIGHT_TABLE = 
+	SELECT DISTINCT T1.CYCLE,T2.ITEM,PLANT,COUNTRY FROM (select distinct a.CYCLE, a.MODEL, a.PLANT, a.COUNTRY from  "EBGCFE".BIZ_COSTADDER_MTM a union select distinct b.CYCLE, b.MODEL, b.PLANT, b.COUNTRY from  "EBGCFE".BIZ_COSTADDER_MTM_HIS b) AS T1 
+		JOIN (select CYCLE,ITEM from :FILTER_TABLE) as T2 on (T1.CYCLE = T2.CYCLE AND T1.MODEL = T2.ITEM)
+	;
+	END IF;
+	-- IF PLANT NULL GET ALL PLANT
+	IF(:TYPE = 'PLANT') THEN
+	
+	RIGHT_TABLE = 
+	SELECT DISTINCT T1.CYCLE,T2.ITEM,T1.PLANT,T1.COUNTRY FROM (select distinct a.CYCLE, a.MODEL, a.PLANT, a.COUNTRY from  "EBGCFE".BIZ_COSTADDER_MTM a union select distinct b.CYCLE, b.MODEL, b.PLANT, b.COUNTRY from  "EBGCFE".BIZ_COSTADDER_MTM_HIS b) AS T1 
+		JOIN (select CYCLE,ITEM,COUNTRY from :FILTER_TABLE) as T2 on (T1.CYCLE = T2.CYCLE AND T1.MODEL = T2.ITEM AND T1.COUNTRY = T2.COUNTRY)
+	;
+	END IF;
+	-- IF COUNTRY NULL GET ALL COUNTRY
+	IF(:TYPE = 'COUNTRY') THEN
+	
+	RIGHT_TABLE = 
+	SELECT DISTINCT T1.CYCLE,T2.ITEM,T1.PLANT,T1.COUNTRY FROM (select distinct a.CYCLE, a.MODEL, a.PLANT, a.COUNTRY from  "EBGCFE".BIZ_COSTADDER_MTM a union select distinct b.CYCLE, b.MODEL, b.PLANT, b.COUNTRY from  "EBGCFE".BIZ_COSTADDER_MTM_HIS b) AS T1 
+		JOIN (select CYCLE,ITEM,PLANT from :FILTER_TABLE) as T2 on (T1.CYCLE = T2.CYCLE AND T1.MODEL = T2.ITEM AND T1.PLANT = T2.PLANT)
+	;
+	END IF;
+	
+	INSERT INTO "EBGCFE"."UI_SEO_DOWNLOAD"(
+			CYCLE,
+			ITEM,
+			PLANT,
+			COUNTRY,
+			MODIFIED_BY
+			)
+			SELECT a.CYCLE,
+				   a.ITEM,
+				   a.PLANT,
+				   a.COUNTRY,
+				   :currentUser
+			FROM :RIGHT_TABLE as a
+			;
+	
+	
+	
+END;

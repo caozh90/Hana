@@ -1,0 +1,185 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle" (
+IN  ITEM NVARCHAR(40),
+IN   LOGICAL_PLANT NVARCHAR(40), 
+IN   WAREHOUSE_NUMBER NVARCHAR(40),
+IN   PHYSICAL_PLANT NVARCHAR(40),
+IN   STORAGE_LOCATION NVARCHAR(40),
+IN   STORAGE_TYPE NVARCHAR(40),
+IN   STORAGE_BIN NVARCHAR(40),
+IN	 	business_name nvarchar(200),
+IN		seq	nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+/************************************************************************
+*name      : ui_control_cycle              --函数名
+*function  : upload数据至表ui_control_cycle并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-26       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_control_cycle';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		SOURCE nvarchar(25) :='UI';
+		temp_logical_physical nvarchar(40);
+		SYS_AUTH_ID	nvarchar(25);
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_CONTROL_CYCLE';
+		validate1 int;
+		validate2 int;
+		validate3 int;
+		validate4 int;
+		validate5 int;
+		validate6 int;
+		validate7 int;
+					privilegeExists  NVARCHAR(30);
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,:seq,:position);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,:seq,:position);
+    END; 
+    --exception 
+	
+	--procedure begin
+		
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+	
+	--设置businesscode:: table_name+business_code	
+	business_code := :seq;
+	
+	--验证主键，只upload表中不存在的记录
+	select count(1) into n  FROM "SZEBGVMI"."UI_CONTROL_CYCLE" where  ITEM = :ITEM 
+		and PHYSICAL_PLANT= :PHYSICAL_PLANT and LOGICAL_PLANT= :LOGICAL_PLANT;
+	--验证ITEM在ITEMSITEMASTER中存在
+	select count(1) into validate1 FROM ITEMSITEMASTER WHERE ITEM=:ITEM;
+	--LOGICAL_PLANT，验证在表SITEMASTER中存在
+	select count(1) into validate2 from CONF_SITEMASTER where SITEID = :LOGICAL_PLANT ;
+	--PHYSICAL_PLANT，验证在表SITEMASTER中存在
+	select count(1) into validate3 from CONF_SITEMASTER where PHYSICALPLANT = :PHYSICAL_PLANT ;
+	--WAREHOUSE_NUMBER，验证在表CONF_WAHREHOUSE_INFO中存在
+	select count(1) into validate4  from CONF_WAHREHOUSE_INFO where whs_no = :WAREHOUSE_NUMBER;
+	--STORAGE_LOCATION，验证在表CONF_WAHREHOUSE_INFO中存在
+	select count(1) into validate5 from CONF_WAHREHOUSE_INFO where STORAGE_LOCATION = :STORAGE_LOCATION;
+	--STORAGE_TYPE，验证在表CONF_WAHREHOUSE_INFO中存在
+	select count(1) into validate6  from  CONF_WAHREHOUSE_INFO WHERE STORAGE_TYPE = :STORAGE_TYPE;
+	--STORAGE_BIN，验证在表CONF_WAHREHOUSE_INFO中存在
+	select count(1) into validate7  from  CONF_WAHREHOUSE_INFO WHERE STORAGE_BIN = :STORAGE_BIN;
+		
+	if(n<=0 and validate1 >0 and validate2>0 and validate3>0 and validate4>0 and validate5>0
+		and validate6>0 and validate7>0) then
+	
+
+		INSERT INTO "SZEBGVMI"."UI_CONTROL_CYCLE"(
+				ITEM,LOGICAL_PLANT,WAREHOUSE_NUMBER,PHYSICAL_PLANT,STORAGE_LOCATION,STORAGE_TYPE,STORAGE_BIN,
+		 		SYS_SOURCE,
+		 	--	SYS_AUTH_ID,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		 	)
+		 VALUES(
+			 	 :ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+			 	 :SOURCE,
+			 --	 :SYS_AUTH_ID,
+			 	 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+		--insert操作需要写入日志
+		insert into "SZEBGVMI"."UI_CONTROL_CYCLE_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				ITEM,LOGICAL_PLANT,WAREHOUSE_NUMBER,PHYSICAL_PLANT,STORAGE_LOCATION,STORAGE_TYPE,STORAGE_BIN,
+			 	SYS_SOURCE,
+		 	--	SYS_AUTH_ID,
+			 	SYS_CREATED_BY,
+			 	SYS_CREATED_DATE,
+			 	SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+		VALUES
+			 	(:currentUser,
+			 	'create',
+			 	:create_time,
+				:ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+			    :SOURCE,
+			 --	:SYS_AUTH_ID,
+			 	:currentUser,
+			 	:create_time,
+			 	:currentUser,
+			 	:create_time);	 			 	
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+			
+		ELSEIF n>0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"('Duplicated primary key!',:business_name,
+			 	 :ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+				:seq,:position);
+			--error log
+            return;	
+		
+		ELSEIF validate1<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"('"ITEM"::'||:ITEM||' is illegal',:business_name,
+			 	 :ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+				:seq,:position);
+			--error log
+            return;	
+		ELSEIF validate2<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"('"LOGICAL_PLANT"::'||:LOGICAL_PLANT||' is illegal',:business_name,
+			 	 :ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+				:seq,:position);
+			--error log
+            return;	
+		ELSEIF validate3<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"('"PHYSICAL_PLANT"::'||:PHYSICAL_PLANT||' is illegal',:business_name,
+			 	 :ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+				:seq,:position);
+			--error log
+            return;
+		ELSEIF validate4<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"('"WAREHOUSE_NUMBER"::'||:WAREHOUSE_NUMBER||' is illegal',:business_name,
+			 	 :ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+				:seq,:position);
+			--error log
+            return;
+		ELSEIF validate5<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"('"STORAGE_LOCATION"::'||:STORAGE_LOCATION||' is illegal',:business_name,
+			 	 :ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+				:seq,:position);
+			--error log
+            return;
+		ELSEIF validate6<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"('"STORAGE_TYPE"::'||:STORAGE_TYPE||' is illegal',:business_name,
+			 	 :ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+				:seq,:position);
+			--error log
+            return;
+		ELSEIF validate7<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_control_cycle_err"('"STORAGE_BIN"::'||:STORAGE_BIN||' is illegal',:business_name,
+			 	 :ITEM,:LOGICAL_PLANT,:WAREHOUSE_NUMBER,:PHYSICAL_PLANT,:STORAGE_LOCATION,:STORAGE_TYPE,:STORAGE_BIN,
+				:seq,:position);
+			--error log
+            return;
+	END IF;
+	
+END;

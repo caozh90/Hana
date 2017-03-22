@@ -1,0 +1,373 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_GET_BWRR_PCA_UPLFT"(
+	IN p_change_id       VARCHAR(100),
+	IN p_product_group   VARCHAR(20),
+	IN p_user_id         VARCHAR(64),
+	OUT p_out_exitcode   DECIMAL,
+    OUT p_out_exitmess   VARCHAR(500)
+)     
+    LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_GET_BWRR_PCA_UPLFT             
+*function   : Get Cost Adder BWRR/PCA/UPLFT
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id 
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : Zhoubinbin
+*CreateDate : 2015-8-25
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS	
+BEGIN
+
+    -- data
+ 	DECLARE v_change_id    	     VARCHAR(100) := p_change_id;
+    DECLARE v_product_group   	 VARCHAR(20)  := p_product_group;
+    DECLARE v_user_id       	 VARCHAR(64)  := p_user_id;
+    DECLARE v_prc_name 	         VARCHAR(30)  := 'PRC_GET_BWRR_PCA_UPLFT';
+    DECLARE v_g_pkg_name 	     VARCHAR(30)  := 'PKG_BOM_CALCULATION';
+    DECLARE v_full_name      	 VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+    DECLARE n	INT;
+    DECLARE v_time               BIGINT;
+    DECLARE v_taking_time        BIGINT;
+    DECLARE V_DEBUG            CHAR;
+    DECLARE v_step_counter       INT;
+    DECLARE v_init_date          TIMESTAMP;
+    declare logid1 int :=0;
+    declare logid2 int :=0;
+    declare logid3 int :=0;
+    declare logid4 int :=0;  
+    
+	-- exception
+    DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found   
+    BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );      
+   		 CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+   		                                             I_LOGSID     => :logid1,
+   		                                             I_EVENT_NAME => :v_full_name,
+   		                                             I_MODULE     => 'EBGCFE',
+		                                             I_MESSAGE    => 'ERROR',
+		                                             I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                     substr(::SQL_ERROR_MESSAGE, 1, 500) ); 
+    END;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );  	
+   		 CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+   		                                             I_LOGSID     => :logid1,
+   		                                             I_EVENT_NAME => :v_full_name,
+   		                                             I_MODULE     => 'EBGCFE',
+		                                             I_MESSAGE    =>'ERROR',
+		                                             I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                     substr(::SQL_ERROR_MESSAGE, 1, 500) );                             
+    END;
+
+   	select session_context('v_step_counter_bom_calculation') into v_step_counter from dummy;
+   
+    p_out_exitcode := -1;
+    p_out_exitmess := 'FAILED';
+
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+	                                            I_LOGSID     => :logid1,
+	                                            I_EVENT_NAME => :v_full_name,
+	                                            I_MODULE     => 'EBGCFE');    
+   
+    insert into CAL_RUNTIME(PKG_NAME,PROC_NAME,START_T,PRD_GROUP)
+	values(v_g_pkg_name,v_prc_name,CURRENT_DATE,v_product_group);
+
+    DELETE FROM MID_adder1 WHERE product_group = :v_product_group;
+    DELETE FROM MID_bwrr_pca_uplft WHERE product_group = :v_product_group;
+    
+  	SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy; 
+  	IF :v_debug = 'T' 
+    THEN
+         v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));     
+    END IF;
+    
+    DELETE FROM MID_bwrr_pca_uplft WHERE product_group = :v_product_group;
+    
+    INSERT INTO MID_bwrr_pca_uplft
+        (product_group, ratio_code, subgeo, country, tba_type,
+         adder_name, m1, sys_created_date)
+    SELECT product_group, ratio_code, subgeo, country, tba_type,
+           'BWRR' AS adder_name, base_warr, current_timestamp
+      FROM UI_warr_pca_uplift
+     WHERE product_group = :v_product_group
+       AND base_warr IS NOT NULL
+    UNION
+    SELECT product_group, ratio_code, subgeo, country, tba_type,
+           'PCA' AS adder_name, pca, current_timestamp
+      FROM UI_warr_pca_uplift
+     WHERE product_group = :v_product_group
+       AND pca IS NOT NULL
+    UNION
+    SELECT product_group, ratio_code, subgeo, country, tba_type,
+           'UPLFT' AS adder_name, uplift, current_timestamp
+      FROM UI_warr_pca_uplift
+     WHERE product_group = :v_product_group
+       AND uplift IS NOT NULL;
+    
+    --ITEM <> 'ALL' / BRAND = 'N/A' / FAMILY = 'N/A' / MACHINE_TYPE = 'N/A'
+    INSERT INTO MID_adder1
+   	    (product_group, model, father, lvl, plant, children, item_desc, subgeo,
+         country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+         cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+         altpri, altpercent, path, category, brand_f, prodfamily_f, plant_f,
+         subgeo_f, country_f, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+         m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+         lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average, 
+         lattest_procur, tba_type)
+  	SELECT t1.product_group, t1.model, t1.model AS father, 1 AS lvl, 
+  	       t1.plant AS plant, t1.cost_name AS children, NULL AS item_desc, 
+           t1.subgeo, t1.country, t1.output_type AS model_type, t1.brand AS model_brand, 
+           t1.prodfamily AS model_family, t1.cost_lvl AS cost_lvl, 'SUBGEO' AS cost_geo_lvl, 
+           t1.subgeo AS cost_geo_value, t1.plant AS cost_plant, 'TBA' AS cost_type,
+           t1.cost_name AS cost_name, 1 AS qtyper, NULL AS altgrup, NULL AS altpri, 
+           100 AS altpercent, NULL AS path, t1.category, t3.brand AS brand_f, 
+           t3.family AS prodfamily_f, NULL AS plant_f, t2.subgeo AS subgeo_f, 
+           t2.country AS country_f,  t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1,
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, 
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1,
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t1.tba_type
+      FROM MID_ui_cost_calcu_formu t1, 
+           MID_bwrr_pca_uplft      t2, 
+           UI_ratio_code           t3, 
+           UI_region               t4
+     WHERE t1.product_group = t3.product_group
+       AND t1.model         = t3.item
+       AND t1.product_group = t4.product_group
+       AND t1.subgeo        = t4.subgeo
+       AND t1.country       = t4.country       
+       AND t3.geo           = t4.geo
+       AND t2.product_group = t3.product_group
+       AND t2.ratio_code    = t3.ratio_code
+       AND t1.subgeo        = t2.subgeo
+       AND (t1.country = t2.country OR t2.country = 'ALL')
+       AND t1.tba_type      = t2.tba_type
+       AND t1.tba           = t2.adder_name
+       AND t1.product_group = :v_product_group
+       AND t3.item         <> 'ALL';  
+    
+    --Modified by Zhoubinbin 20160720, for performance tuning
+    /*--ITEM <> 'ALL' / BRAND = 'N/A' / FAMILY = 'N/A' / MACHINE_TYPE <> 'N/A'   
+    INSERT INTO MID_adder1
+   	    (product_group, model, father, lvl, plant, children, item_desc, subgeo,
+         country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+         cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+         altpri, altpercent, path, category, brand_f, prodfamily_f, plant_f,
+         subgeo_f, country_f, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+         m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+         lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average, 
+         lattest_procur, tba_type, machine_type, machine_type_f)
+  	SELECT t1.product_group, t1.model, t1.model AS father, 1 AS lvl, 
+  	       t1.plant AS plant, t1.cost_name AS children, NULL AS item_desc, 
+           t1.subgeo, t1.country, t1.output_type AS model_type, t1.brand AS model_brand, 
+           t1.prodfamily AS model_family, t1.cost_lvl AS cost_lvl, 'SUBGEO' AS cost_geo_lvl, 
+           t1.subgeo AS cost_geo_value, t1.plant AS cost_plant, 'TBA' AS cost_type,
+           t1.cost_name AS cost_name, 1 AS qtyper, NULL AS altgrup, NULL AS altpri, 
+           100 AS altpercent, NULL AS path, t1.category, t3.brand AS brand_f, 
+           t3.family AS prodfamily_f, NULL AS plant_f, t2.subgeo AS subgeo_f, 
+           t2.country AS country_f,  t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1,
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, 
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1,
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t1.tba_type, t4.machine_type, t3.machinetype
+      FROM MID_ui_cost_calcu_formu t1, 
+           MID_bwrr_pca_uplft      t2, 
+           UI_ratio_code           t3, 
+           UI_item                 t4, 
+           UI_region               t5
+     WHERE t1.product_group = t4.product_group
+       AND t1.model         = t4.item
+       AND t1.product_group = t5.product_group
+       AND t1.subgeo        = t5.subgeo
+       AND t1.country       = t5.country
+       AND t3.product_group = t4.product_group
+       AND t3.machinetype   = t4.machine_type
+       AND t3.geo           = t5.geo
+       AND t2.product_group = t3.product_group
+       AND t2.ratio_code    = t3.ratio_code
+       AND t1.subgeo        = t2.subgeo
+       AND (t1.country = t2.country OR t2.country = 'ALL')
+       AND t1.tba_type      = t2.tba_type
+       AND t1.tba           = t2.adder_name
+       AND t1.product_group = :v_product_group
+       AND t3.item          = 'ALL'
+       AND t3.machinetype  <> 'N/A'
+       AND NOT EXISTS(SELECT 1 FROM MID_adder1 t6
+                       WHERE t6.product_group = t1.product_group
+                         AND t6.model         = t1.model
+                         AND t6.plant         = t1.plant
+                         AND t6.subgeo        = t1.subgeo
+                         AND t6.country       = t1.country
+                         AND t6.cost_name     = t1.cost_name); */
+                         
+    TAB_cost_calcu_formu1 = SELECT * FROM MID_ui_cost_calcu_formu t1
+                            WHERE t1.product_group = :v_product_group
+                               AND NOT EXISTS(SELECT 1 FROM MID_adder1 t2
+                                              WHERE t2.product_group = t1.product_group
+                                               AND t2.model         = t1.model
+                                               AND t2.plant         = t1.plant
+                                               AND t2.subgeo        = t1.subgeo
+                                               AND t2.country       = t1.country
+                                               AND t2.cost_name     = t1.cost_name)
+                              AND EXISTS(SELECT 1 FROM MID_bwrr_pca_uplft t3
+                                          WHERE t3.product_group = t1.product_group
+                                            AND t3.adder_name    = t1.tba);
+    
+    --ITEM <> 'ALL' / BRAND = 'N/A' / FAMILY = 'N/A' / MACHINE_TYPE <> 'N/A'   
+    INSERT INTO MID_adder1
+         (product_group, model, father, lvl, plant, children, item_desc, subgeo,
+         country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+         cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+         altpri, altpercent, path, category, brand_f, prodfamily_f, plant_f,
+         subgeo_f, country_f, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+         m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+         lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average, 
+         lattest_procur, tba_type, machine_type, machine_type_f)
+    SELECT t1.product_group, t1.model, t1.model AS father, 1 AS lvl, 
+           t1.plant AS plant, t1.cost_name AS children, NULL AS item_desc, 
+           t1.subgeo, t1.country, t1.output_type AS model_type, t1.brand AS model_brand, 
+           t1.prodfamily AS model_family, t1.cost_lvl AS cost_lvl, 'SUBGEO' AS cost_geo_lvl, 
+           t1.subgeo AS cost_geo_value, t1.plant AS cost_plant, 'TBA' AS cost_type,
+           t1.cost_name AS cost_name, 1 AS qtyper, NULL AS altgrup, NULL AS altpri, 
+           100 AS altpercent, NULL AS path, t1.category, t3.brand AS brand_f, 
+           t3.family AS prodfamily_f, NULL AS plant_f, t2.subgeo AS subgeo_f, 
+           t2.country AS country_f,  t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1,
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, 
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1,
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t1.tba_type, t1.mt, t3.machinetype
+      FROM :TAB_cost_calcu_formu1 t1, 
+           MID_bwrr_pca_uplft      t2, 
+           UI_ratio_code           t3, 
+           --UI_item                 t4, 
+           UI_region               t5
+     WHERE --t1.product_group = t4.product_group
+       --AND t1.model         = t4.item
+           t1.product_group = t5.product_group
+       AND t1.subgeo        = t5.subgeo
+       AND t1.country       = t5.country
+       --AND t3.product_group = t4.product_group
+       --AND t3.machinetype   = t4.machine_type
+       AND t1.product_group = t3.product_group
+       AND t1.mt            = t3.machinetype
+       AND t3.geo           = t5.geo
+       AND t2.product_group = t3.product_group
+       AND t2.ratio_code    = t3.ratio_code
+       AND t1.subgeo        = t2.subgeo
+       AND (t1.country = t2.country OR t2.country = 'ALL')
+       AND t1.tba_type      = t2.tba_type
+       AND t1.tba           = t2.adder_name
+       AND t1.product_group = :v_product_group
+       AND t3.item          = 'ALL'
+       AND t3.machinetype  <> 'N/A';
+                         
+    --ITEM <> 'ALL' / BRAND = 'N/A' / FAMILY = 'N/A' / MACHINE_TYPE = 'N/A'
+    INSERT INTO MID_adder1
+   	    (product_group, model, father, lvl, plant, children, item_desc, subgeo,
+         country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+         cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+         altpri, altpercent, path, category, brand_f, prodfamily_f, plant_f,
+         subgeo_f, country_f, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+         m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+         lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average, 
+         lattest_procur, tba_type)
+  	SELECT t1.product_group, t1.model, t1.model AS father, 1 AS lvl, 
+  	       t1.plant AS plant, t1.cost_name AS children, NULL AS item_desc, 
+           t1.subgeo, t1.country, t1.output_type AS model_type, t1.brand AS model_brand, 
+           t1.prodfamily AS model_family, t1.cost_lvl AS cost_lvl, 'SUBGEO' AS cost_geo_lvl, 
+           t1.subgeo AS cost_geo_value, t1.plant AS cost_plant, 'TBA' AS cost_type,
+           t1.cost_name AS cost_name, 1 AS qtyper, NULL AS altgrup, NULL AS altpri, 
+           100 AS altpercent, NULL AS path, t1.category, t3.brand AS brand_f, 
+           t3.family AS prodfamily_f, NULL AS plant_f, t2.subgeo AS subgeo_f, 
+           t2.country AS country_f,  t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1,
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, 
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1,
+           t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t2.m1, t1.tba_type
+      FROM MID_ui_cost_calcu_formu t1, 
+           MID_bwrr_pca_uplft      t2, 
+           UI_ratio_code           t3, 
+           UI_region               t4
+     WHERE t1.product_group = t3.product_group
+       AND t1.brand         = t3.brand
+       AND t1.prodfamily    = t3.family
+       AND t1.product_group = t4.product_group
+       AND t1.subgeo        = t4.subgeo
+       AND t1.country       = t4.country
+       AND t3.geo           = t4.geo
+       AND t2.product_group = t3.product_group
+       AND t2.ratio_code    = t3.ratio_code
+       AND t1.subgeo        = t2.subgeo
+       AND (t1.country = t2.country OR t2.country = 'ALL')
+       AND t1.tba_type      = t2.tba_type
+       AND t1.tba           = t2.adder_name
+       AND t1.product_group = :v_product_group
+       AND t3.item          = 'ALL'
+       AND t3.machinetype   = 'N/A'
+       AND NOT EXISTS(SELECT 1 FROM MID_adder1 t5
+                       WHERE t5.product_group = t1.product_group
+                         AND t5.model         = t1.model
+                         AND t5.plant         = t1.plant
+                         AND t5.subgeo        = t1.subgeo
+                         AND t5.country       = t1.country
+                         AND t5.cost_name     = t1.cost_name);                                            
+                          
+     DELETE FROM MID_adder1 t1
+      WHERE t1.product_group = :v_product_group
+        AND t1.country_f     = 'ALL'
+        AND EXISTS(SELECT 1 FROM MID_adder1 t2
+                    WHERE t2.product_group = t1.product_group
+                      AND t2.model         = t1.model
+                      AND t2.plant         = t1.plant
+                      AND t2.subgeo        = t1.subgeo
+                      AND t2.country       = t1.country
+                      AND t2.tba_type      = t1.tba_type
+                      AND t2.country_f    <> 'ALL');        
+        
+     INSERT INTO MID_adder2
+   	     (product_group, model, father, lvl, plant, children, item_desc, subgeo,
+          country, model_type, model_brand, model_family, cost_lvl, cost_geo_lvl, 
+          cost_geo_value, cost_plant, cost_type, cost_name, qtyper, altgrup,
+  	      altpri, altpercent, path, ct, category, m1, m2, m3, m4, m5, m6, m7, m8, 
+  	      m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, 
+  	      lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+  	      weighted_average, lattest_procur, tba_type)
+  	 SELECT t1.product_group, model, father, lvl, plant, children, 
+  	        t2.adder_desc AS item_desc, subgeo, country, model_type, model_brand, 
+  	        model_family, cost_lvl, cost_geo_lvl, cost_geo_value, cost_plant, cost_type, 
+  	        cost_name, qtyper, altgrup, altpri, altpercent, path, ct, category, m1, m2, 
+  	        m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, 
+  	        lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, 
+  	        lm16, lm17, lm18, weighted_average, lattest_procur, t1.tba_type
+     FROM (SELECT * FROM MID_adder1 WHERE product_group = :v_product_group) t1
+          LEFT JOIN
+          ui_adder_conf t2
+          ON t1.product_group = t2.product_group 
+         AND t1.children      = t2.adder_name;  
+      
+     IF (:v_debug='T')
+        THEN
+            v_step_counter := :v_step_counter + 1;
+            v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - v_time;
+            IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+            CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO',I_LOGSID=>:logid4,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+            I_MESSAGE=>'step '||to_char(:v_step_counter)||': ' || to_char(:v_taking_time) || ' sec'); 
+            --log_data_process.info('step '||to_char(v_step_counter)||': ' || to_char(v_taking_time) || ' sec');
+            v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+     END IF;
+	 update CAL_RUNTIME x set end_t=CURRENT_TIMESTAMP
+	 where x.pkg_name=:v_g_pkg_name and x.proc_name=:v_prc_name and end_t is null and
+      prd_group=:v_product_group;
+        
+     p_out_exitcode := 0;
+     p_out_exitmess := 'SUCCESSFUL';
+     
+     exec 'SET ''v_step_counter_bom_calculation'' = '''||ifnull(:v_step_counter,0)||'''';  
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid1,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+     --   log_data_process.proc_end ();         
+  	
+END;

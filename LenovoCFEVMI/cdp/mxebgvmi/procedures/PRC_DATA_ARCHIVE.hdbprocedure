@@ -1,0 +1,421 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures::PRC_DATA_ARCHIVE" (
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_DATA_ARCHIVE              --函数名
+*function   : Data Archive                  --函数功能
+*input      ： -                             --输入参数
+*output     : po_exitcode : error code      --输出参数
+*author     : Leonard Ling                  --作者
+*CreateDate : 2014/12/05                    --创建时间
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+   V_SQL               VARCHAR(1000);
+   V_SQL1              VARCHAR(1000);
+   V_SQL2              VARCHAR(1000);
+   V_DBNAME            VARCHAR(20) := 'VMI';
+   NUM_ROWS            INTEGER;
+   V_TAB_NAME          VARCHAR(30);
+   v_logic_proc_name   VARCHAR(30) := 'PRC_DATA_ARCHIVE_PRDCSE';
+   sql_error           VARCHAR(1500);
+   sql_code            INTEGER;	
+BEGIN
+  DECLARE CURSOR c_data_archive1 FOR SELECT "$rowid$",
+                       schema_name,
+                       source_tab_name,
+                       archive_tab_name,
+                       archive_condition
+                  FROM conf_data_archive
+                 WHERE SYS_ENT_STATUS = 'ACTIVE' AND db_name = :V_DBNAME
+              ORDER BY source_tab_name;
+              
+/*   DECLARE CURSOR c_data_archive2 FOR  SELECT "$rowid$", schema_name, source_tab_name
+         FROM conf_data_archive
+        WHERE SYS_ENT_STATUS = 'ACTIVE' AND ARCHIVE_TAB_NAME IS NOT NULL AND db_name = :V_DBNAME;         
+*/              
+              
+  -- exception
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+      sql_error := SUBSTR(::SQL_ERROR_MESSAGE, 1, 512);
+      sql_code := ::SQL_ERROR_CODE;	
+      INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                                 EVENTSOURCE,
+                                 EOPERATION,
+                                 EVENTCODE,
+                                 EVENTMESSAGE,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+          VALUES (CURRENT_TIMESTAMP,
+                  :v_logic_proc_name,
+                  :v_logic_proc_name,
+                  :sql_code,
+                  :sql_error,
+                  'E',
+                  '',
+                  '',
+                  'Failure!');
+	END;  
+  
+   --  SELECT NAME INTO V_DBNAME FROM SYS.V_$DATABASE;
+   -- PO_EXITCODE := -10001;
+
+   INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                              EVENTSOURCE,
+                              EOPERATION,
+                              EVENTCODE,
+                              EVENTMESSAGE,
+                              EVENTTYPE,
+                              DATASOURCE,
+                              DATADEST,
+                              EVENTDESCR)
+       VALUES (CURRENT_TIMESTAMP,  --SYSDATE,
+               :v_logic_proc_name,
+               :v_logic_proc_name,
+               '0',
+               'SUCESS',
+               'M',
+               '',
+               '',
+               'START');
+
+   --COMMIT;   --commented by Leonard
+
+   /*
+   FOR rs IN (  SELECT ROWID,
+                       schema_name,
+                       source_tab_name,
+                       archive_tab_name,
+                       archive_condition
+                  FROM conf_data_archive
+                 WHERE SYS_ENT_STATUS = 'ACTIVE' AND db_name = V_DBNAME
+              ORDER BY source_tab_name)
+   LOOP */
+   FOR rs AS c_data_archive1 DO
+     BEGIN
+		DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+		  --ROLLBACK;  --commented by Leonard
+            UPDATE conf_data_archive
+               SET SYS_LAST_ARCHIVE_STATUS = 'FAILED',
+                   SYS_LAST_ARCHIVE_DATE = CURRENT_TIMESTAMP,  --SYSDATE,
+                   ARCHIVE_ROWS = NULL
+             --WHERE ROWID = rs.ROWID;
+             WHERE "$rowid$" = rs."$rowid$";
+
+	        sql_error := SUBSTR(::SQL_ERROR_MESSAGE, 1, 512);
+	        sql_code := ::SQL_ERROR_CODE;	
+            INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                                       EVENTSOURCE,
+                                       EOPERATION,
+                                       EVENTCODE,
+                                       EVENTMESSAGE,
+                                       EVENTTYPE,
+                                       DATASOURCE,
+                                       DATADEST,
+                                       EVENTDESCR)
+                VALUES (CURRENT_TIMESTAMP,  --SYSDATE,
+                        :v_logic_proc_name,
+                        :v_logic_proc_name,
+                        sql_code,
+                        sql_error||'::'||:V_SQL2,
+                        'E',
+                        '',
+                        '',
+                        'Failure!');
+	      --COMMIT;    --commented by Leonard 
+		END;
+      
+        IF rs.ARCHIVE_TAB_NAME IS NOT NULL THEN
+            V_SQL1 :=
+               'Insert into '
+               || rs.SCHEMA_NAME
+               || '.'
+               || rs.ARCHIVE_TAB_NAME
+               || ' select t.*, CURRENT_TIMESTAMP from '
+               || rs.schema_name
+               || '.'
+               || rs.source_tab_name
+               || ' t where '
+               || rs.ARCHIVE_CONDITION;
+               
+            EXECUTE IMMEDIATE V_SQL1;
+
+            INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                                       EVENTSOURCE,
+                                       EOPERATION,
+                                       EVENTCODE,
+                                       EVENTMESSAGE,
+                                       EVENTTYPE,
+                                       DATASOURCE,
+                                       DATADEST,
+                                       EVENTDESCR)
+                VALUES (CURRENT_TIMESTAMP,  --SYSDATE,
+                        :v_logic_proc_name,
+                        rs.SCHEMA_NAME,
+                        '0',
+                        'SUCESS',
+                        'M',
+                        rs.source_tab_name,
+                        rs.ARCHIVE_TAB_NAME,
+                        'START ARCHIVE');
+
+            --COMMIT;   --commented by Leonard
+
+            V_SQL2 :=
+               'DELETE FROM '
+               || rs.SCHEMA_NAME
+               || '.'
+               || rs.SOURCE_TAB_NAME
+               || ' where '
+               || rs.ARCHIVE_CONDITION;
+               
+            EXECUTE IMMEDIATE V_SQL2;
+
+            --NUM_ROWS := SQL%ROWCOUNT;
+            NUM_ROWS := ::ROWCOUNT;
+
+ /*           UPDATE conf_data_archive
+               SET DELETE_SQL = :V_SQL2,
+                   ARCHIVE_ROWS = :NUM_ROWS,
+                   SYS_LAST_ARCHIVE_STATUS = 'SUCCESS',
+                   SYS_LAST_ARCHIVE_DATE = CURRENT_TIMESTAMP  --SYSDATE
+             WHERE "$rowid$" = rs."$rowid$";*/
+             UPDATE conf_data_archive
+               SET INSERT_SQL = :V_SQL1,
+               DELETE_SQL = :V_SQL2,
+               ARCHIVE_ROWS = :NUM_ROWS,
+               SYS_LAST_ARCHIVE_STATUS = 'SUCCESS',
+               SYS_LAST_ARCHIVE_DATE = CURRENT_TIMESTAMP  --SYSDATE
+             WHERE "$rowid$" = rs."$rowid$";
+           
+           /*  UPDATE conf_data_archive
+             set DELETE_SQL = :V_SQL2
+             WHERE "$rowid$" = rs."$rowid$";     
+*/
+            INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                                       EVENTSOURCE,
+                                       EOPERATION,
+                                       EVENTCODE,
+                                       EVENTMESSAGE,
+                                       EVENTTYPE,
+                                       DATASOURCE,
+                                       DATADEST,
+                                       EVENTDESCR)
+                VALUES (CURRENT_TIMESTAMP,  --SYSDATE,
+                        :v_logic_proc_name,
+                        rs.SCHEMA_NAME,
+                        '0',
+                        'SUCESS',
+                        'M',
+                        rs.source_tab_name,
+                        rs.ARCHIVE_TAB_NAME,
+                        'DELETE');
+
+            --COMMIT;  --commented by Leonard
+         ELSE
+            V_SQL :=
+               'DELETE '
+               || rs.SCHEMA_NAME
+               || '.'
+               || rs.SOURCE_TAB_NAME
+               || ' where '
+               || rs.ARCHIVE_CONDITION;
+
+            EXECUTE IMMEDIATE V_SQL;
+
+            --NUM_ROWS := SQL%ROWCOUNT;
+            NUM_ROWS := ::ROWCOUNT;
+
+            UPDATE conf_data_archive
+               SET DELETE_SQL = V_SQL,
+                   ARCHIVE_ROWS = NUM_ROWS,
+                   SYS_LAST_ARCHIVE_STATUS = 'SUCCESS',
+                   SYS_LAST_ARCHIVE_DATE = CURRENT_TIMESTAMP  --SYSDATE
+             WHERE "$rowid$" = rs."$rowid$";
+
+            INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                                       EVENTSOURCE,
+                                       EOPERATION,
+                                       EVENTCODE,
+                                       EVENTMESSAGE,
+                                       EVENTTYPE,
+                                       DATASOURCE,
+                                       DATADEST,
+                                       EVENTDESCR)
+                VALUES (CURRENT_TIMESTAMP,  --SYSDATE,
+                        :v_logic_proc_name,
+                        rs.SCHEMA_NAME || rs.ARCHIVE_TAB_NAME,
+                        '0',
+                        'SUCESS',
+                        'M',
+                        rs.source_tab_name,
+                        rs.ARCHIVE_TAB_NAME,
+                        'DELETE');
+
+            --COMMIT;  --commented by Leonard
+         END IF;      
+      END;
+
+      --COMMIT;     --commented by Leonard
+   END FOR;  --END LOOP;
+
+
+  /* -- Rebuid is not required in HANA because the index in HANA is not persisted and the table is reconstructed dynamically
+   INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                              EVENTSOURCE,
+                              EOPERATION,
+                              EVENTCODE,
+                              EVENTMESSAGE,
+                              EVENTTYPE,
+                              DATASOURCE,
+                              DATADEST,
+                              EVENTDESCR)
+       VALUES (CURRENT_TIMESTAMP,  --SYSDATE,
+               :v_logic_proc_name,
+               :v_logic_proc_name,
+               '0',
+               'SUCESS',
+               'M',
+               '',
+               '',
+               'START REBUILD PRDMDM');
+
+   --COMMIT;     --commented by Leonard
+   
+   --FOR rs
+   --IN (SELECT ROWID, schema_name, source_tab_name
+   --      FROM conf_data_archive
+   --     WHERE SYS_ENT_STATUS = 'ACTIVE' AND ARCHIVE_TAB_NAME IS NOT NULL AND db_name = V_DBNAME)
+   --LOOP  
+   FOR rs AS c_data_archive2 DO
+      BEGIN
+		DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+		  --ROLLBACK;  --commented by Leonard
+ 	        sql_error := SUBSTR(::SQL_ERROR_MESSAGE, 1, 512);
+	        sql_code := ::SQL_ERROR_CODE;	
+
+            INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                                       EVENTSOURCE,
+                                       EOPERATION,
+                                       EVENTCODE,
+                                       EVENTMESSAGE,
+                                       EVENTTYPE,
+                                       DATASOURCE,
+                                       DATADEST,
+                                       EVENTDESCR)
+                VALUES (CURRENT_TIMESTAMP,  --SYSDATE,
+                        :v_logic_proc_name,
+                        :v_logic_proc_name,
+                        :sql_code,
+                        :sql_error,
+                        'E',
+                        '',
+                        rs.source_tab_name,
+                        'Rebuild Failure!');
+	      --COMMIT;    --commented by Leonard 
+		END;      
+      
+         V_TAB_NAME := 'TMP_REBUILD' || SUBSTR(TO_CHAR(CURRENT_TIMESTAMP, 'YYMMDDHH24MISSSS'), 1, 18);
+         V_SQL :=
+            'CREATE TABLE '
+            || V_TAB_NAME
+            --|| ' NOLOGGING PARALLEL(DEGREE 10) AS SELECT * FROM '
+            || ' AS (SELECT * FROM ' 
+            || rs.schema_name
+            || '.'
+            || rs.source_tab_name
+            || ' ) NO LOGGING';
+
+         EXECUTE IMMEDIATE V_SQL;
+
+         UPDATE conf_data_archive
+            SET DELETE_SQL = V_SQL
+          WHERE "$rowid$" = rs."$rowid$";
+
+         V_SQL := 'TRUNCATE TABLE ' || rs.schema_name || '.' || rs.source_tab_name;
+
+         EXECUTE IMMEDIATE V_SQL;
+
+         --Note: Commented out - HANA does not support ALTER TABLE LOGGING|NO LOGGING
+         --V_SQL := 'ALTER TABLE ' || rs.schema_name || '.' || rs.source_tab_name || ' NOLOGGING';
+
+         --EXECUTE IMMEDIATE V_SQL;
+
+         V_SQL :=
+            'INSERT INTO '
+            || rs.schema_name
+            || '.'
+            || rs.source_tab_name
+            || ' SELECT * FROM '
+            || V_TAB_NAME;
+
+         EXECUTE IMMEDIATE V_SQL;
+
+         UPDATE conf_data_archive
+            SET INSERT_SQL = V_SQL
+          WHERE "$rowid$" = rs."$rowid$";
+          
+         --Note: Commented out - HANA does not support ALTER TABLE LOGGING|NO LOGGING
+         --V_SQL := 'ALTER TABLE ' || rs.schema_name || '.' || rs.source_tab_name || ' LOGGING';
+
+         --EXECUTE IMMEDIATE V_SQL;
+
+         V_SQL := 'DROP TABLE ' || V_TAB_NAME;
+
+         EXECUTE IMMEDIATE V_SQL;
+
+         INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                                    EVENTSOURCE,
+                                    EOPERATION,
+                                    EVENTCODE,
+                                    EVENTMESSAGE,
+                                    EVENTTYPE,
+                                    DATASOURCE,
+                                    DATADEST,
+                                    EVENTDESCR)
+             VALUES (CURRENT_TIMESTAMP,  --SYSDATE,
+                     :v_logic_proc_name,
+                     rs.schema_name,
+                     '0',
+                     'SUCESS',
+                     'M',
+                     rs.source_tab_name,
+                     rs.source_tab_name,
+                     'REBUILD');
+
+
+         --COMMIT;    --commented by Leonard 
+      END;
+   END FOR;  --END LOOP;
+
+   INSERT INTO LOG_ARCHIVED(EVENTTIME,
+                              EVENTSOURCE,
+                              EOPERATION,
+                              EVENTCODE,
+                              EVENTMESSAGE,
+                              EVENTTYPE,
+                              DATASOURCE,
+                              DATADEST,
+                              EVENTDESCR)
+       VALUES (CURRENT_TIMESTAMP,  --SYSDATE,
+               :v_logic_proc_name,
+               '',
+               '0',
+               'SUCESS',
+               'M',
+               '',
+               '',
+               'END');
+
+   --COMMIT;    --commented by Leonard   
+   */
+   -- PO_EXITCODE := 0;
+END;

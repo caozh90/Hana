@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_GROUP_USER_FUNCTION_ROLE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_GROUP_USER_FUNCTION_ROLE"/>
+  <attributes>
+    <attribute id="ID" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" columnName="ID"/>
+    </attribute>
+    <attribute id="GROUP_NAME" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="GROUP_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_GROUP" columnName="GROUP_NAME"/>
+    </attribute>
+    <attribute id="USER_NAME" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="USER_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER" columnName="USER_NAME"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_GROUP"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_GROUP"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+        <leftColumns>
+          <columnName>GROUP_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>GROUP_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+        <leftColumns>
+          <columnName>USER_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>USER_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="cdp.security.data::userManagement.MAP_ALL" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_GROUP" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="28" y="191"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_USER" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="478" y="115"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

@@ -1,0 +1,374 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_PBOM_GET_PROPERTIES" ( 
+ 		IN p_product_group  VARCHAR(20),
+        OUT p_out_exitcode NUMBER
+)   
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_PBOM_GET_PROPERTIES          
+*function   : Product BOM - Get Properties
+*input      ：p_product_group : product group
+*output     : p_out_exitcode : error code
+*author     : Eric Zhou
+*CreateDate : 2014-11-12
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+	    v_product_group     VARCHAR(20)  := :p_product_group;
+        v_prc_name          VARCHAR(30)  := 'PRC_PBOM_GET_PROPERTIES';
+        v_g_pkg_name        VARCHAR2(30) := 'PKG_BOM_CALCULATION';        
+        v_full_name         VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+
+		v_debug  	        VARCHAR(20);
+		v_init_date         TIMESTAMP; 
+		v_logidi            INTEGER := 0;
+		v_logidj            INTEGER := 0;
+		v_logidk            INTEGER := 0;
+		v_logidl            INTEGER := 0;
+		v_count             INTEGER;
+	
+		v_time              DECIMAL(17,3);
+		v_step_counter      INTEGER       := 0;
+    	v_taking_time       DECIMAL(17,3);
+BEGIN
+
+	-- Exception 
+    DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found
+    BEGIN
+        p_out_exitcode := ::SQL_ERROR_CODE;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :v_logidi,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || ' (' ||
+                                                                    substr(::SQL_ERROR_MESSAGE, 1, 500) || ')'); 
+    END;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+        p_out_exitcode := ::SQL_ERROR_CODE;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :v_logidi,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || ' (' ||
+                                                                    substr(::SQL_ERROR_MESSAGE, 1, 500) || ')'); 
+    END;
+
+    p_out_exitcode := -1;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :v_logidi,
+                                                I_EVENT_NAME => :v_full_name,
+                                                I_MODULE     => 'EBGCFE'); 
+                                                
+    SELECT SESSION_CONTEXT('v_step_counter_bom_calculation') into v_step_counter FROM DUMMY;
+
+/****************Translation of Merge into********************/  
+		
+    insert into CAL_RUNTIME(PKG_NAME,PROC_NAME,START_T,PRD_GROUP)
+    select v_g_pkg_name,v_prc_name,CURRENT_DATE,v_product_group from dummy;
+
+    DELETE FROM MID_sbb_app_sbb WHERE product_group = :v_product_group;
+
+    select "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy;
+    IF :v_debug = 'T'
+    THEN
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+
+    update MID_eccplant_bom a SET item_type_c = item_type
+	  from UI_item b
+	 where a.children = b.item
+       AND a.product_group = :v_product_group
+       AND a.product_group = b.product_group
+       AND a.item_type_c IS NULL;
+
+    IF :v_debug = 'T'
+    THEN
+        v_step_counter := :v_step_counter + 1;
+        v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+    
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+        
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO',
+                                                    I_LOGSID=>:v_logidj,
+                                                    I_EVENT_NAME=>:v_full_name,
+                                                    I_MODULE=>'EBGCFE',
+									                I_MESSAGE=>'step '||to_char(:v_step_counter)||': ' ||to_char(:v_taking_time) || ' sec'); 
+            
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+      
+    update MID_eccplant_bom t2 
+       set (t2.sobsl_f,t2.beskz_f,t2.mtart_f)=
+           (select t1.sobsl,t1.beskz,t1.mtart 
+              from z_pcdw_item t1 
+             where t1.item = t2.father
+               AND t1.siteid = t2.sbom_plant)
+     where t2.item_type_f NOT IN('MTM','CTO', 'SBB', 'SHELL', 'SERVICE')
+       AND t2.product_group = :v_product_group;
+
+    IF :v_debug = 'T'
+    THEN
+        v_step_counter := :v_step_counter + 1;
+        v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+            
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+        
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                    I_LOGSID     => :v_logidk,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+									                I_MESSAGE    => 'step '||to_char(:v_step_counter)||': ' ||
+									                                to_char(:v_taking_time) || ' sec'); 
+            
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+
+    update MID_eccplant_bom t2
+       SET schgt_c = schgt,
+           sobsl_c = sobsl,
+           mfrgr_c = mfrgr,
+           stawn_c = stawn,
+           ekgrp_c = ekgrp,
+           beskz_c = beskz,
+           mtart_c = mtart
+      from z_pcdw_item t1
+     where t1.item = t2.children
+       AND t1.siteid = t2.sbom_plant
+       AND t2.item_type_c NOT IN('MTM','CTO', 'SBB', 'SHELL', 'SERVICE')
+       AND t2.product_group = :v_product_group;
+       
+    INSERT INTO MID_sbb_app_sbb
+        (product_group, model, father, children, item_desc, plant, oem, brand,
+         asp_prd_family, country, lvl, qtyper, stlnr, altgrup, altpri, altpercent, 
+         path, costflag, item_type_m, item_type_f, item_type_c, mtart_f, mtart_c,
+         schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c,
+         bom_plant, sbom_plant, bom_lvl, is_leaf, status, cost_plant)
+    SELECT product_group, model, father, children, item_desc, plant, oem, brand, 
+           asp_prd_family, country, lvl, qtyper, stlnr, altgrup, altpri, altpercent, 
+           path, costflag, item_type_m, item_type_f, item_type_c, mtart_f, mtart_c, 
+           schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c, 
+           bom_plant, sbom_plant, bom_lvl, is_leaf, status, cost_plant
+      FROM MID_eccplant_bom
+     WHERE item_type_c = 'SBB'
+       AND bom_lvl     = 'SBB'
+       AND product_group = :v_product_group;
+
+    --86 PARTS
+    UPDATE MID_eccplant_bom
+       SET sobsl_c = '50'
+     WHERE bom_lvl = 'MTM'
+       AND mtart_c IN ('ZBRV','ZKMA')
+       AND product_group = :v_product_group;
+
+    UPDATE MID_eccplant_bom
+       SET sobsl_f = '50'
+     WHERE bom_lvl = 'MTM'
+       AND mtart_f IN ('ZBRV','ZKMA')
+       AND product_group = :v_product_group;
+
+    --SBB AT THE SUBLEVEL
+    UPDATE MID_eccplant_bom
+       SET sobsl_c = '50'
+     WHERE item_type_c = 'SBB'
+       AND bom_lvl     = 'SBB'
+       AND product_group = :v_product_group;
+
+    UPDATE MID_eccplant_bom
+       SET sobsl_f = '50'
+     WHERE model <> father
+      AND item_type_f = 'SBB'
+      AND bom_lvl     = 'SBB'
+      AND product_group= :v_product_group;
+
+    --OPTION AND VISUAL
+    UPDATE MID_eccplant_bom t1
+       SET sobsl_c = '50'
+     WHERE item_type_c IN('OPTION', 'VISUAL')
+       AND beskz_c = 'E'
+       AND product_group = :v_product_group
+       AND EXISTS(SELECT 1 FROM MID_eccplant_bom t2
+                   WHERE t2.model = t1.model
+                     AND t2.plant = t1.plant
+                     AND t2.father = t1.children
+                     AND t2.product_group = :v_product_group)
+       AND NOT EXISTS(SELECT 1 FROM ui_cost_tape t3
+                       WHERE t3.part_number = t1.children
+                         AND t3.plant       = t1.plant);
+
+    UPDATE MID_eccplant_bom t1
+       SET sobsl_f = '50'
+     WHERE item_type_f IN('OPTION', 'VISUAL')
+       AND father <> model
+       AND beskz_f = 'E'
+       AND product_group = :v_product_group
+       AND NOT EXISTS(SELECT 1 FROM ui_cost_tape t2
+                       WHERE t2.part_number = t1.father
+                         AND t2.plant       = t1.plant);
+
+    --SHELL
+    UPDATE MID_eccplant_bom t1
+       SET sobsl_c = '50'
+     WHERE t1.product_group = :v_product_group
+       AND EXISTS(SELECT 1 FROM UI_sbb_bom_stru_repl t2
+                   WHERE t2.plant = t1.bom_plant
+                     AND t2.sbb   = t1.children
+                     AND t2.bom_type = 'SHELL'
+                     AND t2.product_group = :v_product_group);
+
+    UPDATE MID_eccplant_bom t1
+       SET sobsl_f = '50'
+     WHERE t1.model <> t1.father
+       AND t1.product_group = :v_product_group
+       AND EXISTS(SELECT 1 FROM UI_sbb_bom_stru_repl t2
+                   WHERE t2.plant = t1.bom_plant
+                     AND t2.sbb   = t1.father
+                     AND t2.bom_type = 'SHELL'
+                     AND t2.product_group = :v_product_group);
+                     
+    --BUNDLE
+    UPDATE MID_eccplant_bom t
+       SET sobsl_c = '50'
+     WHERE item_type_m = 'BUNDLE'
+       AND model       = father
+       --Modified by Zhoubinbin 20160806
+       --do not update option's sobsl value which under bundle, option's sobsl value already be updated before
+       AND item_type_c <> 'OPTION'
+       AND bom_plant NOT IN(SELECT pvalue FROM conf_parameters
+                             WHERE pdomain = 'SYSX'
+                               AND pname   = 'PC_PLANT');
+       
+    UPDATE MID_eccplant_bom t1
+       SET sobsl_f = '50'
+     WHERE item_type_m  = 'BUNDLE'
+       AND model       <> father
+       --Modified by Zhoubinbin 20160806
+       --do not update option's sobsl value which under bundle, option's sobsl value already be updated before
+       AND item_type_f <> 'OPTION'
+       AND bom_plant NOT IN(SELECT pvalue FROM conf_parameters
+                             WHERE pdomain = 'SYSX'
+                               AND pname   = 'PC_PLANT');
+       
+    --B510 BUNDLE, Keep B510 plant BOM structre IS BUNDLE-SBBs not like other plant BOM BUNDLE-SEO
+    --So cann't set it to 50
+    UPDATE MID_eccplant_bom t
+       SET sobsl_c = '50'
+     WHERE item_type_m = 'BUNDLE'
+       AND model       = father
+       --Modified by Zhoubinbin 20160806
+       --do not update option's sobsl value which under bundle, option's sobsl value already be updated before
+       AND item_type_c = 'MTM'
+       AND bom_plant IN(SELECT pvalue FROM conf_parameters
+                         WHERE pdomain = 'SYSX'
+                           AND pname   = 'PC_PLANT');
+    
+    --B510 BUNDLE, Keep B510 plant BOM structre IS BUNDLE-SBBs not like other plant BOM BUNDLE-SEO
+    --So cann't set it to 50   
+    UPDATE MID_eccplant_bom t1
+       SET sobsl_f = '50'
+     WHERE item_type_m  = 'BUNDLE'
+       AND model       <> father
+       AND item_type_f  = 'MTM'
+       AND bom_plant IN(SELECT pvalue FROM conf_parameters
+                         WHERE pdomain = 'SYSX'
+                           AND pname   = 'PC_PLANT');
+
+    INSERT INTO MID_eccplant_bom_bak
+        (product_group, model, father, children, item_desc, plant, oem, brand,
+         asp_prd_family, country, lvl, qtyper, stlnr, altgrup, altpri, altpercent, 
+         path, costflag, item_type_m, item_type_f, item_type_c, mtart_f, mtart_c,
+         schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c,
+         bom_plant, sbom_plant, bom_lvl, is_leaf, status, cost_plant)
+    SELECT product_group, model, father, children, item_desc, plant, oem, brand,
+           asp_prd_family, country, lvl, qtyper, stlnr, altgrup, altpri, altpercent, 
+           path, costflag, item_type_m, item_type_f, item_type_c, mtart_f, mtart_c, 
+           schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c, 
+           bom_plant, sbom_plant, bom_lvl, is_leaf, status, cost_plant
+      FROM MID_eccplant_bom
+     WHERE product_group = :v_product_group;
+    
+    --Delete option's bom when user upload its cost 
+    DELETE FROM MID_eccplant_bom t1
+     WHERE t1.product_group = :v_product_group
+       AND t1.item_type_f IN('OPTION', 'VISUAL')
+       AND EXISTS(SELECT 1 FROM ui_cost_tape t2
+                   WHERE t2.part_number = t1.father
+                     AND t2.plant       = t1.plant);
+                     
+    --Delete option's bom when user upload its cost 
+    DELETE FROM MID_eccplant_bom t1
+     WHERE t1.product_group = :v_product_group
+       AND t1.item_type_m IN('OPTION', 'VISUAL')
+       AND EXISTS(SELECT 1 FROM ui_cost_tape t2
+                   WHERE t2.part_number = t1.model
+                     AND t2.plant       = t1.plant);
+
+    --Delete part which is foreign purchased
+    DELETE FROM MID_eccplant_bom
+     WHERE item_type_f NOT IN('MTM', 'CTO', 'SBB', 'SHELL')       
+       AND beskz_f = 'F'
+       AND product_group = :v_product_group;
+       
+    /*--Deleted parts which percentage is zero from BOM
+    DELETE FROM mid_eccplant_bom t
+     WHERE t.product_group = :v_product_group
+       AND t.altpercent    = 0; */       
+    
+    --Delete Option and Visual's BOM which its beskz is F   
+    DELETE FROM MID_eccplant_bom t1
+     WHERE t1.product_group = :v_product_group
+       AND t1.item_type_m IN('OPTION', 'VISUAL')
+       AND EXISTS(SELECT 1 FROM z_pcdw_item t2
+                   WHERE t2.item   = t1.model
+                     AND t2.siteid = t1.sbom_plant
+                     AND t2.beskz  = 'F');
+                     
+    /*--Delete Option and Visual's BOM which exist cost tape
+    DELETE FROM MID_eccplant_bom t1
+     WHERE t1.product_group = :v_product_group
+       AND t1.item_type_m IN('OPTION', 'VISUAL')
+       AND EXISTS(SELECT 1 FROM z_pcdw_item t2
+                   WHERE t2.item   = t1.model
+                     AND t2.siteid = t1.sbom_plant
+                     AND t2.beskz  = 'F')
+       AND EXISTS(SELECT 1 FROM ui_cost_tape t3
+                   WHERE t3.product_group = t1.product_group
+                     AND t3.part_number   = t1.model
+                     AND t3.plant         = t1.plant);*/                   
+       
+    IF :v_debug = 'T'
+    THEN
+        v_step_counter := :v_step_counter + 1;
+        v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+        
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+            
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO',
+                                                    I_LOGSID=>:v_logidl,
+                                                    I_EVENT_NAME=>:v_full_name,
+                                                    I_MODULE=>'EBGCFE',
+									                I_MESSAGE=>'step '||to_char(:v_step_counter)||': ' ||to_char(:v_taking_time) || ' sec'); 
+            
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+
+    update CAL_RUNTIME x 
+       set end_t=CURRENT_DATE
+     where x.pkg_name=v_g_pkg_name 
+       and x.proc_name=v_prc_name 
+       and end_t is null 
+       and prd_group=v_product_group;
+              
+    p_out_exitcode := 0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                 I_LOGSID     => :v_logidi,
+					                             I_EVENT_NAME => :v_full_name,
+					                             I_MODULE     => 'EBGCFE');
+					
+    exec 'SET ''v_step_counter_bom_calculation'' = '''||v_step_counter||'''';         
+END;

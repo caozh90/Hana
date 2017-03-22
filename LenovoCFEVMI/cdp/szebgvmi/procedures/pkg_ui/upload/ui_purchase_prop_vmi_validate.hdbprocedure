@@ -1,0 +1,337 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_validate" (  
+IN seq nvarchar(20),
+IN business_name nvarchar(100)
+ ) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+/************************************************************************
+*name      : validationProportion              --函数名
+*function  : 验证proportion加和是否为1              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-03-12       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.upload::ui_purchase_prop_vmi_validate';
+		proc_name varchar(100) :='ui_purchase_prop_vmi_validate';
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		
+		n INTEGER;
+		
+		business_code nvarchar(20);
+		SYS_SOURCE nvarchar(25) := 'UI';
+		table_name nvarchar(20):='UI_PURCHASE_PROP_VMI';
+		errorMsg nvarchar(1024);
+	 	currentUser varchar(100);
+		create_time TIMESTAMP;
+		total int; --记录buffer表中记录总数
+		validate_amout INTEGER:=0; --buffer表中合法的记录个数,默认为0
+		unvalidate_amount INTEGER:=0; --buffer表中，proportion加和不是1的记录数
+		error_amount INTEGER:=0; --buffer表中,本组里其他数据有错的记录个数，默认为0
+		
+BEGIN
+	--初始化用户和时间戳	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+	--设置businesscode:: table_name+business_code	
+    business_code := :seq; 
+    
+    --若buffer表中没有数据，直接返回
+	select count(1) into total from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER";
+	if(:total =0) then
+		return;
+	end if;
+	
+	/***
+	**************** 检测主键冲突  ******************************
+	***/
+	--更新标识字段
+	UPDATE "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" buffer
+	SET TO_DEL = 1
+	FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI" tab
+	WHERE buffer.LOGICAL_PLANT = tab.LOGICAL_PLANT AND buffer.ITEM = tab.ITEM
+		 AND buffer.VENDORID = tab.VENDORID AND buffer.START_DATE =tab.START_DATE;
+	
+	tab_pkey = select * FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" where TO_DEL = 1;
+	select count(1) into n FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" where TO_DEL = 1;
+	
+	if(:n>0) then
+		errorMsg := 'Primary key constraint violated.';
+		--记录upload的错误
+		insert into "SZEBGVMI"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+		select "SZEBGVMI"."cdp.szebgvmi.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+		POSITION,:errorMsg,:table_name,:business_name
+		from  "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where TO_DEL=1;
+		--记录错误信息,ERR_DETAIL
+		insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI_ERR_DETAIL"(
+	    		CODE,POSITION,ITEM,LOGICAL_PLANT,START_DATE,END_DATE,SYS_SOURCE,VENDORID,
+				PROPORTION
+	    	) 
+	    select :table_name || to_varchar(:business_code),POSITION,ITEM,LOGICAL_PLANT,
+		 	 	 		START_DATE,END_DATE,:SYS_SOURCE,
+			 	 	 	VENDORID,PROPORTION
+		from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where TO_DEL=1;
+		--删除处理的数据
+		DELETE from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where TO_DEL=1;	
+		--更新business的信息
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,0,:n,:table_name);	
+		--若表为空，直接退出
+		select count(1) into n from UI_PURCHASE_PROP_VMI_BUFFER;
+		if :n=0 then
+			return;
+		end if;
+	end if;
+	/***
+	**************** LOGICAL_PLANT校验  ******************************
+	***/
+	errorMsg := '"LOGICAL_PLANT" is illegal.';
+	select count(1) into n from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+			 	 	where LOGICAL_PLANT not in
+					(
+						select SITEID from CONF_SITEMASTER
+					);
+	if :n>0 then
+		--记录upload的错误
+		insert into "SZEBGVMI"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+		select "SZEBGVMI"."cdp.szebgvmi.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+		POSITION,:errorMsg,:table_name,:business_name
+		from  "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where LOGICAL_PLANT not in
+		(
+			select SITEID from CONF_SITEMASTER
+		);
+		--记录错误信息,ERR_DETAIL
+		insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI_ERR_DETAIL"(
+		   		CODE,POSITION,ITEM,LOGICAL_PLANT,START_DATE,END_DATE,SYS_SOURCE,VENDORID,
+				PROPORTION
+		   	) 
+		select :table_name || to_varchar(:business_code),POSITION,ITEM,LOGICAL_PLANT,
+		 		START_DATE,END_DATE,:SYS_SOURCE,
+			 	 	VENDORID,PROPORTION
+		from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where LOGICAL_PLANT not in
+		(
+			select SITEID from CONF_SITEMASTER
+		);
+		--删除处理的数据
+		DELETE from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where LOGICAL_PLANT not in
+		(
+			select SITEID from CONF_SITEMASTER
+		);
+		--更新business的信息
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+				:table_name || :business_code,:business_name,0,:n,:table_name);	
+		--若表为空，直接退出
+		select count(1) into n from UI_PURCHASE_PROP_VMI_BUFFER;
+		if :n=0 then
+			return;
+		end if;
+	end if;
+	/***
+	**************** ITEM校验 ******************************
+	***/
+	errorMsg := '"ITEM" is illegal.';
+	select count(1) into n from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" buffer
+			 	 	where ITEM not in
+					(
+						select ITEM from ITEMSITEMASTER
+						WHERE SITEID= buffer.LOGICAL_PLANT
+					);
+	if :n>0 then
+		--记录upload的错误
+		insert into "SZEBGVMI"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+		select "SZEBGVMI"."cdp.szebgvmi.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+		POSITION,:errorMsg,:table_name,:business_name
+		from  "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" buffer
+		where ITEM not in
+		(
+			select ITEM from ITEMSITEMASTER
+						WHERE SITEID= buffer.LOGICAL_PLANT
+		);
+		--记录错误信息,ERR_DETAIL
+		insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI_ERR_DETAIL"(
+		   		CODE,POSITION,ITEM,LOGICAL_PLANT,START_DATE,END_DATE,SYS_SOURCE,VENDORID,
+				PROPORTION
+		   	) 
+		select :table_name || to_varchar(:business_code),POSITION,ITEM,LOGICAL_PLANT,
+		 		START_DATE,END_DATE,:SYS_SOURCE,
+			 	 	VENDORID,PROPORTION
+		from  "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" buffer
+		where ITEM not in
+		(
+			select ITEM from ITEMSITEMASTER
+						WHERE SITEID= buffer.LOGICAL_PLANT
+		);
+		--删除处理的数据
+		DELETE 	from  "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" buffer
+		where ITEM not in
+		(
+			select ITEM from ITEMSITEMASTER
+						WHERE SITEID= buffer.LOGICAL_PLANT
+		);
+		--更新business的信息
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+				:table_name || :business_code,:business_name,0,:n,:table_name);	
+		--若表为空，直接退出
+		select count(1) into n from UI_PURCHASE_PROP_VMI_BUFFER;
+		if :n=0 then
+			return;
+		end if;
+	end if;
+	/****
+	*************** 验证proportion的加和  ***********************
+	****/
+	
+	/**
+	*	首先，从buffer表中剔除验证时出现错误的记录
+	**/
+	--根据ITEM, LOGICAL_PLANT, START_DATE, END_DATE四个字段确定一批数据，
+	--该批数据中，一条记录出错则其他的记录也当做错误，进入err_detail表
+	tab_error = select buffer.ITEM "ITEM",buffer.LOGICAL_PLANT "LOGICAL_PLANT",
+	 	 	 		buffer.START_DATE "START_DATE",buffer.END_DATE "END_DATE",
+		 	 	 	buffer.VENDORID "VENDORID",buffer.PROPORTION "PROPORTION",
+		 	 	 	buffer.POSITION "POSITION"
+				from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" buffer,
+					"SZEBGVMI"."UI_PURCHASE_PROP_VMI_ERR_DETAIL" detail
+				where buffer.ITEM = detail.ITEM AND buffer.LOGICAL_PLANT = detail.LOGICAL_PLANT
+					AND buffer.START_DATE = detail.START_DATE
+					AND buffer.END_DATE = detail.END_DATE
+					AND detail.CODE = :table_name ||:seq; --本次上传操作产生的错误记录
+	select count(1) into error_amount from :tab_error;
+	if :error_amount>0 then
+		UPDATE "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" a
+		set TO_DEL=1
+		from :tab_error b
+		where a.ITEM = b.ITEM and a.LOGICAL_PLANT = b.LOGICAL_PLANT 
+			and a.START_DATE = b.START_DATE and a.END_DATE = b.END_DATE;
+			
+		--记录err_detail相关的错误
+		errorMsg := 'There are errors with this group of data.';
+		insert into "SZEBGVMI"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+		select "SZEBGVMI"."cdp.szebgvmi.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+		POSITION,:errorMsg,:table_name,:business_name
+		from  "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where TO_DEL=1;
+		--记录错误信息,ERR_DETAIL
+		insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI_ERR_DETAIL"(
+	    		CODE,POSITION,ITEM,LOGICAL_PLANT,START_DATE,END_DATE,SYS_SOURCE,VENDORID,
+				PROPORTION
+	    	) 
+	    select :table_name || to_varchar(:business_code),POSITION,ITEM,LOGICAL_PLANT,
+		 	 	 		START_DATE,END_DATE,:SYS_SOURCE,
+			 	 	 	VENDORID,PROPORTION
+		from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where TO_DEL=1;
+		--删除处理的数据
+		DELETE from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where TO_DEL=1;	
+		--更新business的信息,
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,0,:error_amount,:table_name);	
+		--若表为空，直接退出
+		select count(1) into n from UI_PURCHASE_PROP_VMI_BUFFER;
+		if :n=0 then
+			return;
+		end if;
+	end if;	
+	/*
+	*	1.查询出正确的数据，写入目标表和log表
+	*/
+	--选出正确的数据，然后更新标识字段	
+	tab_correct = select ITEM, LOGICAL_PLANT,START_DATE,END_DATE
+		from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		group by ITEM, LOGICAL_PLANT,START_DATE,END_DATE
+		having sum(proportion) = 1;
+	select count(1) into n from :tab_correct;	
+	
+	if :n>0 then
+		UPDATE "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" a
+		set TO_DEL=1
+		from :tab_correct b
+		where a.ITEM = b.ITEM and a.LOGICAL_PLANT = b.LOGICAL_PLANT 
+			and a.START_DATE = b.START_DATE and a.END_DATE = b.END_DATE;
+		--根据标识的记录插入目标表	
+		insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI"(
+	    		ITEM,ITEMDESC,LOGICAL_PLANT,START_DATE,END_DATE,SYS_SOURCE,VENDORID,
+				PROPORTION,
+					SYS_CREATED_BY,
+			 		SYS_CREATED_DATE,
+			 		SYS_LAST_MODIFIED_BY,
+					SYS_LAST_MODIFIED_DATE
+	    	) 
+	    select ITEM,ITEMDESC,LOGICAL_PLANT,
+		 	 	 		START_DATE,END_DATE,:SYS_SOURCE,
+			 	 	 	VENDORID,PROPORTION,
+			 	 	 	:currentUser,:create_time,:currentUser,:create_time
+		from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where TO_DEL=1;
+		 --记录log
+	    insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+					ITEM,LOGICAL_PLANT,START_DATE,END_DATE,VENDORID,PROPORTION,
+					SYS_CREATED_BY,
+			 		SYS_CREATED_DATE,
+			 		SYS_LAST_MODIFIED_BY,
+					SYS_LAST_MODIFIED_DATE
+				)
+	    select :currentUser,'create',:create_time,ITEM,LOGICAL_PLANT,
+		 	 	 		START_DATE,END_DATE,
+			 	 	 	VENDORID,PROPORTION,
+			 	 	 	:currentUser,:create_time,:currentUser,:create_time
+		from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where TO_DEL=1;
+		
+		--查询正确的记录个数
+		select count(1) into validate_amout from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER"
+		where TO_DEL=1;
+			
+		--更新business的信息,
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+				:table_name || :business_code,:business_name,:validate_amout,0,:table_name);	
+		
+		--删除buffer表中正确的数据
+		delete from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER" where TO_DEL=1;	
+		--如果没有剩余的数据，直接退出
+		select count(1) into n from UI_PURCHASE_PROP_VMI_BUFFER;
+		if :n=0 then
+			return;
+		end if;
+	end if;
+		
+	/**
+	*	2.如果有剩余的数据，都是PROPORTION加和不是1的错误记录,记录在ERR_DETAIL表
+	**/
+	select count(1) into unvalidate_amount from UI_PURCHASE_PROP_VMI_BUFFER;
+	errorMsg := 'PROPORTION is illegal,for the sum of it is not 1!';
+	if :unvalidate_amount>0 then
+		--记录upload的错误
+		insert into "SZEBGVMI"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+		select "SZEBGVMI"."cdp.szebgvmi.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+		POSITION,:errorMsg,:table_name,:business_name
+		from  "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER";
+		--记录错误信息，ERR_DETAIL
+		insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI_ERR_DETAIL"(
+	    		CODE,POSITION,ITEM,LOGICAL_PLANT,START_DATE,END_DATE,SYS_SOURCE,VENDORID,
+				PROPORTION
+	    	) 
+	    select :table_name || to_varchar(:business_code),POSITION,ITEM,LOGICAL_PLANT,
+		 	 	 		START_DATE,END_DATE,:SYS_SOURCE,
+			 	 	 	VENDORID,PROPORTION
+		from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER";
+		--更新business的信息,
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+				:table_name || :business_code,:business_name,0,:unvalidate_amount,:table_name);
+	end if;
+	
+    --清空数据
+    delete from "SZEBGVMI"."UI_PURCHASE_PROP_VMI_BUFFER";
+    
+END;

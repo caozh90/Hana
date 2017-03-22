@@ -1,0 +1,39 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_change_location::deleteChangeSL" (
+	IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_CHANGE_SL_T",
+	OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+	 ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	 AS
+	 	aMATNR NVARCHAR(18);
+	 	aMO_NUM NVARCHAR(12);
+	 	aSTORAGE_LOC NVARCHAR(40);
+	 	aI_DETAIL NVARCHAR(300) :='';
+BEGIN
+
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION
+ BEGIN
+ 
+ aI_DETAIL :='cdp.szebgvmi.procedures::deleteUiCycleControl error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+ errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message,
+     		aI_DETAIL detail  from dummy;
+ END;
+
+ SELECT 
+ 		MATNR,
+ 		MO_NUM,
+ 		STORAGE_LOC
+ 	INTO 
+	 	aMATNR,
+	 	aMO_NUM,
+	 	aSTORAGE_LOC
+ 	FROM :newInfo;
+ 		
+DELETE FROM "SZEBGVMI"."UI_CHANGE_SL"
+	WHERE MATNR = :aMATNR
+	AND MO_NUM = :aMO_NUM
+	AND STORAGE_LOC = :aSTORAGE_LOC;
+ 
+END;

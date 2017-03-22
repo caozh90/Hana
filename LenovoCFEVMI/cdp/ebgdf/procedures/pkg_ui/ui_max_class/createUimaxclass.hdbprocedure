@@ -1,0 +1,133 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_max_class::createUimaxclass"
+( 
+	IN newinfo  "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_MAX_CLASS_T",
+	OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      createUimaxclass
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo
+*author      :      leon Bian
+*CreateDate  :      2015.9.10
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300); 
+	v_resourceExists BIGINT;
+	V_MT NVARCHAR(10)  ; 
+	V_MAX_CLASS NVARCHAR(1)  ; 
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgdf.procedures.pkg_ui.ui_max_class::createUimaxclass error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_max_class::createUimaxclass'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_max_class::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_max_class::createUimaxclass'
+       ,I_MODULE=>'EBGDF'
+   	); 
+   	
+select MT,
+	   MAX_CLASS
+into   V_MT,
+	   V_MAX_CLASS
+from :newInfo;  
+
+select count(1) into v_resourceExists from "EBGDF"."UI_MAX_CLASS" 
+where MT = :V_MT; 
+
+--if item exits in database
+if  :v_resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+	    
+end if;	
+
+--insert into UI_MAX_CLASS table
+
+insert into "EBGDF"."UI_MAX_CLASS"( MT,
+	  								MAX_CLASS,
+									CREATE_TS,
+									CREATE_USERID,
+									LAST_UPDATE_TS,
+									LAST_UPDATE_USERID
+									) 
+	values (V_MT,
+	   		V_MAX_CLASS,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER);
+	
+--INSERT INTO UI_MAX_CLASS_LOG TABLE
+insert into "EBGDF"."UI_MAX_CLASS_LOG"(
+									MT,
+	  								MAX_CLASS,
+									CREATE_TS,
+									CREATE_USERID,
+									LAST_UPDATE_TS,
+									LAST_UPDATE_USERID,
+									AT_MODIFIED_BY,
+									AT_ACTION,
+									AT_MODIFIED_ON,
+									AT_MILLIS
+	 )SELECT 
+	        MT,
+	  		MAX_CLASS,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+	 		SESSION_USER,
+	 		'create',
+	 		CURRENT_UTCTIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3')) FROM :newInfo a; 							
+		
+	  	
+aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_max_class::createUimaxclass successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_max_class::createUimaxclass'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);  
+END;

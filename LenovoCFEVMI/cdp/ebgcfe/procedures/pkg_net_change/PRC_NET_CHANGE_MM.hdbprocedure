@@ -1,0 +1,107 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_net_change::PRC_NET_CHANGE_MM" ( 
+  IN P_CHANGE_ID       VARCHAR(100),
+  IN P_PRODUCT_GROUP   VARCHAR(20),
+  IN P_USER_ID         VARCHAR(64),
+  OUT P_EXIT_CODE      INTEGER,
+  OUT P_EXIT_MESSAGE   VARCHAR(500)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_NET_CHANGE_MM              
+*function   : Material Master Net Change
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id
+*output     : p_exit_code : error code / p_exit_message : error message
+*author     : Leonard Ling
+*CreateDate : 2015-01-13
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+  -- data
+  DECLARE v_pkg_name          VARCHAR(30) := 'PKG_NET_CHANGE';
+  DECLARE v_prc_name          VARCHAR(30) := 'PRC_NET_CHANGE_MM';
+  DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  DECLARE v_found             INTEGER := 0;
+  DECLARE v_init_date         TIMESTAMP; 
+  DECLARE v_last_runtime      TIMESTAMP;
+  DECLARE v_subprc_exitcode   INTEGER;
+  
+  -- exception
+  DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;   
+  DECLARE EXIT HANDLER FOR exp_procedure   
+    BEGIN
+		P_EXIT_CODE := ::SQL_ERROR_CODE;     
+	    P_EXIT_MESSAGE := substr(::SQL_ERROR_MESSAGE, 1, 500 );    
+      UPDATE   conf_sync_lastrun
+           SET   enddate = CURRENT_TIMESTAMP, returncode = :p_exit_code
+         WHERE   pkgname = :v_pkg_name AND progname = :v_prc_name;  
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>:p_exit_message); 			           
+    END;    
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN   
+		P_EXIT_CODE := ::SQL_ERROR_CODE;     
+	    P_EXIT_MESSAGE := substr(::SQL_ERROR_MESSAGE, 1, 500 );                   
+      UPDATE   conf_sync_lastrun
+            SET   enddate = CURRENT_TIMESTAMP, returncode = :p_exit_code
+          WHERE   pkgname = :v_pkg_name AND progname = :v_prc_name;
+
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;            
+  
+  -- process logic
+  P_EXIT_CODE := -1;
+  P_EXIT_MESSAGE := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');     
+  -- update run time info
+  SELECT count(*) INTO v_found FROM conf_sync_lastrun WHERE pkgname = :v_pkg_name AND progname = :v_prc_name; 
+  IF :v_found = 0 
+  THEN 
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_init_date INTO v_init_date FROM DUMMY;
+    INSERT INTO conf_sync_lastrun (pkgname, progname, lastrundate, startdate, returncode) 
+         VALUES (:v_pkg_name, :v_prc_name, :v_init_date, CURRENT_TIMESTAMP, -1); 
+  ELSE UPDATE conf_sync_lastrun SET startdate = CURRENT_TIMESTAMP, returncode = -1
+                              WHERE pkgname = :v_pkg_name AND progname = :v_prc_name; 
+  END IF;       
+
+  -- MM net change
+  SELECT lastrundate INTO v_last_runtime FROM conf_sync_lastrun WHERE pkgname = :v_pkg_name AND progname = :v_prc_name;
+  CALL "cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_ITEM_NETCHG"(:v_last_runtime, :v_subprc_exitcode);
+  IF :v_subprc_exitcode <> 0 THEN
+    p_exit_message := 'Masterial master net change failed in PRC_PCDW_ITEM_NETCHG';
+  	SIGNAL exp_procedure SET MESSAGE_TEXT = :p_exit_message;
+  END IF;
+  
+  -- Product hierarchy net change
+  CALL "cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_PRODHRCHY_NETCHG"(:v_last_runtime, :v_subprc_exitcode);
+  IF :v_subprc_exitcode <> 0 THEN
+    p_exit_message := 'Product hierarchy net change failed in PRC_PCDW_PRODHRCHY_NETCHG';
+  	SIGNAL exp_procedure SET MESSAGE_TEXT = :p_exit_message;
+  END IF;  
+  
+  -- Process item data
+  CALL "cdp.ebgcfe.procedures.pkg_item_process::PRC_PRODUCT"(:v_last_runtime, :v_subprc_exitcode);
+  IF :v_subprc_exitcode <> 0 THEN
+    p_exit_message := 'Item data processing failed in PRC_PRODUCT';
+  	SIGNAL exp_procedure SET MESSAGE_TEXT = :p_exit_message;
+  END IF;    
+  
+  -- Update run time info
+  UPDATE   conf_sync_lastrun c1
+	   SET   lastrundate = startdate, enddate = CURRENT_TIMESTAMP, returncode = 0
+	 WHERE   pkgname = :v_pkg_name AND progname = :v_prc_name;
+        
+  p_exit_code := 0;
+  p_exit_message := 'SUCCESSFUL';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+	                                          I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+END;

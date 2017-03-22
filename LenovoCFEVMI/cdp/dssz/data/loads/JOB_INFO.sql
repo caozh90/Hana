@@ -1,0 +1,7 @@
+
+delete from "cdp.dssz.data::JOB_INFO" ;
+
+INSERT INTO "cdp.dssz.data::JOB_INFO" (MODULE,JOBNAME,PROCESS_NAME,GATETIME) values ('MXEBGVMI','JOB_X86_SCHEDULE_PULL_MEX','MTY Schedule Pull',30);
+INSERT INTO "cdp.dssz.data::JOB_INFO" (MODULE,JOBNAME,PROCESS_NAME,GATETIME) values ('SZEBGVMI','JOB_X86_SCHEDULE_PULL_SZ','SZ Schedule Pull',30);
+
+commit;

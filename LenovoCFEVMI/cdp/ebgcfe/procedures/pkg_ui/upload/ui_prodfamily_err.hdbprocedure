@@ -1,0 +1,50 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_prodfamily_err" (
+IN 	 	error_message	varchar(4096),
+IN 	 	business_name varchar(200),
+IN      CYCLE NVARCHAR(4096),
+IN	 	PRODUCT_GROUP NVARCHAR(4096) ,
+IN	 	BRAND NVARCHAR(4096) ,
+IN		PROD_FAMILY NVARCHAR(4096),
+IN	    EOL_STATUS NVARCHAR(4096),
+IN	 	EOL_STARTDATE NVARCHAR(4096),
+IN	 	EOL_ENDDATE	NVARCHAR(4096),
+IN		SEQ	nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	AS
+/************************************************************************
+*name      : ui_prodfamily_err              --函数名
+*function  : 保存向表ui_prodfamily上传数据时产生的错误信息              --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014/12/11       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	business_code varchar(20);
+	table_name varchar(100) :='UI_PRODFAMILY';
+	privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+	
+	    --添加business信息
+		business_code := :SEQ;
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,0,1,:table_name);
+     	
+     	--记录upload的错误
+     	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || :business_code,:position,:error_message,:table_name,:business_name); 
+     	
+     	--详细记录upload的数据信息
+     	insert into "EBGCFE"."UI_PRODFAMILY_ERR_DETAIL"(CODE,POSITION,CYCLE,PRODUCT_GROUP,BRAND,PROD_FAMILY,
+     		EOL_STATUS,EOL_STARTDATE,EOL_ENDDATE)
+		VALUES(:table_name || :business_code,:position,:CYCLE,:PRODUCT_GROUP,:BRAND,:PROD_FAMILY,
+     		:EOL_STATUS,:EOL_STARTDATE,:EOL_ENDDATE);
+
+
+END;

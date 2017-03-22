@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_GROUP_USER_FUNCTION_ROLE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="SCRIPT_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_GROUP_USER_FUNCTION_ROLE"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="GROUP_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="USER_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="ROLEGROUP_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="ROLE_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="DISPLAY_ROLE_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="MODULE_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="MODULE_ID" length="20"/>
+        <viewAttribute datatype="BIGINT" id="MS"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script, Created by Eric Zhou ************/ 
+ BEGIN 
+ 	 var_out = select groups.GROUP_NAME as GROUP_NAME,
+ 	 				  users.USER_NAME as USER_NAME,
+ 	 				  rolegroup.ROLEGROUP_NAME as ROLEGROUP_NAME,
+ 	 				  role.ROLE_NAME as ROLE_NAME,
+ 	 				  role.DISPLAY_ROLE_NAME as DISPLAY_ROLE_NAME,
+ 	 				  modules.MODULE_NAME as MODULE_NAME,
+ 	 				  modules.MODULE_ID as MODULE_ID,
+ 	 				  sum(0) as MS 
+ 	 			from 
+&quot;_SYS_BIC&quot;.&quot;cdp.security.models/CV_GETMAPALL_USERROLE&quot; as map_all,
+&quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.MAP_GROUP_USER&quot; as map_user,
+&quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE&quot; as map_role,
+&quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_GROUP&quot; as groups,
+&quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_USER&quot; as users,
+&quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_ROLEGROUP&quot; as rolegroup,
+&quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_ROLES&quot; as role,
+&quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_MODULE&quot; as modules
+where map_all.USER_ID = map_user.USER_ID
+and map_all.ROLE_ID = map_role.ROLE_ID
+and map_all.MODULE_ID = modules.MODULE_ID
+and map_user.USER_ID = users.USER_ID
+and map_user.GROUP_ID = groups.GROUP_ID
+and map_role.ROLE_ID = role.ROLE_ID
+and map_role.ROLEGROUP_ID = rolegroup.ROLEGROUP_ID
+and groups.MODULE_ID = map_all.MODULE_ID
+and rolegroup.MODULE_ID = map_all.MODULE_ID
+and map_user.MODULE_ID = map_all.MODULE_ID
+and map_role.MODULE_ID = map_all.MODULE_ID
+group by modules.MODULE_ID,modules.MODULE_NAME,
+         groups.GROUP_NAME,
+ 	 	 users.USER_NAME,
+ 	 	 rolegroup.ROLEGROUP_NAME,
+ 	 	 role.ROLE_NAME,
+ 	 	 role.DISPLAY_ROLE_NAME
+order by modules.MODULE_NAME,
+         groups.GROUP_NAME,
+ 	 	 users.USER_NAME,
+ 	 	 rolegroup.ROLEGROUP_NAME,
+ 	 	 role.ROLE_NAME 	 	 
+; 
+
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="GROUP_NAME" order="1">
+        <descriptions defaultDescription="GROUP_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="GROUP_NAME"/>
+      </attribute>
+      <attribute id="USER_NAME" order="2">
+        <descriptions defaultDescription="USER_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="USER_NAME"/>
+      </attribute>
+      <attribute id="ROLEGROUP_NAME" order="3">
+        <descriptions defaultDescription="ROLEGROUP_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLEGROUP_NAME"/>
+      </attribute>
+      <attribute id="ROLE_NAME" order="4">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="DISPLAY_ROLE_NAME" order="5">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="DISPLAY_ROLE_NAME"/>
+      </attribute>
+      <attribute id="MODULE_NAME" order="6">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MODULE_NAME"/>
+      </attribute>
+      <attribute id="MODULE_ID" order="7">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MODULE_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="MS" order="8" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MS"/>
+        <measureMapping columnObjectName="Script_View" columnName="MS"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

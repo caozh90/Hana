@@ -1,0 +1,155 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_pegging::deleteUipegging" 
+	( 
+		IN oldInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_PEGGING_T",
+		OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError"
+	) 
+		
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	
+/************************************************************************
+*name        :      deleteUipegging
+*function    :               
+*input       ：                 oldInfo
+*output      :      errorInfo
+*author      :      billy Qiao
+*CreateDate  :      2015.8.19
+*UpdateDate  :      2015.8.19  
+*************************************************************************/
+	
+	AS
+	
+	aI_DETAIL NVARCHAR(300) := '';
+	alogide INTEGER := 0;
+	privilegeExists NVARCHAR(300);
+	
+	V_MTM NVARCHAR(18);
+	V_SBB NVARCHAR(12);
+	
+BEGIN
+--Exception Defination
+	DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+--Exception Handler Defination
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+			aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_pegging::deleteUipegging error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+			
+	    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    	 I_TYPE=>'PROC_ERROR'	
+		     	,I_LOGSID=>:alogide
+		     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_pegging::deleteUipegging'
+		     	,I_MODULE=>'EBGDF'
+		     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+		     	,I_DETAIL=>:aI_DETAIL
+	     	);	
+	 
+	 		errorInfo = select 400 as http_status_code, 
+	     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+	     		aI_DETAIL detail from dummy;
+			
+		END;
+
+--Check Privilege
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_pegging::deleteable',privilegeExists);
+    
+    IF  privilegeExists != 'OK' THEN
+    	errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+       	RETURN ;
+    END IF;
+
+--Log Start
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    I_TYPE=>'PROC_START',
+	        I_LOGSID=>:alogide,
+	        I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_pegging::deleteUipegging',
+	        I_MODULE=>'EBGDF'
+	   	); 
+
+--Get key of records to be deleted
+	select
+		MTM,
+		SBB
+	into
+		V_MTM,
+		V_SBB
+	from
+		:oldInfo
+	;--end select;
+
+--Delete records from DB
+	delete from
+		"EBGDF"."RPT_PEGGING"
+	where
+		MTM = :V_MTM
+		and SBB = :V_SBB
+	;--end delete;
+
+--Raise exception if no records were deleted
+	if ::rowcount < 1 then
+		signal DATA_CONFLICT set message_text = 'the record do not exists';
+	end if;
+
+--Insert log table
+	insert into
+		"EBGDF"."RPT_PEGGING_LOG"(
+			"ABCD_T",
+			"MTM",
+			"MTM_ABCD",
+			"SBB",
+			"SBB_DES",
+			"SBB_ABCD",
+			"SBB_ABCD_1",
+			"SBB_ABCD_2",
+			"SBB_ABCD_3",
+			"SBB_ABCD_4",
+			"SBB_ABCD_5",
+			"CREATE_TS",
+			"CREATE_USERID",
+			"LAST_UPDATE_TS",
+			"LAST_UPDATE_USERID",
+			"AT_MODIFIED_BY",
+			"AT_ACTION",
+			"AT_MODIFIED_ON",
+			"AT_MILLIS"
+		)select
+			a."ABCD_T",
+			a."MTM",
+			a."MTM_ABCD",
+			a."SBB",
+			a."SBB_DES",
+			a."SBB_ABCD",
+			a."SBB_ABCD_1",
+			a."SBB_ABCD_2",
+			a."SBB_ABCD_3",
+			a."SBB_ABCD_4",
+			a."SBB_ABCD_5",
+			CURRENT_UTCTIMESTAMP,		--CREATE_TS
+			SESSION_USER,			--CREATE_USERID
+			CURRENT_UTCTIMESTAMP,		--LAST_UPDATE_TS
+			SESSION_USER,			--LAST_UPDATE_USERID
+			SESSION_USER,			--AT_MODIFIED_BY
+			'delete',				--AT_ACTION
+			CURRENT_UTCTIMESTAMP,		--AT_MODIFIED_ON
+			TO_DECIMAL ( TO_VARCHAR ( CURRENT_UTCTIMESTAMP, 'HH24MISSFF3' ) )		--AT_MILLIS
+		from
+			:oldInfo as a
+	;--end insert;
+			
+--Log End
+	aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_pegging::deleteUipegging successfully deleted . ';
+	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		I_TYPE=>'PROC_END',
+		I_LOGSID=>:alogide,
+		I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_pegging::deleteUipegging',
+		I_MODULE=>'EBGDF',
+		I_DETAIL=>:aI_DETAIL
+	);
+
+END;

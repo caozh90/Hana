@@ -1,0 +1,153 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_ZPLN_HANA_XSBB_CV_VK" ( 
+  OUT PO_RETURNCODE INTEGER
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA PCDW
+    AS
+   /************************************************************************
+   *name        : PRC_ZPLN_HANA_XSBB_CV_VK
+   *function    : Insert CTO-FC-SBB data into PCDW
+   *input       : -
+   *output      : PO_RETURNCODE : return code
+   *author      : Leonard Ling    
+   *CreateDate  : 2015-02-02
+   *UpdateDate  :              
+   *************************************************************************/
+   vMsg           VARCHAR(1024) := '';
+   vCode          INTEGER := 0;
+BEGIN
+  --exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+     BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+         vCode := ::SQL_ERROR_CODE;
+      INSERT INTO PCDW_PROC_LOG
+         (EVENTTIME,
+          EVENTNAME,
+          SUBEVENT,
+          MSGCODE,
+          EVENTMSG,
+          EVENTTYPE,
+          DATASOURCE,
+          DATADEST,
+          EVENTDESCR)
+      VALUES
+         (CURRENT_TIMESTAMP,
+          'PRC_ZPLN_HANA_XSBB_CV_VK',
+          'OTHERS ERROR',
+          :vCode,
+          :vMsg,
+          '',
+          '',
+          '',
+          'END');
+      --exec 'COMMIT';      
+     END;
+
+
+   -- log process start
+   INSERT INTO PCDW_PROC_LOG
+   VALUES
+      (CURRENT_TIMESTAMP,
+       'PRC_ZPLN_HANA_XSBB_CV_VK',
+       '',
+       NULL,
+       '',
+       '',
+       '',
+       '',
+       'START');
+   --EXEC 'COMMIT';
+   PO_RETURNCODE := 1;
+
+   
+   -- Delete the old data from target table according to MATNR
+   DELETE FROM PCDW_FCSBBMAP;
+   --BACK UP
+   DELETE FROM BAK_ECC_FCSBBMAP 
+   WHERE DAYS_BETWEEN(SYS_LAST_MODIFIED_DATE,CURRENT_TIMESTAMP)>7;
+   
+   /*
+   INSERT INTO BAK_ECC_FCSBBMAP (MATNR, ATNAM, ATWRT, IDNRK, MENGE,
+    VKOND,ECC_CREATED_DATE, ECC_LAST_MODIFIED_DATE ,
+    ECC_LAST_MODIFIED_BY, SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY,
+    DELFL,ATBEZ)
+          (SELECT MATNR, ATNAM, ATWRT, IDNRK, MENGE, VKOND,
+          ECC_CREATED_DATE, ECC_LAST_MODIFIED_DATE ,ECC_LAST_MODIFIED_BY, 
+          CURRENT_TIMESTAMP,SESSION_USER,DELFL,ATBEZ
+                  FROM ECC_FCSBBMAP );
+   --conment by zhangxj,ds job done               
+   */
+                        
+   -- Insert the new value to the target table
+   INSERT INTO PCDW_FCSBBMAP (MATNR, ATNAM, ATWRT, IDNRK, QUANTITY,
+    VKOND,ACTION,STATUS,ECC_CREATED_DATE, ECC_LAST_MODIFIED_DATE ,
+    ECC_LAST_MODIFIED_BY, SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY,
+    OD_FLAG,SOURCE,CHAR_DESC)
+          (SELECT MATNR, ATNAM, ATWRT, IDNRK, MENGE, VKOND, 'INSERT','ACTIVE',
+          ECC_CREATED_DATE, ECC_LAST_MODIFIED_DATE ,ECC_LAST_MODIFIED_BY, 
+          CURRENT_TIMESTAMP,SESSION_USER,DELFL,'ECC',ATBEZ
+                  FROM ECC_FCSBBMAP );
+
+   --Inactive fc which deleted flag is masked
+   UPDATE PCDW_FCSBBMAP T
+      SET T.STATUS = 'INACTIVE'
+    WHERE IFNULL(OD_FLAG, '') <> '';
+       
+   --Inactive the wrong data which MATNR or IDNRK or VKOND or ATNAM or ATWRT columns value is null                
+   UPDATE PCDW_FCSBBMAP T
+      SET T.STATUS = 'INACTIVE'
+    WHERE T.MATNR IS NULL 
+       OR LENGTH(T.MATNR) = 0
+       OR T.ATNAM IS NULL
+       OR LENGTH(T.ATNAM) = 0;
+   
+   --Inactive the VK data which is not created in latest datetime            
+   UPDATE PCDW_FCSBBMAP T1
+      SET T1.STATUS = 'INACTIVE'
+    WHERE T1.STATUS = 'ACTIVE'
+      AND EXISTS(SELECT 1 FROM PCDW_FCSBBMAP T2
+                  WHERE T2.MATNR  = T1.MATNR
+                    AND T2.ATNAM  = T1.ATNAM
+                    AND T2.ECC_LAST_MODIFIED_DATE > T1.ECC_LAST_MODIFIED_DATE  
+                    AND T2.STATUS = 'ACTIVE');
+   
+   --Inactive duplicate data                 
+   UPDATE PCDW_FCSBBMAP T1
+      SET T1.STATUS = 'INACTIVE'
+    WHERE T1.STATUS = 'ACTIVE'
+      AND T1."$rowid$" < (SELECT MAX(T2."$rowid$") FROM PCDW_FCSBBMAP T2
+                           WHERE T2.MATNR = T1.MATNR
+                             AND T2.ATNAM = T1.ATNAM
+                             AND T2.STATUS = 'ACTIVE');
+    
+   --EXEC 'COMMIT';
+
+   PO_RETURNCODE := 0;
+
+   -- log process end
+   INSERT INTO PCDW_PROC_LOG
+      (EVENTTIME,
+       EVENTNAME,
+       SUBEVENT,
+       MSGCODE,
+       EVENTMSG,
+       EVENTTYPE,
+       DATASOURCE,
+       DATADEST,
+       EVENTDESCR)
+   VALUES
+      (CURRENT_TIMESTAMP,
+       'PRC_ZPLN_HANA_XSBB_CV_VK',
+       'SUCCESS',
+       :vCode,
+       :vMsg,
+       '',
+       '',
+       '',
+       'END');
+   EXEC 'COMMIT';
+   
+END;
+

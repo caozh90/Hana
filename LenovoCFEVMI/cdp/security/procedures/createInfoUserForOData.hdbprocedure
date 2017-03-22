@@ -1,0 +1,127 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createInfoUserForOData" (
+IN newInfo "SECURITY"."cdp.security.data::userManagement.InfoUserT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER AS 
+	
+	USERNAME NVARCHAR(256); 
+	passwd NVARCHAR(256);
+    LOGINNAME NVARCHAR(256);
+    FIRSTNAME NVARCHAR(256);
+    LASTNAME NVARCHAR(256);
+    EMAILADDRESS NVARCHAR(200);
+    STATUS NVARCHAR(20);
+    LOCALE NVARCHAR(16);
+    DESIGNATION NVARCHAR(200);
+    aMODULE_NAME NVARCHAR(200);
+    
+    PHONENUMBER  NVARCHAR(50);
+  	DEPARTMENT NVARCHAR(256); --//部门
+  	COMPANY NVARCHAR(256);		--//公司
+  	USER_GROUP NVARCHAR(256);	--	//用户账户组
+  	VALID_FROM Timestamp ;--//Data as of which the user can connect
+  	VALID_UNTIL Timestamp ;--//Data as of which the user can no longer connect
+  	INTERNAL_SIGN NVARCHAR(256); --//内部用户标识
+  	EXTERNAL_SIGN NVARCHAR(256); --//外部用户标识
+  	
+BEGIN
+
+/***************************** 
+	create new user
+	
+	1\首先判断是否存在module 模块名称是否存在，如果存在则获取他的模块 ＩＤ
+	2\如果不存在，则返回同时写日志log
+	3\存在，则判断username是否存在，如果存在，则返回日志，不做任何操作
+	4\不存在，则添加user ，
+
+	5、需要维护  ---MAP_MODULE_USER  --根据module id 和 user id 添加 MAP_MODULE_USER 
+	"SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER"
+	6、首先需要获得 Public Group （根据 module id 查找）的 同时让他属于 然后维护 MAP_GROUP_USER
+	"SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"
+	example:
+	
+call  "SECURITY"."cdp.security.procedures::createInfoUser"(
+			'USERNAME', 
+	         'Passwd1234567',
+             'loginName',
+             'firstName',
+             'lastName',
+             'emailAddress',
+             'status' ,
+             'LOCALE' ,
+             'DESIGNATION'
+             ,'VMI'
+)
+ *****************************/
+
+    DECLARE aUSER_ID BIGINT;
+    DECLARE aMODULE_ID NVARCHAR(10);
+    DECLARE aMODULE_PATH NVARCHAR(200);
+    DECLARE aGROUP_ID NVARCHAR(10);
+    --exception     
+
+   
+
+ select NAME
+        ,PASSWORD
+        ,LOGINNAME
+        ,FIRSTNAME
+        ,LASTNAME
+        ,EMAILADDRESS
+        ,STATUS  
+        ,LOCALE
+  		,DESIGNATION 
+  		,MODULE_NAME
+  		,		PHONENUMBER  
+  			,		DEPARTMENT  --//部门
+  			,		COMPANY 
+  			,		USER_GROUP
+  			,		VALID_FROM
+  			,		VALID_UNTIL
+  			,		INTERNAL_SIGN
+  			,		EXTERNAL_SIGN
+  into 
+ 	USERNAME  
+	,passwd 
+    ,LOGINNAME 
+    ,FIRSTNAME 
+    ,LASTNAME 
+    ,EMAILADDRESS
+    ,STATUS 
+    ,LOCALE 
+    ,DESIGNATION 
+    ,aMODULE_NAME
+    ,		PHONENUMBER  
+  			,		DEPARTMENT  --//部门
+  			,		COMPANY 
+  			,		USER_GROUP
+  			,		VALID_FROM
+  			,		VALID_UNTIL
+  			,		INTERNAL_SIGN
+  			,		EXTERNAL_SIGN
+  from :newInfo;
+
+
+    
+  call "SECURITY"."cdp.security.procedures::createInfoUser" (
+			 USERNAME , 
+	          passwd ,
+              LOGINNAME ,
+              FIRSTNAME ,
+              LASTNAME ,
+              EMAILADDRESS ,
+              STATUS ,
+              LOCALE ,
+              DESIGNATION
+              ,		PHONENUMBER  
+  			,		DEPARTMENT  --//部门
+  			,		COMPANY 
+  			,		USER_GROUP
+  			,		VALID_FROM
+  			,		VALID_UNTIL
+  			,		INTERNAL_SIGN
+  			,		EXTERNAL_SIGN 
+              --aMODULE_NAME 
+	          , errorInfo );
+     		
+END;

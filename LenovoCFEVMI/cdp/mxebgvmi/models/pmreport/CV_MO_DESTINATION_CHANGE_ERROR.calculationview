@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_MO_DESTINATION_CHANGE_ERROR" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_MO_DESTINATION_CHANGE_ERROR"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="MO_DEST_CHANGE" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="MO_DEST_CHANGE"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="PRODUCTIONORDID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="DEST_STORAGE_LOC"/>
+        <viewAttribute id="WERKS"/>
+        <viewAttribute id="POSNR"/>
+        <viewAttribute id="STATUS">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="ERROR"/>
+        </viewAttribute>
+        <viewAttribute id="REASON_CODE"/>
+        <viewAttribute id="SYS_TIMESTAMP"/>
+        <viewAttribute aggregationType="count" id="COUNTER"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="NVARCHAR" id="CHANGE_DATE" length="10">
+          <formula>string(component(&quot;SYS_TIMESTAMP&quot;,1))+'/' +lpad(string( component(&quot;SYS_TIMESTAMP&quot;,2)) ,2,'0')+'/'+lpad(string(component(&quot;SYS_TIMESTAMP&quot;,3)) ,2,'0')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="CHANGE_TIME" length="10">
+          <formula>lpad(string(component(&quot;SYS_TIMESTAMP&quot;,4)) ,2 ,'0')+':' +lpad(string( component(&quot;SYS_TIMESTAMP&quot;,5)) ,2,'0')+':'+lpad(string(component(&quot;SYS_TIMESTAMP&quot;,6)) ,2,'0')</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#MO_DEST_CHANGE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTIONORDID" source="PRODUCTIONORDID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="POSNR" source="POSNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REASON_CODE" source="REASON_CODE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_TIMESTAMP" source="SYS_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COUNTER" source="PRODUCTIONORDID"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="MO_ID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MO_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PRODUCTIONORDID"/>
+      </attribute>
+      <attribute id="PART_NUMBER" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PART_NUMBER"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_LOC" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_LOC"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEST_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="LOGICAL_PLANT" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOGICAL_PLANT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="WERKS"/>
+      </attribute>
+      <attribute id="POSNR" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="POSNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="POSNR"/>
+      </attribute>
+      <attribute id="STATUS" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="STATUS"/>
+      </attribute>
+      <attribute id="REASON_CODE" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="REASON_CODE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="REASON_CODE"/>
+      </attribute>
+      <attribute id="CHANGE_DATE" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CHANGE_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="CHANGE_DATE"/>
+      </attribute>
+      <attribute id="CHANGE_TIME" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CHANGE_TIME"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="CHANGE_TIME"/>
+      </attribute>
+      <attribute id="COUNTER" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTIONORDID_1"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="COUNTER"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="260"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

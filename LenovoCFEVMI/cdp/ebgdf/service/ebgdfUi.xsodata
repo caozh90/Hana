@@ -1,0 +1,201 @@
+/*VIEW NAME
+--1.1 mfi ppn
+--2.1 report interlock
+*/ 
+service  { 
+//1.1 mfi ppn
+
+	"cdp.ebgdf.models.ui_mfi_ppn::CV_UI_MFI_PPN_SEARCH_DDL" as "UI_MFI_PPN_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_mfi_ppn::CV_UI_MFI_PPN_CREATE_DDL" as "UI_MFI_PPN_CREATE"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_mfi_ppn::CV_UI_MFI_PPN" as "UI_MFI_PPN"
+		key("ABCD_T","SBB","PPN")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_mfi_ppn::createUimfippn"
+		update forbidden
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_mfi_ppn::deleteUimfippn" ;	
+		
+//2.1 report interlock 
+	"cdp.ebgdf.models.ui_report_interlock::CV_UI_REPORT_INTERLOCK_CREATE_DDL" as "CV_UI_REPORT_INTERLOCK_CREATE"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_report_interlock::CV_UI_REPORT_INTERLOCK_SEARCH_DDL" as "CV_UI_REPORT_INTERLOCK_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_report_interlock::CV_UI_REPORT_INTERLOCK_SUPPLIERID_DDL" as "CV_UI_REPORT_INTERLOCK_SUPPLIERID"
+		key("LIFNR","NAME1")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_report_interlock::CV_UI_REPORT_INTERLOCK" as "CV_UI_REPORT_INTERLOCK"
+		key("SBB_OPT","PPN","SUPPLIER")//
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::createUireportinterlock"
+		update using "cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::updateUireportinterlock"
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::deleteUireportinterlock";
+		
+//3.1 Report PN Class
+	"cdp.ebgdf.models.ui_pn_class::CV_UI_PN_CLASS_CREATE_DLL" as "CV_UI_PN_CLASS_CREATE"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_pn_class::CV_UI_PN_CLASS_SEARCH_DLL" as "CV_UI_PN_CLASS_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgdf.models.ui_pn_class::CV_UI_PN_CLASS" as "CV_UI_PN_CLASS_PAR"
+		key("MFI_FFI_FC_IND","MFI_FFI_FC","PPN")
+		parameters via key and entity  "INPUT_PNCLASS"
+		update using "cdp.ebgdf.procedures.pkg_ui.ui_pn_class::updateUipnclass"
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_pn_class::deleteUipnclass";
+	
+	"cdp.ebgdf.models.ui_pn_class::CV_UI_PN_CLASS" as "CV_UI_PN_CLASS"
+		key("MFI_FFI_FC_IND","MFI_FFI_FC","PPN")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_pn_class::createUipnclass";
+		
+		
+//4.1 Report Pegging Report
+	"cdp.ebgdf.models.ui_pegging::CV_UI_PEGGING_CREATE_DLL" as "UI_PEGGING_CREATE"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_pegging::CV_UI_PEGGING_SEARCH_DLL" as "UI_PEGGING_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgdf.models.ui_pegging::CV_UI_PEGGING" as "UI_PEGGING"
+		key("MTM","SBB")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_pegging::createUipegging"
+		update using "cdp.ebgdf.procedures.pkg_ui.ui_pegging::updateUipegging"
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_pegging::deleteUipegging";
+		
+//4.2 Report Rel Config Class
+	"cdp.ebgdf.models.ui_rel_config_class::CV_UI_REL_CONFIG_CLASS_CREATE_DLL" as "UI_REL_CONFIG_CLASS_CREATE"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_rel_config_class::CV_UI_REL_CONFIG_CLASS_SEARCH_DLL" as "UI_REL_CONFIG_CLASS_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgdf.models.ui_rel_config_class::CV_UI_REL_CONFIG_CLASS" as "UI_REL_CONFIG_CLASS"
+		key("MTM")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::createUirelconfigclass"
+		update using "cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::updateUirelconfigclass"
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::deleteUirelconfigclass";
+
+//4.3 Report Lead Time
+	"cdp.ebgdf.models.ui_lead_time::CV_UI_LEAD_TIME_CREATE_DLL" as "UI_LEAD_TIME_CREATE"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_lead_time::CV_UI_LEAD_TIME_SEARCH_DLL" as "UI_LEAD_TIME_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+		
+	"cdp.ebgdf.models.ui_lead_time::CV_UI_LEAD_TIME_LEADTIME_DLL" as "UI_LEAD_TIME_LEADTIME"
+		//key("ITEM_TYPE","ITEM_VALUE")
+		//parameters via key and entity  "INPUT_ABCD"
+		keys generate local "ITEM_TYPE"
+		parameters via entity "INPUT_ABCD"		
+		create forbidden 
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgdf.models.ui_lead_time::CV_UI_LEAD_TIME" as "UI_LEAD_TIME"
+		key("MFI_FFI_FC_IND","MFI_FFI_FC","PPN")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_lead_time::createUileadtime"
+		update using "cdp.ebgdf.procedures.pkg_ui.ui_lead_time::updateUileadtime"
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_lead_time::deleteUileadtime";
+		
+//OPTION_Forecast
+	"cdp.ebgdf.models.ui_forecast_mid::CV_UI_FORECAST_MID_CREATE_DLL" as "UI_FORECAST_MID_CREATE"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+	"cdp.ebgdf.models.ui_forecast_mid::CV_UI_FORECAST_MID_SEARCH_DLL" as "UI_FORECAST_MID_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgdf.models.ui_forecast_mid::CV_UI_FORECAST_MID" as "UI_FORECAST_MID"
+		key("SBB","FCSTWEK")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_forecast_mid::createUiforecastmid"
+		update forbidden
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_forecast_mid::deleteUiforecastmid";		
+
+//OPTION_ClassPercent
+	"cdp.ebgdf.models.ui_class_percent::CV_UI_CLASS_PERCENT_SEARCH_DDL" as "UI_CLASS_PERCENT_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgdf.models.ui_class_percent::CV_UI_CLASS_PERCENT" as "UI_CLASS_PERCENT"
+		key("ABCD_T")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_class_percent::createUiclasspercent"
+		update using "cdp.ebgdf.procedures.pkg_ui.ui_class_percent::updateUiclasspercent"
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_class_percent::deleteUiclasspercent";	
+
+//OPTION_MaxClass
+	"cdp.ebgdf.models.ui_max_class::CV_UI_MAX_CLASS_SEARCH_DDL" as "UI_MAX_CLASS_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgdf.models.ui_max_class::CV_UI_MAX_CLASS" as "UI_MAX_CLASS"
+		key("MT")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_max_class::createUimaxclass"
+		update using "cdp.ebgdf.procedures.pkg_ui.ui_max_class::updateUimaxclass"
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_max_class::deleteUimaxclass";	
+
+//OPTION_Attributes
+	"cdp.ebgdf.models.ui_attributes::CV_UI_ATTRIBUTES_SEARCH_DDL" as "UI_ATTRIBUTES_SEARCH"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgdf.models.ui_attributes::CV_UI_ATTRIBUTES" as "UI_ATTRIBUTES"
+		key("MT")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_attributes::createUiattributes"
+		update using "cdp.ebgdf.procedures.pkg_ui.ui_attributes::updateUiattributes"
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_attributes::deleteUiattributes";	
+
+//UI_LTVALUE
+	"cdp.ebgdf.models.ui_ltvalue::CV_UI_LTVALUE_SEARCH_DDL" as "UI_LTVALUE_SEARCH_DDL"
+		key("ITEM_TYPE","ITEM_VALUE")
+		create forbidden 
+		update forbidden
+		delete forbidden;
+
+	"cdp.ebgdf.models.ui_ltvalue::CV_UI_LTVALUE" as "UI_LTVALUE"
+		key("ABCD")
+		create using "cdp.ebgdf.procedures.pkg_ui.ui_ltvalue::createUiltvalue"
+		update using "cdp.ebgdf.procedures.pkg_ui.ui_ltvalue::updateUiltvalue"
+		delete using "cdp.ebgdf.procedures.pkg_ui.ui_ltvalue::deleteUiltvalue";	
+} 

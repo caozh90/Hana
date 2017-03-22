@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_MANUAL_BOM_SEARCH_CHILDREN" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_MANUAL_BOM_SEARCH_CHILDREN"/>
+  <localVariables>
+    <variable id="INPUT_BOM_LEVEL" parameter="true">
+      <descriptions defaultDescription="INPUT_BOM_LEVEL"/>
+      <variableProperties datatype="NVARCHAR" length="50" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="UI_MANUAL_BOM" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_MANUAL_BOM"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+        <viewAttribute id="BOM_LEVEL"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="10">
+          <formula>'CHILDREN'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#UI_MANUAL_BOM">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="CHILDREN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BOM_LEVEL" source="BOM_LEVEL"/>
+      </input>
+      <filter>&quot;BOM_LEVEL&quot; ='$$INPUT_BOM_LEVEL$$'</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="ITEM_TYPE" order="1" attributeHierarchyActive="false" displayAttribute="false" key="true">
+        <descriptions defaultDescription="ITEM_TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ITEM_TYPE"/>
+      </attribute>
+      <attribute id="ITEM_VALUE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CHILDREN"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ITEM_VALUE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="250"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

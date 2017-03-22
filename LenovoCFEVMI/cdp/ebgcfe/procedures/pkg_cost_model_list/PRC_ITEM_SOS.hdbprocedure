@@ -1,0 +1,643 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cost_model_list::PRC_ITEM_SOS" (
+  OUT P_OUT_EXITCODE INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_ITEM_SOS          
+*function   : Cost Model Item SOS
+*input      ：-
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2014-12-29
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+
+  -- data
+  DECLARE   V_PKG_NAME        VARCHAR(100) := 'PKG_COST_MODEL_LIST';    
+  DECLARE   V_PRC_NAME        VARCHAR(100) := 'PRC_ITEM_SOS';
+  DECLARE   V_FUNC_FULL_NAME  VARCHAR(100) := :V_PKG_NAME || '.' || :V_PRC_NAME;  
+  DECLARE   logidi            INTEGER := 0;
+  
+  DECLARE    v_withdraw_date_addmonths  INTEGER;  
+  DECLARE    v_annc_date_addmonths      INTEGER;  
+     
+   -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+            P_OUT_EXITCODE := -1;  
+			CALL "EX_LOG"."cdp.log.procedures::logProc"
+					(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+					I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'EBGCFE',
+					I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+		                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+		    RESIGNAL;     
+    END;  
+    
+  -- process logic
+  P_OUT_EXITCODE := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGCFE'); 
+
+  --EXECUTE IMMEDIATE 'truncate table MID_COST_MODEL_LIST_TMP';
+  DELETE FROM MID_ITEM_SELLABLE_COUNTRY;
+  DELETE FROM MID_COST_MODEL_LIST_TMP;
+  
+  --Comment by Zhoubinbin 20150729, Get country from SOS instead of MVKE
+  /*--extend item data for SUBGEO='ALL'
+  --subgeo is not null, get plant from UI_sos
+  INSERT INTO MID_COST_MODEL_LIST_TMP (PRODUCT_GROUP,
+                                             ITEM,
+                                             PROD_FAMILY,
+                                             BRAND,
+                                             ITEM_TYPE,
+                                             COUNTRY,
+                                             SUBGEO,
+                                             PLANT,
+                                             BOM_PLANT
+                                             )
+         SELECT DISTINCT A.PRODUCT_GROUP,
+                         A.ITEM,
+                         A.PROD_FAMILY,
+                         A.BRAND,
+                         A.ITEM_TYPE,
+                         A.COUNTRY,
+                         A.SUBGEO,
+                         B.PLANT,
+                         A.BOM_PLANT
+           FROM MID_COST_MODEL_LIST_COUNTRY A, UI_SOS B
+          WHERE     A.PRODUCT_GROUP = B.PRODUCT_GROUP
+                AND A.PROD_FAMILY = B.PROD_FAMILY
+                AND A.BRAND = B.BRAND
+                AND A.SUBGEO = MAP (B.SUBGEO, 'ALL', A.SUBGEO, B.SUBGEO)
+                AND A.SUBGEO IS NOT NULL
+                AND B.EOL_STATUS<>'EOL';
+
+
+  --extend item data for SUBGEO<>'ALL'
+  --subgeo is null then get subgeo from UI_region and get plant from UI_sos
+  INSERT INTO MID_COST_MODEL_LIST_TMP (PRODUCT_GROUP,
+                                             ITEM,
+                                             PROD_FAMILY,
+                                             BRAND,
+                                             ITEM_TYPE,
+                                             COUNTRY,
+                                             SUBGEO,
+                                             PLANT,
+                                             BOM_PLANT)
+         SELECT DISTINCT A.PRODUCT_GROUP,
+                         A.ITEM,
+                         A.PROD_FAMILY,
+                         A.BRAND,
+                         A.ITEM_TYPE,
+                         A.COUNTRY,
+                         C.SUBGEO,
+                         B.PLANT,
+                         A.BOM_PLANT
+           FROM MID_COST_MODEL_LIST_COUNTRY A, UI_SOS B, UI_REGION C
+          WHERE     A.PRODUCT_GROUP = B.PRODUCT_GROUP
+                AND A.PROD_FAMILY = B.PROD_FAMILY
+                AND A.BRAND = B.BRAND
+                AND C.PRODUCT_GROUP = 'EBG'
+                AND MAP (B.SUBGEO, 'ALL', C.SUBGEO, B.SUBGEO) = C.SUBGEO
+                AND A.COUNTRY = C.COUNTRY
+                AND A.SUBGEO IS NOT NULL
+                AND B.EOL_STATUS<>'EOL'
+                AND NOT EXISTS
+                           (SELECT 1
+                              FROM MID_COST_MODEL_LIST_TMP D
+                             WHERE     A.ITEM = D.ITEM
+                                   AND A.PRODUCT_GROUP = D.PRODUCT_GROUP
+                                   AND A.COUNTRY = D.COUNTRY);*/
+                                   
+    /*--Get sell country from country code config
+    INSERT INTO MID_COST_MODEL_LIST_TMP
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         SUBGEO, COUNTRY, PLANT, BOM_PLANT)
+    SELECT T1.PRODUCT_GROUP, T1.ITEM, T1.PROD_FAMILY, T1.BRAND, 
+           T1.ITEM_TYPE, T3.SUBGEO, T3.COUNTRY, T4.PLANT, 
+           NULL AS BOM_PLANT
+      FROM (SELECT T.*, 
+                   CASE WHEN ASCII(LEFT(ITEM, 1)) BETWEEN 48 AND 57 THEN 'S'
+                        WHEN ASCII(LEFT(ITEM, 1)) BETWEEN 65 AND 90 THEN 'C'
+                   END AS MODEL_TYPE
+              FROM MID_ITEM_OL T
+             WHERE ITEM_TYPE IN('MTM', 'BUNDLE')) T1,
+           UI_COUNTRY_CODE                        T2, 
+           UI_REGION                              T3,
+           UI_SOS                                 T4
+     WHERE T1.PRODUCT_GROUP                   = T2.PRODUCT_GROUP
+       AND T1.MODEL_TYPE                      = T2.MODEL_TYPE
+       AND RIGHT(T1.ITEM, LENGTH(T2.POSTFIX)) = T2.POSTFIX
+       AND T2.PRODUCT_GROUP                   = T3.PRODUCT_GROUP
+       AND T2.COUNTRY                         = T3.COUNTRY
+       AND T1.PRODUCT_GROUP                   = T4.PRODUCT_GROUP
+       AND T1.BRAND                           = T4.BRAND
+       AND T1.PROD_FAMILY                     = T4.PROD_FAMILY
+       AND T4.EOL_STATUS                     <> 'EOL'
+       AND T2.STATUS                          = 'ACTIVE'
+       AND MAP(T4.SUBGEO, 'ALL', T4.SUBGEO, T3.SUBGEO) = T4.SUBGEO; */ 
+       
+    TAB_SEO_COUNTRY = SELECT DISTINCT MAP(LENGTH(A.SEO), 18, RIGHT(A.SEO, 10), A.SEO) AS SEO, COUNTRY 
+                        FROM PCDW.PCDW_SEO_BOM A
+                       WHERE EXISTS(SELECT 1 FROM MID_ITEM_OL B
+                                     WHERE B.ITEM      = MAP(LENGTH(A.SEO), 18, RIGHT(A.SEO, 10), A.SEO)
+                                       AND B.ITEM_TYPE = 'MTM');
+    
+    --Get country for SEO from pcdw_seo_bom table   
+    INSERT INTO MID_ITEM_SELLABLE_COUNTRY
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         SUBGEO, COUNTRY, SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT A.PRODUCT_GROUP, A.ITEM, A.PROD_FAMILY, A.BRAND, 
+           A.ITEM_TYPE, C.SUBGEO, C.COUNTRY, :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM MID_ITEM_OL A, :TAB_SEO_COUNTRY B, UI_REGION C
+     WHERE A.ITEM          = B.SEO
+       AND A.PRODUCT_GROUP = C.PRODUCT_GROUP
+       AND B.COUNTRY       = C.COUNTRY;
+       
+    TAB_BUNDLE_COUNTRY = SELECT DISTINCT MAP(LENGTH(A.BUNDLE), 18, RIGHT(A.BUNDLE, 10), A.BUNDLE) AS BUNDLE, COUNTRY 
+                           FROM PCDW.PCDW_BUNDLE_BOM A
+                          WHERE EXISTS(SELECT 1 FROM MID_ITEM_OL B
+                                        WHERE B.ITEM      = MAP(LENGTH(A.BUNDLE), 18, RIGHT(A.BUNDLE, 10), A.BUNDLE)
+                                          AND B.ITEM_TYPE = 'BUNDLE');
+    
+    --Get country for BUNDLE from pcdw_bundle_bom table   
+    INSERT INTO MID_ITEM_SELLABLE_COUNTRY
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         SUBGEO, COUNTRY, SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT A.PRODUCT_GROUP, A.ITEM, A.PROD_FAMILY, A.BRAND, 
+           A.ITEM_TYPE, C.SUBGEO, C.COUNTRY, :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM MID_ITEM_OL A, :TAB_BUNDLE_COUNTRY B, UI_REGION C
+     WHERE A.ITEM          = B.BUNDLE
+       AND A.PRODUCT_GROUP = C.PRODUCT_GROUP
+       AND B.COUNTRY       = C.COUNTRY;   
+       
+    TAB_COUNTRY_CODE = SELECT T1.PRODUCT_GROUP, T1.ITEM, T1.PROD_FAMILY, T1.BRAND, 
+                              T1.ITEM_TYPE, T3.SUBGEO, T3.COUNTRY
+                         FROM (SELECT T.*, 
+                                      CASE WHEN ASCII(LEFT(ITEM, 1)) BETWEEN 48 AND 57 THEN 'S'
+                                           WHEN ASCII(LEFT(ITEM, 1)) BETWEEN 65 AND 90 THEN 'C'
+                                      END AS MODEL_TYPE
+                                 FROM MID_ITEM_OL T
+                                WHERE ITEM_TYPE IN('MTM', 'BUNDLE')) T1,
+                               UI_COUNTRY_CODE                        T2, 
+                               UI_REGION                              T3
+                         WHERE T1.PRODUCT_GROUP                   = T2.PRODUCT_GROUP
+                           AND T1.MODEL_TYPE                      = T2.MODEL_TYPE
+                           AND RIGHT(T1.ITEM, LENGTH(T2.POSTFIX)) = T2.POSTFIX
+                           AND T2.PRODUCT_GROUP                   = T3.PRODUCT_GROUP
+                           AND T2.COUNTRY                         = T3.COUNTRY
+                           AND IFNULL(T2.STATUS, 'ACTIVE')           = 'ACTIVE';
+                           
+    DELETE FROM MID_ITEM_SELLABLE_COUNTRY T1
+    WHERE EXISTS(SELECT 1 FROM :TAB_COUNTRY_CODE T2
+                  WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                    AND T2.ITEM          = T1.ITEM
+                    AND EXISTS(SELECT 1 FROM MID_ITEM_SELLABLE_COUNTRY T3
+                                WHERE T3.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                                  AND T3.ITEM          = T2.ITEM
+                                  AND T3.COUNTRY       = T2.COUNTRY))
+      AND NOT EXISTS(SELECT 1 FROM :TAB_COUNTRY_CODE T4
+                      WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                        AND T4.ITEM          = T1.ITEM
+                        AND T4.COUNTRY       = T1.COUNTRY);
+                        
+    INSERT INTO MID_ITEM_SELLABLE_COUNTRY
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         SUBGEO, COUNTRY, SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT T1.PRODUCT_GROUP, T1.ITEM, T1.PROD_FAMILY, T1.BRAND,
+           T1.ITEM_TYPE, T1.SUBGEO, T1.COUNTRY, :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM :TAB_COUNTRY_CODE T1
+     WHERE NOT EXISTS(SELECT 1 FROM MID_ITEM_SELLABLE_COUNTRY T2
+                       WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                         AND T2.ITEM          = T1.ITEM);   
+    
+    --Start changeid 201611052315
+    --Added by Zhoubinbin 20161105                     
+    --CTO/OPTION Logic, OL countries in onshore sales org
+    INSERT INTO MID_ITEM_SELLABLE_COUNTRY
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         SUBGEO, COUNTRY, EOL_STATUS, SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT T1.PRODUCT_GROUP, T1.ITEM, T1.PROD_FAMILY, T1.BRAND,
+           T1.ITEM_TYPE, T2.SUBGEO, T2.COUNTRY, 'OL', :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM MID_ITEM_OL T1, 
+           UI_REGION   T2
+     WHERE T1.ITEM_TYPE IN('CTO', 'OPTION')
+       AND EXISTS(SELECT 1 FROM UI_COUNTRY_SALESORG_MAPPING T3
+                   WHERE T3.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                    AND T3.COUNTRY       = T2.COUNTRY
+                    AND T3.COUNTRY_SALESORG_TYPE = 'ONSHORE')
+       AND NOT EXISTS(SELECT 1 FROM MID_ITEM_SELLABLE_COUNTRY T4
+                       WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                         AND T4.ITEM          = T1.ITEM
+                         AND T4.COUNTRY       = T2.COUNTRY);
+                         
+    INSERT INTO MID_ITEM_SELLABLE_COUNTRY
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         SUBGEO, COUNTRY, EOL_STATUS, SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT T1.PRODUCT_GROUP, T1.ITEM, T1.PROD_FAMILY, T1.BRAND,
+           T1.ITEM_TYPE, T2.SUBGEO, T2.COUNTRY, 'OL', :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM MID_ITEM_OL T1, 
+           UI_REGION   T2
+     WHERE T1.ITEM_TYPE IN('CTO', 'OPTION')
+       AND T2.IS_LEGACY = 'Y'
+       AND NOT EXISTS(SELECT 1 FROM MID_ITEM_SELLABLE_COUNTRY T3
+                       WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                         AND T3.ITEM          = T1.ITEM
+                         AND T3.COUNTRY       = T2.COUNTRY);
+                         
+    SELECT PVALUE INTO V_WITHDRAW_DATE_ADDMONTHS
+      FROM CONF_PARAMETERS
+     WHERE PDOMAIN = 'SELLABLE_COUNTRY'
+       AND PNAME   = 'WITHDRAW_DATE_ADDMONTHS';  
+       
+    SELECT PVALUE INTO V_ANNC_DATE_ADDMONTHS
+      FROM CONF_PARAMETERS
+     WHERE PDOMAIN = 'SELLABLE_COUNTRY'
+       AND PNAME   = 'ANNC_DATE_ADDMONTHS';  
+                              
+    TAB_SELLABLE_COUNTRY = SELECT T1.PRODUCT_GROUP, T1.ITEM, T2.SUBGEO, T1.COUNTRY,
+                                  CASE WHEN CURRENT_DATE >= ADD_MONTHS(IFNULL(T1.ANNOUNCE_DATE, CURRENT_DATE), V_ANNC_DATE_ADDMONTHS)
+                                        AND CURRENT_DATE <= CASE WHEN T1.WITHDRAW_DATE < CURRENT_DATE
+                                                                  THEN ADD_MONTHS(T1.WITHDRAW_DATE, V_WITHDRAW_DATE_ADDMONTHS)
+                                                                 ELSE IFNULL(T1.WITHDRAW_DATE, TO_DATE('99991231', 'YYYYMMDD'))
+                                                            END
+                                       THEN 'OL'
+                                       ELSE 'EOL' END AS EOL_STATUS
+                             FROM UI_SELLABLE_COUNTRY T1, UI_REGION T2
+                            WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                              AND T1.COUNTRY       = T2.COUNTRY
+                              AND EXISTS(SELECT 1 FROM MID_ITEM_SELLABLE_COUNTRY T3
+                                          WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                            AND T3.ITEM          = T1.ITEM);
+                                          
+    UPDATE MID_ITEM_SELLABLE_COUNTRY T1
+       SET T1.EOL_STATUS = 'EOL'
+     WHERE EXISTS(SELECT 1 FROM :TAB_SELLABLE_COUNTRY T2
+                   WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                     AND T2.ITEM          = T1.ITEM
+                     AND EXISTS(SELECT 1 FROM MID_ITEM_SELLABLE_COUNTRY T3
+                                 WHERE T3.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                                   AND T3.ITEM          = T2.ITEM
+                                   AND T3.COUNTRY       = T2.COUNTRY))
+       AND NOT EXISTS(SELECT 1 FROM :TAB_SELLABLE_COUNTRY T4
+                       WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                         AND T4.ITEM          = T1.ITEM
+                         AND T4.COUNTRY       = T1.COUNTRY
+                         AND T4.EOL_STATUS    = 'OL');
+                         
+    --Get subgeos already exists offshore country for CTO and OPTION
+    TAB_EXISTS_OFFSHORE_SUBGEO = SELECT DISTINCT PRODUCT_GROUP, ITEM, SUBGEO
+                                   FROM MID_ITEM_SELLABLE_COUNTRY T1
+                                  WHERE T1.ITEM_TYPE IN('CTO', 'OPTION')
+                                    AND T1.EOL_STATUS = 'OL'
+                                    AND EXISTS(SELECT 1 FROM UI_COUNTRY_SALESORG_MAPPING T2
+                                                WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                                  AND T2.COUNTRY       = T1.COUNTRY
+                                                  AND T2.COUNTRY_SALESORG_TYPE = 'OFFSHORE');  
+    
+    INSERT INTO MID_ITEM_SELLABLE_COUNTRY
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         SUBGEO, COUNTRY, EOL_STATUS, SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+           SUBGEO, COUNTRY, 'OL' AS EOL_STATUS, :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP 
+      FROM (
+            SELECT T1.PRODUCT_GROUP, T1.ITEM, T1.PROD_FAMILY, T1.BRAND,
+                   T1.ITEM_TYPE, T2.SUBGEO, T2.COUNTRY, 
+                   ROW_NUMBER() OVER(PARTITION BY T1.PRODUCT_GROUP, T1.ITEM, T2.SUBGEO 
+                                     ORDER BY T2.COUNTRY) AS SEQ_ID
+              FROM MID_ITEM_OL           T1,
+                   :TAB_SELLABLE_COUNTRY T2
+             WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+               AND T1.ITEM          = T2.ITEM
+               AND T1.ITEM_TYPE IN('CTO', 'OPTION')
+               AND T2.EOL_STATUS    = 'OL'
+               AND EXISTS(SELECT 1 FROM UI_COUNTRY_SALESORG_MAPPING T3
+                           WHERE T3.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                             AND T3.COUNTRY       = T2.COUNTRY
+                             AND T3.COUNTRY_SALESORG_TYPE = 'OFFSHORE')
+               AND NOT EXISTS(SELECT 1 FROM :TAB_EXISTS_OFFSHORE_SUBGEO T4
+                               WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                 AND T4.ITEM          = T1.ITEM
+                                 AND T4.SUBGEO        = T2.SUBGEO)
+          )
+     WHERE SEQ_ID = 1;
+     
+    INSERT INTO MID_ITEM_SELLABLE_COUNTRY
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         SUBGEO, COUNTRY, EOL_STATUS, SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+           SUBGEO, COUNTRY, 'OL' AS EOL_STATUS, :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP 
+      FROM (
+            SELECT T1.PRODUCT_GROUP, T1.ITEM, T1.PROD_FAMILY, T1.BRAND,
+                   T1.ITEM_TYPE, T2.SUBGEO, T2.COUNTRY, 
+                   ROW_NUMBER() OVER(PARTITION BY T1.PRODUCT_GROUP, T1.ITEM, T2.SUBGEO 
+                                     ORDER BY T2.COUNTRY) AS SEQ_ID
+              FROM MID_ITEM_OL T1, 
+                   UI_REGION   T2
+             WHERE T1.ITEM_TYPE IN('CTO', 'OPTION')
+               AND EXISTS(SELECT 1 FROM UI_COUNTRY_SALESORG_MAPPING T3
+                           WHERE T3.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                             AND T3.COUNTRY       = T2.COUNTRY
+                             AND T3.COUNTRY_SALESORG_TYPE = 'OFFSHORE')
+               AND NOT EXISTS(SELECT 1 FROM :TAB_SELLABLE_COUNTRY T4
+                               WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                 AND T4.ITEM          = T1.ITEM)
+               AND NOT EXISTS(SELECT 1 FROM :TAB_EXISTS_OFFSHORE_SUBGEO T5
+                               WHERE T5.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                 AND T5.ITEM          = T1.ITEM
+                                 AND T5.SUBGEO        = T2.SUBGEO)
+            )
+     WHERE SEQ_ID = 1;
+                         
+    INSERT INTO MID_COST_MODEL_LIST_TMP 
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         COUNTRY, SUBGEO, PLANT, BOM_PLANT, EOL_STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT DISTINCT
+           T1.PRODUCT_GROUP, T1.ITEM, T1.PROD_FAMILY, T1.BRAND,
+           T1.ITEM_TYPE, T1.COUNTRY, T1.SUBGEO, T2.PLANT, NULL,
+           MAP(T1.EOL_STATUS, 'EOL', 'EOL', T2.EOL_STATUS) AS EOL_STATUS, 
+           :V_FUNC_FULL_NAME, CURRENT_TIMESTAMP
+      FROM MID_ITEM_SELLABLE_COUNTRY T1, 
+           UI_SOS                    T2
+     WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+       AND T1.BRAND         = T2.BRAND
+       AND T1.PROD_FAMILY   = T2.PROD_FAMILY
+       AND T1.SUBGEO        = MAP(T2.SUBGEO, 'ALL', T1.SUBGEO, T2.SUBGEO);
+    
+    --Added by Zhoubinbin 20161117
+    --get country from sos if can not find country from the above logic for manual bom
+    INSERT INTO MID_COST_MODEL_LIST_TMP 
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         COUNTRY, SUBGEO, PLANT, BOM_PLANT, EOL_STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT DISTINCT 
+           A.PRODUCT_GROUP, A.ITEM, A.PROD_FAMILY, A.BRAND,
+           A.ITEM_TYPE, C.COUNTRY, C.SUBGEO, B.PLANT,
+           NULL, B.EOL_STATUS, :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM MID_ITEM_OL A, UI_SOS B, UI_REGION C
+     WHERE A.PRODUCT_GROUP = B.PRODUCT_GROUP
+       AND A.PROD_FAMILY   = B.PROD_FAMILY
+       AND A.BRAND         = B.BRAND
+       AND MAP(B.SUBGEO, 'ALL', C.SUBGEO, B.SUBGEO) = C.SUBGEO
+       AND NOT EXISTS(SELECT 1 FROM MID_COST_MODEL_LIST_TMP E
+                       WHERE E.PRODUCT_GROUP = A.PRODUCT_GROUP
+                         AND E.ITEM          = A.ITEM)
+       AND EXISTS(SELECT 1 FROM UI_MANUAL_BOM D
+                   WHERE D.PRODUCT_GROUP = A.PRODUCT_GROUP
+                     AND D.FATHER        = A.ITEM);
+    
+    --Added by Zhoubinbin 20170216                 
+    INSERT INTO MID_COST_MODEL_LIST_TMP 
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         COUNTRY, SUBGEO, PLANT, BOM_PLANT, EOL_STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT DISTINCT 
+           A.PRODUCT_GROUP, A.ITEM, A.PROD_FAMILY, A.BRAND,
+           A.ITEM_TYPE, C.COUNTRY, C.SUBGEO, B.PLANT,
+           NULL, B.EOL_STATUS, :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM MID_ITEM_OL A, UI_SOS B, UI_REGION C
+     WHERE A.PRODUCT_GROUP = B.PRODUCT_GROUP
+       AND A.PROD_FAMILY   = B.PROD_FAMILY
+       AND A.BRAND         = B.BRAND
+       AND MAP(B.SUBGEO, 'ALL', C.SUBGEO, B.SUBGEO) = C.SUBGEO
+       AND EXISTS(SELECT 1 FROM Z_PCDW_ITEM D
+	               WHERE D.ITEM      = A.ITEM
+	                 AND D.SITEID    = B.PLANT
+	                 AND D.SYSX_FLAG = 'X'
+	                 AND D.OWNPR     = 'X')
+	   AND EXISTS(SELECT 1 FROM CONF_PARAMETERS E
+	                   WHERE E.PDOMAIN = 'SYSX'
+	                     AND E.PNAME   = 'PC_PLANT'
+	                     AND E.PVALUE  = B.PLANT
+	                     AND E.PTYPE   = C.COUNTRY)
+       AND NOT EXISTS(SELECT 1 FROM MID_COST_MODEL_LIST_TMP F
+                       WHERE F.PRODUCT_GROUP = A.PRODUCT_GROUP
+                         AND F.ITEM          = A.ITEM
+                         AND F.PLANT         = B.PLANT
+                         AND F.COUNTRY       = C.COUNTRY);
+    
+    --Added by Zhoubinbin 20170209, EOL build in B510 and sell to NON-BR country record                 
+    UPDATE MID_COST_MODEL_LIST_TMP T1
+       SET T1.EOL_STATUS = 'EOL'
+     WHERE T1.PLANT IN(SELECT PVALUE FROM CONF_PARAMETERS
+                        WHERE PDOMAIN = 'SYSX'
+	                      AND PNAME   = 'PC_PLANT')
+	   AND EXISTS(SELECT 1 FROM Z_PCDW_ITEM T2
+	               WHERE T2.ITEM   = T1.ITEM
+	                 AND T2.SITEID = T1.PLANT
+	                 AND T2.SYSX_FLAG = 'X'
+	                 AND T2.OWNPR     = 'X')
+	   AND NOT EXISTS(SELECT 1 FROM CONF_PARAMETERS T3
+	                   WHERE T3.PDOMAIN = 'SYSX'
+	                     AND T3.PNAME   = 'PC_PLANT'
+	                     AND T3.PVALUE  = T1.PLANT
+	                     AND T3.PTYPE   = T1.COUNTRY);
+	
+	--Added by Zhoubinbin 20170209, EOL NON-B510 product AND SOS maintain in B510 record                     
+	UPDATE MID_COST_MODEL_LIST_TMP T1
+       SET T1.EOL_STATUS = 'EOL'
+     WHERE EXISTS(SELECT 1 FROM Z_PCDW_ITEM T2
+	               WHERE T2.ITEM   = T1.ITEM
+	                 AND T2.SITEID = T1.PLANT
+	                 AND T2.SYSX_FLAG = 'X'
+	                 AND IFNULL(T2.OWNPR, 'N') <> 'X')
+	   AND EXISTS(SELECT 1 FROM CONF_PARAMETERS T3
+	               WHERE T3.PDOMAIN = 'SYSX'
+	                 AND T3.PNAME   = 'PC_PLANT'
+	                 AND T3.PVALUE  = T1.PLANT);
+	
+	--Added by Zhoubinbin 20170209                 
+    UPDATE MID_COST_MODEL_LIST_TMP T1
+       SET T1.EOL_STATUS = 'EOL'
+     WHERE T1.ITEM_TYPE IN(SELECT pvalue FROM conf_parameters 
+                            WHERE pdomain = 'SYSX'
+                              AND pname   = 'EOL_MODEL_LIST')
+       AND T1.PLANT IN(SELECT PVALUE FROM CONF_PARAMETERS
+                        WHERE PDOMAIN = 'SYSX'
+	                      AND PNAME   = 'PC_PLANT');
+    
+    --Commend by Zhoubinbin 20161106                               
+    /*INSERT INTO MID_COST_MODEL_LIST_TMP 
+        (PRODUCT_GROUP, ITEM, PROD_FAMILY, BRAND, ITEM_TYPE,
+         COUNTRY, SUBGEO, PLANT, BOM_PLANT, EOL_STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE)
+    SELECT DISTINCT 
+           A.PRODUCT_GROUP, A.ITEM, A.PROD_FAMILY, A.BRAND,
+           A.ITEM_TYPE, C.COUNTRY, C.SUBGEO, B.PLANT,
+           NULL, B.EOL_STATUS, :V_FUNC_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM MID_ITEM_OL A, UI_SOS B, UI_REGION C
+     WHERE A.PRODUCT_GROUP = B.PRODUCT_GROUP
+       AND A.PROD_FAMILY   = B.PROD_FAMILY
+       AND A.BRAND         = B.BRAND
+       AND MAP(B.SUBGEO, 'ALL', C.SUBGEO, B.SUBGEO) = C.SUBGEO
+       AND C.IS_LEGACY     = 'Y'
+       AND NOT EXISTS(SELECT 1 FROM MID_COST_MODEL_LIST_TMP E
+                       WHERE E.PRODUCT_GROUP = A.PRODUCT_GROUP
+                         AND E.ITEM          = A.ITEM)
+       AND A.ITEM_TYPE IN(SELECT PVALUE FROM CONF_PARAMETERS 
+                           WHERE PDOMAIN = 'MODEL_LIST' 
+                             AND PNAME   = 'ISLEGACY_ITEMTYPE');      
+                         
+  SELECT PVALUE INTO V_WITHDRAW_DATE_ADDMONTHS
+    FROM CONF_PARAMETERS
+   WHERE PDOMAIN = 'SELLABLE_COUNTRY'
+     AND PNAME   = 'WITHDRAW_DATE_ADDMONTHS';  
+     
+  SELECT PVALUE INTO V_ANNC_DATE_ADDMONTHS
+    FROM CONF_PARAMETERS
+   WHERE PDOMAIN = 'SELLABLE_COUNTRY'
+     AND PNAME   = 'ANNC_DATE_ADDMONTHS';  
+                              
+  TAB_SELLABLE_COUNTRY1 = SELECT T1.PRODUCT_GROUP, T1.ITEM, T2.SUBGEO, T1.COUNTRY,
+                                CASE WHEN CURRENT_DATE >= ADD_MONTHS(IFNULL(T1.ANNOUNCE_DATE, CURRENT_DATE), V_ANNC_DATE_ADDMONTHS)
+                                      AND CURRENT_DATE <= CASE WHEN T1.WITHDRAW_DATE < CURRENT_DATE
+                                                                 THEN ADD_MONTHS(T1.WITHDRAW_DATE, V_WITHDRAW_DATE_ADDMONTHS)
+                                                               ELSE IFNULL(T1.WITHDRAW_DATE, TO_DATE('99991231', 'YYYYMMDD'))
+                                                          END
+                                     THEN 'OL'
+                                     ELSE 'EOL' END AS EOL_STATUS
+                           FROM UI_SELLABLE_COUNTRY T1, UI_REGION T2
+                          WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                            AND T1.COUNTRY       = T2.COUNTRY
+                            AND EXISTS(SELECT 1 FROM MID_COST_MODEL_LIST_TMP T3
+                                        WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                          AND T3.ITEM          = T1.ITEM);
+                                          
+  TAB_EXISTS_ISLEGACY  = SELECT DISTINCT PRODUCT_GROUP, ITEM, SUBGEO FROM :TAB_SELLABLE_COUNTRY1 T1
+                          WHERE EXISTS(SELECT 1 FROM MID_COST_MODEL_LIST_TMP T2
+                                        WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                          AND T2.ITEM          = T1.ITEM
+                                          AND T2.COUNTRY       = T1.COUNTRY)
+                            AND EXISTS(SELECT 1 FROM UI_REGION T2
+                                        WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                          AND T2.COUNTRY       = T1.COUNTRY
+                                          AND T2.IS_LEGACY = 'Y');
+                          
+                                          
+  TAB_SELLABLE_COUNTRY2 = SELECT * FROM (
+                         SELECT PRODUCT_GROUP, ITEM, SUBGEO, COUNTRY, EOL_STATUS FROM :TAB_SELLABLE_COUNTRY1
+                         UNION
+                         SELECT T1.PRODUCT_GROUP, T1.ITEM, T1.SUBGEO, T2.COUNTRY, T1.EOL_STATUS
+                           FROM (SELECT DISTINCT PRODUCT_GROUP, ITEM, SUBGEO, EOL_STATUS 
+                                   FROM :TAB_SELLABLE_COUNTRY1
+                                  WHERE EOL_STATUS = 'OL') T1, 
+                                UI_REGION                  T2
+                          WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                            AND T1.SUBGEO        = T2.SUBGEO
+                            AND T2.IS_LEGACY     = 'Y'
+                            AND NOT EXISTS(SELECT 1 FROM :TAB_SELLABLE_COUNTRY1 T3
+                                            WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                              AND T3.ITEM          = T1.ITEM
+                                              AND T3.COUNTRY       = T2.COUNTRY)
+                            AND NOT EXISTS(SELECT 1 FROM :TAB_EXISTS_ISLEGACY T4
+                                            WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                              AND T4.ITEM          = T1.ITEM
+                                              AND T4.SUBGEO        = T1.SUBGEO)
+                                  ) T5
+                          WHERE EXISTS(SELECT 1 FROM MID_COST_MODEL_LIST_TMP T6
+                                        WHERE T6.PRODUCT_GROUP = T5.PRODUCT_GROUP
+                                          AND T6.ITEM          = T5.ITEM
+                                          AND T6.COUNTRY       = T5.COUNTRY);
+                                          
+  UPDATE MID_COST_MODEL_LIST_TMP T1
+     SET T1.EOL_STATUS = 'EOL'
+  WHERE EXISTS(SELECT 1 FROM :TAB_SELLABLE_COUNTRY2 T2
+                WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                  AND T2.ITEM          = T1.ITEM)
+    AND NOT EXISTS(SELECT 1 FROM :TAB_SELLABLE_COUNTRY2 T3
+                    WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                      AND T3.ITEM          = T1.ITEM
+                      AND T3.COUNTRY       = T1.COUNTRY
+                      AND T3.EOL_STATUS    = 'OL');
+  
+  --Added by Zhoubinbin 20160808                    
+  --non-legacy country is OL but Legacy country is EOL, should set legacy country to OL status
+  --Start cr20160808
+  
+  --Get sellable org infomation, item is sellable in non-legacy country
+  TAB_SELLABLE_SALESORG = SELECT DISTINCT T1.ITEM, T2.SALES_ORG
+                            FROM :TAB_SELLABLE_COUNTRY1      T1,
+                                 UI_COUNTRY_SALESORG_MAPPING T2,
+                                 UI_REGION                   T3,
+                                 UI_ITEM                     T4
+                           WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                             AND T1.COUNTRY       = T2.COUNTRY
+                             AND T1.PRODUCT_GROUP = T3.PRODUCT_GROUP
+                             AND T1.COUNTRY       = T3.COUNTRY
+                             AND T1.PRODUCT_GROUP = T4.PRODUCT_GROUP
+                             AND T1.ITEM          = T4.ITEM
+                             AND T1.EOL_STATUS    = 'OL'
+                             AND IFNULL(T3.IS_LEGACY, 'N') = 'N'
+                             AND T4.ITEM_TYPE IN(SELECT PVALUE FROM CONF_PARAMETERS 
+                                                  WHERE PDOMAIN = 'MODEL_LIST' 
+                                                    AND PNAME   = 'ISLEGACY_ITEMTYPE');
+                                                    
+  --Get legacy item infomation                           
+  TAB_MODELLIST_SAELSORG = SELECT DISTINCT 
+                                  T1.PRODUCT_GROUP, T1.ITEM, T1.COUNTRY, T2.SALES_ORG,  
+                                  IFNULL(T3.IS_LEGACY, 'N') AS IS_LEGACY, T1.EOL_STATUS
+                             FROM MID_COST_MODEL_LIST_TMP     T1,
+                                  UI_COUNTRY_SALESORG_MAPPING T2,
+                                  UI_REGION                   T3
+                            WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+                              AND T1.COUNTRY       = T2.COUNTRY
+                              AND T1.PRODUCT_GROUP = T3.PRODUCT_GROUP
+                              AND T1.COUNTRY       = T3.COUNTRY
+                              AND T1.ITEM_TYPE IN(SELECT PVALUE FROM CONF_PARAMETERS 
+                                                   WHERE PDOMAIN = 'MODEL_LIST' 
+                                                     AND PNAME   = 'ISLEGACY_ITEMTYPE');
+  
+  --legacy countries are all EOL, but non-legacy is sellable. get these items list
+  TAB_RESET_OL_LIST = SELECT ITEM, SALES_ORG, COUNTRY 
+                       FROM (
+                             SELECT ITEM, SALES_ORG, COUNTRY, 
+                                    ROW_NUMBER() OVER(PARTITION BY ITEM, SALES_ORG ORDER BY COUNTRY) PRI
+                               FROM :TAB_MODELLIST_SAELSORG T1
+                              WHERE T1.EOL_STATUS = 'EOL'
+                                AND T1.IS_LEGACY  = 'Y'
+                                AND NOT EXISTS(SELECT 1 FROM :TAB_MODELLIST_SAELSORG T2
+                                                WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                                  AND T2.ITEM          = T1.ITEM
+                                                  AND T2.SALES_ORG     = T1.SALES_ORG
+                                                  AND T2.IS_LEGACY     = 'Y'
+                                                  AND T2.EOL_STATUS    = 'OL')
+                                                  AND EXISTS(SELECT 1 FROM :TAB_SELLABLE_SALESORG T3
+                                                              WHERE T3.ITEM      = T1.ITEM
+                                                                AND T3.SALES_ORG = T1.SALES_ORG)
+                              )
+                       WHERE PRI = 1;
+                   
+  UPDATE MID_COST_MODEL_LIST_TMP T1
+     SET T1.EOL_STATUS = 'OL'
+   WHERE EXISTS(SELECT 1 FROM :TAB_RESET_OL_LIST T2
+                 WHERE T2.ITEM    = T1.ITEM
+                   AND T2.COUNTRY = T1.COUNTRY);*/
+                   
+  --End cr20160808
+  
+  --End changeid 201611052315
+  --COMMIT;   
+
+  P_OUT_EXITCODE := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGCFE');  
+  
+END;

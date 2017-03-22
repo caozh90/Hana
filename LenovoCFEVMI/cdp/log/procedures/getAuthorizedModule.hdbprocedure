@@ -1,0 +1,51 @@
+PROCEDURE "EX_LOG"."cdp.log.procedures::getAuthorizedModule" (out module "EX_LOG"."cdp.log.data::Logs.DISPLAY_MODULE" ) 
+    LANGUAGE SQLSCRIPT
+   -- SQL SECURITY INVOKER 
+    --DEFAULT SCHEMA <default_schema_name>
+    
+/************************************************************************
+*name      : getAuthorizedModule              --函数名
+*function    : 根据当前session user决定可以看到的module的log内容              --函数功能
+*input     ：  无 --输入参数
+*output     :module 当前session user可以看到的module
+			 --输出参数
+*author     : Fangyuan               --作者
+*CreateDate : 20141128                  --创建时间
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+
+*************************************************************************/    
+    
+    READS SQL DATA AS
+    
+    aMODULE_ID NVARCHAR(10);
+    aMODULE_NAME NVARCHAR(256); 
+BEGIN
+   
+   CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+   
+    -- module=SELECT MODULE FROM "EX_LOG"."cdp.log.data::Logs.AUTHORIZATION_TABLE_FOR_USER" WHERE USER_NAME = SESSION_USER;
+    -- module=SELECT 'TEST' as MODULE FROM dummy;
+    module =     SELECT MODULE FROM
+    (
+    SELECT T1.VALUE as MODULE FROM  
+    "SECURITY"."cdp.security.data::userManagement.MAP_RESOURCE_USER" T1
+    inner join  "SECURITY"."cdp.security.data::userManagement.INFO_USER" T2
+    ON T1.USER_ID = T2.USER_ID
+    where T2.USER_NAME = SESSION_USER AND T1.RESOURCE_TYPE='LOG'
+    UNION ALL
+    SELECT T3.VALUE as MODULE FROM  
+    "SECURITY"."cdp.security.data::userManagement.MAP_RESOURCE_USER" T3
+    INNER JOIN (SELECT T4.GROUP_ID ,T4.MODULE_ID FROM "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER" T4
+    	 INNER JOIN "SECURITY"."cdp.security.data::userManagement.INFO_USER" T5
+    	ON T4.USER_ID = T5.USER_ID
+    	AND T4.MODULE_ID = :aMODULE_ID AND T5.USER_NAME = SESSION_USER) T6    
+    ON T3.GROUP_ID = T6.GROUP_ID
+    AND T3.MODULE_ID = T6.MODULE_ID
+    AND T3.MODULE_ID = :aMODULE_ID   
+    WHERE T3.RESOURCE_TYPE='LOG'
+    ) GROUP BY MODULE
+    ; 
+    
+    
+    
+END;

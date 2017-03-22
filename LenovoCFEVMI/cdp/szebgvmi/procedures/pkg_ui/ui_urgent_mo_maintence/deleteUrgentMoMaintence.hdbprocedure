@@ -1,0 +1,67 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_urgent_mo_maintence::deleteUrgentMoMaintence" (
+	 IN MO_ID NVARCHAR(40)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+BEGIN              
+    	aI_DETAIL :='deleteUrgentMoMaintence error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'deleteUrgentMoMaintence'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+END;  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'urgentmomaintaince::deleteable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ --START
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'deleteUrgentMoMaintence'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+   	--DELETE操作需要写入日志
+	insert into "SZEBGVMI"."UI_URGENT_MO_PULL_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				LOGICAL_PLANT,MO_ID,STATUS,DS_LINE,BOM_NAME,QUANTITY,START_TIME,END_TIME,PLANNED_START_TIME,PLANNED_END_TIME,SYS_SOURCE
+			)
+	select
+	SESSION_USER,
+	'delete',
+	CURRENT_TIMESTAMP,
+	LOGICAL_PLANT,MO_ID,STATUS,DS_LINE,BOM_NAME,QUANTITY,START_TIME,END_TIME,PLANNED_START_TIME,PLANNED_END_TIME,SYS_SOURCE
+	from  UI_URGENT_MO_PULL 
+			where mo_id = :MO_ID;	
+   	--delete
+	delete from  UI_URGENT_MO_PULL 
+			where mo_id = :MO_ID;
+
+
+--END
+aI_DETAIL := 'deleteUrgentMoMaintence successfully created . '||:MO_ID;
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'deleteUrgentMoMaintence'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);		
+END;

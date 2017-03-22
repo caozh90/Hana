@@ -1,0 +1,1491 @@
+namespace cdp.ebgcfe.data;
+
+@Schema: 'EBGCFE'
+context EBGCFE_T {
+
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_DEL_BATCH {
+    	KEY :String(4096);
+   	 	VAL :String(4096);
+    };
+    
+ 	TYPE UI_STDCOST_MONTHLY_T {
+	  CYCLE : String(20) ;
+	  PRODUCT_GROUP : String(20) ;
+	  ITEM : String(120);
+	  PLANT : String(20);
+	  STDCOST : Decimal(15,4);
+	  };
+
+ 			
+ 	TYPE UI_STDCOST_DAILY_T {
+	  CYCLE : String(20) ;
+	  PRODUCT_GROUP : String(20) ;
+	  ITEM : String(120);
+	  PLANT : String(20);
+	  STDCOST : Decimal(15,4);
+	  };
+
+	TYPE UI_CFEECC_PLANTMAPPING_T {
+	  CFE_PLANT : String(40) ;
+	  ECC_PLANT : String(40) ;
+	  ITEM_TYPE : String(40) ;
+	  SUBGEO : String(40);
+	  CURRENCY : String(40);
+	};	
+	  
+  		type HttpError {
+        HTTP_STATUS_CODE: Integer;
+        ERROR_MESSAGE: String(100);
+        DETAIL: String(100);
+   		};
+   		
+   		type UI_COSTFLAG_T {
+   			SBB_TYPE :String(30);
+        	VK: String(30);
+        	COST_FLAG: String(10);
+   		};
+   		
+   		type CFE_UI_ITEMS {
+			BRAND : String(40);
+			ASP_PRD_FAMILY : String(100);
+			MACHINE_TYPE : String(40);
+			ITEM : String(40);
+			PROD_H : String(18);
+			ITEM_TYPE : String(20);
+			EOL_STATUS : String(20); 
+			SYS_LAST_MODIFIED_DATE : UTCTimestamp;
+			CYCLE : String(20);
+			PRODUCT_GROUP : String(10);
+	 	    ITEM_DESC : String(200);
+	 	    EOL_STARTDATE : UTCTimestamp;
+	 	    EOL_ENDDATE : UTCTimestamp;
+    	};
+    	
+    	type UI_PRODFAMILY_T{
+    		BRAND : String(40);
+			PROD_FAMILY : String(100);
+			EOL_STATUS : String(10);
+			EOL_STARTDATE : UTCTimestamp;
+	 	    EOL_ENDDATE : UTCTimestamp;
+    	};
+    	
+    	type UI_SBBCategory_T{
+    		PRODUCT_GROUP : String(10);
+    		BBID : String(18);
+    		COST_CATEGORY : String(40);
+    		CHARACTER_V: String(100);
+    	};
+   		
+   		type UI_PLANT_T{
+   			PLANT : String(20);
+   			PLANT_TYPE : String(20);
+   			PLANT_DESC : String(100);
+   			PLANT_SUBGEO : String(20);
+   		};
+   		
+   		type BIZ_COST_MODEL_LIST_T{
+   			ITEM : String(40);
+   			BRAND : String(40);
+   			PLANT : String(20);
+   			SUBGEO : String(10);
+   			COUNTRY : String(20);
+   			EOL_STATUS : String(20);
+   		};
+   		
+   		type UI_REGION_T{
+   			PRODUCT_GROUP : String(10);
+   			GEO : String(40);
+   			SUBGEO : String(20);
+   			COUNTRY : String(20);
+   			COUNTRY_NAME : String(40);  			
+   		};
+
+        
+        type UI_COST_TAPE_ORI{
+           PRODUCT_GROUP : String(10);
+           PART_NUMBER: String(40);
+           MFG_PLANT: String(20);
+           COST_ELEM: String(20);
+           M1 : Decimal(15,4);
+           M2 : Decimal(15,4);
+           M3 : Decimal(15,4);
+           M4 : Decimal(15,4);
+           M5 : Decimal(15,4);
+           M6 : Decimal(15,4);
+           M7 : Decimal(15,4);
+           M8 : Decimal(15,4);
+           M9 : Decimal(15,4);
+           M10 : Decimal(15,4);
+           M11 : Decimal(15,4);
+           M12 : Decimal(15,4);
+           M13 : Decimal(15,4);
+           M14 : Decimal(15,4);
+           M15 : Decimal(15,4);
+           M16 : Decimal(15,4);
+           M17 : Decimal(15,4);
+           M18 : Decimal(15,4);
+        };
+        
+        type UI_COST_TAPE_ORI_ACTIVATE_T{
+           PRODUCT_GROUP : String(10);
+           PART_NUMBER: String(40);
+           MFG_PLANT: String(20);
+           COST_ELEM: String(20);         
+        };
+        
+        type UI_COST_TAPE_T{
+           PRODUCT_GROUP : String(10);
+           PART_NUMBER: String(40);
+           PLANT: String(20);
+           COST_ELEM: String(20);
+           M1 : Decimal(15,4);
+           M2 : Decimal(15,4);
+           M3 : Decimal(15,4);
+           M4 : Decimal(15,4);
+           M5 : Decimal(15,4);
+           M6 : Decimal(15,4);
+           M7 : Decimal(15,4);
+           M8 : Decimal(15,4);
+           M9 : Decimal(15,4);
+           M10 : Decimal(15,4);
+           M11 : Decimal(15,4);
+           M12 : Decimal(15,4);
+           M13 : Decimal(15,4);
+           M14 : Decimal(15,4);
+           M15 : Decimal(15,4);
+           M16 : Decimal(15,4);
+           M17 : Decimal(15,4);
+           M18 : Decimal(15,4);
+        };
+        
+        type UI_GROUP_COST_T{
+           CYCLE : String(40);
+           PRODUCT_GROUP : String(10);
+           PROD_FAMILY: String(100);
+           MT : String(10);
+           ITEM: String(40);
+           TYPE: String(40);
+           BRAND: String(20);
+           PLANT: String(20);
+           M1 : Decimal(15,4);
+           M2 : Decimal(15,4);
+           M3 : Decimal(15,4);
+           M4 : Decimal(15,4);
+           M5 : Decimal(15,4);
+           M6 : Decimal(15,4);
+           M7 : Decimal(15,4);
+           M8 : Decimal(15,4);
+           M9 : Decimal(15,4);
+           M10 : Decimal(15,4);
+           M11 : Decimal(15,4);
+           M12 : Decimal(15,4);
+           M13 : Decimal(15,4);
+           M14 : Decimal(15,4);
+           M15 : Decimal(15,4);
+           M16 : Decimal(15,4);
+           M17 : Decimal(15,4);
+           M18 : Decimal(15,4);
+        };
+        
+        
+        type UI_COST_ELEM_T{
+        	ELEMENT_NAME : String(40);
+        	ELEMENT_TYPE : String(40);
+        	DESC : String(200);
+        	TOTE : String(1);
+        	TOTL : String(1);
+        	ASP_PROD_FAMILY : String(40);
+        };
+        
+        type UI_COST_CALCU_FORMU_T{
+            CYCLE: String(40);
+        	PRODUCT_GROUP: String(10);
+        	BRAND : String(40);
+            PRODFAMILY: String(120);
+            CATEGORY: String(10);
+            PLANT: String(20);
+            SUBGEO: String(20);
+            LEVEL1_TBAS: String(200);
+	 		LEVEL2_TBAS: String(200);
+	 		LEVEL3_TBAS:String(200);
+	 		LEVEL4_TBAS: String(200);
+	 		LEVEL5_TBAS: String(200);
+	 		LEVEL6_TBAS: String(200);
+        };
+        
+        type UI_MACHINETYPE_T{
+        	PRODUCT_GROUP : String(10);
+        	MACHINETYPE : String(40);
+        	BRAND : String(40);
+        	PROD_FAMILY : String(100);
+        };
+ 
+         type UI_XIFRT_T{
+           BRAND : String(40);
+           FAMILY: String(40);
+           PLANT: String(20);
+           SUBGEO: String(20);
+           TBA_TYPE: String(10);
+           M1 : Decimal(15,4);
+           M2 : Decimal(15,4);
+           M3 : Decimal(15,4);
+           M4 : Decimal(15,4);
+           M5 : Decimal(15,4);
+           M6 : Decimal(15,4);
+           M7 : Decimal(15,4);
+           M8 : Decimal(15,4);
+           M9 : Decimal(15,4);
+           M10 : Decimal(15,4);
+           M11 : Decimal(15,4);
+           M12 : Decimal(15,4);
+           M13 : Decimal(15,4);
+           M14 : Decimal(15,4);
+           M15 : Decimal(15,4);
+           M16 : Decimal(15,4);
+           M17 : Decimal(15,4);
+           M18 : Decimal(15,4);
+        };
+        
+        type UI_XMVA_T{
+        	PRODUCT_GROUP: String(10);
+        	BRAND : String(40);
+            FAMILY: String(40);
+            PLANT: String(20);
+            SUBGEO: String(20);
+            TBA_TYPE: String(10);
+            M1 : Decimal(15,4);
+           	M2 : Decimal(15,4);
+           	M3 : Decimal(15,4);
+           	M4 : Decimal(15,4);
+           	M5 : Decimal(15,4);
+           	M6 : Decimal(15,4);
+           	M7 : Decimal(15,4);
+           	M8 : Decimal(15,4);
+           	M9 : Decimal(15,4);
+           	M10 : Decimal(15,4);
+           	M11 : Decimal(15,4);
+           	M12 : Decimal(15,4);
+           	M13 : Decimal(15,4);
+            M14 : Decimal(15,4);
+            M15 : Decimal(15,4);
+            M16 : Decimal(15,4);
+            M17 : Decimal(15,4);
+            M18 : Decimal(15,4);
+        };
+        
+        type UI_SOS_T{
+        	PRODUCT_GROUP : String(10);       	
+        	PROD_FAMILY : String(100);
+        	PLANT: String(30);
+            SUBGEO: String(20);
+            BRAND : String(40);
+            EOL_STATUS : String(20);
+        };
+        
+        type UI_EXCHANGE_RATE_T{
+        	PRODUCT_GROUP : String(10);
+        	CURRENCY_NAME : String(20);
+        	//COUNTRY : String(20); 
+        	M1 : Decimal(15,4);
+           	M2 : Decimal(15,4);
+           	M3 : Decimal(15,4);
+           	M4 : Decimal(15,4);
+           	M5 : Decimal(15,4);
+           	M6 : Decimal(15,4);
+           	M7 : Decimal(15,4);
+           	M8 : Decimal(15,4);
+           	M9 : Decimal(15,4);
+           	M10 : Decimal(15,4);
+           	M11 : Decimal(15,4);
+           	M12 : Decimal(15,4);
+           	M13 : Decimal(15,4);
+           	M14 : Decimal(15,4);
+           	M15 : Decimal(15,4);
+           	M16 : Decimal(15,4);
+           	M17 : Decimal(15,4);
+           	M18 : Decimal(15,4);
+           	OUTPUT_M1 : Decimal(15,4);
+           	OUTPUT_M2 : Decimal(15,4);
+           	OUTPUT_M3 : Decimal(15,4);
+           	OUTPUT_M4 : Decimal(15,4);
+           	OUTPUT_M5 : Decimal(15,4);
+           	OUTPUT_M6 : Decimal(15,4);
+           	OUTPUT_M7 : Decimal(15,4);
+           	OUTPUT_M8 : Decimal(15,4);
+           	OUTPUT_M9 : Decimal(15,4);
+           	OUTPUT_M10 : Decimal(15,4);
+           	OUTPUT_M11 : Decimal(15,4);
+           	OUTPUT_M12 : Decimal(15,4);
+           	OUTPUT_M13 : Decimal(15,4);
+           	OUTPUT_M14 : Decimal(15,4);
+           	OUTPUT_M15 : Decimal(15,4);
+           	OUTPUT_M16 : Decimal(15,4);
+           	OUTPUT_M17 : Decimal(15,4);
+           	OUTPUT_M18 : Decimal(15,4);
+           	INPUT_RATE : String(10);
+           	//P_CYCLE : String(40);
+           	//P_CURRENCY_NAME : String(20);
+           	           	
+        };
+                
+           type UI_XOUTFR_T{
+           BRAND : String(40);
+           FAMILY: String(40);
+           PLANT: String(20);
+           SUBGEO: String(20);
+           TBA_TYPE: String(10);
+           M1 : Decimal(15,4);
+           M2 : Decimal(15,4);
+           M3 : Decimal(15,4);
+           M4 : Decimal(15,4);
+           M5 : Decimal(15,4);
+           M6 : Decimal(15,4);
+           M7 : Decimal(15,4);
+           M8 : Decimal(15,4);
+           M9 : Decimal(15,4);
+           M10 : Decimal(15,4);
+           M11 : Decimal(15,4);
+           M12 : Decimal(15,4);
+           M13 : Decimal(15,4);
+           M14 : Decimal(15,4);
+           M15 : Decimal(15,4);
+           M16 : Decimal(15,4);
+           M17 : Decimal(15,4);
+           M18 : Decimal(15,4);
+          };    
+          
+       type UI_WWVAR_T{
+        	PRODUCT_GROUP: String(10);
+        	BRAND : String(40);
+            FAMILY: String(40);
+            PLANT: String(20);
+            SUBGEO: String(20);
+            ASSEMBLY: String(40);
+            TBA_TYPE: String(10);
+            M1 : Decimal(15,4);
+           	M2 : Decimal(15,4);
+           	M3 : Decimal(15,4);
+           	M4 : Decimal(15,4);
+           	M5 : Decimal(15,4);
+           	M6 : Decimal(15,4);
+           	M7 : Decimal(15,4);
+           	M8 : Decimal(15,4);
+           	M9 : Decimal(15,4);
+           	M10 : Decimal(15,4);
+           	M11 : Decimal(15,4);
+           	M12 : Decimal(15,4);
+           	M13 : Decimal(15,4);
+            M14 : Decimal(15,4);
+            M15 : Decimal(15,4);
+            M16 : Decimal(15,4);
+            M17 : Decimal(15,4);
+            M18 : Decimal(15,4);
+        };  
+        
+           type UI_XATT_T{
+           BRAND : String(40);
+           FAMILY: String(40);
+           PLANT: String(20);
+           SUBGEO: String(20);
+           TBA_TYPE: String(10);
+           M1 : Decimal(15,4);
+           M2 : Decimal(15,4);
+           M3 : Decimal(15,4);
+           M4 : Decimal(15,4);
+           M5 : Decimal(15,4);
+           M6 : Decimal(15,4);
+           M7 : Decimal(15,4);
+           M8 : Decimal(15,4);
+           M9 : Decimal(15,4);
+           M10 : Decimal(15,4);
+           M11 : Decimal(15,4);
+           M12 : Decimal(15,4);
+           M13 : Decimal(15,4);
+           M14 : Decimal(15,4);
+           M15 : Decimal(15,4);
+           M16 : Decimal(15,4);
+           M17 : Decimal(15,4);
+           M18 : Decimal(15,4);
+          }; 
+          
+         type UI_XATTC_T{
+        	PRODUCT_GROUP: String(10);
+        	BRAND : String(40);
+            FAMILY: String(40);
+            PLANT: String(20);
+            SUBGEO: String(20);
+            TBA_TYPE: String(10);
+            M1 : Decimal(15,4);
+           	M2 : Decimal(15,4);
+           	M3 : Decimal(15,4);
+           	M4 : Decimal(15,4);
+           	M5 : Decimal(15,4);
+           	M6 : Decimal(15,4);
+           	M7 : Decimal(15,4);
+           	M8 : Decimal(15,4);
+           	M9 : Decimal(15,4);
+           	M10 : Decimal(15,4);
+           	M11 : Decimal(15,4);
+           	M12 : Decimal(15,4);
+           	M13 : Decimal(15,4);
+            M14 : Decimal(15,4);
+            M15 : Decimal(15,4);
+            M16 : Decimal(15,4);
+            M17 : Decimal(15,4);
+            M18 : Decimal(15,4);
+        };  
+        
+        type UI_FLEXIBLE_ADDER_T{
+        	PRODUCT_GROUP: String(10);
+        	BRAND : String(40);
+            FAMILY: String(40);
+            PLANT: String(20);
+            SUBGEO: String(20);
+            TBA_TYPE: String(10);
+            ADDER_NAME : String(40);
+            ASSEMBLY : String(40);
+            M1 : Decimal(15,4);
+           	M2 : Decimal(15,4);
+           	M3 : Decimal(15,4);
+           	M4 : Decimal(15,4);
+           	M5 : Decimal(15,4);
+           	M6 : Decimal(15,4);
+           	M7 : Decimal(15,4);
+           	M8 : Decimal(15,4);
+           	M9 : Decimal(15,4);
+           	M10 : Decimal(15,4);
+           	M11 : Decimal(15,4);
+           	M12 : Decimal(15,4);
+           	M13 : Decimal(15,4);
+            M14 : Decimal(15,4);
+            M15 : Decimal(15,4);
+            M16 : Decimal(15,4);
+            M17 : Decimal(15,4);
+            M18 : Decimal(15,4);
+        };  
+        
+        type UI_ADDER_CONF_T{
+            "ADDER_NAME" : String(40);
+            "ADDER_DESC" : String(200);
+            "ASP_PROD_FAMILY" : String(40);
+        }; 
+        
+        type UI_ONDEMAND_REFRESH_T{
+        	PRODUCT_GROUP: String(10);
+        	ONDEMAND_TYPE : String(20);
+            EVENT_NAME: String(100);
+        };
+        
+        type UI_COST_BAKE_T{
+        	PRODUCT_GROUP : String(10);
+        	CYCLE : String(40);
+        	CYCLE_NAME : String(20);
+        	FORCAST_MONTH : String(20);
+        	CYCLE_TYPE : String(20);
+        	BAKE_STATUS : String(100);
+        };
+        
+        type UI_CYCLE_T
+        {
+        	PRODUCT_GROUP : String(10);
+        	CYCLE : String(40);
+        	CYCLE_NAME : String(50);
+        	CYCLE_CUR_MONTH : String(100);
+        	CYCLE_FCST_MONTH : String(100);
+        	CYCLE_TYPE : String(20);
+        };
+        
+        type UI_MANUAL_BOM_T{
+        	PRODUCT_GROUP : String(10);
+        	BOM_LEVEL : String(10);
+        	FATHER : String(18);
+        	CHILDREN : String(100);
+        	PLANT : String(40);
+        	QUANTITY : String(100);
+        	FLAG : String(20);
+        }; 
+        
+        type UI_FROCE_ITEM_TYPE{
+        	PRODUCT_GROUP : String(10);
+        	PART : String(10);
+        	ITEM_TYPE : String(100);
+        	EOL_STATUS : String(20);
+        };
+        
+        type UI_ITEM_TYPE_T
+        {
+        	PRODUCT_GROUP : String(10);
+        	ITEM : String(40);
+        	USER_ITEM_DESC : String(200);
+        	USER_ITEM_TYPE : String(20);
+        	USER_EOL_STATUS : String(20);
+        	USER_ASP_PRD_FAMILY : String(100);
+        };
+        
+        type UI_DUMMYPART_T{
+        	PRODUCT_GROUP : String(10);
+        	DUMMY_PART : String(18);
+        	PART_DESC : String(100);
+        };
+        
+        type UI_COUNTRY_SALESORG_MAPPING_T{
+        	COUNTRY : String(20); 
+        	SALES_ORG : String(20);
+        	SALES_OFFICE : String(20);
+        };
+            
+        type UI_REAL_DUMMY_MAPPING_T{
+            PRODUCT_GROUP : String(10);
+        	REAL_PART : String(40); 
+        	DUMMY_PART : String(18);
+        	COMMODITY : String(40);
+        	OWNER : String(70);
+        };
+        
+        
+ //added by chenwh3 20150805 start
+	type UI_RATIO_CODE_T
+	{
+		CYCLE:       String(40);
+		PRODUCT_GROUP: String(10);
+		GEO:         String(40);
+		BRAND :      String(40);
+		FAMILY:      String(40);
+		MACHINETYPE: String(40);
+		ITEM:		 String(40);
+		RATIO_CODE:  String(100);
+		SYS_CREATED_DATE: UTCTimestamp;
+		SYS_CREATED_BY:   String(100);
+		SYS_LAST_MODIFIED_DATE: UTCTimestamp;
+		SYS_LAST_MODIFIED_BY:   String(100);
+		ACTION:		String(100);
+		STATUS:     String(40);
+		CHANGE_ID:  String(100);
+		CHANGE_ACTION: String(40);
+		
+		
+	};
+	// added by chenwh3 20150805 end
+    //added by bianzh1 20150810
+    type UI_ADDITIONAL_COST_T{
+            CYCLE :String(40);
+			PRODUCT_GROUP : String(10);
+			RATIO_CODE : String(100);
+			SUBGEO : String(20);
+			COUNTRY : String(20);
+			TBA_TYPE : String(40);
+			ADDITIONAL_COST : Decimal(15,4);
+			SYS_CREATED_DATE : UTCTimestamp;
+			SYS_CREATED_BY : String(100);
+			SYS_LAST_MODIFIED_DATE : UTCTimestamp;
+			SYS_LAST_MODIFIED_BY : String(100);
+			ACTION : String(100);
+			STATUS : String(40);
+			CHANGE_ID : String(100);
+			CHANGE_ACTION : String(40);
+        };  
+    //added by bianzh1 20150810     
+    
+     //added by Justin 20150810
+    type UI_WARR_PCA_UPLIFT_T{
+            CYCLE :String(40);
+			PRODUCT_GROUP : String(10);
+			RATIO_CODE : String(100);
+			SUBGEO : String(20);
+			COUNTRY : String(20);
+			TBA_TYPE : String(40);
+			BASE_WARR : Decimal(15,4);
+			PCA : Decimal(15,4);
+			UPLIFT : Decimal(15,4);			
+        };  
+    //added by Justin 20150810     
+    
+    //added by Billy Qiao 20150906
+	type UI_SERVICE_COST_T{
+		CYCLE : String(40);
+		PRODUCT_GROUP : String(10);
+		MODEL : String(40);
+		BRAND : String(40);
+		SUBGEO : String(20);
+		COUNTRY : String(20);
+		M1 : Decimal(15,4);
+		M2 : Decimal(15,4);
+		M3 : Decimal(15,4);
+		M4 : Decimal(15,4);
+		M5 : Decimal(15,4);
+		M6 : Decimal(15,4);
+		M7 : Decimal(15,4);
+		M8 : Decimal(15,4);
+		M9 : Decimal(15,4);
+		M10 : Decimal(15,4);
+		M11 : Decimal(15,4);
+		M12 : Decimal(15,4);
+		M13 : Decimal(15,4);
+		M14 : Decimal(15,4);
+		M15 : Decimal(15,4);
+		M16 : Decimal(15,4);
+		M17 : Decimal(15,4);
+		M18 : Decimal(15,4);
+		ACTION : String(100);
+		STATUS : String(40);
+	};    
+	//added by Billy Qiao 20150906
+    
+    //added by Justin 20151010
+    type UI_PM_BS_PART{
+            CYCLE :String(40);
+			PRODUCT_GROUP : String(10);
+			OEM_NAME : String(40);
+			BS_PART : String(40);
+			COMMODITY : String(20);
+			PART_DESC : String(20);
+        };  
+     //added by Justin 20151010
+    
+    //added by Leon 20150831
+    type UI_CTO_CV_VK_COST{
+            CYCLE :String(40);
+			PRODUCT_GROUP : String(10);
+			CHARACTERISTIC : String(30);
+			VARIANT : String(30);
+			SALES_ORG : String(20);
+			PH_1 : String(5);
+			PH_2 : String(5);
+			PH_3 : String(5);
+			PH_4 : String(5);
+			M1 : Decimal(15,4);			
+        };  
+     //added by Leon 20150831
+     type UI_PM_BOM{
+		CYCLE : String(40);
+		PRODUCT_GROUP : String(10);
+		OEM_NAME : String(40);
+		ITEM : String(20);
+		ITEM_DESC : String(200);
+		ITEM_TYPE : String(40);
+		BS_PART : String(20);
+		COMMODITY : String(40);
+		PART_DESC : String(200);
+		PART_QTY : Decimal(15,4);		
+	};	
+	//added by zhdaodan1 20160115
+	type UI_CTOFC_FLAG{
+		CYCLE : String(40);
+		PRODUCT_GROUP : String(10);
+		CTO: String(18);
+		FC: String(40);
+		ANNOUNCE_DATE: UTCTimestamp;
+		WITHDRAW_DATE: UTCTimestamp; 
+		
+	};
+	type UI_MT_EOL{
+		CYCLE : String(40);
+		PRODUCT_GROUP : String(10);
+		MT: String(10);
+		EOL_STATUS: String(10);		
+	};
+	//added by chenwh3 20160305 start
+	type UI_TIEMFENCE_T{
+	 OEM_NAME: 		 		String(40);
+	 TIME_FENCE:		 	String(1000);
+	 FUNCTION_TYPE:	 		String(40);
+	 TIME_FENCE_TYPE:		String(40);
+
+	 PROFIT_CENTER:			String(40);
+	 START_DATE:			UTCTimestamp;
+	 END_DATE:				UTCTimestamp;
+	};
+	//added by chenwh3 20160305 end
+	
+	//added by bianzh1 20160307 start
+	type UI_PM_SALES_REPORT_T{
+		PRODUCT_GROUP: 		 		String(20);
+		PROFIT_CENTER: 		 		String(100);
+		TIME_FENCE: 		 		String(100);
+		FUNCTION_TYPE: 		 		String(40);
+		SALES_DATE:					UTCTimestamp;
+		OEM_NAME: 		 			String(40);
+		PART_NO: 		 			String(100);
+		PART_DESC: 		 			String(400);
+		SALES_QTY : 				Integer;	
+		SALES_TOTAL_INCOMING : 		Decimal(11,2);	
+		SALES_TOTAL_COST : 			Decimal(11,2);	
+		SALES_TOTAL_MASK : 			Decimal(11,2);	
+		DUMMY_PK: 		 			String(40);
+	};
+	//added by bianzh1 20160307 end
+	
+	//added by zhaodan1 20160309 start
+	type UI_PM_GR_MTM_T{
+		PRODUCT_GROUP  :String(20);
+	   	OEM_NAME :String(100);
+	   	//TIME_FENCE_TYPE: String(100);
+		TIME_FENCE :String(100);
+		FUNCTION_TYPE :String(40);
+		PROFIT_CENTER : String(100);
+		//MTM_NO : String(100);
+		//MTM_DESC : String(200); 
+		GR_DATE: LocalDate;//UTCTimestamp;
+		GR_QTY: Decimal(11,0);
+		//STATUS : String(40);
+		    
+		DUMMY_PK: String(40);
+	};
+	//added by zhaodan1 20160309 end
+	
+	type UI_XOUTFR_WEIGHT_T{
+		CYCLE    :String(40);
+		PRODUCT_GROUP  :String(20);
+	   	BRAND :String(40);
+	   	FAMILY :String(100);
+	   	MT :String(100);
+	   	ITEM :String(40);
+	   	WEIGHT :Decimal(15,4);
+	};
+	
+	type UI_SELLABLE_COUNTRY_T{
+		CYCLE    :String(40);
+		PRODUCT_GROUP  :String(20);
+	   	ITEM :String(40);
+	   	COUNTRY :String(40);
+	   	PRODCLASS :String(50);
+	   	COFCAT : String(60);
+	   	ANNOUNCE_DATE : LocalDate; //add zhaodan1 2016/11/1
+	   	WITHDRAW_DATE : LocalDate;//add zhaodan1 2016/11/1
+	};
+	
+context PROC_T{
+	type LVL_TYPE{
+		A : String(500);
+		B : String(500);
+		LV : Integer;
+	};
+	
+	type TYP_UI_ATTR_ARRAY{
+		KEY : String(30);
+		VALUE : String(4000);
+	}; 
+	
+	type CYCLE_LIST{
+		CYCLE : String(40);
+	};
+	
+	type UI_PM_BOM{
+		CYCLE : String(40);
+		PRODUCT_GROUP : String(10);
+		OEM_NAME : String(40);
+		ITEM : String(20);
+		ITEM_DESC : String(200);
+		ITEM_TYPE : String(40);
+		BS_PART : String(20);
+		COMMODITY : String(40);
+		PART_DESC : String(200);
+		PART_QTY : Decimal(15,4);		
+	};	
+	
+	type CYCLE_MONTH_LIST{
+		PRODUCT_GROUP : String(10);
+		CYCLE : String(40);
+		CYCLE_STATUS : String(20);
+		CYCLE_TYPE : String(20);
+		CYCLE_CUR_MONTH : String(100);
+		CYCLE_SEQ : Integer;
+		M1 : String(20);
+		M2 : String(20);
+		M3 : String(20);
+		M4 : String(20);
+		M5 : String(20);
+		M6 : String(20);
+		M7 : String(20);
+		M8 : String(20);
+		M9 : String(20);
+		M10 : String(20);
+		M11 : String(20);
+		M12 : String(20);
+		/*M13 : String(20);
+        M14 : String(20);
+        M15 : String(20);
+        M16 : String(20);
+        M17 : String(20);
+        M18 : String(20); */
+	};
+	
+	type MONTH_LIST{
+		CYCLE_CUR_MONTH : String(100);
+	};
+	
+	type PART_LIST{
+		PART_NUMBER : String(40);
+		MFG_PLANT : String(20);
+	};	
+		
+};  
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY PM_UI_GR_MTM_S {  
+        
+        PRODUCT_GROUP  :String(20);
+	    OEM_NAME :String(100);
+	    TIME_FENCE :String(100);
+	    FUNCTION_TYPE :String(40);
+	    PROFIT_CENTER : String(100);
+	    MTM_NO : String(100);
+//	    MTM_DESC : String(200); 
+	    GR_DATE: LocalDate;//UTCTimestamp;
+	    GR_QTY: Decimal(11,0);
+	    //USER_ACTION : String(40);
+	    //STATUS : String(40);	    
+	    
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+		
+		
+	  };
+   	 
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY PM_UI_GR_MTM_E {
+            PRODUCT_GROUP  :String(4096);
+		    OEM_NAME :String(4096);
+		    TIME_FENCE :String(4096);
+		    FUNCTION_TYPE :String(4096);
+		    PROFIT_CENTER : String(4096);
+		    MTM_NO : String(4096);
+//		    MTM_DESC : String(4096);
+		    GR_DATE: String(4096);
+		    GR_QTY: String(4096);
+		    SOURCE : String(9);//xsjs or procedure
+   	 		
+   	 		ERROR_MESSAGE :String(4096);
+   	 		BUSINESS_NAME :String(200);
+   	 		SEQ :Integer;
+   	 		POSITION :Integer;
+	  };     
+
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY PM_UI_SALES_REPORT_S {  
+		PROFIT_CENTER :String(100);
+		TIME_FENCE :String(100);
+		FUNCTION_TYPE :String(40);
+		SALES_DATE :UTCTimestamp;
+		OEM_NAME :String(40);
+		PART_NO :String(100);
+		PART_DESC :String(400);
+		SALES_QTY :Integer;
+		SALES_TOTAL_INCOMING : Decimal(11,2);
+		SALES_TOTAL_COST: Decimal(11,2);
+		SALES_TOTAL_MASK: Decimal(11,2);
+
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+		
+		
+	  };
+   	 
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY PM_UI_SALES_REPORT_E {
+   		PROFIT_CENTER :String(4096);
+		TIME_FENCE :String(4096);
+		FUNCTION_TYPE :String(4096);
+		SALES_DATE :String(4096);
+		OEM_NAME :String(4096);
+		PART_NO :String(4096);
+		PART_DESC :String(4096);
+		SALES_QTY :String(4096);
+		SALES_TOTAL_INCOMING :String(4096);
+		SALES_TOTAL_COST: String(4096);
+		SALES_TOTAL_MASK: String(4096);
+
+ 		ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(200);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  };
+	  
+	  @Catalog.tableType: #GLOBAL_TEMPORARY
+    ENTITY UI_CTO_COSTBOM_S {
+		key CYCLE :String(40);
+		key ITEM :String(80);
+		PLANT :String(40);
+		COUNTRY :String(40);
+	  };    
+	        
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_PARTIAL_CAL_S {
+		ITEM :String(40);
+		
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+	  };  
+	
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_PARTIAL_CAL_E {
+   		ITEM :String(4096);
+
+ 		ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(200);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  };
+	//added by zhaodan1 20160519 start
+	TYPE UI_XOUTFR_RATE_T{
+		CYCLE  :String(40);
+		PRODUCT_GROUP : String(10) ;
+	   	BRAND :String(40);	   	
+		PLANT :String(20);
+		GEO_TYPE :String(40);
+		GEO : String(40); //GEO_CODE
+		FAMILY :String(100);//PRODUCT FAMILY
+		MACHINETYPE :String(100);	
+		FREIGHT_TYPE :String(20);
+		
+		GL_PERCENTAGE : Decimal(15,4);			
+		M1:Decimal(15,4);
+	}; 
+//added by zhaodan1 20160520 start	
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_XOUTFR_RATE_DEL {  
+        CYCLE  :String(40);
+		PRODUCT_GROUP : String(10) ;
+	   	BRAND :String(40);	   	
+		PLANT :String(20);
+		GEO : String(40); //GEO_CODE
+		FAMILY :String(100);//PRODUCT FAMILY
+		MACHINETYPE :String(100);
+	  };
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_XOUTFR_RATE_UPD {  
+        CYCLE  :String(40);
+		PRODUCT_GROUP : String(10) ;
+	   	BRAND :String(40);	   	
+		PLANT :String(20);
+		GEO_TYPE :String(40);
+		GEO : String(40); //GEO_CODE
+		FAMILY :String(100);//PRODUCT FAMILY
+		MACHINETYPE :String(100);	
+		FREIGHT_TYPE :String(20);		
+		GL_PERCENTAGE : Decimal(15,4);			
+		UNIT_COST:Decimal(15,4);
+	  };	  
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_XOUTFR_RATE_S {  
+        CYCLE  :String(40);
+		PRODUCT_GROUP : String(10) ;
+	   	BRAND :String(40);	   	
+		PLANT :String(20);
+		GEO_TYPE :String(40);
+		GEO : String(40); //GEO_CODE
+		FAMILY :String(100);//PRODUCT FAMILY
+		MACHINETYPE :String(100);	
+		FREIGHT_TYPE :String(20);		
+		GL_PERCENTAGE : Decimal(15,4);			
+		UNIT_COST:Decimal(15,4);	    
+	    
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;		
+	  };
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_XOUTFR_RATE_E {
+            CYCLE  :String(4096);			
+		   	BRAND : String(4096);  
+		   	PRODUCT_GROUP : String(4096);	
+			
+			GEO_TYPE : String(4096);
+			GEO : String(4096); //GEO_CODE
+			PLANT : String(4096);
+			FAMILY : String(4096);//PRODUCT FAMILY
+			MACHINETYPE : String(4096);		
+			GL_PERCENTAGE : String(4096);	
+			FREIGHT_TYPE : String(4096);		
+			UNIT_COST: String(4096);
+   	 		SOURCE : String(9);//xsjs or procedure
+   	 		
+   	 		ERROR_MESSAGE :String(4096);
+   	 		BUSINESS_NAME :String(200);
+   	 		SEQ :Integer;
+   	 		POSITION :Integer;
+	  }; 	  
+	
+	
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_XOUTFR_WEIGHT_TABLE_T {
+		CYCLE    :String(40);
+		PRODUCT_GROUP  :String(20);
+	   	BRAND :String(40);
+	   	FAMILY :String(100);
+	   	MT :String(100);
+	   	ITEM :String(40);
+	   	WEIGHT :Decimal(15,4);
+	   	
+	   	BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+	  };   
+	
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_XOUTFR_WEIGHT_TABLE_T_E {
+		CYCLE    :String(4096);
+		PRODUCT_GROUP  :String(4096);
+	   	BRAND :String(4096);
+	   	FAMILY :String(4096);
+	   	MT :String(4096);
+	   	ITEM :String(4096);
+	   	WEIGHT :String(4096);
+	   	
+	   	ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(200);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  }; 
+	  
+	type UI_COUNTRY_DUTY_T{
+           PRODUCT_GROUP : String(10);
+           COUNTRY: String(20);
+           BRAND: String(40);
+           PLANT: String(20);
+           M1 : Decimal(15,4);
+           M2 : Decimal(15,4);
+           M3 : Decimal(15,4);
+           M4 : Decimal(15,4);
+           M5 : Decimal(15,4);
+           M6 : Decimal(15,4);
+           M7 : Decimal(15,4);
+           M8 : Decimal(15,4);
+           M9 : Decimal(15,4);
+           M10 : Decimal(15,4);
+           M11 : Decimal(15,4);
+           M12 : Decimal(15,4);
+           M13 : Decimal(15,4);
+           M14 : Decimal(15,4);
+           M15 : Decimal(15,4);
+           M16 : Decimal(15,4);
+           M17 : Decimal(15,4);
+           M18 : Decimal(15,4);
+     };  
+     @Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_COUNTRY_DUTY_TABLE_T {
+		CYCLE    :String(40);
+		PRODUCT_GROUP : String(10);
+           COUNTRY: String(20);
+           BRAND: String(40);
+           PLANT: String(20);
+           M1 : Decimal(15,4);
+           M2 : Decimal(15,4);
+           M3 : Decimal(15,4);
+           M4 : Decimal(15,4);
+           M5 : Decimal(15,4);
+           M6 : Decimal(15,4);
+           M7 : Decimal(15,4);
+           M8 : Decimal(15,4);
+           M9 : Decimal(15,4);
+           M10 : Decimal(15,4);
+           M11 : Decimal(15,4);
+           M12 : Decimal(15,4);
+           M13 : Decimal(15,4);
+           M14 : Decimal(15,4);
+           M15 : Decimal(15,4);
+           M16 : Decimal(15,4);
+           M17 : Decimal(15,4);
+           M18 : Decimal(15,4);
+	   	
+	   	BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+	  };   
+	
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_COUNTRY_DUTY_TABLE_T_E {
+		CYCLE    :String(4096);
+		PRODUCT_GROUP  :String(4096);
+	   	COUNTRY: String(4096);
+           BRAND: String(4096);
+           PLANT: String(4096);
+           M1 : String(4096);
+           M2 : String(4096);
+           M3 : String(4096);
+           M4 : String(4096);
+           M5 : String(4096);
+           M6 : String(4096);
+           M7 : String(4096);
+           M8 : String(4096);
+           M9 : String(4096);
+           M10 : String(4096);
+           M11 : String(4096);
+           M12 : String(4096);
+           M13 : String(4096);
+           M14 : String(4096);
+           M15 : String(4096);
+           M16 : String(4096);
+           M17 : String(4096);
+           M18 : String(4096);
+	   	
+	   	ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(200);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  }; 
+	  
+	   @Catalog.tableType: #GLOBAL_TEMPORARY
+     ENTITY UI_MATERIAL_MARGIN_S {
+		key ITEM :String(40);
+		key MT :String(10);
+		key FAMILY :String(100);
+	  }; 
+	  
+	 @Catalog.tableType: #GLOBAL_TEMPORARY
+     ENTITY UI_MTM_S {
+		key ITEM :String(40);
+		key MT :String(10);
+		key FAMILY :String(100);
+	  }; 
+	 @Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY 	UI_CTOFC_ADDER_S {  
+			CTO :  String(18);
+			FC : String(40);
+			PLANT : String(40);
+			SUBGEO  : String(40);
+			ADDER_NAME : String(200);
+			COST_LEVEL :  String(10);
+			TBA_TYPE  : String(40);
+            M1 : Decimal(15,4);
+            M2 : Decimal(15,4);
+            M3 : Decimal(15,4);
+            M4 : Decimal(15,4);
+            M5 : Decimal(15,4);
+            M6 : Decimal(15,4);
+            M7 : Decimal(15,4);
+            M8 : Decimal(15,4);
+            M9 : Decimal(15,4);
+            M10 : Decimal(15,4);
+            M11 : Decimal(15,4);
+            M12 : Decimal(15,4);
+            M13 : Decimal(15,4);
+            M14 : Decimal(15,4);
+            M15 : Decimal(15,4);
+            M16 : Decimal(15,4);
+            M17 : Decimal(15,4);
+            M18 : Decimal(15,4);
+            
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;
+		
+		
+	  };
+   	 
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_CTOFC_ADDER_E {
+            CTO  :String(4096);
+		    FC :String(4096);
+		    PLANT :String(4096);
+		    SUBGEO :String(4096);
+		    ADDER_NAME : String(4096);
+		    COST_LEVEL : String(4096);
+		    TBA_TYPE: String(4096);
+		    M1 : String(4096);
+            M2 : String(4096);
+            M3 : String(4096);
+            M4 : String(4096);
+            M5 : String(4096);
+            M6 : String(4096);
+            M7 : String(4096);
+            M8 : String(4096);
+            M9 : String(4096);
+            M10 : String(4096);
+            M11 : String(4096);
+            M12 : String(4096);
+            M13 : String(4096);
+            M14 : String(4096);
+            M15 : String(4096);
+            M16 : String(4096);
+            M17 : String(4096);
+            M18 : String(4096);
+            
+		    SOURCE : String(9);//xsjs or procedure
+   	 		
+   	 		ERROR_MESSAGE :String(4096);
+   	 		BUSINESS_NAME :String(200);
+   	 		SEQ :Integer;
+   	 		POSITION :Integer;
+	  };
+	  
+	type  UI_CTOFC_ADDER_T{
+			CYCLE    :String(40);
+			PRODUCT_GROUP  :String(20);
+		   	CTO :  String(18);
+			FC : String(40);
+			PLANT : String(40);
+			SUBGEO  : String(40);
+			ADDER_NAME : String(200);
+			COST_LEVEL :  String(10);
+			TBA_TYPE  : String(40);
+            M1 : Decimal(15,4);
+            M2 : Decimal(15,4);
+            M3 : Decimal(15,4);
+            M4 : Decimal(15,4);
+            M5 : Decimal(15,4);
+            M6 : Decimal(15,4);
+            M7 : Decimal(15,4);
+            M8 : Decimal(15,4);
+            M9 : Decimal(15,4);
+            M10 : Decimal(15,4);
+            M11 : Decimal(15,4);
+            M12 : Decimal(15,4);
+            M13 : Decimal(15,4);
+            M14 : Decimal(15,4);
+            M15 : Decimal(15,4);
+            M16 : Decimal(15,4);
+            M17 : Decimal(15,4);
+            M18 : Decimal(15,4);
+	};	
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_RATIO_CODE_BATCH_S {
+            CYCLE:       String(40);
+			PRODUCT_GROUP: String(10);
+			GEO:         String(40);
+			BRAND :      String(40);
+			FAMILY:      String(40);
+			MACHINETYPE: String(40);
+			ITEM:		 String(40);
+			RATIO_CODE:  String(100);
+			
+			BUSINESS_NAME :String(200);
+			SEQ :Integer;
+			POSITION :Integer;		
+			
+   };	 
+   
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_RATIO_CODE_BATCH_E {
+            CYCLE:       String(40);
+			PRODUCT_GROUP: String(10);
+			GEO:         String(40);
+			BRAND :      String(40);
+			FAMILY:      String(40);
+			MACHINETYPE: String(40);
+			ITEM:		 String(40);
+			RATIO_CODE:  String(100);
+			
+			//SOURCE : String(9);//xsjs or procedure
+   	 		
+   	 		ERROR_MESSAGE :String(4096);
+   	 		BUSINESS_NAME :String(200);
+   	 		SEQ :Integer;
+   	 		POSITION :Integer;
+			
+   };    
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN //add by zhaodan1 priceMask 2016/8/24  
+    ENTITY UI_PM_BS_PART_NO_S {  
+	        PART_NO  :String(40);	    
+		    
+			BUSINESS_NAME :String(200);
+			SEQ :Integer;
+			POSITION :Integer;		
+	  };
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN //add by zhaodan1 priceMask 2016/8/24  
+    ENTITY UI_PM_BS_PART_NO_E {
+            PART_NO  :String(40);	
+            PART_DESC : String(200);			
+   	 		
+   	 		ERROR_MESSAGE :String(4096);
+   	 		BUSINESS_NAME :String(200);
+   	 		SEQ :Integer;
+   	 		POSITION :Integer;
+	  };    
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN
+    ENTITY UI_PM_BS_PART_NO_DEL {  
+        PART_NO  :String(40);
+	  };  
+@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN //add byzhaodan1 la CR 2017/1/25
+    ENTITY UI_CRYAD_PH_E {
+        CYCLE:String(4096);
+        PRODUCT_GROUP:String(4096);
+   		PH   :String(4096);
+   		ITEM :String(4096);
+   		PLANT:String(4096);
+   		COUNTRY:String(4096);
+   		TBA_TYPE:String(4096);
+	    M1 : String(4096);
+        M2 : String(4096);
+        M3 : String(4096);
+        M4 : String(4096);
+        M5 : String(4096);
+        M6 : String(4096);
+        M7 : String(4096);
+        M8 : String(4096);
+        M9 : String(4096);
+        M10 : String(4096);
+        M11 : String(4096);
+        M12 : String(4096);
+        M13 : String(4096);
+        M14 : String(4096);
+        M15 : String(4096);
+        M16 : String(4096);
+        M17 : String(4096);
+        M18 : String(4096);
+
+ 		ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(200);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  };	
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN //add byzhaodan1 la CR 2017/1/25
+    ENTITY UI_CRYAD_PH_S {  
+        CYCLE:String(40);
+        PRODUCT_GROUP:String(10);
+   		PH   :String(20);
+   		ITEM :String(40);
+   		PLANT:String(20);
+   		COUNTRY:String(20);
+   		TBA_TYPE:String(20);
+	    M1 : Decimal(15,4);
+	    M2 : Decimal(15,4);
+	    M3 : Decimal(15,4);
+	    M4 : Decimal(15,4);
+	    M5 : Decimal(15,4);
+	    M6 : Decimal(15,4);
+	    M7 : Decimal(15,4);
+	    M8 : Decimal(15,4);
+	    M9 : Decimal(15,4);
+	    M10 : Decimal(15,4);
+	    M11 : Decimal(15,4);
+	    M12 : Decimal(15,4);
+	    M13 : Decimal(15,4);
+	    M14 : Decimal(15,4);
+	    M15 : Decimal(15,4);
+	    M16 : Decimal(15,4);
+	    M17 : Decimal(15,4);
+	    M18 : Decimal(15,4);	    
+		    
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;		
+	  };
+	  TYPE UI_CRYAD_PH_T{ //add byzhaodan1 la CR 2017/2/6
+		CYCLE:String(40);
+        PRODUCT_GROUP:String(10);
+   		PH   :String(20);
+   		ITEM :String(40);
+   		PLANT:String(20);
+   		COUNTRY:String(20);
+   		TBA_TYPE:String(20);
+	    M1 : Decimal(15,4);
+	    M2 : Decimal(15,4);
+	    M3 : Decimal(15,4);
+	    M4 : Decimal(15,4);
+	    M5 : Decimal(15,4);
+	    M6 : Decimal(15,4);
+	    M7 : Decimal(15,4);
+	    M8 : Decimal(15,4);
+	    M9 : Decimal(15,4);
+	    M10 : Decimal(15,4);
+	    M11 : Decimal(15,4);
+	    M12 : Decimal(15,4);
+	    M13 : Decimal(15,4);
+	    M14 : Decimal(15,4);
+	    M15 : Decimal(15,4);
+	    M16 : Decimal(15,4);
+	    M17 : Decimal(15,4);
+	    M18 : Decimal(15,4);
+	};
+	
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN //add by bianzh1 2017/2/6
+    ENTITY UI_FRT_PH_E {
+        CYCLE:String(4096);
+        PRODUCT_GROUP:String(4096);
+   		PH   :String(4096);
+   		ITEM :String(4096);
+   		PLANT:String(4096);
+   		COUNTRY:String(4096);
+   		TBA_TYPE:String(4096);
+	    M1 : String(4096);
+        M2 : String(4096);
+        M3 : String(4096);
+        M4 : String(4096);
+        M5 : String(4096);
+        M6 : String(4096);
+        M7 : String(4096);
+        M8 : String(4096);
+        M9 : String(4096);
+        M10 : String(4096);
+        M11 : String(4096);
+        M12 : String(4096);
+        M13 : String(4096);
+        M14 : String(4096);
+        M15 : String(4096);
+        M16 : String(4096);
+        M17 : String(4096);
+        M18 : String(4096);
+
+ 		ERROR_MESSAGE :String(4096);
+ 		BUSINESS_NAME :String(200);
+ 		SEQ :Integer;
+ 		POSITION :Integer;
+	  };
+	  
+	@Catalog.tableType: #GLOBAL_TEMPORARY_COLUMN //add by bianzh1 2017/2/6
+    ENTITY UI_FRT_PH_S {  
+        CYCLE:String(40);
+        PRODUCT_GROUP:String(10);
+   		PH   :String(20);
+   		ITEM :String(40);
+   		PLANT:String(20);
+   		COUNTRY:String(20);
+   		TBA_TYPE:String(20);
+	    M1 : Decimal(15,4);
+	    M2 : Decimal(15,4);
+	    M3 : Decimal(15,4);
+	    M4 : Decimal(15,4);
+	    M5 : Decimal(15,4);
+	    M6 : Decimal(15,4);
+	    M7 : Decimal(15,4);
+	    M8 : Decimal(15,4);
+	    M9 : Decimal(15,4);
+	    M10 : Decimal(15,4);
+	    M11 : Decimal(15,4);
+	    M12 : Decimal(15,4);
+	    M13 : Decimal(15,4);
+	    M14 : Decimal(15,4);
+	    M15 : Decimal(15,4);
+	    M16 : Decimal(15,4);
+	    M17 : Decimal(15,4);
+	    M18 : Decimal(15,4);	    
+		    
+		BUSINESS_NAME :String(200);
+		SEQ :Integer;
+		POSITION :Integer;		
+	  };
+	  
+	TYPE UI_FRT_PH_T{ //add by bianzh1 2017/2/6
+		CYCLE:String(40);
+        PRODUCT_GROUP:String(10);
+   		PH   :String(20);
+   		ITEM :String(40);
+   		PLANT:String(20);
+   		COUNTRY:String(20);
+   		TBA_TYPE:String(20);
+	    M1 : Decimal(15,4);
+	    M2 : Decimal(15,4);
+	    M3 : Decimal(15,4);
+	    M4 : Decimal(15,4);
+	    M5 : Decimal(15,4);
+	    M6 : Decimal(15,4);
+	    M7 : Decimal(15,4);
+	    M8 : Decimal(15,4);
+	    M9 : Decimal(15,4);
+	    M10 : Decimal(15,4);
+	    M11 : Decimal(15,4);
+	    M12 : Decimal(15,4);
+	    M13 : Decimal(15,4);
+	    M14 : Decimal(15,4);
+	    M15 : Decimal(15,4);
+	    M16 : Decimal(15,4);
+	    M17 : Decimal(15,4);
+	    M18 : Decimal(15,4);
+	}; 
+};
+
+

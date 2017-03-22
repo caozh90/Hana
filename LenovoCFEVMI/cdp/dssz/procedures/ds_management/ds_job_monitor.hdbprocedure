@@ -1,0 +1,163 @@
+PROCEDURE "DS_INFO_SZ"."cdp.dssz.procedures.ds_management::ds_job_monitor" --(OUT on_exitcode NUMBER)
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "DS_INFO_SZ"
+	--READS SQL DATA
+	/************************************************************************
+	*name        : PRC_RPT_ASN_PULL              --函数名
+	*function    :                               --函数功能
+	*input       : iv_id                         --输入参数
+	*output      : on_exitcode                   --输出参数
+	*author      : Eric Zhou                     --作者
+	*CreateDate  : 2014/12/05                    --创建时间
+	*UpdateDate  :                               --函数更改信息（包括作者、时间、更改内容等）
+	*************************************************************************/		 
+	AS
+	  on_exitcode 	      NUMBER;
+	  v_logidi            INTEGER := 0;	
+	  v_pkg_name          VARCHAR (40)            := '';
+	  v_logic_proc_name   VARCHAR (40)            := 'DS_JOB_MONIITOR';
+	  v_full_name         VARCHAR (100)           := v_pkg_name||'.'||v_logic_proc_name;	
+BEGIN
+
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+			 on_exitcode := ::SQL_ERROR_CODE;
+			 CALL "EX_LOG"."cdp.log.procedures::logProc"
+				  (I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+				   I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+				   I_MESSAGE=>'ERROR',
+				   I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||CURRENT_TIMESTAMP||':'||'Failure');                                                  
+		END;
+	
+	on_exitcode := -20099;		
+	/************************************************************************
+	Set all the old record status into complete.
+	Delete the records 90 days ago.
+	*************************************************************************/	
+	UPDATE "DS_INFO_SZ"."DS_JOB_MONITOR" 
+	   SET STATUS = 'COMPLETE' 
+	 WHERE STATUS = 'IN_PROCESS';
+    /*
+	DELETE 
+	  FROM "DS_INFO_SZ"."DS_JOB_MONITOR" 
+	 WHERE ADD_DAYS(START_DATE, 90) < CURRENT_TIMESTAMP;	
+	*/ 
+	/************************************************************************
+	Set all the old record status into complete.
+	Delete the records 90 days ago.
+	*************************************************************************/	
+  INSERT INTO "DS_INFO_SZ"."DS_JOB_MONITOR"
+              ("BUSINESSMODULE",
+               "JOB_RUNID" ,
+               "JOB_NAME" ,
+               "STEPID" ,
+               "SUBSTEP_INFO",
+               "SUMMARY" ,
+               "NOTES" ,
+               "START_DATE" ,
+               "INCIDENT" ,
+               "PRIORITY" ,
+               "PRODUCT_CAT_T1",
+               "PRODUCT_CAT_T2",
+               "PRODUCT_CAT_T3",    
+               "BUSINESS_CAT_T1",
+               "BUSINESS_CAT_T2",
+               "BUSINESS_CAT_T3",       
+               "STATUS",
+               "CREATED_DATE")
+        SELECT a.businessmodule,
+               a.jobrunid,
+               a.jobname,
+               b.stepid,
+               b.substep_info,
+               CASE WHEN a.jobstatus = 'ERROR' THEN a.businessmodule || ' JOB ID: '|| a.jobrunid ||' JOB: ' || a.jobname || ' Error.'
+                    ELSE a.businessmodule || ' JOB ID: '|| a.jobrunid || ' JOB: ' || a.jobname || ' Timeout.'
+                    END SUMMARY,
+               CASE WHEN a.jobstatus = 'ERROR' THEN a.businessmodule || ' JOB ID: '|| a.jobrunid  || ' JOB: ' || a.jobname || ', STEP: ' || b.substep_info || ' Error.'
+                    ELSE a.businessmodule || ' JOB ID: '|| a.jobrunid || ' JOB: ' || a.jobname || ', STEP: ' || b.substep_info || ' Timeout.'
+                    END NOTES,
+               a.starttime,
+               '',
+               'P2',
+               c.product_cat_t1,
+               c.product_cat_t2,
+               c.product_cat_t3,
+               c.business_cat_t1,
+               c.business_cat_t2,
+               c.business_cat_t3,
+               'NEW',
+               current_timestamp
+          FROM "DS_INFO_SZ"."DS_JOB_RUN_INFO" a
+          LEFT OUTER JOIN "DS_INFO_SZ"."DS_JOB_STEP_INFO" b
+            ON a.jobrunid = b.jobrunid 
+         INNER JOIN "DS_INFO_SZ"."INC_CAT" c
+            ON a.businessmodule = c.businessmodule
+         WHERE ((a.jobstatus = 'ERROR' AND b.status = 'ERROR')
+            OR  (a.jobstatus = 'RUNNING' AND add_seconds(b.starttime, 3600) <= CURRENT_TIMESTAMP AND b.endtime IS NULL)
+            OR  (a.jobstatus = 'ERROR' AND b.status IS NULL)
+               )
+           AND ADD_DAYS(a.STARTTIME, 90) > CURRENT_TIMESTAMP
+           AND NOT EXISTS (SELECT 1 
+                             FROM "DS_INFO_SZ"."DS_JOB_MONITOR" mon
+                            WHERE mon.job_runid = a.jobrunid);
+
+  INSERT INTO "DS_INFO_SZ"."DS_JOB_MONITOR"
+              ("BUSINESSMODULE",
+               "JOB_RUNID" ,
+               "JOB_NAME" ,
+               "STEPID" ,
+               "SUBSTEP_INFO",
+               "SUMMARY" ,
+               "NOTES" ,
+               "START_DATE" ,
+               "INCIDENT" ,
+               "PRIORITY" ,
+               "PRODUCT_CAT_T1",
+               "PRODUCT_CAT_T2",
+               "PRODUCT_CAT_T3",    
+               "BUSINESS_CAT_T1",
+               "BUSINESS_CAT_T2",
+               "BUSINESS_CAT_T3",       
+               "STATUS",
+               "CREATED_DATE")
+        SELECT a.businessmodule,
+               a.jobrunid,
+               a.jobname,
+               b.stepid,
+               b.substep_info,
+               CASE WHEN a.jobstatus = 'ERROR' THEN a.businessmodule || ' JOB ID: '|| a.jobrunid ||' JOB: ' || a.jobname || ' Error.'
+                    ELSE a.businessmodule || ' JOB ID: '|| a.jobrunid || ' JOB: ' || a.jobname || ' Timeout.'
+                    END SUMMARY,
+               CASE WHEN a.jobstatus = 'ERROR' THEN a.businessmodule || ' JOB ID: '|| a.jobrunid  || ' JOB: ' || a.jobname || ', STEP: ' || b.substep_info || ' Error.'
+                    ELSE a.businessmodule || ' JOB ID: '|| a.jobrunid || ' JOB: ' || a.jobname || ', STEP: ' || b.substep_info || ' Timeout.'
+                    END NOTES,
+               a.starttime,
+               '',
+               'P2',
+               c.product_cat_t1,
+               c.product_cat_t2,
+               c.product_cat_t3,
+               c.business_cat_t1,
+               c.business_cat_t2,
+               c.business_cat_t3,
+               'NEW',
+               current_timestamp
+          FROM "DS_INFO"."DS_JOB_RUN_INFO" a
+          LEFT OUTER JOIN "DS_INFO"."DS_JOB_STEP_INFO" b
+            ON a.jobrunid = b.jobrunid 
+         INNER JOIN "DS_INFO_SZ"."INC_CAT" c
+            ON a.businessmodule = c.businessmodule
+         WHERE ((a.jobstatus = 'ERROR' AND b.status = 'ERROR')
+            OR  (a.jobstatus = 'RUNNING' AND add_seconds(b.starttime, 3600) <= CURRENT_TIMESTAMP AND b.endtime IS NULL)
+            OR  (a.jobstatus = 'ERROR' AND b.status IS NULL)
+               )
+           AND ADD_DAYS(a.STARTTIME, 90) > CURRENT_TIMESTAMP
+           AND NOT EXISTS (SELECT 1 
+                             FROM "DS_INFO_SZ"."DS_JOB_MONITOR" mon
+                            WHERE mon.job_runid = a.jobrunid);
+                            
+	    
+	on_exitcode := 0;
+
+END;

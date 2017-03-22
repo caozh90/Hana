@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cube:cube xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Cube="http://www.sap.com/ndb/BiModelCube.ecore" schemaVersion="1.5" id="AN_COLUMNNAME" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled">
+  <descriptions defaultDescription="AN_"/>
+  <localVariables>
+    <variable id="INPUT_CYCLE" parameter="true">
+      <descriptions defaultDescription="INPUT_CYCLE"/>
+      <variableProperties datatype="VARCHAR" length="40" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <privateMeasureGroup id="MeasureGroup">
+    <attributes>
+      <attribute id="M1" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M1"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M1"/>
+      </attribute>
+      <attribute id="M2" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M2"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M2"/>
+      </attribute>
+      <attribute id="M3" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M3"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M3"/>
+      </attribute>
+      <attribute id="M4" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M4"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M4"/>
+      </attribute>
+      <attribute id="M5" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M5"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M5"/>
+      </attribute>
+      <attribute id="M6" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M6"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M6"/>
+      </attribute>
+      <attribute id="M7" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M7"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M7"/>
+      </attribute>
+      <attribute id="M8" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M8"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M8"/>
+      </attribute>
+      <attribute id="M9" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M9"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M9"/>
+      </attribute>
+      <attribute id="M10" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M10"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M10"/>
+      </attribute>
+      <attribute id="M11" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M11"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M11"/>
+      </attribute>
+      <attribute id="M12" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="M12"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_CYCLE" columnName="M12"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies>
+        <tableProxy centralTable="true">
+          <table schemaName="EBGCFE" columnObjectName="UI_CYCLE"/>
+          <columnFilter columnName="CYCLE">
+            <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$INPUT_CYCLE$$"/>
+          </columnFilter>
+          <columnFilter columnName="PRODUCT_GROUP">
+            <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="EBG"/>
+          </columnFilter>
+        </tableProxy>
+      </tableProxies>
+      <joins/>
+      <layout>
+        <shapes>
+          <shape modelObjectName="UI_CYCLE" modelObjectNameSpace="EBGCFE" modelObjectType="catalog">
+            <upperLeftCorner x="70" y="30"/>
+          </shape>
+        </shapes>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures>
+      <measure id="CNT" hidden="false" order="13" aggregationType="sum" measureType="simple" calculatedMeasureType="counter" datatype="INTEGER">
+        <descriptions defaultDescription="CNT"/>
+        <exceptionAggregation exceptionAggregationType="countDistinct">
+          <attribute attributeName="M1"/>
+          <attribute attributeName="M2"/>
+          <attribute attributeName="M3"/>
+          <attribute attributeName="M4"/>
+          <attribute attributeName="M5"/>
+          <attribute attributeName="M6"/>
+          <attribute attributeName="M7"/>
+          <attribute attributeName="M8"/>
+          <attribute attributeName="M9"/>
+          <attribute attributeName="M10"/>
+          <attribute attributeName="M11"/>
+          <attribute attributeName="M12"/>
+        </exceptionAggregation>
+        <formula>1</formula>
+      </measure>
+    </calculatedMeasures>
+    <restrictedMeasures/>
+    <sharedDimensions/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="MEASURE_GROUP" modelObjectType="repository">
+          <upperLeftCorner x="300" y="200"/>
+        </shape>
+        <shape modelObjectName="LogicalView" modelObjectNameSpace="MeasureGroup" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateMeasureGroup>
+</Cube:cube>

@@ -1,0 +1,1927 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_forecast::PRC_CTO_FULL_PRE" (
+	IN p_in_product_group VARCHAR(200),
+	OUT p_out_exitcode  INTEGER,
+    OUT p_out_exitmess  VARCHAR(500) 
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	
+	AS
+		v_g_pkg_name        VARCHAR(30)  := 'PKG_FORECAST'; 
+		v_prc_name          VARCHAR(30)  := 'PRC_CTO_FULL_PRE';
+     	v_full_name         VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+       	logidi              INTEGER := 0;
+       --	v_sql				VARCHAR(2000);
+       	v_count				INTEGER;
+       	v_subprc_exitcode   INTEGER;
+       	v_currency          VARCHAR(20) := 'USD';
+      	v_priceunit         VARCHAR(20) := 'EA';
+		v_cycle_name		VARCHAR(20) ;
+		v_is_exec			INTEGER := -1;
+		v_item_count		INTEGER := -1;
+		v_default_cost      INTEGER ;
+		v_zero_cost         INTEGER := 0;
+        v_withdraw_date_addmonths  INTEGER;  
+        v_annc_date_addmonths      INTEGER;   
+        v_ondemand_exec         INTEGER;	
+    
+BEGIN
+/***************************** 
+
+-- Author:      Zhangxj
+-- Create date: 2015-09-20
+-- Description: CTO cost forecast 
+-- Modify [1]:  Zhangxj, 2015-09-29, 增加BAKE完成状态判断,若未完成,退出程序
+-- Modify [2]:  Zhangxj, 2015-09-30, 增加ui_ondemand_cal_list,计算指定的item
+-- Modify [3]:  Zhangxj, 2015-10-13, 对于fcsbbmap与costadder 不匹配的SBB,将cost_name置为LEVEL0,TOTL,BOML
+-- Modify [4]:  Zhangxj, 2015-10-27, 将cost_name like XACCT% OR XACCT$的 去掉后缀后汇总
+-- Modify [5]:  Zhangxj, 2015-10-29, country='N/A'时作为过滤，否则关联
+-- Modify [5]:  Zhangxj, 2015-11-05, 去掉m1的round逻辑，ECC会处理
+ *****************************/
+ 
+ 	DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001; 
+ 	DECLARE exit_normal CONDITION FOR SQL_ERROR_CODE 10002; 
+	DECLARE EXIT HANDLER FOR exp_procedure   
+		BEGIN
+	        p_out_exitcode := ::SQL_ERROR_CODE;
+	        p_out_exitmess := ::SQL_ERROR_MESSAGE;
+            CALL "EX_LOG"."cdp.log.procedures::logProc"(
+                          I_TYPE=>'PROC_ERROR',
+                          I_LOGSID=>:logidi,
+		                  I_EVENT_NAME=>:v_full_name,
+		                  I_MODULE=>'EBGCFE',
+		                  I_MESSAGE=>'ERROR', 
+		                  I_DETAIL=>:p_out_exitmess); 			           
+		END;
+
+	DECLARE EXIT HANDLER FOR exit_normal   
+		BEGIN
+	        p_out_exitcode := 0;
+	        p_out_exitmess := 'No CTO need to ondemand,exit program';
+            CALL "EX_LOG"."cdp.log.procedures::logProc"(
+                          I_TYPE=>'PROC_INFO',
+                          I_LOGSID=>:logidi,
+		                  I_EVENT_NAME=>:v_full_name,
+		                  I_MODULE=>'EBGCFE',
+		                  I_MESSAGE=>'INFO', 
+		                  I_DETAIL=>:p_out_exitmess); 			           
+		END;
+		
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := SUBSTR(::SQL_ERROR_MESSAGE, 1, 500 );  
+ 	 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+ 	 	                                            I_LOGSID      => :logidi,
+ 	 	                                            I_EVENT_NAME  => :v_full_name,
+ 	 	                                            I_MODULE      => 'EBGCFE',
+		                                            I_MESSAGE     => 'ERROR',
+		                                            I_DETAIL      => TO_CHAR(::SQL_ERROR_CODE) || ':' ||
+                                                                     SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );                                   
+    END;
+	
+	
+	SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().DEFAULT_VK_COST INTO v_default_cost FROM dummy;
+	
+	SELECT COUNT(*) INTO v_is_exec FROM ui_control_point WHERE control_point = 'BAKE' AND control_point_status ='COMPLETED';
+	
+	IF v_is_exec = 0 THEN
+		p_out_exitmess := 'PRC_BAKE IS NOT COMPLETED,PLS CHECK IT';
+		SIGNAL exp_procedure SET MESSAGE_TEXT = :p_out_exitmess;
+	END IF;
+	    
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE'); 
+
+											
+	/*
+	delete all middle table data
+	*/
+	
+	
+	DELETE FROM mid_exp_cfe_cto_12mon;
+	DELETE FROM mid_exp_cfe_cto_12mon2;
+	DELETE FROM mid_var_sales_office;
+	DELETE FROM mid_var_sales_org;
+	DELETE FROM mid_cto_sales_office;
+	DELETE FROM mid_cto_sales_org;
+	DELETE FROM mid_cto_exchange_rate;
+	DELETE FROM biz_cto_salesorg_pre;
+	DELETE FROM biz_cto_salesoffice_pre;
+	DELETE FROM biz_cto_commissioncost_pre;
+	
+	EXEC 'commit';
+	--get cycle_name from ui_control_point
+	SELECT cycle_name INTO v_cycle_name FROM ui_control_point WHERE control_point = 'BAKE' AND control_point_status ='COMPLETED';
+	
+	SELECT COUNT(*) INTO v_item_count FROM ui_ondemand_cal_list 
+	WHERE item_type IN (SELECT pvalue FROM conf_parameters WHERE pdomain='FORECAST' and pname='ONDEMAND_CTO' );
+	SELECT COUNT(*) INTO v_ondemand_exec FROM ui_ondemand_cal_list;
+	
+	IF v_item_count = 0 AND v_ondemand_exec<>0 THEN
+		    p_out_exitmess := 'No CTO need to ondemand,exit program';	     
+			SIGNAL exit_normal  SET MESSAGE_TEXT = :p_out_exitmess;
+	END IF;
+
+	
+	
+    SELECT pvalue INTO v_withdraw_date_addmonths
+      FROM conf_parameters
+     WHERE pdomain = 'FORECAST'
+       AND pname   = 'WITHDRAW_DATE_ADDMONTHS';  
+     
+    SELECT pvalue INTO v_annc_date_addmonths
+      FROM conf_parameters
+     WHERE pdomain = 'FORECAST'
+       AND pname   = 'ANNC_DATE_ADDMONTHS';  
+        	
+    cto_fc_ol = SELECT cycle,product_group,matnr,idnrk,varcond,quantity,od_flag,fc
+	              FROM (SELECT f.cycle,f.product_group,f.matnr,f.idnrk,f.varcond,f.quantity,f.od_flag,f.fc,
+				               IFNULL(c.announce_date,ADD_MONTHS(CURRENT_DATE,-1)) AS announce_date,
+				               IFNULL(c.withdraw_date,ADD_MONTHS(CURRENT_DATE,1)) AS withdraw_date
+			              FROM biz_fcsbbmap_his f LEFT JOIN ui_ctofc_flag c
+				            ON (f.matnr = c.cto AND (f.fc = c.fc OR f.fc = c.fc||'_'||c.cto))
+			             WHERE f.cycle              = v_cycle_name
+			               AND f.product_group      = p_in_product_group
+			               AND f.cycle_productgroup = v_cycle_name||p_in_product_group)
+	             WHERE  CASE WHEN  IFNULL(withdraw_date,TO_DATE('99991231','YYYYMMDD')) > CURRENT_DATE 
+	                                       THEN  IFNULL(withdraw_date,TO_DATE('99991231','YYYYMMDD'))
+	                                       ELSE ADD_MONTHS(withdraw_date,v_withdraw_date_addmonths) 
+	                             END >  CURRENT_DATE
+	                     AND  ADD_MONTHS(IFNULL(announce_date,CURRENT_DATE),v_annc_date_addmonths) < CURRENT_DATE;
+
+
+	IF v_item_count = 0 THEN
+		INSERT INTO mid_exp_cfe_cto_12mon
+		(cycle,product_group,cto,sbb,quantity,country,variant,sales_org,sales_office,plant,od_flag,item_desc,brand)
+        SELECT c.cycle,c.product_group,s.matnr,s.idnrk,s.quantity,m.country,s.varcond,m.sales_org,m.sales_office,c.plant,s.od_flag,i.item_desc,c.brand
+		  FROM :cto_fc_ol s, ui_item_his i, biz_cost_model_list_his c, ui_country_salesorg_mapping_his m 
+		 WHERE s.cycle              = i.cycle
+		   AND i.cycle              = c.cycle
+		   AND c.cycle              = m.cycle
+		   AND s.product_group      = i.product_group
+		   AND i.product_group      = c.product_group
+		   AND c.product_group      = m.product_group
+		  -- AND s.cycle_productgroup = i.cycle_productgroup
+		   AND i.cycle_productgroup = c.cycle_productgroup
+		   AND c.cycle_productgroup = m.cycle_productgroup
+		   AND s.idnrk              = i.item
+		   AND c.item               = s.matnr
+		   AND c.country            = m.country
+		   AND c.product_group      = p_in_product_group
+		   AND c.cycle              = v_cycle_name
+		   AND c.cycle_productgroup = v_cycle_name||p_in_product_group
+		   AND i.cycle_productgroup = v_cycle_name||p_in_product_group
+		  -- AND s.cycle_productgroup = v_cycle_name||p_in_product_group
+		   AND m.cycle_productgroup = v_cycle_name||p_in_product_group
+		   AND i.item_type          = 'SBB'
+		   AND i.eol_status NOT IN('EOL', 'TEMP')
+		   AND NOT EXISTS(  SELECT NULL FROM rpt_bommissingtotal_his b 
+		                     WHERE b.plant              = c.plant 
+		                       AND b.product_group      = c.product_group
+		                       AND b.model              = s.matnr
+		                       AND b.sbb                = s.idnrk 
+		                       --Modified by Zhoubinbin 20161117, if exists error type in country level then filter by country
+		                       AND b.country            = MAP(b.country,'N/A','N/A',m.country)
+		                       AND b.missing_reason     IN ( SELECT pvalue  FROM conf_parameters
+                                                              WHERE pdomain = 'FORECAST'
+                                                                AND pname   = 'MISSING_REASON')
+		                       AND b.product_group      = p_in_product_group
+		                       AND b.cycle              = v_cycle_name
+		                       AND b.cycle_productgroup = v_cycle_name||p_in_product_group ); -- Modify [5]
+
+
+	ELSE 
+
+		INSERT INTO mid_exp_cfe_cto_12mon
+		(cycle,product_group,cto,sbb,quantity,country,variant,sales_org,sales_office,plant,od_flag,item_desc,brand)
+        SELECT c.cycle,c.product_group,s.matnr,s.idnrk,s.quantity,m.country,s.varcond,m.sales_org,m.sales_office,c.plant,s.od_flag,i.item_desc,c.brand
+		  FROM :cto_fc_ol s, ui_item_his i, biz_cost_model_list_his c, ui_country_salesorg_mapping_his m 
+		 WHERE s.cycle              = i.cycle
+		   AND i.cycle              = c.cycle
+		   AND c.cycle              = m.cycle
+		   AND s.product_group      = i.product_group
+		   AND i.product_group      = c.product_group
+		   AND c.product_group      = m.product_group
+		   --AND s.cycle_productgroup = i.cycle_productgroup
+		   AND i.cycle_productgroup = c.cycle_productgroup
+		   AND c.cycle_productgroup = m.cycle_productgroup
+		   AND s.idnrk              = i.item
+		   AND c.item               = s.matnr
+		   AND c.country            = m.country
+		   AND c.product_group      = p_in_product_group
+		   AND c.cycle              = v_cycle_name
+		   AND c.cycle_productgroup = v_cycle_name||p_in_product_group
+		   AND i.cycle_productgroup = v_cycle_name||p_in_product_group
+		   --AND s.cycle_productgroup = v_cycle_name||p_in_product_group
+		   AND m.cycle_productgroup = v_cycle_name||p_in_product_group
+		   AND i.item_type          = 'SBB'
+		   AND s.matnr          IN (SELECT item FROM ui_ondemand_cal_list)
+		   AND i.eol_status NOT IN ('EOL', 'TEMP')
+		   AND NOT EXISTS(  SELECT NULL FROM rpt_bommissingtotal_his b 
+		                     WHERE b.plant              = c.plant 
+		                       AND b.product_group      = c.product_group
+		                       AND b.model              = s.matnr
+		                       AND b.sbb                = s.idnrk 
+		                       --Modified by Zhoubinbin 20161117, if exists error type in country level then filter by country
+		                       AND b.country            = MAP(b.country,'N/A','N/A',m.country)
+		                       AND b.missing_reason     IN ( SELECT pvalue  FROM conf_parameters
+                                                              WHERE pdomain = 'FORECAST'
+                                                                AND pname   = 'MISSING_REASON')
+		                       AND b.product_group      = p_in_product_group
+		                       AND b.cycle              = v_cycle_name
+		                       AND b.cycle_productgroup = v_cycle_name||p_in_product_group );
+
+
+	  
+	 END IF;
+	 EXEC 'commit'; 
+	 
+	 --Modified by Zhoubinbin 20160728, Filter missing adder SBBs
+	 DELETE FROM mid_exp_cfe_cto_12mon t1
+      WHERE EXISTS(SELECT 1 FROM rpt_bommissingtotal_his t2
+                    WHERE t2.model   = t1.cto
+                      AND t2.plant   = t1.plant
+                      AND t2.country = t1.country
+                      AND t2.cycle_productgroup = v_cycle_name||p_in_product_group
+                      AND t2.missing_reason     = 'MISSING ADDER'
+                      AND t2.missing_reason IN (SELECT pvalue  FROM conf_parameters
+                                                 WHERE pdomain = 'FORECAST'
+                                                   AND pname   = 'MISSING_REASON')
+                      AND EXISTS(SELECT 1 FROM ui_sbbcategory_his t3
+                                  WHERE t3.bbid          = t1.sbb
+                                    AND t3.cost_category = t2.sbb
+                                    AND t3.cycle_productgroup = v_cycle_name||p_in_product_group));          
+
+    /*
+    1.when rank number=1 ,get max m1-m12 
+    2.if no cost for a sbb or variant then m1-m12 are null
+    */
+	INSERT INTO mid_exp_cfe_cto_12mon2
+	(cycle,product_group,brand,cto,sbb,quantity,country,variant,sales_org,sales_office,cost_type,cost_name,od_flag,basic_name,
+	m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12)  
+	SELECT
+		t.cycle,
+		t.product_group,
+		t.brand,
+		t.cto,
+		t.sbb,
+		t.quantity,
+		t.country,
+		t.variant,
+		t.sales_org,
+		t.sales_office,
+		t.cost_type,
+		t.cost_name,
+		t.od_flag,
+		SUBSTR(t.item_desc,1,LOCATE(t.item_desc,' ',1,2)) AS basic_name,
+		MAX(t.m1),
+		MAX(t.m2),
+		MAX(t.m3),
+		MAX(t.m4),
+		MAX(t.m5),
+		MAX(t.m6),
+		MAX(t.m7),
+		MAX(t.m8),
+		MAX(t.m9),
+		MAX(t.m10),
+		MAX(t.m11),
+		MAX(t.m12) 
+	FROM (	SELECT 
+		m1.cycle,
+		m1.product_group,
+		m1.brand,
+		m1.cto,
+		m1.sbb,
+		m1.quantity,
+		m1.country,
+		m1.variant,
+		m1.sales_org,
+		m1.sales_office,
+		ch.cost_type,
+		CASE WHEN ch.cost_type ='TBA' THEN RTRIM(ch.children,'%$') ELSE 
+		ch.children END AS cost_name,
+		m1.od_flag,
+		m1.item_desc,
+		sum(IFNULL(ch.m1,0)) AS m1,
+		sum(IFNULL(ch.m2,0)) AS m2,
+		sum(IFNULL(ch.m3,0)) AS m3,
+		sum(IFNULL(ch.m4,0)) AS m4,
+		sum(IFNULL(ch.m5,0)) AS m5,
+		sum(IFNULL(ch.m6,0)) AS m6,
+		sum(IFNULL(ch.m7,0)) AS m7,
+		sum(IFNULL(ch.m8,0)) AS m8,
+		sum(IFNULL(ch.m9,0)) AS m9,
+		sum(IFNULL(ch.m10,0)) AS m10,
+		sum(IFNULL(ch.m11,0)) AS m11,
+		sum(IFNULL(ch.m12,0)) AS m12,
+		RANK() OVER(PARTITION BY m1.cycle,
+		m1.product_group,
+		m1.brand,
+		m1.cto,
+		m1.sbb,
+		m1.variant,
+		m1.country,
+		m1.plant
+			ORDER BY IFNULL(sh.priority,
+		0)) AS rnk 
+		FROM mid_exp_cfe_cto_12mon m1 
+		INNER JOIN biz_costadder_cto_his ch 
+		     ON(m1.cycle              = ch.cycle 
+			AND m1.product_group      = ch.product_group 
+			AND m1.cto                = ch.model 
+			AND m1.sbb                = ch.father 
+			AND m1.country            = ch.country 
+			AND m1.plant              = ch.plant
+			AND ch.cycle_productgroup = v_cycle_name||p_in_product_group
+			AND ch.value_type         = 'US_DOLLAR') 
+		LEFT JOIN ui_sos_his sh 
+		     ON (ch.product_group     = sh.product_group 
+			AND ch.model_brand        = sh.brand 
+			AND ch.model_family       = sh.prod_family 
+			AND ch.subgeo             = sh.subgeo 
+			AND ch.plant              = sh.plant
+			AND ch.cycle              = sh.cycle
+			AND sh.cycle_productgroup = v_cycle_name||p_in_product_group)
+		--WHERE ch.value_type = 'US_DOLLAR'			
+		GROUP BY m1.cycle,
+		m1.product_group,
+		m1.brand,
+		m1.cto,
+		m1.sbb,
+		m1.quantity,
+		m1.country,
+		m1.variant,
+		m1.sales_org,
+		m1.sales_office,
+		ch.cost_type,
+		CASE WHEN ch.cost_type ='TBA' THEN RTRIM(ch.children,'%$') ELSE 
+		ch.children END,
+		m1.plant,
+		m1.od_flag,
+		m1.item_desc,
+		sh.priority
+		--update  by Modify [4]
+		) t 
+	WHERE t.rnk=1 
+	GROUP BY t.cycle,
+		t.product_group,
+		t.brand,
+		t.cto,
+		t.sbb,
+		t.quantity,
+		t.country,
+		t.variant,
+		t.sales_org,
+		t.sales_office,
+		t.od_flag,
+		SUBSTR(t.item_desc,1,LOCATE(t.item_desc,' ',1,2)),
+		t.cost_type,
+		t.cost_name;
+	
+	
+	--Delete sbb which PN start with 'X', then set its cost to zero	
+    DELETE FROM mid_exp_cfe_cto_12mon2 t1
+    WHERE EXISTS(SELECT 1 FROM :cto_fc_ol t2
+                  WHERE t2.matnr              = t1.cto
+                    AND t2.idnrk              = t1.sbb
+                    AND LEFT(t2.idnrk, 1)     = 'X'
+                    AND RIGHT(t2.idnrk, 4)    = t2.fc
+                    AND t2.cycle              = v_cycle_name
+                    AND t2.product_group      =p_in_product_group);
+                    
+	temp_tab = SELECT DISTINCT cycle, product_group, brand, cto, country, sales_org, 
+	                  sales_office, cost_type, cost_name, od_flag
+	             FROM mid_exp_cfe_cto_12mon2;
+	
+		
+	INSERT INTO mid_exp_cfe_cto_12mon2
+	    (cycle, product_group, brand, cto, sbb, quantity, country, variant, 
+	     sales_org, sales_office, cost_type, cost_name, od_flag, basic_name, 
+	     m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12)
+	SELECT t1.cycle, t1.product_group, t1.brand, t1.cto, t2.idnrk, t2.quantity,
+	       t1.country, t2.varcond, t1.sales_org, t1.sales_office, t1.cost_type,
+	       t1.cost_name, t2.od_flag, NULL AS basic_name, 
+	       v_zero_cost, v_zero_cost, v_zero_cost, v_zero_cost, v_zero_cost, v_zero_cost, 
+	       v_zero_cost, v_zero_cost, v_zero_cost, v_zero_cost, v_zero_cost, v_zero_cost 
+	  FROM :temp_tab t1,
+	       :cto_fc_ol t2
+     WHERE t1.product_group      = t2.product_group
+       AND t1.cto                = t2.matnr
+       AND t2.cycle              = v_cycle_name
+       AND t2.product_group      = p_in_product_group
+       AND LEFT(t2.idnrk, 1)     = 'X'
+       AND RIGHT(t2.idnrk, 4)    = t2.fc;
+		
+	EXEC 'commit';
+    /*
+     if m1 is null and variant exists in biz_cto_default_fcst then set m1~m12=999999
+    */
+   	UPDATE mid_exp_cfe_cto_12mon2 t
+	SET (t.m1,t.m2,t.m3,t.m4,t.m5,t.m6,t.m7,t.m8,t.m9,t.m10,t.m11,t.m12) =
+		(v_default_cost,v_default_cost,v_default_cost,v_default_cost,v_default_cost,v_default_cost,
+		 v_default_cost,v_default_cost,v_default_cost,v_default_cost,v_default_cost,v_default_cost)
+	WHERE t.m1 IS NULL 
+	AND EXISTS(
+		SELECT NULL FROM biz_cto_default_fcst f
+		WHERE f.variant = t.variant);
+	
+
+		
+	/*
+     If m1 is null then set m1~m12=0
+    */
+   	UPDATE mid_exp_cfe_cto_12mon2 t
+	SET (t.m1,t.m2,t.m3,t.m4,t.m5,t.m6,t.m7,t.m8,t.m9,t.m10,t.m11,t.m12) =
+		(SELECT 0,0,0,0,0,0,0,0,0,0,0,0 FROM dummy)
+	WHERE t.m1 IS NULL ;
+	
+
+	
+	/*
+	convert cost_name 
+	*/
+   	UPDATE mid_exp_cfe_cto_12mon2 t
+	SET t.cost_name = (CASE WHEN t.cost_type = 'COST-OUTPUT' AND t.cost_name = 'LEVEL0_ALL_COST' THEN 'LEVEL0'
+	WHEN t.cost_type = 'COST-OUTPUT' AND t.cost_name = 'LEVEL4_ALL_COST' THEN 'BOML'
+	WHEN t.cost_type = 'COST-OUTPUT' AND t.cost_name = 'LEVEL6_ALL_COST' THEN 'TOTL' END)
+	WHERE t.cost_type='COST-OUTPUT' ;
+	
+
+	EXEC 'commit';
+	--add by modify[3],305~333 line
+	
+	INSERT INTO mid_exp_cfe_cto_12mon2
+	(cycle,product_group,brand,cto,sbb,quantity,country,variant,sales_org,sales_office,cost_type,cost_name,od_flag,basic_name,
+	m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12) 
+	SELECT cycle,product_group,brand,cto,sbb,quantity,country,variant,sales_org,sales_office,'COST-OUTPUT' AS cost_type,'LEVEL0' AS cost_name,od_flag,basic_name,
+	m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12 FROM mid_exp_cfe_cto_12mon2 WHERE cost_type IS NULL;
+	
+	INSERT INTO mid_exp_cfe_cto_12mon2
+	(cycle,product_group,brand,cto,sbb,quantity,country,variant,sales_org,sales_office,cost_type,cost_name,od_flag,basic_name,
+	m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12) 
+	SELECT cycle,product_group,brand,cto,sbb,quantity,country,variant,sales_org,sales_office,'COST-OUTPUT' AS cost_type,'BOML' AS cost_name,od_flag,basic_name,
+	m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12 FROM mid_exp_cfe_cto_12mon2 WHERE cost_type IS NULL;
+	
+	INSERT INTO mid_exp_cfe_cto_12mon2
+	(cycle,product_group,brand,cto,sbb,quantity,country,variant,sales_org,sales_office,cost_type,cost_name,od_flag,basic_name,
+	m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12) 
+	SELECT cycle,product_group,brand,cto,sbb,quantity,country,variant,sales_org,sales_office,'COST-OUTPUT' AS cost_type,'TOTL' AS cost_name,od_flag,basic_name,
+	m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12 FROM mid_exp_cfe_cto_12mon2 WHERE cost_type IS NULL;
+	
+	DELETE FROM mid_exp_cfe_cto_12mon2 WHERE cost_name IS NULL;	
+	
+	--Added by Zhoubinbin 20161019, substract outbond freight and uplift cost from TMC for LAS region
+    tab_substract_freight = 
+         SELECT t1.cycle, t1.product_group, t1.cto, t1.sbb, t1.variant, t1.sales_org, 
+                t1.sales_office, t1.country, SUM(t1.m1) AS m1, SUM(t1.m2) AS m2, SUM(t1.m3) AS m3,
+                SUM(t1.m4) AS m4, SUM(t1.m5) AS m5, SUM(t1.m6) AS m6, SUM(t1.m7) AS m7, 
+                SUM(t1.m8) AS m8, SUM(t1.m9) AS m9, SUM(t1.m10) AS m10, SUM(t1.m11) AS m11, 
+                SUM(t1.m12) AS m12
+           FROM mid_exp_cfe_cto_12mon2 t1, 
+                ui_region              t2, 
+                conf_parameters        t3
+          WHERE t1.product_group = p_in_product_group
+            AND t1.product_group = t2.product_group
+            AND t1.country       = t2.country
+            AND t3.pdomain       = 'FORECAST'
+            AND t3.pname         = 'SUBSTRACT_FROM_TMC'
+            AND t1.product_group = t3.product_group
+            AND t1.cost_name     = t3.pvalue
+            AND t2.subgeo        = t3.ptype
+            AND EXISTS(SELECT 1 FROM ui_country_salesorg_mapping_his t4
+                        WHERE t4.cycle         = v_cycle_name
+                          AND t4.product_group = t1.product_group
+                          AND t4.sales_org     = t1.sales_org
+                          AND t4.sales_office  = t1.sales_office
+                          AND t4.country_salesorg_type = 'OFFSHORE')
+         GROUP BY t1.cycle, t1.product_group, t1.cto, t1.sbb, t1.variant,  t1.sales_org, 
+                  t1.sales_office, t1.country;
+                  
+    UPDATE mid_exp_cfe_cto_12mon2 t1
+       SET t1.m1 = t1.m1 - t2.m1,
+           t1.m2 = t1.m2 - t2.m2,
+           t1.m3 = t1.m3 - t2.m3,
+           t1.m4 = t1.m4 - t2.m4,
+           t1.m5 = t1.m5 - t2.m5,
+           t1.m6 = t1.m6 - t2.m6,
+           t1.m7 = t1.m7 - t2.m7,
+           t1.m8 = t1.m8 - t2.m8,
+           t1.m9 = t1.m9 - t2.m9,
+           t1.m10 = t1.m10 - t2.m10,
+           t1.m11 = t1.m11 - t2.m11,
+           t1.m12 = t1.m12 - t2.m12
+      FROM :tab_substract_freight t2
+     WHERE t1.product_group = p_in_product_group
+       AND t1.cost_name     = 'TOTL'
+       AND t1.cycle         = t2.cycle
+       AND t1.product_group = t2.product_group
+       AND t1.cto           = t2.cto
+       AND t1.sbb           = t2.sbb
+       AND t1.variant       = t2.variant
+       AND t1.sales_org     = t2.sales_org
+       AND t1.sales_office  = t2.sales_office
+       AND t1.country       = t2.country;   
+	
+	/*
+	Average m1~m12 over different countries 
+	*/
+	
+	INSERT INTO mid_var_sales_office
+		(cycle,
+		product_group,
+		cto,
+		sbb,
+		variant,
+		sales_org,
+		sales_office,
+		cost_type,
+		cost_name,
+		m1,
+		m2,
+		m3,
+		m4,
+		m5,
+		m6,
+		m7,
+		m8,
+		m9,
+		m10,
+		m11,
+		m12)
+	SELECT  m.cycle,
+			m.product_group,
+			m.cto,
+			m.sbb,
+			m.variant,
+			m.sales_org,
+			m.sales_office,
+			m.cost_type,
+			m.cost_name,
+			m.m1*h.quantity,
+			m.m2*h.quantity,
+			m.m3*h.quantity,
+			m.m4*h.quantity,
+			m.m5*h.quantity,
+			m.m6*h.quantity,
+			m.m7*h.quantity,
+			m.m8*h.quantity,
+			m.m9*h.quantity,
+			m.m10*h.quantity,
+			m.m11*h.quantity,
+			m.m12*h.quantity 
+	FROM (SELECT cycle,
+			     product_group,
+				 cto,
+				 sbb,
+			   	 variant,
+			     sales_org,
+			     sales_office,
+			     cost_type,
+			     cost_name,
+			     AVG(m1) AS m1,
+			     AVG(m2) AS m2,
+			     AVG(m3) AS m3,
+			     AVG(m4) AS m4,
+			     AVG(m5) AS m5,
+			     AVG(m6) AS m6,
+			     AVG(m7) AS m7,
+			     AVG(m8) AS m8,
+			     AVG(m9) AS m9,
+			     AVG(m10) AS m10,
+			     AVG(m11) AS m11,
+			    AVG(m12) AS m12
+	       FROM mid_exp_cfe_cto_12mon2
+	       GROUP BY cycle,
+			        product_group,
+			        cto,
+			        sbb,
+			        variant,
+			        sales_org,
+			        sales_office,
+			        cost_type,
+			        cost_name) m , 
+	      :cto_fc_ol h
+    WHERE m.variant            =  h.varcond
+      AND m.sbb                =  h.idnrk
+      AND m.cto                =  h.matnr
+      AND m.cycle              =  h.cycle 
+      AND m.product_group      =  h.product_group ;
+
+			
+
+	
+	/*
+	Do weight-average over different sales offices under same sales org
+	eg:
+	SALES_ORG;SALES_OFFICE;SALES_OFFICE_PCT;M1
+	FI10     EE10   10  100
+	FI10     FI20   70  200
+	FI10     LT10   10  300
+	FI10     LV10   10  400
+
+	result=100*0.1+200*0.7+300*0.1+400*0.1/0.1+0.7+0.1+0.1=220 
+	
+	*/		
+	INSERT INTO mid_var_sales_org
+	(cycle,product_group,cto,variant,sales_org,cost_type,cost_name,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12)
+	SELECT
+		o.cycle,
+		o.product_group,
+		o.cto,
+		o.variant,
+		o.sales_org,
+		o.cost_type,
+		o.cost_name,
+		SUM(o.m1 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m1,0)=0 THEN 0 ELSE (cm.sales_office_pct) / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m1,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m1,
+		SUM(o.m2 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m2,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m2,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m2,
+		SUM(o.m3 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m3,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m3,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m3,
+		SUM(o.m4 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m4,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m4,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m4,
+		SUM(o.m5 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m5,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m5,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m5,
+		SUM(o.m6 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m6,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m6,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m6,
+		SUM(o.m7 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m7,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m7,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m7,
+		SUM(o.m8 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m8,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m8,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m8,
+		SUM(o.m9 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m9,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m9,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m9,
+		SUM(o.m10 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m10,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m10,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m10,
+		SUM(o.m11 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m11,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m11,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m11,
+		SUM(o.m12 * cm.sales_office_pct/100) / 
+		CASE WHEN 
+			(SUM (CASE WHEN IFNULL (o.m12,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END))=0 
+		THEN 1 
+		ELSE 
+			SUM (CASE WHEN IFNULL (o.m12,0)=0 THEN 0 ELSE cm.sales_office_pct / 100 END) END AS m12
+	FROM mid_var_sales_office o,
+		ui_country_salesorg_mapping cm 
+	WHERE o.sales_org      = cm.sales_org 
+	  AND o.m1             < v_default_cost
+	  AND cm.product_group = p_in_product_group
+	GROUP BY o.cycle,
+		o.product_group,
+		o.cto,
+		o.variant,
+		o.sales_org,
+		o.cost_type,
+		o.cost_name;
+		
+
+	
+	/*
+	Get product_hierarchy from ui_item_his into cto and max(m1)~max(12) 
+	among different sales office under the same sales org
+	*/
+	INSERT INTO mid_cto_sales_office
+	(cycle,product_group,cto,variant,sales_org,sales_office,cost_type,cost_name,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12)
+	SELECT
+		so.cycle,
+		so.product_group,
+		substr(ih.prod_h,1,11) AS cto,
+		so.variant,
+		so.sales_org,
+		so.sales_office,
+		so.cost_type,
+		so.cost_name,
+		MAX(so.m1) AS m1,
+		MAX(so.m2) AS m2,
+		MAX(so.m3) AS m3,
+		MAX(so.m4) AS m4,
+		MAX(so.m5) AS m5,
+		MAX(so.m6) AS m6,
+		MAX(so.m7) AS m7,
+		MAX(so.m8) AS m8,
+		MAX(so.m9) AS m9,
+		MAX(so.m10) AS m10,
+		MAX(so.m11) AS m11,
+		MAX(so.m12) AS m12 
+	FROM mid_var_sales_office so,
+		ui_item_his ih 
+	WHERE so.cto                = ih.item 
+	  AND so.product_group      = ih.product_group 
+	  AND ih.eol_status         NOT IN('EOL', 'TEMP')
+	  AND ih.prod_h             IS NOT NULL 
+	  AND ih.product_group      = p_in_product_group
+	  AND ih.cycle_productgroup = v_cycle_name||p_in_product_group
+	GROUP BY so.cycle,
+		so.product_group,
+		substr(ih.prod_h,1,11),
+		so.variant,
+		so.sales_org,
+		so.sales_office,
+		so.cost_type,
+		so.cost_name;
+		
+
+	
+	
+	/*
+	append data from ui_cto_cv_vk_cost_his and not exists mid_cto_sales_office  with cost_name='TOTL' and 'BOML'
+	*/
+	IF v_item_count = 0 THEN
+	    INSERT INTO mid_cto_sales_office (cycle,product_group,cto,variant,	sales_org,	sales_office,cost_name,m1,
+	                                                                        m2,	m3,	m4,	m5,	m6,	m7,	m8,	m9,	m10,m11,m12 ) 
+	   SELECT cv.cycle,cv.product_group,cv.ph_1||cv.ph_2||cv.ph_3||cv.ph_4 AS cto,cv.variant,cv.sales_org,	uc.sales_office,'TOTL' AS cost_name,
+	                  cv.m1,cv.m2,	cv.m3,cv.m4,cv.m5,cv.m6,cv.m7,	cv.m8,cv.m9,cv.m10,cv.m11,cv.m12
+	    FROM ui_cto_cv_vk_cost_his cv,
+		           (SELECT DISTINCT sales_org, sales_office
+                       FROM ui_country_salesorg_mapping 
+                      WHERE product_group = p_in_product_group) uc
+	  WHERE cv.sales_org          = uc.sales_org
+	      AND cv.cycle_productgroup = v_cycle_name||p_in_product_group
+	     AND NOT EXISTS ( SELECT NULL  FROM mid_cto_sales_office co 
+		      WHERE co.cycle         = cv.cycle 
+		        AND co.product_group = cv.product_group 
+		        AND co.sales_org     = cv.sales_org 
+		        AND co.sales_office  = uc.sales_office 
+		        AND co.variant       = cv.variant 
+		        AND substr(co.cto,1,1) = cv.ph_1		
+		        AND substr(co.cto,2,3) = cv.ph_2		
+		        AND substr(co.cto,5,3) = cv.ph_3
+		        AND substr(co.cto,8,4) = cv.ph_4 ) ;
+ 
+ 	    INSERT INTO mid_cto_sales_office (cycle,product_group,cto,variant,	sales_org,	sales_office,cost_name,m1,
+	                                                                        m2,	m3,	m4,	m5,	m6,	m7,	m8,	m9,	m10,m11,m12 ) 
+	   SELECT cv.cycle,cv.product_group,cv.ph_1||cv.ph_2||cv.ph_3||cv.ph_4 AS cto,cv.variant,cv.sales_org,	uc.sales_office,'BOML' AS cost_name,
+	                  cv.m1,cv.m2,	cv.m3,cv.m4,cv.m5,cv.m6,cv.m7,	cv.m8,cv.m9,cv.m10,cv.m11,cv.m12
+	    FROM ui_cto_cv_vk_cost_his cv,
+		           (SELECT DISTINCT sales_org, sales_office
+                       FROM ui_country_salesorg_mapping 
+                      WHERE product_group = p_in_product_group) uc
+	  WHERE cv.sales_org          = uc.sales_org
+	      AND cv.cycle_productgroup = v_cycle_name||p_in_product_group
+	     AND NOT EXISTS ( SELECT NULL  FROM mid_cto_sales_office co 
+		      WHERE co.cycle         = cv.cycle 
+		        AND co.product_group = cv.product_group 
+		        AND co.sales_org     = cv.sales_org 
+		        AND co.sales_office  = uc.sales_office 
+		        AND co.variant       = cv.variant 
+		        AND substr(co.cto,1,1) = cv.ph_1		
+		        AND substr(co.cto,2,3) = cv.ph_2		
+		        AND substr(co.cto,5,3) = cv.ph_3
+		        AND substr(co.cto,8,4) = cv.ph_4 ) ;
+    ELSE
+	    INSERT INTO mid_cto_sales_office (cycle,product_group,cto,variant,	sales_org,	sales_office,cost_name,m1,
+	                                                                        m2,	m3,	m4,	m5,	m6,	m7,	m8,	m9,	m10,m11,m12 ) 
+	   SELECT cv.cycle,cv.product_group,cv.ph_1||cv.ph_2||cv.ph_3||cv.ph_4 AS cto,cv.variant,cv.sales_org,	uc.sales_office,'TOTL' AS cost_name,
+	                  cv.m1,cv.m2,	cv.m3,cv.m4,cv.m5,cv.m6,cv.m7,	cv.m8,cv.m9,cv.m10,cv.m11,cv.m12
+	    FROM ui_cto_cv_vk_cost_his cv,
+		           (SELECT DISTINCT sales_org, sales_office
+                       FROM ui_country_salesorg_mapping 
+                      WHERE product_group = p_in_product_group) uc
+	  WHERE cv.sales_org          = uc.sales_org
+	      AND cv.cycle_productgroup = v_cycle_name||p_in_product_group
+	      AND cv.ph_1||cv.ph_2||cv.ph_3||cv.ph_4 IN (SELECT  SUBSTR(b.prod_h,1,11) FROM ui_ondemand_cal_list a INNER JOIN  ui_item b ON(a.item = b.item))
+	     AND NOT EXISTS ( SELECT NULL  FROM mid_cto_sales_office co 
+		      WHERE co.cycle         = cv.cycle 
+		        AND co.product_group = cv.product_group 
+		        AND co.sales_org     = cv.sales_org 
+		        AND co.sales_office  = uc.sales_office 
+		        AND co.variant       = cv.variant 
+		        AND substr(co.cto,1,1) = cv.ph_1		
+		        AND substr(co.cto,2,3) = cv.ph_2		
+		        AND substr(co.cto,5,3) = cv.ph_3
+		        AND substr(co.cto,8,4) = cv.ph_4 ) ;
+		        
+	    INSERT INTO mid_cto_sales_office (cycle,product_group,cto,variant,	sales_org,	sales_office,cost_name,m1,
+	                                                                        m2,	m3,	m4,	m5,	m6,	m7,	m8,	m9,	m10,m11,m12 ) 
+	   SELECT cv.cycle,cv.product_group,cv.ph_1||cv.ph_2||cv.ph_3||cv.ph_4 AS cto,cv.variant,cv.sales_org,	uc.sales_office,'BOML' AS cost_name,
+	                  cv.m1,cv.m2,	cv.m3,cv.m4,cv.m5,cv.m6,cv.m7,	cv.m8,cv.m9,cv.m10,cv.m11,cv.m12
+	    FROM ui_cto_cv_vk_cost_his cv,
+		           (SELECT DISTINCT sales_org, sales_office
+                       FROM ui_country_salesorg_mapping 
+                      WHERE product_group = p_in_product_group) uc
+	  WHERE cv.sales_org          = uc.sales_org
+	      AND cv.cycle_productgroup = v_cycle_name||p_in_product_group
+	      AND cv.ph_1||cv.ph_2||cv.ph_3||cv.ph_4 IN (SELECT  SUBSTR(b.prod_h,1,11) FROM ui_ondemand_cal_list a INNER JOIN  ui_item b ON(a.item = b.item))
+	     AND NOT EXISTS ( SELECT NULL  FROM mid_cto_sales_office co 
+		      WHERE co.cycle         = cv.cycle 
+		        AND co.product_group = cv.product_group 
+		        AND co.sales_org     = cv.sales_org 
+		        AND co.sales_office  = uc.sales_office 
+		        AND co.variant       = cv.variant 
+		        AND substr(co.cto,1,1) = cv.ph_1		
+		        AND substr(co.cto,2,3) = cv.ph_2		
+		        AND substr(co.cto,5,3) = cv.ph_3
+		        AND substr(co.cto,8,4) = cv.ph_4 ) ;
+	END IF;    		    
+  
+
+	
+	/*
+	Get product_hierarchy from ui_item_his into cto and max(m1)~max(12) 
+	*/
+	INSERT INTO mid_cto_sales_org
+	(cycle,product_group,cto,variant,sales_org,cost_type,cost_name,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12)
+	SELECT
+		so.cycle,
+		so.product_group,
+		substr(ih.prod_h,1,11) AS cto,
+		so.variant,
+		so.sales_org,
+		so.cost_type,
+		so.cost_name,
+		MAX(so.m1) AS m1,
+		MAX(so.m2) AS m2,
+		MAX(so.m3) AS m3,
+		MAX(so.m4) AS m4,
+		MAX(so.m5) AS m5,
+		MAX(so.m6) AS m6,
+		MAX(so.m7) AS m7,
+		MAX(so.m8) AS m8,
+		MAX(so.m9) AS m9,
+		MAX(so.m10) AS m10,
+		MAX(so.m11) AS m11,
+		MAX(so.m12) AS m12 
+	FROM mid_var_sales_org so,
+		ui_item_his ih 
+	WHERE so.cto                = ih.item 
+	  AND so.product_group      = ih.product_group 
+	  AND ih.eol_status         NOT IN('EOL', 'TEMP')
+	  AND ih.prod_h             IS NOT NULL 
+	  AND ih.product_group      = p_in_product_group
+	  AND ih.cycle_productgroup =  v_cycle_name||p_in_product_group
+	GROUP BY so.cycle,
+		so.product_group,
+		substr(ih.prod_h,1,11),
+		so.variant,
+		so.sales_org,
+		so.cost_type,
+		so.cost_name;
+		
+
+		
+	/*
+	append data from ui_cto_cv_vk_cost_his and not exists mid_cto_sales_org with cost_type='TOTL'
+	*/
+	INSERT INTO mid_cto_sales_org (cycle,
+		product_group,
+		cto,
+		variant,
+		sales_org,
+		cost_name,
+		m1,
+		m2,
+		m3,
+		m4,
+		m5,
+		m6,
+		m7,
+		m8,
+		m9,
+		m10,
+		m11,
+		m12 ) 
+	SELECT
+		cv.cycle,
+		cv.product_group,
+		cv.ph_1||cv.ph_2||cv.ph_3||cv.ph_4 AS cto,
+		cv.variant,
+		cv.sales_org,
+		'TOTL' AS cost_name,
+		cv.m1,
+		cv.m2,
+		cv.m3,
+		cv.m4,
+		cv.m5,
+		cv.m6,
+		cv.m7,
+		cv.m8,
+		cv.m9,
+		cv.m10,
+		cv.m11,
+		cv.m12
+	FROM ui_cto_cv_vk_cost_his cv
+	WHERE cv.cycle_productgroup = v_cycle_name||p_in_product_group
+	  AND NOT EXISTS ( SELECT NULL FROM mid_cto_sales_org co 
+		                WHERE co.cycle           = cv.cycle 
+		                  AND co.product_group   = cv.product_group 
+		                  AND co.sales_org       = cv.sales_org 
+		                  AND co.variant         = cv.variant 
+		                  AND SUBSTR(co.cto,1,1) = cv.ph_1		
+		                  AND SUBSTR(co.cto,2,3) = cv.ph_2		
+		                  AND SUBSTR(co.cto,5,3) = cv.ph_3
+		                  AND SUBSTR(co.cto,8,4) = cv.ph_4 ) ;
+		    
+	/*
+	append data from ui_cto_cv_vk_cost_his and not exists mid_cto_sales_org with cost_type='BOML'
+	*/
+	INSERT INTO mid_cto_sales_org (cycle,
+		product_group,
+		cto,
+		variant,
+		sales_org,
+		cost_name,
+		m1,
+		m2,
+		m3,
+		m4,
+		m5,
+		m6,
+		m7,
+		m8,
+		m9,
+		m10,
+		m11,
+		m12 ) 
+	SELECT
+		cv.cycle,
+		cv.product_group,
+		cv.ph_1||cv.ph_2||cv.ph_3||cv.ph_4 AS cto,
+		cv.variant,
+		cv.sales_org,
+		'BOML' AS cost_name,
+		cv.m1,
+		cv.m2,
+		cv.m3,
+		cv.m4,
+		cv.m5,
+		cv.m6,
+		cv.m7,
+		cv.m8,
+		cv.m9,
+		cv.m10,
+		cv.m11,
+		cv.m12
+	FROM ui_cto_cv_vk_cost_his cv
+	WHERE cv.cycle_productgroup = v_cycle_name||p_in_product_group
+	  AND NOT EXISTS ( SELECT NULL FROM mid_cto_sales_org co 
+		                WHERE co.cycle           = cv.cycle 
+		                  AND co.product_group   = cv.product_group 
+		                  AND co.sales_org       = cv.sales_org 
+		                  AND co.variant         = cv.variant 
+		                  AND SUBSTR(co.cto,1,1) = cv.ph_1		
+		                  AND SUBSTR(co.cto,2,3) = cv.ph_2		
+		                  AND SUBSTR(co.cto,5,3) = cv.ph_3
+		                  AND SUBSTR(co.cto,8,4) = cv.ph_4 ) ;
+
+
+   
+    /*
+    Get exchange rate from UI_EXCHANGE_RATE_HIS
+    */
+	INSERT INTO mid_cto_exchange_rate
+	SELECT product_group,cycle,currency_name,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,action,status,
+		sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by,presicion,change_id,change_action
+	FROM ui_exchange_rate_his 
+	WHERE cycle_productgroup = v_cycle_name || p_in_product_group;
+	
+	EXEC 'commit';
+
+	
+	
+	SELECT CASE
+		WHEN c.m1 = c.cycle_fcst_month THEN 1
+		WHEN c.m2 = c.cycle_fcst_month THEN 2
+		WHEN c.m3 = c.cycle_fcst_month THEN 3
+		WHEN c.m4 = c.cycle_fcst_month THEN 4
+		WHEN c.m5 = c.cycle_fcst_month THEN 5
+		WHEN c.m6 = c.cycle_fcst_month THEN 6
+		WHEN c.m7 = c.cycle_fcst_month THEN 7
+		WHEN c.m8 = c.cycle_fcst_month THEN 8
+		WHEN c.m9 = c.cycle_fcst_month THEN 9
+		WHEN c.m10 = c.cycle_fcst_month THEN 10
+		WHEN c.m11 = c.cycle_fcst_month THEN 11
+		WHEN c.m12 = c.cycle_fcst_month THEN 12
+		ELSE 0  END AS vnum
+		INTO v_count
+	FROM ui_cycle c
+	WHERE c.product_group = p_in_product_group
+      AND c.cycle_name = v_cycle_name
+    LIMIT 1;
+    
+	--v_count:=2;
+	IF v_count = 2
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m2,
+					m2 = m3,
+					m3 = m4,
+					m4 = m5,
+					m5 = m6,
+					m6 = m7,
+					m7 = m8,
+					m8 = m9,
+					m9 = m10,
+					m10 = m11,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m2,
+					m2 = m3,
+					m3 = m4,
+					m4 = m5,
+					m5 = m6,
+					m6 = m7,
+					m7 = m8,
+					m8 = m9,
+					m9 = m10,
+					m10 = m11,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m2,
+					m2 = m3,
+					m3 = m4,
+					m4 = m5,
+					m5 = m6,
+					m6 = m7,
+					m7 = m8,
+					m8 = m9,
+					m9 = m10,
+					m10 = m11,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+		
+	IF v_count = 3
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m3,
+					m2 = m4,
+					m3 = m5,
+					m4 = m6,
+					m5 = m7,
+					m6 = m8,
+					m7 = m9,
+					m8 = m10,
+					m9 = m11,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m3,
+					m2 = m4,
+					m3 = m5,
+					m4 = m6,
+					m5 = m7,
+					m6 = m8,
+					m7 = m9,
+					m8 = m10,
+					m9 = m11,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m3,
+					m2 = m4,
+					m3 = m5,
+					m4 = m6,
+					m5 = m7,
+					m6 = m8,
+					m7 = m9,
+					m8 = m10,
+					m9 = m11,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+	IF v_count = 4
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m4,
+					m2 = m5,
+					m3 = m6,
+					m4 = m7,
+					m5 = m8,
+					m6 = m8,
+					m7 = m10,
+					m8 = m11,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m4,
+					m2 = m5,
+					m3 = m6,
+					m4 = m7,
+					m5 = m8,
+					m6 = m8,
+					m7 = m10,
+					m8 = m11,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m4,
+					m2 = m5,
+					m3 = m6,
+					m4 = m7,
+					m5 = m8,
+					m6 = m8,
+					m7 = m10,
+					m8 = m11,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+
+	IF v_count = 5
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m5,
+					m2 = m6,
+					m3 = m7,
+					m4 = m8,
+					m5 = m9,
+					m6 = m10,
+					m7 = m11,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m5,
+					m2 = m6,
+					m3 = m7,
+					m4 = m8,
+					m5 = m9,
+					m6 = m10,
+					m7 = m11,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m5,
+					m2 = m6,
+					m3 = m7,
+					m4 = m8,
+					m5 = m9,
+					m6 = m10,
+					m7 = m11,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+		
+	IF v_count = 6
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m6,
+					m2 = m7,
+					m3 = m8,
+					m4 = m9,
+					m5 = m10,
+					m6 = m11,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m6,
+					m2 = m7,
+					m3 = m8,
+					m4 = m9,
+					m5 = m10,
+					m6 = m11,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m6,
+					m2 = m7,
+					m3 = m8,
+					m4 = m9,
+					m5 = m10,
+					m6 = m11,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+
+	IF v_count = 7
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m7,
+					m2 = m8,
+					m3 = m9,
+					m4 = m10,
+					m5 = m11,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m7,
+					m2 = m8,
+					m3 = m9,
+					m4 = m10,
+					m5 = m11,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m7,
+					m2 = m8,
+					m3 = m9,
+					m4 = m10,
+					m5 = m11,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+
+	IF v_count = 8
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m8,
+					m2 = m9,
+					m3 = m10,
+					m4 = m11,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m8,
+					m2 = m9,
+					m3 = m10,
+					m4 = m11,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m8,
+					m2 = m9,
+					m3 = m10,
+					m4 = m11,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+		
+
+	IF v_count = 9
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m9,
+					m2 = m10,
+					m3 = m11,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m9,
+					m2 = m10,
+					m3 = m11,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m9,
+					m2 = m10,
+					m3 = m11,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+		
+	IF v_count = 10
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m10,
+					m2 = m11,
+					m3 = m12,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m10,
+					m2 = m11,
+					m3 = m12,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m10,
+					m2 = m11,
+					m3 = m12,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+
+	IF v_count = 11
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m11,
+					m2 = m12,
+					m3 = m12,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m11,
+					m2 = m12,
+					m3 = m12,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m11,
+					m2 = m12,
+					m3 = m12,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;
+
+	IF v_count = 12
+		THEN
+			UPDATE mid_cto_sales_office
+				SET m1 = m12,
+					m2 = m12,
+					m3 = m12,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_sales_org
+				SET m1 = m12,
+					m2 = m12,
+					m3 = m12,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+	
+			UPDATE mid_cto_exchange_rate
+				SET m1 = m12,
+					m2 = m12,
+					m3 = m12,
+					m4 = m12,
+					m5 = m12,
+					m6 = m12,
+					m7 = m12,
+					m8 = m12,
+					m9 = m12,
+					m10 = m12,
+					m11 = m12,
+					m12 = m12
+			WHERE product_group = p_in_product_group
+				AND cycle = v_cycle_name;
+		END IF;	
+	
+		
+    
+    /*
+    insert data from MID_CTO_SALES_ORG, with sales_office being '' and PH1~4 separated
+    */
+
+	INSERT INTO biz_cto_salesorg_pre
+			(variant,
+			sales_org,
+			sales_office,
+			cost_type,
+			CYCLE,
+			producthier_1,
+			producthier_2,
+			producthier_3,
+			producthier_4,
+			currency_name,
+			price_unit,
+			m1,
+			m2,
+			m3,
+			m4,
+			m5,
+			m6,
+			m7,
+			m8,
+			m9,
+			m10,
+			m11,
+			m12,
+			product_group)
+	SELECT  variant,
+			sales_org,
+			'',
+			cost_name,
+			cycle,
+			SUBSTR (cto, 1, 1),
+			SUBSTR (cto, 2, 3),
+			SUBSTR (cto, 5, 3),
+			SUBSTR (cto, 8, 4),
+			v_currency,
+			v_priceunit,
+			m1,
+			m2,
+			m3,
+			m4,
+			m5,
+			m6,
+			m7,
+			m8,
+			m9,
+			m10,
+			m11,
+			m12,
+			product_group
+	FROM mid_cto_sales_org;
+	
+
+	
+    /*
+    insert data from MID_CTO_SALES_OFFICE, with PH1~4 separated
+    */
+
+	INSERT INTO biz_cto_salesoffice_pre 
+		(variant,
+		sales_org,
+		sales_office,
+		cost_type,
+		cycle,
+		producthier_1,
+		producthier_2,
+		producthier_3,
+		producthier_4,
+		currency_name,
+		price_unit,
+		m1,
+		m2,
+		m3,
+		m4,
+		m5,
+		m6,
+		m7,
+		m8,
+		m9,
+		m10,
+		m11,
+		m12,
+		product_group)
+	SELECT variant,
+			sales_org,
+			sales_office,
+			cost_name,
+			cycle,
+			SUBSTR (cto, 1, 1),
+			SUBSTR (cto, 2, 3),
+			SUBSTR (cto, 5, 3),
+			SUBSTR (cto, 8, 4),
+			v_currency,
+			v_priceunit,
+			m1,
+			m2,
+			m3,
+			m4,
+			m5,
+			m6,
+			m7,
+			m8,
+			m9,
+			m10,
+			m11,
+			m12,
+			product_group
+	FROM mid_cto_sales_office;
+			
+
+	/*
+	m1-m12 being local currency
+	*/
+	
+	INSERT INTO biz_cto_commissioncost_pre 
+		(variant,
+		sales_org,
+		producthier_1,
+		producthier_2,
+		producthier_3,
+		producthier_4,
+		cycle,
+		currency_name,
+		price_unit,
+		m1,
+		m2,
+		m3,
+		m4,
+		m5,
+		m6,
+		m7,
+		m8,
+		m9,
+		m10,
+		m11,
+		m12,
+		from_date,
+		to_date,
+		action,
+		status,
+		sys_created_date,
+		sys_created_by,
+		sys_last_modified_date,
+		sys_last_modified_by,
+		product_group)
+	SELECT m.variant,
+		m.sales_org,
+		SUBSTR (m.cto, 1, 1) AS producthier_1,
+		SUBSTR (m.cto, 2, 3) AS producthier_2,
+		SUBSTR (m.cto, 5, 3) AS producthier_3,
+		SUBSTR (m.cto, 8, 4) AS producthier_4,
+		m.cycle,
+		r.currency AS currency_name,
+		v_priceunit AS price_unit,
+		CASE WHEN  IFNULL (e.m1, 0)=0 THEN 0 ELSE (e.m1 * m.m1)  END AS m1,
+		CASE WHEN  IFNULL (e.m2, 0)=0 THEN 0 ELSE (e.m2 * m.m2)  END AS m2,
+		CASE WHEN  IFNULL (e.m3, 0)=0 THEN 0 ELSE (e.m3 * m.m3)  END AS m3,
+		CASE WHEN  IFNULL (e.m4, 0)=0 THEN 0 ELSE (e.m4 * m.m4)  END AS m4,
+		CASE WHEN  IFNULL (e.m5, 0)=0 THEN 0 ELSE (e.m5 * m.m5)  END AS m5,
+		CASE WHEN  IFNULL (e.m6, 0)=0 THEN 0 ELSE (e.m6 * m.m6)  END AS m6,
+		CASE WHEN  IFNULL (e.m7, 0)=0 THEN 0 ELSE (e.m7 * m.m7)  END AS m7,
+		CASE WHEN  IFNULL (e.m8, 0)=0 THEN 0 ELSE (e.m8 * m.m8)  END AS m8,
+		CASE WHEN  IFNULL (e.m9, 0)=0 THEN 0 ELSE (e.m9 * m.m9)  END AS m9,
+		CASE WHEN  IFNULL (e.m10, 0)=0 THEN 0 ELSE (e.m10 * m.m10) END AS m10,
+		CASE WHEN  IFNULL (e.m11, 0)=0 THEN 0 ELSE (e.m11 * m.m11) END AS m11,
+		CASE WHEN  IFNULL (e.m12, 0)=0 THEN 0 ELSE (e.m12 * m.m12) END AS m12,
+		CURRENT_TIMESTAMP,
+		TO_DATE ('99991231', 'YYYYMMDD'),
+		'INSERT' AS action,
+		NULL,
+		CURRENT_TIMESTAMP AS sys_created_date,
+		v_full_name AS sys_created_by ,
+		CURRENT_TIMESTAMP AS sys_last_modified_date,
+		SESSION_USER AS sys_last_modified_by,
+		p_in_product_group
+	FROM mid_cto_sales_org m,
+		(SELECT DISTINCT sales_org, currency
+			FROM ui_country_salesorg_mapping_his 
+			WHERE product_group = p_in_product_group
+			  --Added by Zhoubinbin 20161116, sales org currency can be difference in difference cycle
+		      AND cycle         = v_cycle_name) r,
+		mid_cto_exchange_rate e
+	WHERE  m.sales_org  = r.sales_org
+	AND m.cycle         = e.cycle
+	AND e.currency_name = r.currency
+	AND m.product_group = e.product_group
+	AND m.cost_name     = 'TOTL';
+	
+  --Comment by Zhoubinbin 20161105, change copy logic to copy offshores'cost on item/subgeo level
+  --Modified by Zhoubinbin 20160713, Copy VARIANT's cost FROM legacy country to non-legacy country
+  /*tab_office_datafrom = SELECT t1.sales_org AS to_sales_org,   t1.sales_office AS to_sales_office, 
+                               t4.sales_org AS from_sales_org, t4.sales_office AS from_sales_office 
+                          FROM ui_country_salesorg_mapping_his t1,
+                               (SELECT t3.subgeo, t2.sales_org, t2.sales_office, 
+                                       ROW_NUMBER() OVER(PARTITION BY t3.subgeo ORDER BY t2.sales_org, t2.sales_office) pri
+                                  FROM ui_country_salesorg_mapping_his t2,
+                                       ui_region                       t3
+                                 WHERE t2.product_group = t3.product_group
+                                   AND t2.country       = t3.country
+                                   AND t2.product_group = p_in_product_group
+                                   AND t2.cycle         = v_cycle_name
+                                   AND t3.is_legacy     = 'Y') t4,
+                               ui_region                     t5
+                      WHERE t1.product_group = t5.product_group
+                        AND t1.country       = t5.country
+                        AND IFNULL(t5.is_legacy, 'N') = 'N'
+                        AND t4.subgeo        = t5.subgeo
+                        AND t1.product_group = p_in_product_group
+                        AND t1.cycle         = v_cycle_name
+                        AND t4.pri           = 1;
+                                     
+  INSERT INTO biz_cto_salesoffice_pre
+      (variant, sales_org, sales_office, cost_type, cycle, producthier_1, producthier_2, producthier_3, 
+       producthier_4, currency_name, price_unit, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+       product_group, sys_created_date)
+  SELECT t1.variant, t2.to_sales_org AS sales_org, t2.to_sales_office AS sales_office, t1.cost_type, 
+         t1.cycle, t1.producthier_1, t1.producthier_2, t1.producthier_3, t1.producthier_4, t1.currency_name, 
+         t1.price_unit, t1.m1, t1.m2, t1.m3, t1.m4, t1.m5, t1.m6, t1.m7, t1.m8, t1.m9, t1.m10, t1.m11, 
+         t1.m12, t1.product_group, CURRENT_TIMESTAMP
+    FROM biz_cto_salesoffice_pre t1, 
+         :tab_office_datafrom    t2
+     WHERE t1.sales_org     = t2.from_sales_org
+       AND t1.sales_office  = t2.from_sales_office
+       AND t1.product_group = p_in_product_group
+      AND t1.cycle         = v_cycle_name
+      AND T1.cost_type IN('BOML','TOTL')
+      AND NOT EXISTS(SELECT 1 FROM biz_cto_salesoffice_pre t3
+                      WHERE t3.product_group = t1.product_group
+                        AND t3.cycle         = t1.cycle
+                        AND t3.producthier_1 = t1.producthier_1
+                        AND t3.producthier_2 = t1.producthier_2
+                        AND t3.producthier_3 = t1.producthier_3
+                        AND t3.producthier_4 = t1.producthier_4
+                        AND t3.sales_org     = t2.to_sales_org
+                        AND t3.sales_office  = t2.to_sales_office);*/
+    
+    --copy offshores'cost on item/subgeo level                    
+    TAB_OFFSHORE_CTO = 
+        SELECT DISTINCT
+               t1.product_group, t1.producthier_1, t1.producthier_2, t1.producthier_3, 
+               t1.producthier_4, t1.variant, t1.sales_org, t1.sales_office, 
+               t3.subgeo, t3.country, t1.cycle, t1.cost_type, t1.currency_name, 
+               t1.price_unit, t1.m1, t1.m2, t1.m3, t1.m4, t1.m5, t1.m6, t1.m7, 
+               t1.m8, t1.m9, t1.m10, t1.m11, t1.m12,
+               dense_rank() over(partition by t1.product_group, t1.producthier_1, 
+                                              t1.producthier_2, t1.producthier_3, 
+                                              t1.producthier_4, t3.subgeo
+                                 order by t1.sales_org, t1.sales_office, t3.country) AS seq_id
+          FROM biz_cto_salesoffice_pre         t1,
+               ui_country_salesorg_mapping_his t2,
+               ui_region                       t3
+         WHERE t1.product_group = t2.product_group
+           AND t1.sales_org     = t2.sales_org
+           AND t1.sales_office  = t2.sales_office
+           AND t2.product_group = t3.product_group
+           AND t2.country       = t3.country
+           AND t1.cost_type IN('BOML','TOTL')
+           AND t2.product_group = p_in_product_group
+           AND t2.cycle         = v_cycle_name 
+           AND t2.country_salesorg_type = 'OFFSHORE';   
+
+    INSERT INTO biz_cto_salesoffice_pre
+        (variant, sales_org, sales_office, cost_type, cycle, producthier_1, producthier_2, producthier_3, 
+         producthier_4, currency_name, price_unit, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+         product_group, sys_created_date)
+    SELECT t1.variant, t2.sales_org, t2.sales_office, t1.cost_type, t1.cycle, t1.producthier_1, t1.producthier_2, 
+           t1.producthier_3, t1.producthier_4, t1.currency_name, t1.price_unit, t1.m1, t1.m2, t1.m3, t1.m4, 
+           t1.m5, t1.m6, t1.m7, t1.m8, t1.m9, t1.m10, t1.m11, t1.m12, t1.product_group, CURRENT_TIMESTAMP
+      FROM :TAB_OFFSHORE_CTO            t1,
+           ui_country_salesorg_mapping_his t2,
+           ui_region                       t3
+     WHERE t1.product_group = t3.product_group
+       AND t1.subgeo        = t3.subgeo
+       AND t2.product_group = t3.product_group
+       AND t2.country       = t3.country
+       AND t1.seq_id        = 1
+       AND t2.country_salesorg_type = 'OFFSHORE'
+       AND t2.product_group = p_in_product_group
+       AND t2.cycle         = v_cycle_name
+       AND NOT EXISTS(SELECT 1 FROM :TAB_OFFSHORE_CTO t4
+                       WHERE t4.product_group = t1.product_group
+                         AND t4.producthier_1 = t1.producthier_1
+                         AND t4.producthier_2 = t1.producthier_2
+                         AND t4.producthier_3 = t1.producthier_3
+                         AND t4.producthier_4 = t1.producthier_4
+                         AND t4.sales_org     = t2.sales_org
+                         AND t4.sales_office  = t2.sales_office);
+
+	/*
+	merge history data
+	*/
+	CALL "cdp.ebgcfe.procedures.pkg_forecast::PRC_MERGE_HISTORY_DATA"(p_in_product_group => :p_in_product_group,
+																	  p_in_cycle_name => :v_cycle_name,
+																	  p_in_categroy => 'CTO_PRE',
+																	  p_out_exitcode => :v_subprc_exitcode);
+																	  
+
+	IF :v_subprc_exitcode <> 0 THEN
+		p_out_exitcode := :v_subprc_exitcode;
+	ELSE
+		p_out_exitcode := 0;
+    	p_out_exitmess := 'SUCCESSFUL';
+    END IF;
+     
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  
+ 
+END;

@@ -1,0 +1,35 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_nocut_so_priority::validationNocutSoPriority" (
+	 IN LOGICAL_PLANT NVARCHAR(40),
+	 IN DELIVERY_PRIORITY INTEGER,
+	 IN OPER_TYPE NVARCHAR(10),
+	 OUT ERROR NVARCHAR(300)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+	AS
+	v_tmp INTEGER := 0;
+BEGIN
+	SELECT COUNT(1) into v_tmp FROM UI_NOCUT_SO_PRIORITY WHERE DELIVERY_PRIORITY =:DELIVERY_PRIORITY 
+					AND LOGICAL_PLANT=:LOGICAL_PLANT;    
+	if v_tmp > 0 and OPER_TYPE = 'insert'
+	then
+		ERROR := 'Primary key constraint';
+		return;
+	end if;   
+	if v_tmp < 0 and OPER_TYPE = 'update'
+	then
+		ERROR := 'Primary key constraint';
+		return;
+	end if;
+	
+	select COUNT(1) into v_tmp from CONF_SITEMASTER WHERE SITEID = :LOGICAL_PLANT;
+	IF v_tmp = 0
+	then
+		ERROR := 'LOGICAL_PLANT: VALIDATION FAILED, DO NOT EXIST IN CONF_SITEMASTER';
+		return;
+	end if;
+	
+	ERROR := '';
+END;

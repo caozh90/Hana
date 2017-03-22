@@ -1,0 +1,230 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::updateUiXoutfrRate" ( 
+         IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_T",
+		 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_T",
+		 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      updateUiXoutfrRate
+*function    :               
+*input       ：              newInfo&oldInfo
+*output      :      errorInfo            
+*author      :      zhaodan1
+*CreateDate  :      2016.5.19
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	resourceExists BIGINT;
+	privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::updateUiXoutfrRate error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::updateUiXoutfrRate'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+    END;  
+
+    CALL "SECURITY"."cdp.security.procedures::checkPrivilege"('ui_xoutfr_rate::editable',privilegeExists);
+   IF  privilegeExists != 'OK' THEN
+	    errorInfo = select 400 as http_status_code, 
+	              'SQL ERROR CODE : 0' error_message, 
+	              privilegeExists detail from dummy;
+	    RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::updateUiXoutfrRate'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+   	
+   	
+newInfo = SELECT * FROM :newInfo WHERE    FREIGHT_TYPE <> 'GEO_MIX';
+oldInfo = SELECT * FROM :oldInfo WHERE    FREIGHT_TYPE <> 'GEO_MIX';	
+  	
+SELECT COUNT(1) into resourceExists 
+FROM :oldInfo a,:newInfo b 
+WHERE a.CYCLE = b.CYCLE AND
+      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+      a.BRAND = b.BRAND AND
+      a.PLANT = b.PLANT AND
+      --a.GEO_TYPE = b.GEO_TYPE AND     
+      a.GEO = b.GEO AND
+      a.FAMILY = b.FAMILY AND
+      a.MACHINETYPE = b.MACHINETYPE AND
+      a.GL_PERCENTAGE = b.GL_PERCENTAGE AND
+      a.M1 = b.M1 ;
+if resourceExists > 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;	     		
+	     	return;*/
+	 --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists'; 
+	 return;
+end if;		
+
+
+				      				      
+
+--update into UI_XOUTFR_RATE table
+			UPDATE "EBGCFE"."UI_XOUTFR_RATE" a 
+			   SET (  a.CYCLE,      a.BRAND, a.PRODUCT_GROUP,
+				      a.GEO_TYPE, a.GEO, a.PLANT,	      
+				      a.FAMILY,       a.MACHINETYPE,
+				      a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+				      a.m1, a.m2, a.m3, a.m4,
+				      a.m5, a.m6, a.m7, a.m8,
+				      a.m9, a.m10, a.m11, a.m12,
+				      a.m13, a.m14, a.m15, a.m16,
+				      a.m17, a.m18,	     
+				      a.SYS_LAST_MODIFIED_DATE, a.SYS_LAST_MODIFIED_BY )
+				 = 
+					( b.CYCLE,      b.BRAND, b.PRODUCT_GROUP,
+				      b.GEO_TYPE, b.GEO, b.PLANT,	      
+				      b.FAMILY,       b.MACHINETYPE,
+				      b.GL_PERCENTAGE,b.FREIGHT_TYPE,	  
+				      b.M1,b.M1,b.M1,b.M1,  
+					  b.M1,b.M1,b.M1,b.M1,
+					  b.M1,b.M1,b.M1,b.M1,
+					  b.M1,b.M1,b.M1,b.M1,
+					  b.M1,b.M1,
+					  CURRENT_TIMESTAMP,SESSION_USER)
+			FROM "EBGCFE"."UI_XOUTFR_RATE" a,:newInfo b 
+			WHERE a.CYCLE = b.CYCLE AND
+			      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+			      a.BRAND = b.BRAND AND
+			      a.PLANT = b.PLANT AND
+			      --a.GEO_TYPE = b.GEO_TYPE AND     
+			      a.GEO = b.GEO AND
+			      a.FAMILY = b.FAMILY AND
+			      a.MACHINETYPE = b.MACHINETYPE AND
+			      a.FREIGHT_TYPE = b.FREIGHT_TYPE  ; 
+	     
+
+					  
+				prepare_update = 	  
+				    SELECT DISTINCT a.CYCLE,      a.BRAND, a.PRODUCT_GROUP,
+					       a.GEO_TYPE, a.GEO, a.PLANT,	      
+					       a.FAMILY,       a.MACHINETYPE,
+					       a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+					       a.m1, a.m2, a.m3, a.m4,
+					       a.m5, a.m6, a.m7, a.m8,
+					       a.m9, a.m10, a.m11, a.m12,
+					       a.m13, a.m14, a.m15, a.m16,
+		                   a.m17, a.m18
+					  FROM "EBGCFE"."UI_XOUTFR_RATE" a,:newInfo b 
+					WHERE a.CYCLE = b.CYCLE AND
+					      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+					      a.BRAND = b.BRAND AND
+					      a.PLANT = b.PLANT AND
+					      --a.GEO_TYPE = b.GEO_TYPE AND     
+					      a.GEO = b.GEO AND
+					      a.FAMILY = b.FAMILY AND
+					      a.MACHINETYPE = b.MACHINETYPE AND
+						  a.FREIGHT_TYPE <> 'GEO_MIX';      	  
+				      
+				geo_mix_new = 
+				   SELECT a.CYCLE, a.PRODUCT_GROUP, a.BRAND,a.PLANT, a.GEO_TYPE,
+			              a.GEO,   a.FAMILY,        a.MACHINETYPE,   'GEO_MIX' AS FREIGHT_TYPE,
+			              NULL AS GL_PERCENTAGE,    SUM(a.M1*a.GL_PERCENTAGE/100) AS UNIT_COST
+					 FROM :prepare_update a
+					 GROUP BY
+					      a.CYCLE, a.PRODUCT_GROUP, a.BRAND,a.PLANT, a.GEO_TYPE,
+			              a.GEO,   a.FAMILY,        a.MACHINETYPE;    
+			              
+			    UPDATE "EBGCFE"."UI_XOUTFR_RATE" a 
+				   SET (  a.CYCLE,      a.BRAND, a.PRODUCT_GROUP,
+					      a.GEO_TYPE, a.GEO,	      
+					      a.FAMILY,       a.MACHINETYPE,
+					      a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+					      a.m1, a.m2, a.m3, a.m4,
+					      a.m5, a.m6, a.m7, a.m8,
+					      a.m9, a.m10, a.m11, a.m12,
+					      a.m13, a.m14, a.m15, a.m16,
+		                  a.m17, a.m18,	     
+					      a.SYS_LAST_MODIFIED_DATE, a.SYS_LAST_MODIFIED_BY )
+					 = 
+						( b.CYCLE,      b.BRAND, b.PRODUCT_GROUP,
+					      b.GEO_TYPE, b.GEO,	      
+					      b.FAMILY,       b.MACHINETYPE,
+					      b.GL_PERCENTAGE,b.FREIGHT_TYPE,	  
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST,
+						  CURRENT_TIMESTAMP,SESSION_USER)
+				FROM "EBGCFE"."UI_XOUTFR_RATE" a,:geo_mix_new b 
+				WHERE a.CYCLE = b.CYCLE AND
+				      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+				      a.BRAND = b.BRAND AND
+				      a.PLANT = b.PLANT AND
+				      --a.GEO_TYPE = b.GEO_TYPE AND     
+				      a.GEO = b.GEO AND
+				      a.FAMILY = b.FAMILY AND
+				      a.MACHINETYPE = b.MACHINETYPE AND
+				      a.FREIGHT_TYPE = b.FREIGHT_TYPE  AND
+					  a.FREIGHT_TYPE = 'GEO_MIX'; 
+
+--insert log table
+INSERT INTO "EBGCFE"."UI_XOUTFR_RATE_LOG"(
+		  CYCLE,      BRAND,
+	      GEO_TYPE, GEO,	      
+	      FAMILY,       MACHINETYPE,
+	      GL_PERCENTAGE,FREIGHT_TYPE,
+	      m1, m2, m3, m4,
+	      m5, m6, m7, m8,
+	      m9, m10, m11, m12,
+	      m13, m14, m15, m16,
+		  m17, m18,	
+		SYS_CREATED_BY,SYS_CREATED_DATE,
+		SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,
+		AT_ACTION,AT_MODIFIED_ON,AT_MILLIS
+	 )SELECT 
+		 a.CYCLE,      a.BRAND,
+	      a.GEO_TYPE, a.GEO,	      
+	      a.FAMILY,       a.MACHINETYPE,
+	      a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		'update',	CURRENT_TIMESTAMP ,TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+	  FROM :oldInfo a; 	
+
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::updateUiXoutfrRate successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::updateUiXoutfrRate'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

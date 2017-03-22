@@ -1,0 +1,149 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_loi_gr::PRC_LOI_GR_TRANSFER" (
+	IN iv_id VARCHAR(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_LOI_GR_TRANSFER              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/01                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+	v_logic_proc_name   VARCHAR2 (40) := 'PRC_LOI_GR_TRANSFER';
+    gv_logic_name    VARCHAR2 (40)  := 'PKG_LOI_GR';
+	v_full_name VARCHAR(100) := gv_logic_name||'.'||v_logic_proc_name;
+	v_logidi INTEGER := 0;
+	v_dept  VARCHAR(40);
+
+BEGIN
+	  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	  BEGIN
+	  	 on_exitcode := ::SQL_ERROR_CODE;
+	  	 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+
+         --commit;                                         --comment by Eric Zhou
+
+	  END;
+	  on_exitcode := -20099;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>:iv_id||':'||'Start');
+      DELETE FROM pcdw.exp_ecc_loi_gr
+            WHERE werks IN (SELECT siteid
+                              FROM conf_site_schedule
+                             WHERE ID = :iv_id);
+
+--   add by xwu. 2015/8/26
+     select top 1 dept into v_dept  from "SZEBGVMI"."CONF_SITE_SCHEDULE" as a;
+---------------------------
+
+      DELETE FROM Z_PCDW_RSP_LOI_GR;
+      
+        ---MEX CSE PROJECT UPDATED BY YUANSHENG1 2013-07-10
+
+UPDATE   LOI_GR LG
+   SET  LG.MATNR_DESCR =
+            (SELECT   ITEMDESC
+               FROM   ITEMSITEMASTER ISM
+              WHERE   LG.MATNR = ISM.ITEM AND LG.WERKS = ISM.SITEID AND ISM.SYS_ENT_STATE = 'ACTIVE')
+ WHERE       EXISTS (SELECT   1
+                       FROM   ITEMSITEMASTER ISM
+                      WHERE   LG.MATNR = ISM.ITEM AND LG.WERKS = ISM.SITEID AND ISM.SYS_ENT_STATE = 'ACTIVE' )
+         AND STATUS = 'NEW'
+         AND WERKS IN (SELECT   siteid
+                         FROM   conf_site_schedule
+                        WHERE   ID = :iv_id);
+                        
+ --PB The GR qty < Hold Qty from 3PL GR by Nancy wei
+ UPDATE LOI_GR
+    SET STATUS ='ERROR', REASON_CODE ='The GR qty < Hold Qty from 3PL GR'
+ WHERE QTY < HOLD_QTY
+     AND STATUS = 'NEW'
+     AND WERKS IN (SELECT   siteid
+                         FROM   conf_site_schedule
+                        WHERE   ID = :iv_id); 
+      
+      --added by wenfei @2007-11-12
+      UPDATE loi_gr
+         SET status = 'XI_IN_PROCESS'
+       WHERE status = 'NEW' AND werks IN (SELECT siteid
+                                                  FROM conf_site_schedule
+                                                 WHERE ID = :iv_id);
+
+      --commit;                 --comment by Eric Zhou
+
+	 --BACK UP
+	 DELETE FROM PCDW.BAK_EXP_ECC_LOI_GR
+	 WHERE DAYS_BETWEEN(SYS_TIMESTAMP,CURRENT_TIMESTAMP)>90;
+	
+	 INSERT INTO PCDW.BAK_EXP_ECC_LOI_GR
+                  (matnr, werks, whs_no, dest_storage_location, dest_type,
+                   dest_bin, qty, hold_type, hold_qty, lifnr, tpl_receipt_id,
+                   dept, tpl_receipt_line_id, po_number, po_line_id,
+                   invoice_number, ecc_step, tr_number, tr_item_number,
+                   material_document_year, material_document, tpl_id,SYS_TIMESTAMP)
+         SELECT matnr, werks, whs_no, dest_storage_location, dest_type,
+                dest_bin, qty, hold_type, hold_qty, lifnr, tpl_receipt_id,
+                :v_dept, tpl_receipt_line_id, po_number, po_line_id,       -- updated from dept to :dept 2015/8/26 by xwu.
+                invoice_number, ecc_step, tr_number, tr_item_number,
+                material_document_year, material_document, tpl_id,CURRENT_TIMESTAMP
+           FROM loi_gr
+          WHERE status = 'XI_IN_PROCESS' AND werks IN (SELECT siteid
+                                                         FROM conf_site_schedule
+                                                        WHERE ID = :iv_id);
+
+      INSERT INTO pcdw.exp_ecc_loi_gr
+                  (matnr, werks, whs_no, dest_storage_location, dest_type,
+                   dest_bin, qty, hold_type, hold_qty, lifnr, tpl_receipt_id,
+                   dept, tpl_receipt_line_id, po_number, po_line_id,
+                   invoice_number, ecc_step, tr_number, tr_item_number,
+                   material_document_year, material_document, tpl_id,SYS_TIMESTAMP)
+         SELECT matnr, werks, whs_no, dest_storage_location, dest_type,
+                dest_bin, qty, hold_type, hold_qty, lifnr, tpl_receipt_id,
+                :v_dept, tpl_receipt_line_id, po_number, po_line_id,      -- updated from dept to :dept 2015/8/26 by xwu.
+                invoice_number, ecc_step, tr_number, tr_item_number,
+                material_document_year, material_document, tpl_id,CURRENT_TIMESTAMP
+           FROM loi_gr
+          WHERE status = 'XI_IN_PROCESS' AND werks IN (SELECT siteid
+                                                         FROM conf_site_schedule
+                                                        WHERE ID = :iv_id);
+	
+      IF ::ROWCOUNT >= 1
+      THEN
+         UPDATE CONF_CFG_XI_PARA xp
+            SET xp.low = 1
+          WHERE xp.progname = 'ZRFC_VMI_MEX_LOIGR_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = :iv_id;
+      ELSE
+         UPDATE CONF_CFG_XI_PARA xp
+            SET xp.low = 0
+          WHERE xp.progname = 'ZRFC_VMI_MEX_LOIGR_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = :iv_id;
+      END IF;
+
+      UPDATE loi_gr
+         SET status = 'SENT'
+       WHERE status = 'XI_IN_PROCESS' AND werks IN (SELECT siteid
+                                                      FROM conf_site_schedule
+                                                     WHERE ID = :iv_id);
+
+      --commit;                    --comment by Eric Zhou
+      on_exitcode := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>:iv_id||':'||'Success');
+END;

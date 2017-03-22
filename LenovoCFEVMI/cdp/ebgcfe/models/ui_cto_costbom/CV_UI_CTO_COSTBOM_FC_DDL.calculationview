@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_CTO_COSTBOM_FC_DDL" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true" hierarchiesSQLEnabled="false" translationRelevant="true">
+  <descriptions defaultDescription="CV_UI_CTO_COSTBOM_FC_DDL"/>
+  <localVariables>
+    <variable id="V_CYCLE" parameter="true">
+      <descriptions defaultDescription="V_CYCLE"/>
+      <variableProperties datatype="VARCHAR" length="40" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="V_MODEL" parameter="true">
+      <descriptions defaultDescription="V_MODEL"/>
+      <variableProperties datatype="VARCHAR" length="80" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="V_COUNTRY" parameter="true">
+      <descriptions defaultDescription="V_COUNTRY"/>
+      <variableProperties datatype="VARCHAR" length="40" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="V_PLANT" parameter="true">
+      <descriptions defaultDescription="V_PLANT"/>
+      <variableProperties datatype="VARCHAR" length="40" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="FC" length="40"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#V_CYCLE</localVariable>
+      <localVariable>#V_MODEL</localVariable>
+      <localVariable>#V_COUNTRY</localVariable>
+      <localVariable>#V_PLANT</localVariable>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	IF :V_CYCLE = 'CURRENT' then
+ 	 var_out = select distinct FC from (
+(
+select  cycle,children from &quot;EBGCFE&quot;.biz_cbom_ctosbb where cycle=:V_CYCLE and model= :V_MODEL and plant= :V_PLANT
+union
+select cycle,children from &quot;EBGCFE&quot;.biz_cbom_swrcost where cycle=:V_CYCLE and  model= :V_MODEL and plant= :V_PLANT and country= :V_COUNTRY
+ )  as T1 join (select FC,IDNRK,CYCLE from &quot;EBGCFE&quot;.&quot;BIZ_FCSBBMAP&quot; where MATNR = :V_MODEL) as T2 on (T1.children = T2.IDNRK AND T1.cycle = T2.CYCLE)
+)
+ 				;
+ 	ELSE
+ 		var_out = select distinct FC from (
+(
+select  cycle,children from &quot;EBGCFE&quot;.biz_cbom_ctosbb_his where cycle=:V_CYCLE and  model= :V_MODEL and plant= :V_PLANT
+union
+select cycle,children from &quot;EBGCFE&quot;.biz_cbom_swrcost_his where cycle=:V_CYCLE and  model= :V_MODEL and plant= :V_PLANT and country= :V_COUNTRY
+ )  as T1 join (select FC,IDNRK,CYCLE from &quot;EBGCFE&quot;.&quot;BIZ_FCSBBMAP&quot; where MATNR = :V_MODEL) as T2 on (T1.children = T2.IDNRK AND T1.cycle = T2.CYCLE)
+)
+ 				;
+ 	END IF;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="FC" order="1">
+        <descriptions defaultDescription="FC"/>
+        <keyMapping columnObjectName="Script_View" columnName="FC"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

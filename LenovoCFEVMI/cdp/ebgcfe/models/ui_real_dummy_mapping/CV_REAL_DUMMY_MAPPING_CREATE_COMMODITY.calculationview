@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_REAL_DUMMY_MAPPING_CREATE_COMMODITY" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_REAL_DUMMY_MAPPING_CREATE_"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="CONF_PARAMETERS" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="CONF_PARAMETERS"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="PDOMAIN"/>
+        <viewAttribute id="PNAME"/>
+        <viewAttribute id="PVALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CONF_PARAMETERS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PDOMAIN" source="PDOMAIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PNAME" source="PNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PVALUE" source="PVALUE"/>
+      </input>
+      <filter>(&quot;PDOMAIN&quot; ='UI_COST_TAPE_ORI')and(&quot;PNAME&quot;='COMMODITY')</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="PVALUE" order="1" attributeHierarchyActive="false" displayAttribute="false" key="true">
+        <descriptions defaultDescription="PVALUE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PVALUE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="190"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,63 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xattc_err" (
+IN 	 	error_message	varchar(4096),
+IN 	 	business_name varchar(200),
+IN  CYCLE NVARCHAR(4096),
+IN   TBA_TYPE NVARCHAR(4096),
+IN   BRAND NVARCHAR(4096),
+IN   PLANT NVARCHAR(4096),
+IN   FAMILY NVARCHAR(4096),
+IN   SUBGEO NVARCHAR(4096),
+IN   M1 NVARCHAR(4096),
+IN   M2 NVARCHAR(4096),
+IN   M3 NVARCHAR(4096),
+IN   M4 NVARCHAR(4096),
+IN   M5 NVARCHAR(4096),
+IN   M6 NVARCHAR(4096),
+IN   M7 NVARCHAR(4096),
+IN   M8 NVARCHAR(4096),
+IN   M9 NVARCHAR(4096),
+IN   M10 NVARCHAR(4096),
+IN   M11 NVARCHAR(4096),
+IN   M12 NVARCHAR(4096),
+IN   M13 NVARCHAR(4096),
+IN   M14 NVARCHAR(4096),
+IN   M15 NVARCHAR(4096),
+IN   M16 NVARCHAR(4096),
+IN   M17 NVARCHAR(4096),
+IN   M18 NVARCHAR(4096),
+IN		SEQ	nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	AS
+/************************************************************************
+*name      : UI_XATTC_ERR              --函数名
+*function  : 保存在上传数据至表UI_XATTC时产生的错误信息              --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-01-21       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	business_code varchar(20);
+	table_name varchar(1000) := 'UI_XATTC';
+	privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	
+	    --添加business信息
+		business_code := :SEQ;
+  
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,0,1,:table_name);    
+			
+     	--记录upload的错误
+     	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || :business_code,:position,:error_message,:table_name,:business_name); 
+     	--详细记录upload的数据信息
+     	insert into "EBGCFE"."UI_XATTC_ERR_DETAIL"(CODE,POSITION,
+			CYCLE,TBA_TYPE,BRAND,PLANT,FAMILY,SUBGEO,M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18)
+		VALUES(:table_name || :business_code,:position,
+			:CYCLE,:TBA_TYPE,:BRAND,:PLANT,:FAMILY,:SUBGEO,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+END;

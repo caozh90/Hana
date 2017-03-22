@@ -1,0 +1,157 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_sellable_country::deleteUiSellableCountry"
+( 
+	IN   oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_SELLABLE_COUNTRY_T"
+	,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiSellableCountry
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo            
+*author      :      chris
+*CreateDate  :      2016.6.12
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(500) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ;
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_sellable_country::deleteUiSellableCountry error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_sellable_country::deleteUiSellableCountry'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_sellable_country::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_sellable_country::deleteUiSellableCountry'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+ 
+
+
+log_record = select top 1 a.CYCLE,
+	a.PRODUCT_GROUP,
+	a.ITEM,
+	 a.COUNTRY,
+	 a.PRODCLASS,
+	 a.ANNOUNCE_DATE,
+	 a.WITHDRAW_DATE,
+	 a.IAD,
+	 a.EOW,
+	 a.OPTION,
+	 a.COFCAT from "EBGCFE"."UI_SELLABLE_COUNTRY" as a, :oldInfo as b
+	where a.ITEM =b.ITEM
+          and a.COUNTRY = b.COUNTRY
+          and a.PRODCLASS = b.PRODCLASS
+          and a.COFCAT = b.COFCAT;
+	
+	
+--insert log table
+INSERT into  "EBGCFE"."UI_SELLABLE_COUNTRY_LOG"
+	("CYCLE",
+	"PRODUCT_GROUP",
+	"ITEM",
+	"COUNTRY",
+	"PRODCLASS",
+	"ANNOUNCE_DATE",
+	"WITHDRAW_DATE",
+	"IAD",
+	"EOW",
+	"OPTION",
+	"COFCAT",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+	)
+SELECT
+	'CURRENT',
+	'EBG',
+	 a.ITEM,
+	 a.COUNTRY,
+	 a.PRODCLASS,
+	 a.ANNOUNCE_DATE,
+	 a.WITHDRAW_DATE,
+	 a.IAD,
+	 a.EOW,
+	 a.OPTION,
+	 a.COFCAT,
+	CURRENT_TIMESTAMP,
+	SESSION_USER,
+	CURRENT_TIMESTAMP,
+	SESSION_USER,
+	SESSION_USER,
+	'delete',
+	CURRENT_TIMESTAMP,
+	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+from :log_record a;
+
+-- delete record from table	  	
+delete from "EBGCFE"."UI_SELLABLE_COUNTRY" AS a
+WHERE EXISTS (
+	SELECT 1
+		FROM :oldInfo as b
+		WHERE 
+		CYCLE = 'CURRENT' 
+		and PRODUCT_GROUP = 'EBG' 
+		and a.ITEM = b.ITEM
+		and a.COUNTRY = b.COUNTRY
+		and a.PRODCLASS = b.PRODCLASS
+		and a.COFCAT = b.COFCAT
+);
+
+ UPDATE pcdw.pcdw_sellable_country a SET(a.DELETION_FLAG,a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY)=
+    ('X',CURRENT_TIMESTAMP,session_user)
+    from :oldInfo b 
+    where a.ITEM =b.ITEM
+          and a.COUNTRY = b.COUNTRY
+          and a.PRODCLASS = b.PRODCLASS
+          and a.COFCAT = b.COFCAT;
+	   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_sellable_country::deleteUiSellableCountry successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_sellable_country::deleteUiSellableCountry'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);  
+END;

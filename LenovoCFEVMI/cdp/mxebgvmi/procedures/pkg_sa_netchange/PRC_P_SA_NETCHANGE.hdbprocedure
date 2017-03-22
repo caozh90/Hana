@@ -1,0 +1,236 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_sa_netchange::PRC_P_SA_NETCHANGE" ( 
+	IN iv_id VARCHAR(10), 
+	OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_P_SA_NETCHANGE              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/01                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/ 
+	AS
+	v_logic_proc_name   VARCHAR2 (40) := 'PRC_P_SA_NETCHANGE';
+	gv_logic_name    VARCHAR2 (40)  := 'PKG_SA_NETCHANGE';
+      v_full_name VARCHAR(50) := gv_logic_name||'.'||v_logic_proc_name;
+      v_logidi            INTEGER := 0;
+BEGIN
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+               
+         --commit;       --comment by Eric Zhou
+         
+	END;
+	  on_exitcode := -20099;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Start');    
+      UPDATE sa
+         SET entity_state = NULL
+       WHERE werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = :iv_id);
+
+      --commit;                          --comment by Eric Zhou
+
+      UPDATE sa
+         SET status = 'ACTIVE'
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_SA
+                 WHERE sa.sa_number = Z_PCDW_SA.sa_number
+                   AND sa.sa_line_id = Z_PCDW_SA.sa_line_id
+                   AND ifnull (Z_PCDW_SA.status, 't') <> 'X')
+         AND status = 'INACTIVE'
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = '1000');
+
+      UPDATE sa sa
+         SET entity_state = 'NO_CHANGE'
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_SA rs
+                 WHERE rs.sa_number = sa.sa_number
+                   AND rs.sa_line_id = sa.sa_line_id
+                   AND rs.order_type = sa.order_type
+                   AND rs.start_date = sa.start_date
+                   AND rs.end_date = sa.end_date
+                   AND rs.lifnr = sa.lifnr
+                   AND rs.matnr = sa.matnr
+                   AND rs.werks = sa.werks
+                   AND rs.create_date = sa.create_date
+                   AND rs.line_change_date = sa.line_change_date
+                   AND rs.qty = sa.qty
+                   AND rs.open_qty = sa.open_qty
+                   -- Added by Harris Liu for INC000000152725 on May 31, 2009
+                   -- Purpose: purchasing group is added into Z_PCDW_SA and SA
+                   AND rs.purchase_group = sa.purchase_group
+                                                
+             );
+
+      --commit;                                --comment by Eric Zhou
+
+      UPDATE sa t
+         SET (t.order_type, t.start_date, t.end_date, t.lifnr, t.matnr,
+              t.werks, t.create_date, t.line_change_date, t.qty, t.open_qty
+              , t.purchase_group) =
+                (SELECT s.order_type, s.start_date, s.end_date, s.lifnr,
+                        s.matnr, s.werks, s.create_date, s.line_change_date,
+                        -- Added by Harris Liu for INC000000152725 on May 31, 2009
+                        -- Purpose: purchasing group is added into Z_PCDW_SA and SA
+                        s.qty, s.open_qty 
+                        , s.purchase_group
+                   FROM Z_PCDW_SA s
+                  WHERE s.sa_number = t.sa_number
+                    AND s.sa_line_id = t.sa_line_id),
+             entity_state = 'UPDATE',
+             status = 'ACTIVE'
+       WHERE t.werks IN (SELECT siteid
+                           FROM conf_site_schedule
+                          WHERE ID = :iv_id)
+         AND entity_state IS NULL
+         AND EXISTS (
+                   SELECT 'x'
+                     FROM Z_PCDW_SA
+                    WHERE sa_number = t.sa_number
+                          AND sa_line_id = t.sa_line_id);
+
+      --commit;                              --comment by Eric Zhou
+
+      --then insert all new rows into SA
+      INSERT INTO sa
+                  (sa_number, sa_line_id, order_type, start_date, end_date,
+                   lifnr, matnr, werks, create_date, line_change_date, qty,
+                   -- Added by Harris Liu for INC000000152725 on May 31, 2009
+                   -- Purpose: purchasing group is added into Z_PCDW_SA and SA
+                   open_qty
+                   , entity_state, status, purchase_group,sys_created_date,sys_created_by,sys_auth_id) -- 2013.07.09 MEX CSE PROJECT ADDED BY YUANSHENG1
+         SELECT sa_number, sa_line_id, order_type, start_date, end_date,
+                lifnr, matnr, werks, create_date, line_change_date, qty,
+                open_qty  
+                , 'INSERT', 'ACTIVE', purchase_group,CURRENT_DATE,v_logic_proc_name,werks                   -- 2013.07.09 MEX CSE PROJECT ADDED BY YUANSHENG1
+           FROM Z_PCDW_SA
+          WHERE NOT EXISTS (
+                   SELECT 'x'
+                     FROM sa
+                    WHERE sa.sa_number = Z_PCDW_SA.sa_number
+                      AND sa.sa_line_id = Z_PCDW_SA.sa_line_id)
+            AND EXISTS (
+                   SELECT 'x'
+                     FROM Z_PCDW_SUPITEM ma    --mst_apprsupitem
+                    WHERE ma.item = Z_PCDW_SA.matnr
+                      AND ma.siteid = Z_PCDW_SA.werks
+                      AND SUBSTR
+                             (ma.supplierid,
+                              1,
+                              CASE
+                                 WHEN INSTR (ma.supplierid, '_', 1, 1) > 0
+                                    THEN INSTR (ma.supplierid, '_', 1, 1) - 1
+                                 ELSE 999
+                              END
+                             ) = Z_PCDW_SA.lifnr
+                      
+                      )
+            AND werks IN (SELECT siteid
+                            FROM conf_site_schedule
+                           WHERE ID = :iv_id);
+
+      --commit;                                --comment by Eric Zhou
+
+      --added @2007-11-14
+      UPDATE sa
+         SET entity_state = 'DELETE'
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_SA
+                 WHERE sa.sa_number = Z_PCDW_SA.sa_number
+                   AND sa.sa_line_id = Z_PCDW_SA.sa_line_id
+                   AND Z_PCDW_SA.status = 'X')
+         AND entity_state = 'NO_CHANGE'
+         AND status = 'ACTIVE'
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = :iv_id);
+
+      UPDATE sa
+         SET status = 'INACTIVE'
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_SA
+                 WHERE sa.sa_number = Z_PCDW_SA.sa_number
+                   AND sa.sa_line_id = Z_PCDW_SA.sa_line_id
+                   AND (Z_PCDW_SA.status = 'X'
+       -- Added by Harris Liu for INC000000152725 on May 4, 2009
+       -- Purpose: 1.If a SA is deleted or blocked, VMI will not consider the SA;
+       --          2.If "Open Schedule line" is equal to "0", VMI will not consider the SA.
+                    OR Z_PCDW_SA.open_qty <= 0))
+         --and (entity_state <> 'NO_CHANGE' or entity_state is null)
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = :iv_id);
+                        
+      --modify by nancy wei in 20130902
+    
+      UPDATE   SA
+         SET   STATUS = 'INACTIVE'
+       WHERE   EXISTS 
+                 (SELECT   'x'
+                    FROM   Z_PCDW_SA
+                   WHERE   SA.Sa_Number = Z_PCDW_SA.Sa_Number
+                           AND SA.SA_LINE_ID = Z_PCDW_SA.Sa_Line_Id
+                           --AND trunc(Z_PCDW_SA.end_date) < trunc(CURRENT_DATE))
+                           AND Z_PCDW_SA.end_date < CURRENT_DATE)
+                AND Werks IN (SELECT   siteid
+                                FROM   conf_site_schedule
+                               WHERE   id = :iv_id); 
+                               
+    --modify end by nancy wei in 20130902
+
+      UPDATE sa
+         SET status = 'ACTIVE'
+       WHERE (status IS NULL OR status <> 'INACTIVE')
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = :iv_id);
+
+      UPDATE sa
+         SET sys_timestamp = CURRENT_DATE
+       WHERE werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = :iv_id);
+
+
+    -- 2013.07.09 CSE PROJECT UPDATED BY YUANSHENG1
+
+    UPDATE  SA
+   SET  SA.MATNR_DESCR =
+            (SELECT   ITEMDESC
+               FROM   ITEMSITEMASTER ISM
+              WHERE   SA.MATNR = ISM.ITEM AND SA.WERKS = ISM.SITEID AND ISM.SYS_ENT_STATE = 'ACTIVE')
+ WHERE       EXISTS (SELECT   1
+                       FROM   ITEMSITEMASTER ISM
+                      WHERE   SA.MATNR = ISM.ITEM AND SA.WERKS = ISM.SITEID AND ISM.SYS_ENT_STATE = 'ACTIVE' AND ifnull(SA.MATNR_DESCR,'0')<>ISM.ITEMDESC);
+
+
+      --commit;                     --comment by Eric Zhou
+      on_exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success'); 
+       
+END;

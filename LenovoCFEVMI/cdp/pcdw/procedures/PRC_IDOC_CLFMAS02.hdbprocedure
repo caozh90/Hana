@@ -1,0 +1,372 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_IDOC_CLFMAS02" ( 
+OUT   PO_RETURNCODE  DECIMAL ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW 
+	AS
+   /************************************************************************
+   *name        :               PRC_IDOC_CLFMAS02
+   *function    :               master data update for IDOC CLFMAS02
+   *input       :
+   *output      :
+   *author      :               liyhd
+   *CreateDate  :                2011-2-23
+   *UpdateDate  :               --??????(?????????????)
+  --------------------------------------------------------------------------------------------------------
+    z_mid_ecc_clfmas02 , pcdw_itemsitemaster 增加x_cofcat ,x_cofsubcat字段
+    修改相应的程序.    
+    by xwu2015/12/24
+    Z_MID_ECC_CLFMAS02 增加字段 X_SPECMODDESG， X_SPECMODDESG_FLAG
+    修改相应的程序.    
+    by xwu2016/1/15    
+   *************************************************************************/
+   vProcStartTime   TIMESTAMP := CURRENT_TIMESTAMP; 
+   v_DelteStr       VARCHAR (1024);
+   vMsg             VARCHAR (1024) := '';
+   vCode            DECIMAL := 0;
+
+BEGIN
+	
+	-- exception
+    --定义异常
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+	  vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+           VALUES (CURRENT_TIMESTAMP,
+                   'PRC_IDOC_CLFMAS02',
+                   'OTHERS ERROR',
+                   :vCode,
+                   :vMsg,
+                   '',
+                   '',
+                   '',
+                   'END');
+    exec 'commit';
+    END;
+	-- exception
+
+	INSERT INTO PCDW_PROC_LOG
+        VALUES (:vProcStartTime,
+                'PRC_IDOC_CLFMAS02',
+                '',
+                NULL,
+                '',
+                '',
+                '',
+                '',
+                'START');
+
+   exec 'COMMIT';
+
+   PO_RETURNCODE := 1;
+
+   --i
+   --Start CRQ000000068025
+   /*
+   when item expend to new plat after classfication was arrived the classfication will be null
+   Damin Li add 2013/12/17
+   */
+   UPDATE ECC_CLFMAS02 a
+      SET flag = 1
+    WHERE EXISTS
+             (SELECT 1
+                FROM PCDW_MID_ITEMSITEMASTER B
+               WHERE B.NEWFLAG = 'Y' AND A.MATNR = B.ITEM);
+
+   --end CRQ000000068025
+
+   --iii
+   /* If the classification Idoc arrived to DB earlier than material Idoc,
+   then do not update the status.  YanJun add 2011-07-08 */
+   UPDATE ECC_CLFMAS02 a
+      SET flag = 1
+    WHERE     flag = 0
+          AND EXISTS
+                 (SELECT 1
+                    FROM PCDW_ITEMSITEMASTER B
+                   WHERE A.MATNR = B.ITEM);
+
+   exec 'COMMIT';
+	
+  	delete from "Z_MID_ECC_CLFMAS02";
+	exec 'commit';
+	
+	--begin, modified by zhaish1 on 20141017
+/* 1-exist classification information, 0-not exist. 
+   Keep the original value in pcdw_itemsitemaster when there are no records in ecc_clfmas02 */
+   INSERT INTO Z_MID_ECC_CLFMAS02 (MATNR,
+                                   EM_COUNTRY,
+                                   EM_COUNTRY_FLAG,
+                                   EM_GEO,
+                                   EM_GEO_FLAG,
+                                   EM_SUBGEO,
+                                   EM_SUBGEO_FLAG,
+                                   PRODFAMILY,
+                                   PRODFAMILY_FLAG,
+                                   CCPRODH,
+                                   CCPRODH_FLAG,
+                                   DUMMYFG,
+                                   DUMMYFG_FLAG,
+                                   BASEWARRANTY,
+                                   BASEWARRANTY_FLAG,
+                                   CUSTOMMODELFLAG,
+                                   CUSTOMMODELFLAG_FLAG,
+                                   ISSBB,
+                                   ISSBB_FLAG,
+                                   PLATFORM,
+                                   PLATFORM_FLAG,
+                                   NESTPLATE,
+                                   NESTPLATE_FLAG,
+                                   CIQ,
+                                   CIQ_FLAG,
+                                   MACHINECODE,
+                                   MACHINECODE_FLAG,
+                                   BACCODE,
+                                   BACCODE_FLAG,
+                                   HTSD,
+                                   HTSD_FLAG,
+                                   MIDHCOUNTRY,
+                                   MIDHCOUNTRY_FLAG,
+                                   SMT,
+                                   SMT_FLAG,
+                                   BOMID,
+                                   BOMID_FLAG,X_ENTITY_TYPE,X_ENTITY_TYPE_FLAG,
+                                   X_COUNTRY_ANNOUNCE_DATE,X_COUNTRY_ANNOUNCE_DATE_FLAG,
+	 	 	 	 	 	 	 	   X_COUNTRY_WITHDRAW_DATE,X_COUNTRY_WITHDRAW_DATE_FLAG,
+	 	 	 	 	 	 	 	   X_WW_ANNC_DATE,X_WW_ANNC_DATE_FLAG,          
+	 	 	 	 	 	 	 	   X_WW_WITHDRAW_DATE,X_WW_WITHDRAW_DATE_FLAG,
+	 	 	 	 	 	 	 	   X_UNIT_CLASS,X_UNIT_CLASS_FLAG,   --add by xwu 2015/9/9
+	 	 	 	 	 	 	 	   X_COFCAT, X_COFCAT_FLAG,                --add by xwu 2015/12/24
+	 	 	 	 	 	 	 	   X_COFSUBCAT, X_COFSUBCAT_FLAG, 	 --add by xwu 2015/12/24
+	 	 	 	 	 	 	 	   BASE_MOD,BASE_MOD_FLAG,    -- add by xiechao 2016/1/12
+	 	 	 	 	 	 	 	   X_SPECMODDESG, X_SPECMODDESG_FLAG  -- add by xwu 2016/1/15
+                                   )
+        SELECT MATNR,
+               MAX (MAP (ATNAM, 'EM_COUNTRY', ATWRT)) EM_COUNTRY,
+               MAX (MAP (ATNAM, 'EM_COUNTRY', 1, 0)) EM_COUNTRY_FLAG,
+               MAX (MAP (ATNAM, 'EM_GEO', ATWRT)) EM_GEO,
+               MAX (MAP (ATNAM, 'EM_GEO', 1, 0)) EM_GEO_FLAG,
+               MAX (MAP (ATNAM, 'EM_SUBGEO', ATWRT)) EM_SUBGEO,
+               MAX (MAP (ATNAM, 'EM_SUBGEO', 1, 0)) EM_SUBGEO_FLAG,
+               MAX (MAP (ATNAM, 'EM_PRDFAMILY', ATWRT)) PRDFAMILY,
+               MAX (MAP (ATNAM, 'EM_PRDFAMILY', 1, 0)) EM_PRDFAMILY_FLAG,
+               MAX (MAP (ATNAM, 'PLM_PHC', ATWRT)) CCPRODH,
+               MAX (MAP (ATNAM, 'PLM_PHC', 1, 0)) PLM_PHC_FLAG,
+               MAX (MAP (ATNAM, 'DUMMYFG', ATWRT)) DUMMYFG,
+               MAX (MAP (ATNAM, 'DUMMYFG', 1, 0)) DUMMYFG_FLAG,
+               MAX (MAP (ATNAM, 'BASEWARRANTY', ATWRT)) BASEWARRANTY,
+               MAX (MAP (ATNAM, 'BASEWARRANTY', 1, 0)) BASEWARRANTY_FLAG,
+               MAX (MAP (ATNAM, 'CUSTOMMODELFLAG', ATWRT)) CUSTOMMODELFLAG,
+               MAX (MAP (ATNAM, 'CUSTOMMODELFLAG', 1, 0))
+                  CUSTOMMODELFLAG_FLAG,
+               MAX (MAP (ATNAM, 'ISSBB', ATWRT)) ISSBB,
+               MAX (MAP (ATNAM, 'ISSBB', 1, 0)) ISSBB_FLAG,
+               MAX (MAP (ATNAM, 'PLATFORM', ATWRT)) PLATFORM,
+               MAX (MAP (ATNAM, 'PLATFORM', 1, 0)) PLATFORM_FLAG,
+               MAX (MAP (ATNAM, 'NESTPLATE', ATWRT)) NESTPLATE,
+               MAX (MAP (ATNAM, 'NESTPLATE', 1, 0)) NESTPLATE_FLAG,
+               MAX (MAP (ATNAM, 'CIQ', ATWRT)) CIQ,
+               MAX (MAP (ATNAM, 'CIQ', 1, 0)) CIQ_FLAG,
+               MAX (MAP (ATNAM, 'MACHINECODE', ATWRT)) MACHINECODE,
+               MAX (MAP (ATNAM, 'MACHINECODE', 1, 0)) MACHINECODE_FLAG,
+               MAX (MAP (ATNAM, 'BACCODE', ATWRT)) BACCODE,
+               MAX (MAP (ATNAM, 'BACCODE', 1, 0)) BACCODE_FLAG,
+               MAX (MAP (ATNAM, 'HTSD', ATWRT)) HTSD,
+               MAX (MAP (ATNAM, 'HTSD', 1, 0)) HTSD_FLAG,
+               MAX (MAP (ATNAM, 'MIDHCOUNTRY', ATWRT)) MIDHCOUNTRY,
+               MAX (MAP (ATNAM, 'MIDHCOUNTRY', 1, 0)) MIDHCOUNTRY_FLAG,
+               MAX (MAP (ATNAM, 'SMT', ATWRT)) SMT,
+               MAX (MAP (ATNAM, 'SMT', 1, 0)) SMT_FLAG,
+               MAX (MAP (ATNAM, 'BOMID', ATWRT)) BOMID,
+               MAX (MAP (ATNAM, 'BOMID', 1, 0)) BOMID_FLAG,
+               MAX (MAP (ATNAM, 'X_ENTITY_TYPE', ATWRT)) X_ENTITY_TYPE,
+               MAX (MAP (ATNAM, 'X_ENTITY_TYPE', 1,0)) X_ENTITY_TYPE_FLAG,
+               
+               TO_DATE(MAX (MAP (ATNAM, 'X_COUNTRY_ANNOUNCE_DATE', ATWRT))) X_COUNTRY_ANNOUNCE_DATE,
+               MAX (MAP (ATNAM, 'X_COUNTRY_ANNOUNCE_DATE', 1,0)) X_COUNTRY_ANNOUNCE_DATE_FLAG,
+               TO_DATE(MAX (MAP (ATNAM, 'X_COUNTRY_WITHDRAW_DATE', ATWRT))) X_COUNTRY_WITHDRAW_DATE,
+               MAX (MAP (ATNAM, 'X_COUNTRY_WITHDRAW_DATE', 1,0)) X_COUNTRY_WITHDRAW_DATE_FLAG,
+               TO_DATE(MAX (MAP (ATNAM, 'X_WW_ANNC_DATE', ATWRT))) X_WW_ANNC_DATE,         
+               MAX (MAP (ATNAM, 'X_WW_ANNC_DATE', 1,0)) X_WW_ANNC_DATE_FLAG,               
+               TO_DATE(MAX (MAP (ATNAM, 'X_WW_WITHDRAW_DATE', ATWRT))) X_WW_WITHDRAW_DATE, 
+               MAX (MAP (ATNAM, 'X_WW_WITHDRAW_DATE', 1,0)) X_WW_WITHDRAW_DATE_FLAG,
+               MAX (MAP (ATNAM, 'X_UNIT_CLASS', ATWRT)) X_UNIT_CLASS,    -- add by xwu 2015/9/9
+               MAX (MAP (ATNAM, 'X_UNIT_CLASS', 1,0)) X_UNIT_CLASS_FLAG, -- add by xwu 2015/9/9
+               -- add by xwu 2015/12/24
+               MAX (MAP (ATNAM, 'X_COFCAT', ATWRT)) X_COFCAT,                 
+               MAX (MAP (ATNAM, 'X_COFCAT', 1,0)) X_COFCAT_FLAG,
+               MAX (MAP (ATNAM, 'X_COFSUBCAT', ATWRT)) X_COFSUBCAT,
+               MAX (MAP (ATNAM, 'X_COFSUBCAT', 1,0)) X_COFSUBCAT_FLAG,
+               MAX (MAP (ATNAM, 'BASE_MOD', ATWRT)) BASE_MOD,    -- add by xiechao 2016/1/12
+               MAX (MAP (ATNAM, 'BASE_MOD', 1,0)) BASE_MOD_FLAG,-- add by xiechao 2016/1/12            
+               MAX (MAP (ATNAM, 'X_SPECMODDESG', ATWRT)) X_SPECMODDESG,    -- add by xwu 2016.1.15
+               MAX (MAP (ATNAM, 'X_SPECMODDESG', 1,0)) X_SPECMODDESG_FLAG  -- add by xwu 2016/1/15
+          FROM ECC_CLFMAS02
+         WHERE     FLAG = 1
+               AND ATNAM IN ('EM_COUNTRY',
+                             'EM_GEO',
+                             'EM_SUBGEO',
+                             'EM_PRDFAMILY',
+                             'PLM_PHC',
+                             'DUMMYFG',
+                             'BASEWARRANTY',
+                             'CUSTOMMODELFLAG',
+                             'ISSBB',
+                             'PLATFORM',
+                             'NESTPLATE',
+                             'CIQ',
+                             'MACHINECODE',
+                             'BACCODE',
+                             'HTSD',
+                             'MIDHCOUNTRY',
+                             'SMT',
+                             'BOMID',
+                             'X_ENTITY_TYPE',
+                             'X_COUNTRY_ANNOUNCE_DATE',
+                             'X_COUNTRY_WITHDRAW_DATE',
+                             'X_WW_ANNC_DATE',
+                             'X_WW_WITHDRAW_DATE',
+                             'X_UNIT_CLASS',        -- add by xwu 2015/9/9
+                             'X_COFCAT',              -- add by xwu 2015/12/24
+                             'X_COFSUBCAT',        -- add by xwu 2015/12/24
+                             'BASE_MOD',    -- add by xiechao 2016/1/12
+                             'X_SPECMODDESG'   -- add by xwu 2016/1/15
+                             )
+      GROUP BY MATNR;
+      
+      exec 'commit';
+--end, modified by zhaish1 on 20141017
+	
+	update PCDW_ITEMSITEMASTER A
+	set A.EM_COUNTRY =
+            MAP (B.EM_COUNTRY_FLAG, 1, B.EM_COUNTRY, A.EM_COUNTRY),
+         A.EM_GEO = MAP (B.EM_GEO_FLAG, 1, B.EM_GEO, A.EM_GEO),
+         A.EM_SUBGEO = MAP (B.EM_SUBGEO_FLAG, 1, B.EM_SUBGEO, A.EM_SUBGEO),
+         /*x86全是新料，有所更改
+         A.PRODFAMILY =
+            MAP (
+               REGEXP_INSTR (B.MATNR, '^[0-9]*$'),
+               1, MAP (B.PRODFAMILY_FLAG, 1, B.PRODFAMILY, A.PRODFAMILY),
+               A.PRODFAMILY),
+          */     
+         A.CCPRODH = MAP (B.CCPRODH_FLAG, 1, B.CCPRODH, A.CCPRODH),
+         A.DUMMYFG = MAP (B.DUMMYFG_FLAG, 1, B.DUMMYFG, A.DUMMYFG),
+         A.BASEWARRANTY =
+            MAP (B.BASEWARRANTY_FLAG, 1, B.BASEWARRANTY, A.BASEWARRANTY),
+         A.CUSTOMMODELFLAG =
+            MAP (B.CUSTOMMODELFLAG_FLAG,
+                    1, B.CUSTOMMODELFLAG,
+                    A.CUSTOMMODELFLAG),
+         A.ISSBB = MAP (B.ISSBB_FLAG, 1, B.ISSBB, A.ISSBB),
+         A.PLATFORM = MAP (B.PLATFORM_FLAG, 1, B.PLATFORM, A.PLATFORM),
+         A.NESTPLATE = MAP (B.NESTPLATE_FLAG, 1, B.NESTPLATE, A.NESTPLATE),
+         A.CIQ = MAP (B.CIQ_FLAG, 1, B.CIQ, A.CIQ),
+         A.MACHINECODE =
+            MAP (B.MACHINECODE_FLAG, 1, B.MACHINECODE, A.MACHINECODE),
+         A.BACCODE = MAP (B.BACCODE_FLAG, 1, B.BACCODE, A.BACCODE),
+         A.HTSD = MAP (B.HTSD_FLAG, 1, B.HTSD, A.HTSD),
+         A.MIDHCOUNTRY =
+            MAP (B.MIDHCOUNTRY_FLAG, 1, B.MIDHCOUNTRY, A.MIDHCOUNTRY),
+         A.SMT = MAP (B.SMT_FLAG, 1, B.SMT, A.SMT),
+         A.BOMID = MAP (B.BOMID_FLAG, 1, B.BOMID, A.BOMID),
+         A.X_ENTITY_TYPE = MAP(B.X_ENTITY_TYPE_FLAG,1,B.X_ENTITY_TYPE,A.X_ENTITY_TYPE),
+         
+       	 A.X_COUNTRY_ANNOUNCE_DATE = TO_DATE(MAP(B.X_COUNTRY_ANNOUNCE_DATE_FLAG,1,B.X_COUNTRY_ANNOUNCE_DATE,A.X_COUNTRY_ANNOUNCE_DATE)),
+         A.X_COUNTRY_WITHDRAW_DATE = TO_DATE(MAP(B.X_COUNTRY_WITHDRAW_DATE_FLAG,1,B.X_COUNTRY_WITHDRAW_DATE,A.X_COUNTRY_WITHDRAW_DATE)),
+         A.X_WW_ANNC_DATE = TO_DATE(MAP(B.X_WW_ANNC_DATE_FLAG,1,B.X_WW_ANNC_DATE,A.X_WW_ANNC_DATE)),
+         A.X_WW_WITHDRAW_DATE = TO_DATE(MAP(B.X_WW_WITHDRAW_DATE_FLAG,1,B.X_WW_WITHDRAW_DATE,A.X_WW_WITHDRAW_DATE)),
+         
+         -- add by xwu 2015/11/19-------------------------------
+         A.X_UNIT_CLASS = MAP (B.X_UNIT_CLASS_FLAG, 1, B.X_UNIT_CLASS, A.X_UNIT_CLASS),
+         -------------------------------------------------------------------
+
+         -- add by xwu 2015/12/24-------------------------------
+         A.X_COFCAT         = MAP (B.X_COFCAT_FLAG, 1, B.X_COFCAT, A.X_COFCAT),
+         A.X_COFSUBCAT  = MAP (B.X_COFSUBCAT_FLAG, 1, B.X_COFSUBCAT, A.X_COFSUBCAT),
+         -------------------------------------------------------------------
+         -- add by xiechao 2016/1/129-------------------------------
+         A.BASE_MOD = MAP (B.BASE_MOD_FLAG, 1, B.BASE_MOD, A.BASE_MOD),
+         -------------------------------------------------------------------         
+         -- add by xwu 2016/1/15-------------------------------
+         A.X_SPECMODDESG = MAP (B.X_SPECMODDESG_FLAG, 1, B.X_SPECMODDESG, A.X_SPECMODDESG),
+         -------------------------------------------------------------------         
+         
+         A.SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+         A.SYS_LAST_MODIFIED_BY = 'PRC_IDOC_CLFMAS02'
+	  FROM Z_MID_ECC_CLFMAS02 B
+	  WHERE B.MATNR = A.ITEM;
+	  
+	  exec 'commit';
+	
+   delete from 	Z_MID_ECC_CLFMAS02_STORCOND;
+   exec 'commit';
+		
+   INSERT INTO Z_MID_ECC_CLFMAS02_STORCOND (ITEM, SITEID, ATWRT)
+      SELECT MATNR, SUBSTR (ATNAM, 4, 4), ATWRT
+        FROM ECC_CLFMAS02
+       WHERE SUBSTR (ATNAM, 1, 2) = 'SS' AND FLAG = 1;
+
+   exec 'COMMIT';
+
+
+   update PCDW_ITEMSITEMASTER A 
+   SET
+         A.STORCOND = B.ATWRT,
+         A.SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+         A.SYS_LAST_MODIFIED_BY = 'PRC_IDOC_CLFMAS02'
+   from Z_MID_ECC_CLFMAS02_STORCOND B
+   where B.ITEM = A.ITEM AND A.SITEID = B.SITEID;
+   
+   EXEC 'COMMIT';
+   /*MERGE INTO PCDW_ITEMSITEMASTER A
+        USING Z_MID_ECC_CLFMAS02_STORCOND B
+           ON (B.ITEM = A.ITEM AND A.SITEID = B.SITEID)
+   WHEN MATCHED
+   THEN
+      UPDATE SET
+         A.STORCOND = B.ATWRT,
+         A.SYS_LAST_MODIFIED_DATE = SYSDATE,
+         A.SYS_LAST_MODIFIED_BY = 'PRC_IDOC_CLFMAS02';
+*/
+	UPDATE ECC_CLFMAS02 a
+    SET flag = 2
+ 	WHERE flag = 1;
+
+	exec 'COMMIT';
+
+   PO_RETURNCODE := 0;
+
+   INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                              EVENTNAME,
+                              SUBEVENT,
+                              MSGCODE,
+                              EVENTMSG,
+                              EVENTTYPE,
+                              DATASOURCE,
+                              DATADEST,
+                              EVENTDESCR)
+        VALUES (CURRENT_TIMESTAMP,
+                'PRC_IDOC_CLFMAS02',
+                'SUCCESS',
+                :vCode,
+                :vMsg,
+                '',
+                '',
+                '',
+                'END');
+
+   EXEC 'COMMIT';
+	
+END;

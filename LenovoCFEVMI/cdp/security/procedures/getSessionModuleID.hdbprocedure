@@ -1,0 +1,22 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::getSessionModuleID" (
+	out module "SECURITY"."cdp.security.data::userManagement.DisplayModuleIDT" ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	READS SQL DATA AS
+
+BEGIN
+/***************************** 
+	Write your procedure logic  
+ *****************************/
+ 	
+
+ 	module = SELECT 
+ 	"SESSION_VALUE" AS "MODULE_ID"
+ 	FROM "SECURITY"."cdp.security.data::userManagement.DATA_SESSION_CONTEXT" A
+ 	,"SECURITY"."cdp.security.data::userManagement.INFO_USER" B
+ 	WHERE A."SESSION_TYPE" = 'MODULE_ID'
+ 	AND A."USER_ID" = B."USER_ID" 	
+ 	AND B."USER_NAME" = SESSION_USER; 
+ 		
+END;

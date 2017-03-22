@@ -1,0 +1,121 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_ONDEMAND_LIST" 
+( 
+    IN  p_in_cycle_name    		VARCHAR(40),
+    IN  P_in_deltacycle_name    VARCHAR(40),
+    IN  p_in_report_name    	VARCHAR(300),
+    OUT p_out_exitcode     		NUMBER,
+    OUT V_T_COST_MODEL_LIST     "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.T_BIZ_COST_MODEL_LIST"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	DEFAULT SCHEMA EBGCFE 
+	
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_RPT_ONDEMAND_LIST 
+*function   : Material Margin Report
+*input      : p_in_cycle_type, p_in_cycle_name
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2016-08-02
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+AS
+	  v_user_id         VARCHAR(64) := SESSION_USER;
+      v_pkg_name        VARCHAR(30) := 'PKG_REPORT';
+      v_prc_name        VARCHAR(50) := 'PRC_RPT_ONDEMAND_LIST';
+      v_full_name       VARCHAR(100) := :v_pkg_name || '.' || :v_prc_name;	
+      v_exitmess        VARCHAR(200) := '';
+      logidi            INTEGER := 0;
+      v_count         	NUMBER;
+BEGIN    
+	
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN         
+        p_out_exitcode:=::SQL_ERROR_CODE;
+               
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+	                                                I_LOGSID     => :logidi,
+		                                            I_EVENT_NAME => :v_full_name, 
+		                                            I_MODULE     => 'EBGCFE',
+		                                            I_MESSAGE    => 'ERROR', 
+		                                            I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || 
+		                                                            substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+    --process logic  
+    p_out_exitcode := -1;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE'); 
+		                                        
+    select count(*) into v_count from UI_RPT_MODELLIST
+     where REPORT_NAME = :p_in_report_name;
+ 
+      IF :v_count = 0
+      THEN 
+      
+         TAB_MODEL_LIST_CURRENT = 
+                 SELECT product_group, item, plant, country, item_type
+                   FROM BIZ_COST_MODEL_LIST
+                  WHERE eol_status <> 'EOL'
+                    AND cycle IN(P_in_cycle_name, P_in_deltacycle_name);
+                    
+         TAB_MODEL_LIST_HISTORY =
+                 SELECT product_group, item, plant, country, item_type
+                   FROM BIZ_COST_MODEL_LIST_HIS
+                     WHERE eol_status <> 'EOL'
+                       AND cycle_productgroup IN(:p_in_cycle_name||'EBG', :p_in_deltacycle_name||'EBG');
+      ELSE
+          TAB_MODEL_LIST_CURRENT =
+                 SELECT product_group, item, plant, country, item_type  
+                   FROM BIZ_COST_MODEL_LIST T1
+                  WHERE eol_status <> 'EOL'
+                    AND cycle IN(:P_in_cycle_name, :P_in_deltacycle_name)
+                    AND EXISTS (SELECT 1 FROM UI_ITEM T2
+	                             WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+	                               AND T2.ITEM = T1.ITEM
+	                               AND EXISTS(SELECT 1 FROM UI_RPT_MODELLIST T3
+	                                           WHERE (T3.ITEM   = T2.ITEM OR 
+	                                                  T3.MT     = T2.MACHINE_TYPE OR 
+	                                                  T3.FAMILY = T2.ASP_PRD_FAMILY)
+	                                             AND T3.REPORT_NAME = :p_in_report_name ));
+	                                             
+	                                             
+	        TAB_MODEL_LIST_HISTORY =
+                 SELECT product_group, item, plant, country, item_type
+                      FROM BIZ_COST_MODEL_LIST_HIS T1
+                     WHERE eol_status <> 'EOL'
+                       AND cycle_productgroup IN(:p_in_cycle_name||'EBG', :p_in_deltacycle_name||'EBG')
+                       AND EXISTS (SELECT 1 FROM UI_ITEM T2
+	                             WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+	                               AND T2.ITEM = T1.ITEM
+	                               AND EXISTS(SELECT 1 FROM UI_RPT_MODELLIST T3
+	                                           WHERE (T3.ITEM   = T2.ITEM OR 
+	                                                  T3.MT     = T2.MACHINE_TYPE OR 
+	                                                  T3.FAMILY = T2.ASP_PRD_FAMILY)
+	                                             AND T3.REPORT_NAME = :p_in_report_name ));
+      END IF;
+      
+      V_T_COST_MODEL_LIST =            
+          SELECT product_group, item, plant, country, item_type,
+                 ROW_NUMBER() OVER(PARTITION BY item_type 
+                                   ORDER BY item, plant, country) AS seq_id 
+            FROM (SELECT product_group, item, plant, country, 
+                         MAX(item_type) AS item_type
+                    FROM (
+		                  SELECT * FROM :TAB_MODEL_LIST_CURRENT
+		                  UNION
+		                  SELECT * FROM :TAB_MODEL_LIST_HISTORY
+                          )
+                  GROUP BY product_group, item, plant, country
+                  );    
+                  
+    --end--
+    p_out_exitcode := 0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+	                                            I_EVENT_NAME => :v_full_name,
+	                                            I_MODULE     => 'EBGCFE');   
+END;

@@ -1,0 +1,23 @@
+FUNCTION "SZEBGVMI"."cdp.szebgvmi.functions.pkg_pcdw_to_vmi::FUNC_GET_ITEMTYPE" (
+    V_EPRIO VARCHAR, V_MTART VARCHAR
+ ) 
+	RETURNS result varchar2(1024)
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER AS
+BEGIN
+
+	If v_eprio='0006' and v_mtart <>'ZIMG' and v_mtart<>'ZTCP' 
+	then 
+	   result:='JIT';
+	elseif v_eprio='0007' and v_mtart <>'ZIMG' and v_mtart<>'ZTCP' 
+	then 
+	   result:='VMI';
+	elseif v_eprio is NULL and v_mtart <>'ZIMG' and v_mtart<>'ZTCP' 
+	then 
+	   result:='NON-JIT';
+	elseif v_mtart ='ZIMG' or v_mtart='ZTCP' 
+	then 
+	   result:='NON-STOCK';
+	end if;
+
+END;

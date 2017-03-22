@@ -1,0 +1,35 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_change_location::deleteUiChangeLocation" ( 
+IN newInfo "MXEBGVMI"."UI_CHANGE_SL",
+OUT errorInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+	 	MATNR NVARCHAR(18);
+		STORAGE_LOC NVARCHAR(40);
+		MO_NUM NVARCHAR(12);
+
+	
+BEGIN
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+ 	BEGIN
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		::SQL_ERROR_MESSAGE detail from dummy;
+ 	END ;
+ 	
+ 	select 
+ 		MATNR,
+ 		STORAGE_LOC,
+ 		MO_NUM
+ 	into 
+ 		MATNR,
+ 		STORAGE_LOC,
+ 		MO_NUM
+ 	from :newInfo;
+ 	
+ 	delete from "MXEBGVMI"."UI_CHANGE_SL"
+ 	where MATNR = :MATNR and STORAGE_LOC = :STORAGE_LOC and MO_NUM = :MO_NUM;
+ 	
+END;

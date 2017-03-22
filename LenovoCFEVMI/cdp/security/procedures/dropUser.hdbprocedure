@@ -1,0 +1,106 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::dropUser" (
+	In aUSER_ID BIGINT ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	aMODULE_NAME NVARCHAR(200) :='SYS';
+	aUSER_NAME VARCHAR(256);
+	privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	
+	更加强烈的删除user 的动作，
+	完全不进行校验，
+	直接删除所有相关数据库中的配置和权限。
+	最后drop user
+	call "SECURITY"."cdp.security.procedures::dropUser"(userid);
+	
+ *****************************/
+   
+   
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299;   
+     
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到aROLE_ID ,则返回，同时告知不存在这个权限明细
+			
+     aI_DETAIL :='cdp.security.procedures::dropUser can not find the userid : '||aUSER_ID ||' .';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::dropUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+     END;
+     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	--如果产生异常，返回，并且告知异常。
+    	aI_DETAIL :='cdp.security.procedures::dropUser error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::dropUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+   	
+   		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+    END; 
+    
+call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityUserAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    	RETURN ;
+    END IF;
+    
+    --START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::dropUser"'
+	,I_MODULE=>:aMODULE_NAME); 
+	
+    select USER_NAME into aUSER_NAME from "SYS"."USERS" WHERE "USER_ID" = :aUSER_ID;
+ 		
+  	delete from "SECURITY"."cdp.security.data::userManagement.INFO_USER"  where  USER_ID = :aUSER_ID;
+
+	delete from "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER"  where  USER_ID = :aUSER_ID;
+
+	delete from "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"  where  USER_ID = :aUSER_ID;
+  
+  	delete from "SECURITY"."cdp.security.data::userManagement.MAP_ALL" where USER_ID = :aUSER_ID;
+  
+  	delete from "SECURITY"."cdp.security.data::userManagement.MAP_RESOURCE_USER" where USER_ID = :aUSER_ID;
+  
+	exec 'drop user ' || :aUSER_NAME;
+  
+ 
+ --如果成功添加,则log添加成功！
+
+     	aI_DETAIL := 'cdp.security.procedures::dropUser ('||:aUSER_ID||' ) [user name :'||:aUSER_NAME||'];  successfully executed . ';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::dropUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000005'
+     	,I_DETAIL=>:aI_DETAIL); 	
+   	
+END;

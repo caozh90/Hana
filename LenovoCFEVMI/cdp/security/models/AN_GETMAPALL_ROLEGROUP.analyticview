@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cube:cube xmlns:Cube="http://www.sap.com/ndb/BiModelCube.ecore" schemaVersion="1.5" id="AN_GETMAPALL_ROLEGROUP" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled">
+  <descriptions defaultDescription="AN_GETMAPALL_ROLEGROUP"/>
+  <localVariables/>
+  <privateMeasureGroup id="MeasureGroup">
+    <attributes>
+      <attribute id="MODULE_ID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" columnName="MODULE_ID"/>
+      </attribute>
+      <attribute id="GROUP_ID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="GROUP_ID"/>
+        <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" columnName="GROUP_ID"/>
+      </attribute>
+      <attribute id="USER_ID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="USER_ID"/>
+        <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" columnName="USER_ID"/>
+      </attribute>
+      <attribute id="ROLEGROUP_ID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLEGROUP_ID"/>
+        <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" columnName="ROLEGROUP_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="ROLEGROUP_NAME_EX" hidden="false" order="7" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLEGROUP_NAME_EX"/>
+        <keyCalculation datatype="NVARCHAR" length="256">
+          <formula>IF(&quot;ROLEGROUP_ID&quot;= 0 ,'Other Roles' ,&quot;ROLEGROUP_NAME&quot;)</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="ROLE_ID" hidden="false" order="8" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_ID"/>
+        <keyCalculation datatype="BIGINT">
+          <formula>0</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="ROLE_NAME" hidden="false" order="9" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyCalculation datatype="NVARCHAR" length="256">
+          <formula>&quot;ROLEGROUP_NAME_EX&quot;</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="CDP_PRIVILEGE_NAME" hidden="false" order="10" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CDP_PRIVILEGE_NAME"/>
+        <keyCalculation datatype="NVARCHAR" length="300">
+          <formula>'securityAccess'</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies>
+        <tableProxy>
+          <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+        </tableProxy>
+        <tableProxy centralTable="true">
+          <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLEGROUP"/>
+        </tableProxy>
+      </tableProxies>
+      <joins>
+        <join>
+          <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+          <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLEGROUP"/>
+          <leftColumns>
+            <columnName>MODULE_ID</columnName>
+            <columnName>ROLEGROUP_ID</columnName>
+          </leftColumns>
+          <rightColumns>
+            <columnName>MODULE_ID</columnName>
+            <columnName>ROLEGROUP_ID</columnName>
+          </rightColumns>
+          <properties joinOperator="Equal" joinType="leftOuter"/>
+        </join>
+      </joins>
+      <layout>
+        <shapes>
+          <shape modelObjectName="cdp.security.data::userManagement.MAP_ALL" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+            <upperLeftCorner x="70" y="30"/>
+          </shape>
+          <shape modelObjectName="cdp.security.data::userManagement.INFO_ROLEGROUP" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+            <upperLeftCorner x="443" y="187"/>
+          </shape>
+        </shapes>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="ROLEGROUP_NAME" order="5" aggregationType="max" measureType="simple">
+        <descriptions defaultDescription="ROLEGROUP_NAME"/>
+        <measureMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLEGROUP" columnName="ROLEGROUP_NAME"/>
+      </measure>
+      <measure id="COMMENT" order="6" aggregationType="max" measureType="simple">
+        <descriptions defaultDescription="COMMENT"/>
+        <measureMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLEGROUP" columnName="COMMENT"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <sharedDimensions/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="MEASURE_GROUP" modelObjectType="repository">
+          <upperLeftCorner x="114" y="124"/>
+        </shape>
+        <shape modelObjectName="LogicalView" modelObjectNameSpace="MeasureGroup" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateMeasureGroup>
+</Cube:cube>

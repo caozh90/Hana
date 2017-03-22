@@ -1,0 +1,137 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_ratio_code::deleteUiRatioCode" 
+( 
+	IN   oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_RATIO_CODE_T"
+	,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS
+	 aI_DETAIL 		NVARCHAR(300) :='';
+	 alogide 		INTEGER :=0;
+	 v_cycle 		NVARCHAR(40);
+	 v_BRAND      	NVARCHAR(40); 
+	 v_FAMILY       NVARCHAR(40);
+	 v_GEO          NVARCHAR(40);
+	 v_MACHINETYPE  NVARCHAR(40);
+	 v_ITEM  NVARCHAR(40);
+  	 privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+*name        :    deleteUiRatioCode
+*function    :               
+*input       :    oldInfo
+*output      :    errorInfo            
+*author      :    chenwh3
+*DeleteDate  :    2015.08.05
+*UpdateDate  :         
+*CreateDate  :    
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+	BEGIN
+		aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_ratio_code::deleteUiRatioCode error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+		
+		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ratio_code::deleteUiRatioCode'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+	END;
+	/*call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_ratio_code::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' || :privilegeExists as error_message, 
+              privilegeExists as detail from dummy;
+       RETURN ;
+    END IF;*/
+--LOG START    
+ CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ratio_code::deleteUiRatioCode'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	select cycle,BRAND ,FAMILY,GEO,MACHINETYPE,ITEM into v_cycle,v_brand,v_family,v_GEO,v_machinetype,v_ITEM
+   		from :oldinfo;
+---delete record
+if v_cycle = 'CURRENT' then
+	DELETE  FROM "EBGCFE"."UI_RATIO_CODE"
+	  where CYCLE = :v_cycle   and PRODUCT_GROUP = 'EBG' AND  brand = :v_brand and family = :v_family and geo = :v_geo and MACHINETYPE = :v_MACHINETYPE and ITEM = :v_ITEM;
+	if ::rowcount < 0 then
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists in UI_RATIO_CODE';
+	end if;
+ ELSE
+ 	DELETE  FROM "EBGCFE"."UI_RATIO_CODE_HIS"
+	  where CYCLE = :v_cycle   and PRODUCT_GROUP = 'EBG' AND  brand = :v_brand and family = :v_family  and geo = :v_geo and MACHINETYPE = :v_MACHINETYPE and ITEM = :v_ITEM;
+	if ::rowcount < 0 then
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists IN UI_RATIO_CODE_HIS';
+	end if;
+ end if;
+ --insert into log
+INSERT into  "EBGCFE"."UI_RATIO_CODE_LOG"
+	("CYCLE",
+	"PRODUCT_GROUP",
+	"BRAND",
+	"FAMILY",
+	"GEO",
+	"MACHINETYPE",
+	"ITEM",
+	"RATIO_CODE",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"STATUS",
+	"CHANGE_ID",
+	"CHANGE_ACTION",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+	)
+SELECT
+	a.CYCLE,
+	a.PRODUCT_GROUP,
+	a.BRAND,
+	a.FAMILY,
+	a.GEO,
+	a.MACHINETYPE,
+	a.ITEM,
+	a.RATIO_CODE,
+	a.SYS_CREATED_DATE,
+	a.SYS_CREATED_BY,
+	CURRENT_TIMESTAMP,
+	SESSION_USER,
+	a.STATUS,
+	a.CHANGE_ID,
+	a.CHANGE_ACTION,
+	SESSION_USER,
+	'delete',
+	CURRENT_TIMESTAMP,
+	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+from :oldinfo a;  
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_ratio_code::deleteUiRatioCode successfully deleted . ';
+  		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ratio_code::deleteUiRatioCode'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	  
+   
+   
+   
+   		
+   	
+END;

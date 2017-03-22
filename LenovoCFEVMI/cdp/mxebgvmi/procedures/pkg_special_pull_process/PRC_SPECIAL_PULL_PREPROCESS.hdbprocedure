@@ -1,0 +1,83 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_special_pull_process::PRC_SPECIAL_PULL_PREPROCESS" (
+	  IN iv_id            VARCHAR(10),
+      IN pull_type           VARCHAR(30),
+      OUT on_exitcode      NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA
+/************************************************************************
+*name      : PRC_SPECIAL_PULL_PREPROCESS              --函数名
+*function    :               --函数功能
+*input     ：  iv_id, pull_type              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/01                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	AS
+	v_pull_type         VARCHAR(20);
+    v_logic_proc_name   VARCHAR2 (40)          := 'PRC_SPECIAL_PULL_PREPROCESS';
+    gv_logic_name    VARCHAR2 (40)  := 'PKG_SPECIAL_PULL_PROCESS';
+    v_full_name VARCHAR(300) := gv_logic_name||'.'||v_logic_proc_name;
+      v_logidi            INTEGER := 0;
+BEGIN
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		on_exitcode := ::SQL_ERROR_CODE;
+		CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+         --COMMIT;                                          --comment by Eric Zhou
+	END;
+	  v_pull_type := pull_type;
+      on_exitcode := -20099;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Start',I_MESSAGE=>'PULL TYPE:'||:v_pull_type); 
+      IF v_pull_type != 'EXCESS' AND v_pull_type != 'SHIPPING_GROUP' AND v_pull_type != 'SHIPPING'
+      THEN
+         on_exitcode := 0;
+      ELSE
+      
+
+      INSERT INTO clear_diff
+                  (pull_line_id, pull_header_id, werks, src_storage_type,
+                   src_storage_loc, src_storage_bin, inventory_type,
+                   confirmed_qty, request_qty, difference_qty, whs_no, lifnr,
+                   dept, matnr, status, pull_type, sys_source, tpl_id)
+         SELECT pl.pull_line_id, pl.pull_header_id, pl.werks,
+                pl.src_storage_type, pl.src_storage_loc, pl.src_storage_bin,
+                pl.inventory_type, pl.full_box_qty, pl.full_box_qty, 0,
+                wh.whs_no, pl.line_supplierid, pl.dept, pl.matnr, 'OLD',
+                pl.pull_type, pl.sys_source, pl.header_supplierid
+           FROM pull_line pl, conf_wahrehouse_info wh
+          WHERE pl.src_storage_loc = wh.storage_location
+            AND pl.src_storage_type = wh.storage_type
+            AND pl.src_storage_bin = wh.storage_bin
+            AND pl.header_supplierid = wh.owner
+            AND pl.werks = wh.werks
+            AND pl.pull_type = v_pull_type
+            AND pl.status LIKE '%IN_PROCESS'
+            AND pl.werks IN (SELECT siteid
+                               FROM conf_site_schedule
+                              WHERE ID = iv_id)
+            AND NOT EXISTS (
+                   SELECT 'x'
+                     FROM clear_diff
+                    WHERE werks = pl.werks
+                      AND pull_line_id = pl.pull_line_id
+                      AND pull_header_id = pl.pull_header_id);
+
+      --COMMIT;                                            --comment by Eric Zhou
+	  END IF;
+	   on_exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');
+END;

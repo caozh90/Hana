@@ -1,0 +1,428 @@
+namespace cdp.security.data;
+
+@Schema: 'SECURITY'
+context userManagement {
+
+//rule:
+//info 表都是字典性质的表
+//map表都是表达关联关系的表
+//DATA 表，就是日常使用的记录表，
+//字段如果需要和系统表进行关联，则名称跟从系统表中列的列名和类型。
+//缺省的主键都是自增长的数字 ID
+//关联表主键是自增长的数字 ID
+
+//content:
+//13 个对象 ：13个table ， 6个table INFO 6 个map \1 个 data 
+//1.INFO_USER 		用户信息表
+//2.INFO_MODULE		模块列表
+//3.INFO_GROUP		用户组列表
+//4.INFO_ROLEGROUP  权限组合列表
+//5.INFO_ROLES		权限明细信息
+//6.MAP_MODULE_USER	模块和用户\用户组合对应关系
+//7.MAP_GROUP_USER	用户组合和用户之间的对应关系
+//8.MAP_ROLEGROUP_ROLE	权限组合和权限细项之间的关系
+//9.MAP_ALL				用户或者用户组 同  权限或者权限细项之间的对应关系
+//10.MAP_RESOURCE_USER	资源信息同用户之间的关系
+//11.INFO_RESOURCE_TYPE	资源信息类型列表,被初始化好,只有2~3条.
+//12.MAP_VIEW_ROLE  		界面和role之间的关联列表
+//----13.INFO_VIEW  		user interface 界面和层级关联 ，view中有两层，一层为组合名，一层为view Name.
+//13.DATA_SESSION_CONTEXT  		每当用户登录的时候，记录相关自定义的session context信息
+
+//column type 4 个
+//IDKey		字符串 10 ，对应自增长id
+//IDSystemKey 对应bigint 对应系统表中 id
+//type CommentString :String(256) :所有表或者结构中，涉及到comment 字段的时候，都是用这个type
+//type NameString :String(256); ：所有表或者结构中，涉及name 字段时候，使用这个type
+
+//table type :13 个
+//返回显示模型列表的table type
+//1.DisplayModuleT  返回module name  为判断权限使用 ,被AP所用procedure 调用
+//2.DisplayModuleIDT 返回module id
+//3.DisplayUserIDT  返回user id
+//4.HttpError 		odata返回的错误结构
+//5.InfoUserT 		
+//6.InfoGroupT
+//7.MapGroupUserT 	 
+//8.InfoRoleGroupT 
+//9.MapRoleGroupT 
+//10.MapAllT
+//11.UserRoleGroupT
+//12.MapResourceUserT 
+//13.RoleGroupRoleT
+//14.DataSessionModuleT; 
+
+		
+
+
+//type 类型以首字母大写，结尾以大写T结尾
+//里面的列名全大写
+//Type ValidityT {
+//        STARTDATE : SDate;
+//        ENDDATE : SDate;
+//      };
+
+//reference 关联对象
+//自增长id 用的是10个字符长的字符串
+//like type BusinessKey : String(10);
+//需要添加的自增长的对象
+//2\3456789\10\11 除了表1 ，都需要添加Sequences对象 一共10个sequences对象
+//小写字母，以SeqId结尾
+//命名： addressSeqId。hdbsequence 
+//schema= "SAP_HANA_DEMO";
+//start_with= 1000000500;
+//maxvalue= 1999999999;
+//nomaxvalue=false;
+//minvalue= 1;
+//nominvalue=true;
+//cycles= false;
+//depends_on_table= "sap.hana.democontent.epm.data::EPM.MD.Addresses";
+
+//'0' || "sap.hana.democontent.epm.data::salesOrderId".NEXTVAL,
+//values ('0' || "sap.hana.democontent.epm.data::salesOrderId".CURRVAL
+
+    
+//2.自增长ID type
+//因为 MAP_MODULE_ROLE\MAP_MODULE_user 
+//两张表，所以  userid group id \role id \role group id 都需要是数字 而其他的id 都可以是IDkey
+
+
+    type IDKey : String(10) ;
+    type IDSystemKey : Integer64;
+    type CommentString :String(256);
+    type NameString :String(256);
+    type SignString :String(256);
+    type BooleanString :String(5); //--TRUE,FALSE
+    
+//1.TABLE TYPE 为了显示某个用户存在于那些模块中    
+    type DisplayModuleT {
+        MODULE_NAME: NameString;
+    };
+//2    
+    type DisplayModuleIDT {
+        MODULE_ID: IDKey;
+    };
+//3    
+     type DisplayUserIDT {
+        USER_ID: IDSystemKey;
+    };
+    
+//4 .http error
+type HttpError {
+        HTTP_STATUS_CODE: Integer;
+        ERROR_MESSAGE: String(100);
+        DETAIL: String(100);
+    };
+//5..odata create \update\delete过程中使用
+    type InfoUserT {
+    	ID: IDSystemKey; //user id                
+        NAME: NameString;
+        PASSWORD: String(256);
+        LOGINNAME: NameString;
+        FIRSTNAME: NameString;
+        LASTNAME: NameString;
+        EMAILADDRESS: String(200);
+        STATUS: String(20);//display user status, such as ACTIVATE | DEACTIVATE  
+        LOCALE:         String(16);
+  		DESIGNATION:    String(200); 
+  		MODULE_NAME: NameString;
+  		GROUP_ID: IDSystemKey; // auto id
+  		COMMENT: CommentString; 
+  		GROUP_NAME: NameString;
+  		PHONENUMBER :String(50);
+  		DEPARTMENT:NameString; //部门
+  		COMPANY:NameString;		//公司
+  		USER_GROUP:NameString;	//用户账户组
+  		VALID_FROM: UTCTimestamp ;//Data as of which the user can connect
+  		VALID_UNTIL: UTCTimestamp ;//Data as of which the user can no longer connect
+  		INTERNAL_SIGN:SignString; //内部用户标识
+  		EXTERNAL_SIGN:SignString; //外部用户标识
+    };
+    type InfoUserPassWdT {       
+    	ID: IDSystemKey; //user id         
+    	GROUP_ID: IDSystemKey; // auto id
+        NAME: NameString;
+        PASSWORD: String(256);
+    };
+//6.odata create \update\delete过程中使用
+	type InfoGroupT {	
+     	ID: IDSystemKey; //GROUP id 
+   //  	MODULE_ID: IDKey;                   
+        NAME: NameString; //GROUP NAME  
+        COMMENT: CommentString;       
+   //--     MODULE_NAME: NameString;
+        
+	 };
+//7	 
+	 type MapGroupUserT {	 
+    	ID: IDKey; // auto id     
+      	MODULE_ID: IDKey; //module id ---冗余的字段，仅仅是为了记录日志等的方便  
+    	GROUP_ID: IDSystemKey; // 
+    	USER_ID: IDSystemKey;
+    	MODULE_NAME: NameString;
+	 }; 
+//8.	 
+	type InfoRoleGroupT {
+		ID: IDSystemKey; //group id      
+    	MODULE_ID: IDKey; // module id           
+        NAME: NameString;     	
+     	COMMENT: CommentString; 
+     	MODULE_NAME: NameString;
+	 };
+//9.	 
+	 type MapRoleGroupT {
+	 ID: IDKey; // role id
+	 ROLE_ID :IDSystemKey;	 
+     MODULE_ID: IDKey; //module id ---冗余的字段，仅仅是为了记录日志等的方便  
+     ROLEGROUP_ID: IDSystemKey; //   	  
+     MODULE_NAME: NameString;
+	 }; 
+//10.	 
+	 type MapAllT{
+		MODULE_ID: IDKey; //module id
+		//--MODULE_NAME: NameString;
+		ROLEGROUP_ID :IDSystemKey; 
+		ROLE_ID: IDSystemKey;
+		//ROLE_NAME: NameString;
+		//--NAME: NameString;		
+		USER_ID:IDSystemKey;
+		GROUP_ID:IDSystemKey;	
+		//--ID: IDSystemKey;					
+	 };
+//11.	 
+	 type UserRoleGroupT{
+	 	U_TYPE: String(20);
+	 	U_ID: IDSystemKey;//for user or user group
+	 	MODULE_ID: IDSystemKey;
+	 	ID: IDSystemKey;//role group id
+	 };
+//12.	 
+	 type MapResourceUserT { 
+	    RESOURCE_ID: IDSystemKey;     
+        MODULE_ID: IDSystemKey; //module id
+        RESOURCE_TYPE: String(200);
+		VALUE: String(200);
+		GROUP_ID: IDSystemKey;
+		USER_ID: IDSystemKey;
+    };
+ //13.    
+     type RoleGroupRoleT { 
+        ROLEGROUP_ID :IDSystemKey; 
+        ROLEGROUP_NAME: NameString;
+        ROLEGROUP_COMMENT: CommentString;
+        ROLE_ID :IDSystemKey;
+        ROLE_NAME: NameString;
+        ROLE_COMMENT: CommentString;
+    };   
+    
+////14 .DATA_SESSION_moduleT
+  
+    type DataSessionModuleT {   
+        
+        XSSESSION_ID:String(64); //xsSessionId  
+        MODULE_ID:IDKey; //like module id        
+		COMMENT: CommentString;			
+    }; 
+//12.	 
+	 type ResourceValueT { 
+		VALUE: String(200);
+    };
+//12.	 
+//	 type DisplayRoleT { 
+//		DISPLAY_ROLE_NAME: String(256);
+ //   };
+
+//12.	 
+	 type privilegeT { 
+		CDP_PRIVILEGE_NAME: String(300);
+    };
+//1.
+
+ @Catalog.tableType : #COLUMN
+ //对应users ，扩展信息，1对1的关系 
+ //全名，电子邮件，联系电话，所属部门（或公司），用户账户组，有效期，锁标识，密码（有效加密机制 ），内部、外部用户标识 ；
+    Entity INFO_USER {
+        key  USER_ID: IDSystemKey;
+        USER_NAME: NameString;  //显示使用，可以修改，尽量唯一，
+        LOGINNAME: NameString; //HANA 用户名称，登陆的时候使用，确定后，不可以进行修改，且唯一
+        FIRSTNAME: NameString;
+        LASTNAME: NameString;
+        EMAILADDRESS: String(200);
+        STATUS: String(20);//display user status, such as "ACTIVATE", "DEACTIVATE"  
+        LOCALE:         String(16);
+  		DESIGNATION:    String(256); 
+  		COMMENT: CommentString; 
+  		PHONENUMBER :String(50);
+  		DEPARTMENT:NameString; //部门
+  		COMPANY:NameString;		//公司
+  		USER_GROUP:NameString;	//用户账户组
+  		VALID_FROM: UTCTimestamp ;//Data as of which the user can connect
+  		VALID_UNTIL: UTCTimestamp ;//Data as of which the user can no longer connect
+  		INTERNAL_SIGN:SignString; //内部用户标识
+  		EXTERNAL_SIGN:SignString; //外部用户标识
+  		
+    };
+
+//2.
+	@Catalog.tableType : #COLUMN 
+     // MODULE 的信息，模块信息如 CFE VMI MXVMI ...
+     //1\在添加一个新的module的时候，需要添加他的缺省权限  public_<module_name> ,
+     //2\同时拥有一个缺省的用户组 public group 
+    Entity INFO_MODULE {
+    key  MODULE_ID: IDKey; // auto id        
+         MODULE_NAME: NameString;
+     	 MODULE_PATH: String(200); //path ： cdp.vmi   cdp.cfe cdp.mxvmi etc..
+     	 COMMENT: CommentString; 
+	 };
+
+
+//3.
+	@Catalog.tableType : #COLUMN 
+     // GROUP 的信息，一个user group 包含至少一个或多个user
+     //每一个 module 存在一个缺省的用户组  public group ,不属于任何组成员的用户，属于这个组。
+     //由于一个 user  group  只可以属于唯一个的一个module ，所以，放在这里
+    Entity INFO_GROUP {
+    key  GROUP_ID: IDSystemKey; // auto id
+    	 MODULE_ID: IDKey;       
+         GROUP_NAME: NameString;
+     	 COMMENT: CommentString;
+     	 REAL_ROLE_NAME : NameString;
+     	 IS_SYSGROUP:BooleanString;
+	 };
+
+//4.
+	@Catalog.tableType : #COLUMN 
+     // RoLEGROUP 的信息，
+     //role group 只可以属于唯一个的一个module ，所以，放在这里
+     //缺省存在一个Other Roles 的组合，不在其他组合当中的role都在Other roles当中
+    Entity INFO_ROLEGROUP {
+    key  ROLEGROUP_ID: IDSystemKey; // auto id
+    	MODULE_ID: IDKey; // module id           
+        ROLEGROUP_NAME: NameString;     	
+     	COMMENT: CommentString; 
+     	REAL_ROLE_NAME : NameString;
+     	IS_SYSROLEGROUP:BooleanString;
+	 };
+
+//5.	
+
+	@Catalog.tableType : #COLUMN 
+     // Role 的信息，
+     // 同一个role 可以存在于不同的模块中
+    Entity INFO_ROLES {
+    key  ID :IDKey ;
+    	 ROLE_ID: IDSystemKey; // 
+     	 MODULE_ID: IDKey;      	
+         ROLE_NAME: NameString;
+         DISPLAY_ROLE_NAME: NameString;              	
+     	 COMMENT: CommentString; 
+     	 IS_SYSROLE:BooleanString;
+	 }; 
+
+//6.
+	@Catalog.tableType : #COLUMN 
+     // mapMODULE 和 user 以及 user group 的对应信息，
+     //一个用户可以属于多个模块
+     //一个组合，只可以属于一个 module 
+     //组合在module并不代表user 在module中，所以必须单独维护用户与module的关系
+     
+    Entity MAP_MODULE_USER {
+    key  ID: IDKey; // auto id       
+    	MODULE_ID: IDKey; //
+    	USER_ID: IDSystemKey;
+	 };
+
+//7.	 
+	@Catalog.tableType : #COLUMN 
+     // map group  和 user 的信息，
+     //USER GROUP 的信息，一个user group 包含至少一个或多个user
+    Entity MAP_GROUP_USER {
+    key  ID: IDKey; // auto id     
+      	MODULE_ID: IDKey; //module id ---冗余的字段，仅仅是为了记录日志等的方便  
+    	GROUP_ID: IDSystemKey; // 
+    	USER_ID: IDSystemKey;
+	 }; 
+
+//8.	 
+	 @Catalog.tableType : #COLUMN 
+     //ROLE GROUP 的信息，一个role group 包含多个role
+    Entity MAP_ROLEGROUP_ROLE {
+        key  ID: IDKey;  // auto id
+         MODULE_ID: IDKey; //module id ---冗余的字段，仅仅是为了记录日志等的方便
+        ROLEGROUP_ID: IDSystemKey; //ROLE_GROUP id        
+        ROLE_ID: IDSystemKey;        
+    };
+
+
+//9.    
+    @Catalog.tableType : #COLUMN 
+     //对应 user\USER GROUP 同 \rolegroup role 之间的关联对应 
+     //role - rolegroup -user group 都不可能为空
+     //如果要对应一个role group ,则，会添加role group 下面所有的role 即便有重复的role 会出现。
+     //如果要删除某个role group ，则删除其所对应的所有role ，如果这个role 也被包含在其他的role group 中，则仅仅删除记录，但是不会剥夺这个role 的真实权利；
+     //如果要对应一个user group ,则会添加这个user group所对对应的所有user ,
+     //如果要删除user group所对应的关联 ---。。。没有这个操作，我们在界面上的操作都是选中某个user group ，然后添加或者撤销他所对应的role 或者role group.
+     
+     
+    Entity MAP_ALL {
+		key ID: IDKey;  // auto id
+		MODULE_ID: IDKey; //module id
+		GROUP_ID:IDSystemKey;
+		USER_ID:IDSystemKey;
+		ROLEGROUP_ID :IDSystemKey;
+		ROLE_ID:IDSystemKey;
+    };
+
+//10.    
+    @Catalog.tableType : #COLUMN 
+    Entity MAP_RESOURCE_USER {     
+        key  RESOURCE_ID: IDKey; // auto id
+        MODULE_ID: IDKey; //module id
+        RESOURCE_TYPE: String(200);
+		VALUE: String(200);
+		GROUP_ID:IDSystemKey;
+		USER_ID:IDSystemKey;		
+    };
+
+//11. RESOURCE_TYPE LIST
+@Catalog.tableType : #COLUMN 
+    Entity INFO_RESOURCE_TYPE {     
+        key  RESOURCE_TYPE_ID: IDKey; // auto id        
+        RESOURCE_TYPE: String(200);
+		COMMENT: CommentString;		
+    };
+   
+//12. view role 
+@Catalog.tableType : #COLUMN 
+    Entity MAP_VIEW_ROLE {     
+        key  ID: IDKey; // auto id
+        MODULE_ID: IDKey; //module id        
+        VIEW_NAME: NameString;
+        ROLE_ID:IDSystemKey;
+        MAP_TYPE:String(50); //VIEW ,CONTROLLOR
+		COMMENT: CommentString;		
+    };
+
+/*
+//13. view INFORMATION 
+@Catalog.tableType : #COLUMN 
+    Entity INFO_VIEW {     
+        key  ID: IDKey; // auto id
+        MODULE_ID: IDKey; //module id
+        VIEW_GROUPNAME: NameString;
+        VIEW_NAME: NameString;
+		COMMENT: CommentString;	
+		INDEX: Integer not null;	
+    };
+  */      
+  //14 .DATA_SESSION_CONTEXT 
+ @Catalog.tableType : #COLUMN 
+    Entity DATA_SESSION_CONTEXT {     
+        key  ID: IDKey; // auto id
+        XSSESSION_ID:String(64); //xsSessionId  
+        SESSION_TYPE:NameString; //like module id
+        SESSION_VALUE:NameString; // session value
+  		USER_ID: IDSystemKey;        
+		COMMENT: CommentString;			
+    }; 
+  
+};

@@ -1,0 +1,215 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_group_cost" (
+IN 	CYCLE varchar(40),
+IN  PRODUCT_GROUP VARCHAR(10),
+IN 	PROD_FAMILY varchar(100),
+IN  MT VARCHAR(10),
+IN  ITEM VARCHAR(40),
+IN 	TYPE varchar(40),
+IN 	BRAND varchar(40),
+IN 	PLANT varchar(50),
+IN  M1 varchar(20),
+IN  M2 varchar(20),
+IN  M3 varchar(20),
+IN  M4 varchar(20),
+IN  M5 varchar(20),
+IN  M6 varchar(20),
+IN  M7 varchar(20),
+IN  M8 varchar(20),
+IN  M9 varchar(20),
+IN  M10 varchar(20),
+IN  M11 varchar(20),
+IN  M12 varchar(20),
+IN  M13 varchar(20),
+IN  M14 varchar(20),
+IN  M15 varchar(20),
+IN  M16 varchar(20),
+IN  M17 varchar(20),
+IN  M18 varchar(20),
+IN	 	table_name varchar(200),
+IN	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_group_cost              --函数名
+*function  : upload数据至表ui_group_cost并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Eric               --作者
+*CreateDate    : 2015-01-22       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_group_cost';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate int;
+		var_oper VARCHAR(10);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_group_cost_err"(
+			:CYCLE,:PRODUCT_GROUP,:PROD_FAMILY,:MT,:ITEM,:TYPE,:BRAND,:PLANT,
+			:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15
+			,:M16,:M17,:M18,
+			:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE);
+     	
+    END; 
+    --exception 
+	
+	
+
+	
+	--procedure begin
+
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     	
+	select  count(1) into validate from UI_Prodfamily where BRAND = :BRAND;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_group_cost_err"(
+			:CYCLE,:PRODUCT_GROUP,:PROD_FAMILY,:MT,:ITEM,:TYPE,:BRAND,:PLANT,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15
+			,:M16,:M17,:M18,:table_name,:business_name,:business_code,:position,'"BRAND"::'||:BRAND||' is illegal');
+		
+		return;
+	end if;
+	
+	
+	if	PROD_FAMILY <> 'N/A' then
+		select  count(1) into validate from UI_Prodfamily where BRAND = :BRAND and PROD_FAMILY = :PROD_FAMILY;
+		if validate = 0  then
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_group_cost_err"(
+				:CYCLE,:PRODUCT_GROUP,:PROD_FAMILY,:MT,:ITEM,:TYPE,:BRAND,:PLANT,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15
+				,:M16,:M17,:M18,:table_name,:business_name,:business_code,:position,'"PROD_FAMILY"::'||:PROD_FAMILY||' is illegal');
+			
+			return;
+		end if;
+	end if;
+	
+	if	MT <> 'N/A' then
+		SELECT COUNT(1) INTO validate 
+	 	FROM   "EBGCFE"."UI_MACHINETYPE"
+	 	WHERE UPPER(MACHINETYPE) = UPPER(:MT);
+		if validate = 0  then
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_group_cost_err"(
+				:CYCLE,:PRODUCT_GROUP,:PROD_FAMILY,:MT,:ITEM,:TYPE,:BRAND,:PLANT,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15
+				,:M16,:M17,:M18,:table_name,:business_name,:business_code,:position,'"MT"::'||:MT||' is illegal');
+			
+			return;
+		end if;
+	end if;	
+	
+	if	ITEM <> 'N/A' then
+		SELECT COUNT(1) INTO validate 
+	 	FROM   "EBGCFE"."UI_ITEM"
+	 	WHERE UPPER(ITEM) = UPPER(:ITEM) AND ITEM_TYPE IN ('MTM','OPTION','BUNDLE','SBB') ;
+		if validate = 0  then
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_group_cost_err"(
+				:CYCLE,:PRODUCT_GROUP,:PROD_FAMILY,:MT,:ITEM,:TYPE,:BRAND,:PLANT,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15
+				,:M16,:M17,:M18,:table_name,:business_name,:business_code,:position,'"ITEM"::'||:ITEM||' is illegal');
+			
+			return;
+		end if;
+	end if;
+	
+
+	
+	select  count(1) into validate from  conf_parameters where pdomain='UI_GROUP_COST' and pname='TYPE'
+			and pvalue = :TYPE;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_group_cost_err"(
+			:CYCLE,:PRODUCT_GROUP,:PROD_FAMILY,:MT,:ITEM,:TYPE,:BRAND,:PLANT,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15
+			,:M16,:M17,:M18,:table_name,:business_name,:business_code,:position,'"TYPE"::'||:TYPE||' is illegal');
+		
+		return;
+	end if;
+	
+	select  count(1) into validate from  UI_Plant where PLANT = :PLANT;
+	if validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_group_cost_err"(
+			:CYCLE,:PRODUCT_GROUP,:PROD_FAMILY,:MT,:ITEM,:TYPE,:BRAND,:PLANT,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15
+			,:M16,:M17,:M18,:table_name,:business_name,:business_code,:position,'"PLANT"::'||:PLANT||' is illegal');
+		
+		return;
+	end if;
+	
+	SELECT top 1 count(1) into validate from "EBGCFE"."UI_GROUP_COST" 
+		where PRODUCT_GROUP = :PRODUCT_GROUP and 
+		PROD_FAMILY = :PROD_FAMILY and 
+		MT = :MT and
+		ITEM = :ITEM and
+		TYPE = :TYPE and BRAND = :BRAND
+		and PLANT = :PLANT and CYCLE = :CYCLE;
+	if validate = 0
+	then
+		    insert into "EBGCFE"."UI_GROUP_COST"(CYCLE,
+									PROD_FAMILY,
+									MT,
+									ITEM,
+									PRODUCT_GROUP,
+									TYPE,
+									BRAND,
+									PLANT,
+									M1,M2,M3,M4,M5,M6
+									,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+									) 
+	values (:CYCLE,:PROD_FAMILY,:MT,:ITEM,:PRODUCT_GROUP,:TYPE,:BRAND,
+				:PLANT,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+  		var_oper := 'create';
+  	else
+  		update "EBGCFE"."UI_GROUP_COST" a set (M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+				SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY) = 
+				(:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,CURRENT_TIMESTAMP,SESSION_USER)
+		where PRODUCT_GROUP = :PRODUCT_GROUP and BRAND = :BRAND and PROD_FAMILY = :PROD_FAMILY and 
+		      MT = :MT and ITEM = :ITEM and TYPE = :TYPE and PLANT = :PLANT and CYCLE = :CYCLE;
+        var_oper := 'update';      
+  	end if;
+  	
+
+insert into "EBGCFE"."UI_GROUP_COST_LOG"(CYCLE,
+									PROD_FAMILY,
+									MT,
+									ITEM,
+									PRODUCT_GROUP,
+									TYPE,
+									BRAND,
+									PLANT,
+									M1,M2,M3,M4,M5,M6
+									,M7,M8,M9,M10,M11,M12,
+									M13,M14,M15,M16,M17,M18,
+									SYS_CREATED_BY,
+									SYS_CREATED_DATE,
+									AT_ACTION,
+									AT_MODIFIED_ON,
+    								AT_MILLIS 
+									)
+	values ('CURRENT',:PROD_FAMILY,:MT,:ITEM,:PRODUCT_GROUP,:TYPE,:BRAND,
+				:PLANT,:M1,:M2,:M3,:M4,:M5,:M6
+									,:M7,:M8,:M9,:M10,:M11,:M12,
+									:M13,:M14,:M15,:M16,:M17,:M18,
+				SESSION_USER,CURRENT_TIMESTAMP,:var_oper,current_timestamp,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+			
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+	
+
+	
+END;

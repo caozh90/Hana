@@ -1,0 +1,168 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_pcdw_txn::PRC_PCDW_DELIVERY" (IN PI_ID  VARCHAR(12),OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_PCDW_DELIVERY        
+*function   : Merge data FROM ECC_* INTO PCDW_*
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2015-07-28
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_lastrun_time timestamp;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_DELIVERY', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_DELIVERY', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1;
+   
+   -- Step 1. Merge data FROM ECC_DELIVERY INTO PCDW_DELIVERY
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_DELIVERY', 'SUCCESS', NULL, '', '', '', '', 'step 1');
+   EXEC 'COMMIT';  
+
+    UPDATE pcdw_delivery t1
+       SET matnr = t2.matnr, werks = t2.werks, vstel = t2.vstel,
+           vkorg = t2.vkorg, lfart = t2.lfart, wadat = t2.wadat,
+           wadat_ist = t2.wadat_ist, vbtyp = t2.vbtyp, kunnr = t2.kunnr,
+           kunag = t2.kunag, vtweg = t2.vtweg, spart = t2.spart,
+           vbgel = t2.vbgel, vgpos = t2.vgpos, vbelv = t2.vbelv,
+           posnv = t2.posnv, lfimg = t2.lfimg, lgort = t2.lgort,
+           sys_ent_state = 'ACTIVE',
+           sys_last_modified_by = 'pkg_pcdw_txn.PRC_PCDW_DELIVERY',
+           sys_last_modified_date = current_timestamp 
+     FROM  ecc_delivery t2
+     WHERE     t2.z_wfname = 'GLOBAL'
+           --AND t2.werks IN ('X470', 'U400', 'L070', 'B501','H001')
+           AND t1.vbeln = t2.vbeln
+           AND t1.posnr = t2.posnr
+           AND EXISTS (SELECT 1
+                FROM pcdw_itemsitemaster t3
+               WHERE    t2.matnr = t3.item
+                     AND t2.werks = t3.siteid
+                     AND t3.zucod LIKE 'H%');
+              
+    EXEC 'COMMIT'; 
+    
+    INSERT INTO pcdw_delivery
+      (vbeln, posnr, matnr, werks, erdat, erzet, vstel, vkorg, lfart, wadat,
+       wadat_ist, vbtyp, kunnr, kunag, vtweg, spart, vbgel, vgpos, vbelv,
+       posnv, lfimg, lgort, sys_ent_state, sys_created_by, sys_creation_date,
+       sys_last_modified_by, sys_last_modified_date)
+      SELECT vbeln, posnr, matnr, werks, erdat, erzet,
+             vstel, vkorg, lfart, wadat, wadat_ist, vbtyp,
+             kunnr, kunag, vtweg, spart, vbgel, vgpos,
+             vbelv, posnv, lfimg, lgort, 'ACTIVE',
+             'pkg_pcdw_txn.PRC_PCDW_SO', current_timestamp,
+             'pkg_pcdw_txn.PRC_PCDW_SO', current_timestamp
+        FROM ecc_delivery t1
+       WHERE     t1.z_wfname = 'GLOBAL'
+             --AND t1.werks IN ('X470', 'U400', 'L070', 'B501','H001')
+             AND NOT EXISTS (SELECT 1
+                              FROM pcdw_so t2
+                             WHERE t1.vbeln = t2.vbeln
+                                   AND t1.posnr = t2.posnr)
+             AND EXISTS (SELECT 1
+                          FROM pcdw_itemsitemaster t3
+                          WHERE   t1.matnr = t3.item
+                              AND t1.werks = t3.siteid
+                              AND t3.zucod LIKE 'H%');                              
+                                   
+   -- Step 2. Update the PCDW_DELIVERY deleted posnr's status
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_DELIVERY', 'SUCCESS', NULL, '', '', '', '', 'step 2');
+   EXEC 'COMMIT'; 
+                                             
+    UPDATE pcdw_delivery p
+       SET p.sys_ent_state = 'DELETED',
+           p.sys_last_modified_by = 'pkg_pcdw_txn.PRC_PCDW_DELIVERY',
+           p.sys_last_modified_date = current_timestamp
+     WHERE     EXISTS
+                  (SELECT 1
+                     FROM ecc_delivery e1
+                    WHERE e1.z_wfname = 'GLOBAL' AND e1.vbeln = p.vbeln)
+           AND NOT EXISTS
+                      (SELECT 1
+                         FROM ecc_delivery e2
+                        WHERE     e2.z_wfname = 'GLOBAL'
+                              AND e2.vbeln = p.vbeln
+                              AND e2.posnr = p.posnr);
+ 
+    -- Step 3. Update the PCDW_DELIVERY deleted vbeln's status BY ECC_DELIVERYDEL
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_DELIVERY', 'SUCCESS', NULL, '', '', '', '', 'step 3');
+   EXEC 'COMMIT'; 
+                                             
+    UPDATE pcdw_delivery p
+       SET p.sys_ent_state = 'DELETED',
+           p.sys_last_modified_by = 'pkg_pcdw_txn.PRC_PCDW_DELIVERY',
+           p.sys_last_modified_date = current_timestamp
+     WHERE  EXISTS
+              (SELECT 1
+                 FROM ecc_deliverydel e2
+                WHERE     e2.z_wfname = 'GLOBAL'
+                      AND e2.objectid = p.vbeln
+                      AND SUBSTRING(e2.tabkey, LENGTH(e2.tabkey)-6+1) = p.posnr);
+                                                           
+    -- Step 4. Merge data FROM ECC_DELIVERYDEL INTO PCDW_DELIVERYDEL
+    -- The same OBJECTID + TABKEY may have multiple CHANGENR, only pick the one with the later date.
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_DELIVERY', 'SUCCESS', NULL, '', '', '', '', 'step 4');
+   EXEC 'COMMIT';    
+                                 
+    UPDATE pcdw_deliverydel t1
+       SET changenr = t2.changenr, username = t2.username, udate = t2.udate,
+           utime = t2.utime, tcode = t2.tcode, sys_ent_state = 'ACTIVE',
+           sys_last_modified_by = 'pkg_pcdw_txn.PRC_PCDW_DELIVERY',
+           sys_last_modified_date = current_timestamp 
+           FROM (SELECT objectid, changenr, username, udate, utime, tcode, tabkey,
+                  row_number() over(PARTITION BY objectid, tabkey ORDER BY utime DESC) AS seq
+                 FROM ecc_deliverydel
+                WHERE z_wfname = 'GLOBAL') t2
+     WHERE t2.seq = 1
+           AND t1.objectid = t2.objectid
+           AND t1.tabkey = t2.tabkey;
+
+    EXEC 'COMMIT'; 
+    
+    INSERT INTO pcdw_deliverydel
+      (objectid, changenr, username, udate, utime, tcode, tabkey,
+       sys_ent_state, sys_created_by, sys_creation_date,
+       sys_last_modified_by, sys_last_modified_date)
+      SELECT objectid, changenr, username, udate, utime, tcode, tabkey,
+             'ACTIVE', 'pkg_pcdw_txn.PRC_PCDW_DELIVERY', current_timestamp,
+             'pkg_pcdw_txn.PRC_PCDW_DELIVERY', current_timestamp
+        FROM (SELECT objectid, changenr, username, udate, utime, tcode,
+                      tabkey,
+                      row_number() over(PARTITION BY objectid, tabkey ORDER BY utime DESC) AS seq
+                 FROM ecc_deliverydel t1
+                WHERE t1.z_wfname = 'GLOBAL'
+                      AND NOT EXISTS
+                              (SELECT 1
+                                 FROM pcdw_deliverydel t2
+                                WHERE t1.objectid = t2.objectid
+                                      AND t1.tabkey = t2.tabkey))
+       WHERE seq = 1;
+                                                                
+   PO_RETURNCODE := 0;
+   -- log process end
+   INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_DELIVERY', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';             
+END;
+

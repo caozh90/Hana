@@ -1,0 +1,108 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteMapViewRole" (
+			IN aMODULE_NAME NVARCHAR(200),
+			IN aVIEW_NAME  NVARCHAR(256),
+			IN aROLE_NAME  NVARCHAR(200),
+			IN aMAP_TYPE  NVARCHAR(50),
+			
+			OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+	    aID NVARCHAR(10);
+	    aROLE_ID BIGINT;
+		aModule_ID  BIGINT;
+	--	aMODULE_NAME NVARCHAR(200);
+		resourceExists BIGINT;
+		alogidk INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :=''; 
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	
+	
+	CALL "SECURITY"."cdp.security.procedures::deleteMapViewRole" (
+	'CFE'
+	,'ABC'
+	,'ADFA'
+	?);
+	
+ *****************************/
+DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+			aI_DETAIL :='cdp.security.procedures::deleteMapViewRole can not find the MODULE : '||:aMODULE_NAME ||' in this resource .';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapViewRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);   
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::deleteMapViewRole error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapViewRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);   	
+   	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+  
+  SELECT "MODULE_ID" INTO aMODULE_ID FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE"
+  WHERE "MODULE_NAME" = :aMODULE_NAME;   
+
+    SELECT top 1 count(1) into resourceExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLES" A    
+     WHERE A."MODULE_ID" = :aModule_ID
+          AND A."ROLE_NAME" = :aROLE_NAME ;
+          
+     if  :resourceExists = 0 then
+    	 aI_DETAIL := 'cdp.security.procedures::deleteMapViewRole ROLE : '||:aROLE_NAME||' CAN NOT FIND .';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapViewRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000025'
+     	,I_DETAIL=>:aI_DETAIL);  
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'role can not find' error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+     	return ;
+     end if;
+     
+  	delete from "SECURITY"."cdp.security.data::userManagement.MAP_VIEW_ROLE"
+  	where "MODULE_ID" = :aModule_ID
+  	AND "VIEW_NAME" = :aVIEW_NAME
+  	AND "ROLE_ID" = :aVIEW_NAME
+  	AND "MAP_TYPE" = :aMAP_TYPE;
+  		
+    aI_DETAIL := 'cdp.security.procedures::deleteMapViewRole ('||:aRole_name||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapViewRole"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000026'
+     	,I_DETAIL=>:aI_DETAIL);	 		
+END;

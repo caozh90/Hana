@@ -1,0 +1,44 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createMapResourceUserForOData" (
+			IN newInfo "SECURITY"."cdp.security.data::userManagement.MapResourceUserT",
+			OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+	    aResource_type NVARCHAR(200);
+	    aValue NVARCHAR(200);
+	    aGroup_Id NVARCHAR(50);
+	    aUser_Id BIGINT;
+		aModule_ID  BIGINT;
+
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+
+   
+ select 
+	--MODULE_ID, 	--//userid /usergroup id	
+    RESOURCE_TYPE,
+    VALUE,
+    GROUP_ID,
+    USER_ID
+  into 
+ 	--aModule_ID,  --//module id
+ 	aResource_type,
+	aValue,
+	aGroup_Id,
+	aUser_Id
+  from :newInfo;
+  
+CALL	"SECURITY"."cdp.security.procedures::createMapResourceUser" (
+			--	aModule_ID 
+			
+			 aResource_type
+	    	,	aValue 
+	    	,	aGroup_Id
+	    	,	aUser_Id
+			, errorInfo);
+
+END;

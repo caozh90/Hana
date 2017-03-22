@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_EVENTS" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_EVENTS"/>
+  <defaultSchema schemaName="SZEBGVMI"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="PULL_ID" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="LINE_ID" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="PN_NUMBER" length="18"/>
+        <viewAttribute datatype="VARCHAR" id="PN_DESCRIPTION" length="255"/>
+        <viewAttribute datatype="VARCHAR" id="PLANT" length="4"/>
+        <viewAttribute datatype="VARCHAR" id="PULL_TYPE" length="20"/>
+        <viewAttribute datatype="DECIMAL" id="REQUESTED_QTY" length="13" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="FULL_BOX_QTY" length="13" scale="3"/>
+        <viewAttribute datatype="VARCHAR" id="INVENTORY_TYPE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="DELIVERY_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="PHYSICAL_PLANT" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="WAREHOUSE_NO" length="3"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCTION_LINE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="VENDOR" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="SOURCE_LOCATION" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="SOURCE_TYPE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="SOURCE_BIN" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="DESTINATION_LOCATION" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="DESTINATION_TYPE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="DESTINATION_BIN" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="TPL_ID" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="CREATED_BY" length="70"/>
+        <viewAttribute datatype="VARCHAR" id="CREATION_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="LAST_MODIFIED_BY" length="70"/>
+        <viewAttribute datatype="VARCHAR" id="LAST_MODIFIED_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="EVENT_TYPE" length="64"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = SELECT PULL_HEADER_ID AS Pull_Id,
+            PULL_LINE_ID AS Line_Id,
+            MATNR AS PN_Number,
+            MATNR_DESCR AS PN_Description,
+            WERKS AS Plant,
+            a.PULL_TYPE AS Pull_Type,
+            PULL_QTY AS Requested_qty,
+            FULL_BOX_QTY AS Full_Box_Qty,
+            INVENTORY_TYPE AS Inventory_Type,
+            to_seconddate(DELIVERY_DATE) AS Delivery_Date,
+            PHYSICAL_PLANT AS Physical_Plant,
+            WHS_NO AS Warehouse_NO,
+            PRODUCTION_LINE AS Production_Line,
+            LINE_SUPPLIERID AS Vendor,
+            SRC_STORAGE_LOC AS Source_Location,
+            SRC_STORAGE_TYPE AS Source_Type,
+            SRC_STORAGE_BIN AS Source_Bin,
+            DEST_STORAGE_LOC AS Destination_Location,
+            DEST_STORAGE_TYPE AS Destination_Type,
+            DEST_STORAGE_BIN AS Destination_Bin,
+            a.HEADER_SUPPLIERID AS TPL_ID,
+            a.SYS_CREATED_BY AS Created_By,
+            to_seconddate(a.SYS_CREATED_DATE) AS Creation_Date,
+            a.SYS_LAST_MODIFIED_BY AS Last_Modified_By,
+            to_seconddate(a.SYS_LAST_MODIFIED_DATE) AS LAST_MODIFIED_DATE
+            ,b.EVENT_TYPE AS EVENT_TYPE
+       FROM pull_line a, UI_Create_CycleTime b
+      WHERE     STATUS = 'OLD'
+            AND a.pull_type = b.pull_type
+            AND a.HEADER_SUPPLIERID = B.TPL_ID
+            AND b.EVENT_TYPE = 'Dispatch Delay by 3PL' --'Pull Confirmation Delay by 3PL'
+            AND a.SYS_CREATED_DATE > ADD_DAYS(CURRENT_DATE, - 7)
+            AND SYS_TIMESTAMP &lt;= ADD_DAYS(CURRENT_DATE, - CYCLE_TIME / (24 * 60))
+            --AND CONFIRM_QTY IS NULL
+            AND NOT EXISTS
+                       (SELECT 1
+                          FROM dispatch_list c
+                         WHERE     a.pull_header_id = c.pull_header_id
+                               AND a.pull_line_id = c.pull_line_id)
+--   ORDER BY a.SYS_CREATED_DATE DESC
+   UNION ALL
+SELECT PULL_HEADER_ID AS Pull_Id,
+            PULL_LINE_ID AS Line_Id,
+            MATNR AS PN_Number,
+            MATNR_DESCR AS PN_Description,
+            WERKS AS Plant,
+            a.PULL_TYPE AS Pull_Type,
+            PULL_QTY AS Requested_qty,
+            FULL_BOX_QTY AS Full_Box_Qty,
+            INVENTORY_TYPE AS Inventory_Type,
+            to_seconddate(DELIVERY_DATE) AS Delivery_Date,
+            PHYSICAL_PLANT AS Physical_Plant,
+            WHS_NO AS Warehouse_NO,
+            PRODUCTION_LINE AS Production_Line,
+            LINE_SUPPLIERID AS Vendor,
+            SRC_STORAGE_LOC AS Source_Location,
+            SRC_STORAGE_TYPE AS Source_Type,
+            SRC_STORAGE_BIN AS Source_Bin,
+            DEST_STORAGE_LOC AS Destination_Location,
+            DEST_STORAGE_TYPE AS Destination_Type,
+            DEST_STORAGE_BIN AS Destination_Bin,
+            a.HEADER_SUPPLIERID AS TPL_ID,
+            a.SYS_CREATED_BY AS Created_By,
+            to_seconddate(a.SYS_CREATED_DATE) AS Creation_Date,
+            a.SYS_LAST_MODIFIED_BY AS Last_Modified_By,
+            to_seconddate(a.SYS_LAST_MODIFIED_DATE) AS LAST_MODIFIED_DATE
+            ,b.EVENT_TYPE AS EVENT_TYPE
+       FROM pull_line a, UI_Create_CycleTime b
+      WHERE     a.pull_type = b.pull_type
+            AND a.HEADER_SUPPLIERID = b.TPL_ID
+            AND b.EVENT_TYPE = 'Pull Confirmation Delay by 3PL'
+            AND a.SYS_TIMESTAMP &lt;= ADD_DAYS(CURRENT_DATE, - CYCLE_TIME / (24 * 60))
+            AND a.SYS_CREATED_DATE >= ADD_DAYS(CURRENT_DATE, - 7) --a.SYS_TIMESTAMP >= SYSDATE - 7
+            AND CONFIRM_QTY IS NULL
+            ;
+            
+            
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="PULL_ID" hidden="false" order="1">
+        <descriptions defaultDescription="PULL_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="PULL_ID"/>
+      </attribute>
+      <attribute id="LINE_ID" hidden="false" order="2">
+        <descriptions defaultDescription="LINE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="LINE_ID"/>
+      </attribute>
+      <attribute id="PN_NUMBER" hidden="false" order="3">
+        <descriptions defaultDescription="PN_NUMBER"/>
+        <keyMapping columnObjectName="Script_View" columnName="PN_NUMBER"/>
+      </attribute>
+      <attribute id="PN_DESCRIPTION" hidden="false" order="4">
+        <descriptions defaultDescription="PN_DESCRIPTION"/>
+        <keyMapping columnObjectName="Script_View" columnName="PN_DESCRIPTION"/>
+      </attribute>
+      <attribute id="PLANT" hidden="false" order="5">
+        <descriptions defaultDescription="PLANT"/>
+        <keyMapping columnObjectName="Script_View" columnName="PLANT"/>
+      </attribute>
+      <attribute id="PULL_TYPE" hidden="false" order="6">
+        <descriptions defaultDescription="PULL_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="PULL_TYPE"/>
+      </attribute>
+      <attribute id="REQUESTED_QTY" hidden="false" order="7">
+        <descriptions defaultDescription="REQUESTED_QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="REQUESTED_QTY"/>
+      </attribute>
+      <attribute id="FULL_BOX_QTY" hidden="false" order="8">
+        <descriptions defaultDescription="FULL_BOX_QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="FULL_BOX_QTY"/>
+      </attribute>
+      <attribute id="INVENTORY_TYPE" hidden="false" order="9">
+        <descriptions defaultDescription="INVENTORY_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="INVENTORY_TYPE"/>
+      </attribute>
+      <attribute id="DELIVERY_DATE" hidden="false" order="10">
+        <descriptions defaultDescription="DELIVERY_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="DELIVERY_DATE"/>
+      </attribute>
+      <attribute id="PHYSICAL_PLANT" hidden="false" order="11">
+        <descriptions defaultDescription="PHYSICAL_PLANT"/>
+        <keyMapping columnObjectName="Script_View" columnName="PHYSICAL_PLANT"/>
+      </attribute>
+      <attribute id="WAREHOUSE_NO" hidden="false" order="12">
+        <descriptions defaultDescription="WAREHOUSE_NO"/>
+        <keyMapping columnObjectName="Script_View" columnName="WAREHOUSE_NO"/>
+      </attribute>
+      <attribute id="PRODUCTION_LINE" hidden="false" order="13">
+        <descriptions defaultDescription="PRODUCTION_LINE"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTION_LINE"/>
+      </attribute>
+      <attribute id="VENDOR" hidden="false" order="14">
+        <descriptions defaultDescription="VENDOR"/>
+        <keyMapping columnObjectName="Script_View" columnName="VENDOR"/>
+      </attribute>
+      <attribute id="SOURCE_LOCATION" hidden="false" order="15">
+        <descriptions defaultDescription="SOURCE_LOCATION"/>
+        <keyMapping columnObjectName="Script_View" columnName="SOURCE_LOCATION"/>
+      </attribute>
+      <attribute id="SOURCE_TYPE" hidden="false" order="16">
+        <descriptions defaultDescription="SOURCE_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SOURCE_TYPE"/>
+      </attribute>
+      <attribute id="SOURCE_BIN" hidden="false" order="17">
+        <descriptions defaultDescription="SOURCE_BIN"/>
+        <keyMapping columnObjectName="Script_View" columnName="SOURCE_BIN"/>
+      </attribute>
+      <attribute id="DESTINATION_LOCATION" hidden="false" order="18">
+        <descriptions defaultDescription="DESTINATION_LOCATION"/>
+        <keyMapping columnObjectName="Script_View" columnName="DESTINATION_LOCATION"/>
+      </attribute>
+      <attribute id="DESTINATION_TYPE" hidden="false" order="19">
+        <descriptions defaultDescription="DESTINATION_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="DESTINATION_TYPE"/>
+      </attribute>
+      <attribute id="DESTINATION_BIN" hidden="false" order="20">
+        <descriptions defaultDescription="DESTINATION_BIN"/>
+        <keyMapping columnObjectName="Script_View" columnName="DESTINATION_BIN"/>
+      </attribute>
+      <attribute id="TPL_ID" hidden="false" order="21">
+        <descriptions defaultDescription="TPL_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_ID"/>
+      </attribute>
+      <attribute id="CREATED_BY" hidden="false" order="22">
+        <descriptions defaultDescription="CREATED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="CREATED_BY"/>
+      </attribute>
+      <attribute id="CREATION_DATE" hidden="false" order="23">
+        <descriptions defaultDescription="CREATION_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="CREATION_DATE"/>
+      </attribute>
+      <attribute id="LAST_MODIFIED_BY" hidden="false" order="24">
+        <descriptions defaultDescription="LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="LAST_MODIFIED_DATE" hidden="false" order="25">
+        <descriptions defaultDescription="LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="EVENT_TYPE" order="26">
+        <descriptions defaultDescription="EVENT_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="EVENT_TYPE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

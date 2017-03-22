@@ -1,0 +1,392 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_frt_ph::createUiFrtPh" (
+
+IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FRT_PH_T",
+OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      createUiFrtPh
+*function    :               
+*input       ：                    newInfo
+*output      :      errorInfo            
+*author      :      bianzh1
+*CreateDate  :      2017.2.7
+*UpdateDate  :        
+*************************************************************************/ 	
+	AS
+	   aI_DETAIL NVARCHAR(300) :='';
+	   alogide INTEGER :=0;
+	   V_CYCLE NVARCHAR(40);
+	   V_PRODUCT_GROUP NVARCHAR(10);
+	   V_PH NVARCHAR(20); 
+	   V_ITEM NVARCHAR(40);
+	   V_PLANT NVARCHAR(20);
+	   V_COUNTRY NVARCHAR(40);
+	   V_TBA_TYPE NVARCHAR(20);
+	   v_resourceExists BIGINT;	   
+	   V_M1 DECIMAL(15,4);
+	   V_M2 DECIMAL(15,4);
+	   V_M3 DECIMAL(15,4);
+	   V_M4 DECIMAL(15,4);
+	   V_M5 DECIMAL(15,4);
+	   V_M6 DECIMAL(15,4);
+	   V_M7 DECIMAL(15,4);
+	   V_M8 DECIMAL(15,4);
+	   V_M9 DECIMAL(15,4);
+	   V_M10 DECIMAL(15,4);
+	   V_M11 DECIMAL(15,4);
+	   V_M12 DECIMAL(15,4);
+	   V_M13 DECIMAL(15,4);
+	   V_M14 DECIMAL(15,4);
+	   V_M15 DECIMAL(15,4);
+	   V_M16 DECIMAL(15,4);
+	   V_M17 DECIMAL(15,4);
+	   V_M18 DECIMAL(15,4);
+	   privilegeExists  NVARCHAR(300)  ;  
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_frt_ph::createUiFrtPh error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_frt_ph::createUiFrtPh'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_frt_ph::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_frt_ph::createUiFrtPh'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+
+
+select  CYCLE,
+        PRODUCT_GROUP,
+		PH,
+		ITEM,
+		PLANT,
+		COUNTRY,
+		TBA_TYPE,
+		M1,
+		M2,
+		M3,
+		M4,
+		M5,
+		M6,
+		M7,
+		M8,
+		M9,
+		M10,
+		M11,
+		M12,
+		M13,
+		M14,
+		M15,
+		M16,
+		M17,
+		M18
+into V_CYCLE,
+     V_PRODUCT_GROUP,
+	 V_PH,
+	 V_ITEM,
+	 V_PLANT,
+	 V_COUNTRY,
+	 V_TBA_TYPE,
+	 V_M1,
+	 V_M2,
+	 V_M3,
+	 V_M4,
+	 V_M5,
+	 V_M6,
+	 V_M7,
+	 V_M8,
+	 V_M9,
+	 V_M10,
+	 V_M11,
+	 V_M12,
+	 V_M13,
+	 V_M14,
+	 V_M15,
+	 V_M16,
+	 V_M17,
+	 V_M18
+from :newInfo;  
+
+select count(1) into v_resourceExists from "EBGCFE"."UI_FRT_PH" 
+where CYCLE = :V_CYCLE 
+  and PRODUCT_GROUP = :V_PRODUCT_GROUP 
+  AND PH = :V_PH
+  AND ITEM = :V_ITEM
+  and PLANT = :V_PLANT
+  and COUNTRY = :V_COUNTRY
+  and TBA_TYPE = :V_TBA_TYPE; 
+
+--if item exits in database
+if  :v_resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+	    
+end if;	
+
+--ITEM Check
+if V_ITEM <> '' and V_ITEM <> 'N/A' then
+  v_resourceExists := 0;
+  
+  select count(1) into v_resourceExists
+    from UI_ITEM 
+    where item_type in ( 'MTM' , 'CTO' , 'BUNDLE' , 'OPTION' )
+    and item = :V_ITEM;
+   
+  if :v_resourceExists = 0 then
+  	errorinfo = select 400 as http_status_code, 
+            'ITEM: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;         
+    RETURN;
+  else
+    V_PH := 'N/A';
+  end if;
+elseif V_PH <> '' and v_PH  <> 'N/A' then
+  select count(1) into v_resourceExists 
+  	from UI_item 
+  	where left(prod_h,length(:V_PH)) = :V_PH;
+  if :v_resourceExists = 0 then
+  	errorinfo = select 400 as http_status_code, 
+            'PH: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;         
+    RETURN;
+  else
+    V_ITEM := 'N/A';
+  end if; 
+else
+  errorinfo = select 400 as http_status_code, 
+            'PH & ITEM should be filled at last one' error_message, 
+            '' detail from dummy;         
+  RETURN;
+end if;
+
+
+--plant Check
+select count(1) into v_resourceExists
+from UI_PLANT
+where ( plant <> 'WW'and plant = :V_PLANT) or :V_PLANT = 'ALL';
+IF :v_resourceExists = 0 THEN
+	 errorinfo = select 400 as http_status_code, 
+            'PLANT: VALIDATION FAILED, NOT EXIST IN UI_PLANT' error_message, 
+            '' detail from dummy;         
+     RETURN;
+ END IF ;
+
+
+--country check
+select count(1) into v_resourceExists
+from UI_REGION
+where country = :V_COUNTRY;
+IF :v_resourceExists = 0 THEN
+	 errorinfo = select 400 as http_status_code, 
+            'COUNTRY: VALIDATION FAILED, NOT EXIST IN UI_REGION' error_message, 
+            '' detail from dummy;         
+     RETURN;
+ END IF ;
+
+--TBA_TYPE check
+select count(1) into v_resourceExists
+from CONF_PARAMETERS
+where pdomain='UI_ADDER_CONF' 
+and pname='TBA_TYPE'
+and pvalue = :V_TBA_TYPE;
+IF :v_resourceExists = 0 THEN
+	 errorinfo = select 400 as http_status_code, 
+            'TBA_TYPE: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;         
+     RETURN;
+ END IF ;
+         
+--insert into UI_FRT_PH table
+
+insert into "EBGCFE"."UI_FRT_PH"(CYCLE,
+								PRODUCT_GROUP,
+								PH,
+								ITEM,
+								PLANT,
+								COUNTRY,
+								TBA_TYPE,
+								M1,
+								M2,
+								M3,
+								M4,
+								M5,
+								M6,
+								M7,
+								M8,
+								M9,
+								M10,
+								M11,
+								M12,
+								M13,
+								M14,
+								M15,
+								M16,
+								M17,
+								M18,
+								ACTION,
+								STATUS,
+								SYS_CREATED_DATE,
+								SYS_CREATED_BY,
+								SYS_LAST_MODIFIED_DATE,
+								SYS_LAST_MODIFIED_BY,
+								CHANGE_ID,
+								CHANGE_ACTION
+									) 
+	values ('CURRENT',
+	   V_PRODUCT_GROUP,
+	   V_PH,
+	   V_ITEM,
+	   V_PLANT,
+	   V_COUNTRY,
+	   V_TBA_TYPE,
+	   V_M1,
+	   V_M2,
+	   V_M3,
+	   V_M4,
+	   V_M5,
+	   V_M6,
+	   V_M7,
+	   V_M8,
+	   V_M9,
+	   V_M10,
+	   V_M11,
+	   V_M12,
+	   V_M13,
+	   V_M14,
+	   V_M15,
+	   V_M16,
+	   V_M17,
+	   V_M18,
+	   'insert',--ACTION
+	   '',--STATUS
+	   CURRENT_TIMESTAMP,
+	   SESSION_USER,
+	   CURRENT_TIMESTAMP,
+	   SESSION_USER,
+	   '',--CHANGE_ID
+	   ''--CHANGE_ACTION
+	   );
+	
+--INSERT INTO UI_FRT_PH_LOG TABLE
+insert into "EBGCFE"."UI_FRT_PH_LOG"(
+									CYCLE,
+									PRODUCT_GROUP,
+									PH,
+									ITEM,
+									PLANT,
+									COUNTRY,
+									TBA_TYPE,
+									M1,
+									M2,
+									M3,
+									M4,
+									M5,
+									M6,
+									M7,
+									M8,
+									M9,
+									M10,
+									M11,
+									M12,
+									M13,
+									M14,
+									M15,
+									M16,
+									M17,
+									M18,
+									STATUS,
+									SYS_CREATED_DATE,
+									SYS_CREATED_BY,
+									SYS_LAST_MODIFIED_DATE,
+									SYS_LAST_MODIFIED_BY,
+									CHANGE_ID,
+									CHANGE_ACTION,
+									AT_MODIFIED_BY,
+									AT_ACTION,
+									AT_MODIFIED_ON,
+									AT_MILLIS
+	 )SELECT 
+	        'CURRENT',
+		    'EBG',
+		    a.PH,
+			a.ITEM,
+			a.PLANT,
+			a.COUNTRY,
+			a.TBA_TYPE,
+			a.M1,
+			a.M2,
+			a.M3,
+			a.M4,
+			a.M5,
+			a.M6,
+			a.M7,
+			a.M8,
+			a.M9,
+			a.M10,
+			a.M11,
+			a.M12,
+			a.M13,
+			a.M14,
+			a.M15,
+			a.M16,
+			a.M17,
+			a.M18,
+		    '',--STATUS
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+	 		SESSION_USER,
+	 		'insert',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :newInfo a; 							
+		
+	  	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_frt_ph::createUiFrtPh successfully inserted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_frt_ph::createUiFrtPh'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   	
+END;

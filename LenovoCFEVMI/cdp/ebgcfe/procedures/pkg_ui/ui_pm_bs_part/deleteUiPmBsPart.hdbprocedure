@@ -1,0 +1,109 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::deleteUiPmBsPart" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_BS_PART"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name> 
+	AS
+/************************************************************************
+*name      :                     deleteUiPmBsPart
+*function    :               
+*input     ：                                                                         newInfo
+*output     :                    errorInfo          
+*author     :                     Justin
+*CreateDate    :                  2015.10.10
+*UpdateDate  :        
+*************************************************************************/		
+		v_OEM_NAME NVARCHAR(40);
+		v_BS_PART NVARCHAR(40);
+		
+		
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::deleteUiPmBsPart error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::deleteUiPmBsPart'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_pm_bs_part::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::deleteUiPmBsPart'
+       ,I_MODULE=>'EBGCFE'
+   	);
+   	
+ select    	
+    OEM_NAME,
+    BS_PART
+  into  
+ 	v_OEM_NAME,
+	v_BS_PART
+  from :newInfo;
+  
+  
+  delete from "EBGCFE"."UI_PM_BS_PART"
+  	where OEM_NAME = :v_OEM_NAME
+  		and BS_PART = :v_BS_PART;
+
+/*put operation to log table*/
+   INSERT into  "EBGCFE"."UI_PM_BS_PART_LOG"
+	(
+	"PRODUCT_GROUP",
+	"OEM_NAME",
+	"BS_PART",
+	SYS_LAST_MODIFIED_DATE,
+    AT_ACTION,
+    SYS_LAST_MODIFIED_BY,
+    AT_MODIFIED_ON,
+    AT_MILLIS    	
+	)
+	
+ VALUES(	
+	'EBG',
+	:v_OEM_NAME,
+	:v_BS_PART,
+	CURRENT_TIMESTAMP,
+    'delete',
+    session_user,
+    CURRENT_TIMESTAMP,
+    TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+              
+ /*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::deleteUiPmBsPart successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bs_part::deleteUiPmBsPart'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	  
+END;

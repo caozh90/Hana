@@ -1,0 +1,338 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_PBOM_DEL_LOWCOST_PARTS" ( 
+ 		IN p_product_group VARCHAR(20),
+        OUT p_out_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_PBOM_DEL_LOWCOST_PARTS              
+*function   : Product BOM - Low cost parts
+*input      ：p_product_group : product group
+*output     : p_out_exitcode : error code 
+*author     : Eric Zhou
+*CreateDate : 2014-11-12
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+	    v_product_group     VARCHAR2(20)  := p_product_group;
+        v_prc_name          VARCHAR2(30)  := 'PRC_PBOM_DEL_LOWCOST_PARTS';
+        v_g_pkg_name        VARCHAR2(30)  := 'PKG_BOM_CALCULATION';                
+        v_full_name         VARCHAR2(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+        
+		v_debug  	        VARCHAR(20);
+    	v_count             INTEGER;
+    	v_init_date         TIMESTAMP; 
+    	v_logidi            INTEGER := 0;
+		v_logidj            INTEGER := 0;
+		v_logidk            INTEGER := 0;
+		v_logidl            INTEGER := 0;
+				
+		v_time              DECIMAL(17,3);
+		v_step_counter      INTEGER       := 0;
+    	v_taking_time       DECIMAL(17,3);
+BEGIN
+
+    -- Exception 
+    DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found
+    BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+         CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                     I_LOGSID     => :v_logidi,
+                                                     I_EVENT_NAME => :v_full_name,
+                                                     I_MODULE     => 'EBGCFE',
+                                                     I_MESSAGE    => 'ERROR',
+                                                     I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                     substr(::SQL_ERROR_MESSAGE, 1, 1000) || ' (' ||substr(::SQL_ERROR_MESSAGE, 1, 500) || ')'); 
+
+    END;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :v_logidi,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) || ' (' ||substr(::SQL_ERROR_MESSAGE, 1, 500) || ')'); 
+
+END;
+    p_out_exitcode := -1;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :v_logidi,
+                                                I_EVENT_NAME => :v_full_name,
+                                                I_MODULE     => 'EBGCFE'); 
+                                                
+    SELECT SESSION_CONTEXT('v_step_counter_bom_calculation') into v_step_counter FROM DUMMY;
+        
+    insert into CAL_RUNTIME(PKG_NAME,PROC_NAME,START_T,PRD_GROUP)
+    select v_g_pkg_name,v_prc_name,CURRENT_DATE,v_product_group from dummy;
+        
+    DELETE FROM MID_biz_pbom         WHERE product_group = :v_product_group;
+    DELETE FROM MID_eccplant_bom_agg WHERE product_group = :v_product_group;
+
+    select "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy;
+    IF :v_debug = 'T'
+    THEN
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+    
+    --Modified delete low cost parts logic to update altpercent=0
+    /*
+    --Delete components which costflag is null
+    DELETE FROM MID_eccplant_bom
+     WHERE item_type_c not in ('SBB')
+       AND costflag IS NULL
+       AND product_group = :v_product_group;
+
+    --Delete bulk material from BOM
+    DELETE FROM MID_eccplant_bom
+     WHERE item_type_c <> 'SBB'
+       AND schgt_c     = 'X'
+       AND product_group = v_product_group;
+       
+    --Delelte EOL parts
+    DELETE FROM MID_eccplant_bom t1
+    WHERE t1.product_group = :v_product_group
+      --AND t1.item_type_c  <> 'SBB'
+      AND EXISTS(SELECT 1 FROM UI_item t2
+                  WHERE t2.product_group = t1.product_group
+                    AND t2.item          = t1.children
+                    AND t2.eol_status    = 'EOL');        
+                    
+    --Delelte parts according to basic name
+    DELETE FROM MID_eccplant_bom t1
+    WHERE t1.product_group = :v_product_group
+      AND t1.item_type_c  <> 'SBB'
+      AND EXISTS(SELECT 1 FROM UI_item t2
+                  WHERE t2.product_group = t1.product_group
+                    AND t2.item          = t1.children
+                    AND upper(t2.zeinr) IN
+                        (SELECT pvalue FROM conf_parameters
+                          WHERE pdomain = 'DEL_LOWCOST_PARTS'
+                            AND pname   = 'BASIC_NAME'));
+    */
+    
+    --Fix wrong alternate percentage, Set highest alternate priority parts percentage to 100, otherwise 0
+    tab_wrong_altper = SELECT product_group, model, father, children, plant, 
+                              CASE WHEN ROW_NUMBER() OVER(PARTITION BY product_group, model, plant,
+                                                                       altgrup
+                                                          ORDER BY altpri DESC) = 1
+                                       THEN 100
+                                  ELSE 0 END AS altpercent
+                         FROM MID_eccplant_bom t1
+                        WHERE t1.product_group = :p_product_group
+                          AND IFNULL(t1.altgrup, '') <> ''
+                          AND LEFT(t1.altgrup, 1)    <> '-'
+                          AND EXISTS(SELECT 1 FROM (
+                                        SELECT product_group, model, plant, altgrup
+                                          FROM MID_eccplant_bom 
+                                         WHERE product_group           = :p_product_group
+                                           AND IFNULL(t1.altgrup, '') <> ''
+                                           AND LEFT(t1.altgrup, 1)    <> '-'
+                                        GROUP BY product_group, model, plant, altgrup
+                                        HAVING SUM(altpercent) <> 100) t2
+                                     WHERE t2.product_group = t1.product_group
+                                       AND t2.model         = t1.model
+                                       AND t2.plant         = t1.plant
+                                       AND t2.altgrup       = t1.altgrup);
+                                       
+    --Reset alternate percentage for wrong alternate group
+    UPDATE MID_eccplant_bom t1
+       SET t1.altpercent = t2.altpercent
+      FROM :tab_wrong_altper t2
+     WHERE t1.product_group = t2.product_group
+       AND t1.model         = t2.model
+       AND t1.father        = t2.father
+       AND t1.children      = t2.children
+       AND t1.plant         = t2.plant;
+    
+    tab1 = SELECT DISTINCT
+                  product_group, model, plant, altgrup 
+             FROM MID_eccplant_bom t1
+            WHERE t1.product_group = :v_product_group
+              AND IFNULL(t1.altgrup, '') <> ''
+              AND LEFT(t1.altgrup, 1)    <> '-'
+              AND t1.altpercent          <> 0
+              AND EXISTS(SELECT 1 FROM UI_cost_tape t2
+                          WHERE t2.product_group = t1.product_group
+                            AND t2.plant         = IFNULL(t1.cost_plant, t1.plant)
+                            AND t2.part_number   = t1.children
+                            AND t2.cost_elem     = 'TOTE');
+                            
+    --Reset alternate percentage to 0 when some parts in same alternate group has cost
+    UPDATE MID_eccplant_bom t1
+       SET t1.altpercent = 0
+     WHERE t1.product_group = :v_product_group
+       AND IFNULL(t1.altgrup, '') <> ''
+       AND LEFT(t1.altgrup, 1)    <> '-'
+       AND EXISTS(SELECT 1 FROM MID_eccplant_bom t2
+                   WHERE t2.product_group = t1.product_group
+                     AND t2.model         = t1.model
+                     AND t2.plant         = t1.plant
+                     AND t2.altgrup       = t1.altgrup
+                     AND EXISTS(SELECT 1 FROM UI_cost_tape t3
+                                 WHERE t3.product_group = t2.product_group
+                                   AND t3.part_number   = t2.children
+                                   AND t3.plant         = IFNULL(t2.cost_plant, t1.plant)
+                                   AND t3.cost_elem     = 'TOTE'))
+       AND NOT EXISTS(SELECT 1 FROM :tab1 t4
+                       WHERE t4.product_group = t1.product_group
+                         AND t4.model         = t1.model
+                         AND t4.plant         = t1.plant
+                         AND t4.altgrup       = t1.altgrup);
+    
+    --Set alternate percentage to 100 when the part has highest cost in same alternate group
+    UPDATE MID_eccplant_bom t1
+       SET t1.altpercent = 100
+      FROM (SELECT t2.product_group, t2.model, t2.father, t2.children, 
+                   t2.plant, t2.altgrup,
+                   row_number() over(partition by t2.product_group, t2.model, 
+                                                  t2.father, t2.plant, t2.altgrup
+                                     order by t3.m1 desc) AS pri
+              FROM MID_eccplant_bom t2, UI_cost_tape t3
+             WHERE t2.product_group = :v_product_group
+               AND t2.product_group = t3.product_group
+               AND t2.children      = t3.part_number
+               AND IFNULL(t2.cost_plant, t2.plant) = t3.plant
+               AND IFNULL(t2.altgrup, '') <> ''
+               AND LEFT(t2.altgrup, 1)    <> '-'
+               AND t3.cost_elem     = 'TOTE') t4
+     WHERE t1.product_group = :v_product_group
+       AND t1.product_group = t4.product_group
+       AND t1.model         = t4.model
+       AND t1.father        = t4.father
+       AND t1.children      = t4.children
+       AND t1.plant         = t4.plant
+       AND t4.pri           = 1
+       AND NOT EXISTS(SELECT 1 FROM :tab1 t5
+                       WHERE t5.product_group = t4.product_group
+                         AND t5.model         = t4.model
+                         AND t5.plant         = t4.plant
+                         AND t5.altgrup       = t4.altgrup);
+                            
+    --components which costflag is null
+    UPDATE MID_eccplant_bom
+       SET altpercent = 0
+     WHERE item_type_c not in ('SBB', 'SWR')
+       AND costflag IS NULL
+       AND product_group = :v_product_group;
+
+    --bulk material from BOM
+    UPDATE MID_eccplant_bom
+       SET altpercent = 0
+     WHERE item_type_c NOT IN ('SBB', 'SWR')
+       AND schgt_c     = 'X'
+       AND product_group = v_product_group;
+       
+    --EOL parts
+    UPDATE MID_eccplant_bom t1
+       SET altpercent = 0
+    WHERE t1.product_group = :v_product_group
+      --AND t1.item_type_c  <> 'SBB'
+      AND EXISTS(SELECT 1 FROM UI_item t2
+                  WHERE t2.product_group = t1.product_group
+                    AND t2.item          = t1.children
+                    AND t2.eol_status    = 'EOL');        
+                    
+    --Delelte parts according to basic name
+    UPDATE MID_eccplant_bom t1
+       SET altpercent = 0
+    WHERE t1.product_group = :v_product_group
+      AND t1.item_type_c  <> 'SBB'
+      AND EXISTS(SELECT 1 FROM UI_item t2
+                  WHERE t2.product_group = t1.product_group
+                    AND t2.item          = t1.children
+                    AND upper(t2.zeinr) IN
+                        (SELECT pvalue FROM conf_parameters
+                          WHERE pdomain = 'DEL_LOWCOST_PARTS'
+                            AND pname   = 'BASIC_NAME'));                     
+
+    INSERT INTO MID_eccplant_bom_agg
+        (product_group, model, father, children, item_desc, plant, oem, brand,
+         asp_prd_family, country, qtyper, altgrup, altpri, altpercent, path, 
+         costflag, item_type_m, item_type_f, item_type_c, bom_plant, sbom_plant,
+         bom_lvl, status, cost_plant)
+    SELECT product_group, model, father, children, MIN(item_desc), plant, MIN(oem), 
+           MIN(brand), MIN(asp_prd_family), MIN(country), SUM(qtyper * altpercent / 100), 
+           MIN(altgrup), MIN(altpri), 100 AS altpercent, MIN(path), MIN(costflag), 
+           MIN(item_type_m), MIN(item_type_f), MIN(item_type_c), bom_plant, sbom_plant, 
+           bom_lvl, MIN(status), cost_plant
+      FROM MID_eccplant_bom
+     WHERE product_group = v_product_group
+    GROUP BY product_group, plant, model, father, children, bom_plant,
+            sbom_plant, bom_lvl, cost_plant
+    HAVING COUNT(0) > 1;
+
+    DELETE FROM MID_eccplant_bom t1
+     WHERE product_group = v_product_group
+       AND EXISTS(SELECT 1 FROM MID_eccplant_bom_agg t2
+                   WHERE t2.product_group = t1.product_group
+                     AND t2.plant = t1.plant
+                     AND t2.model = t1.model
+                     AND t2.father = t1.father
+                     AND t2.children = t1.children);
+
+    INSERT INTO MID_eccplant_bom
+        (product_group, model, father, children, item_desc, plant, oem, brand,
+         asp_prd_family, country, qtyper, altgrup, altpri, altpercent, path, 
+         costflag, item_type_m, item_type_f, item_type_c, bom_plant, sbom_plant,
+         bom_lvl, status, cost_plant)
+    SELECT product_group, model, father, children, item_desc, plant, oem, brand,
+           asp_prd_family, country, qtyper, altgrup, altpri, altpercent, path, 
+           costflag, item_type_m, item_type_f, item_type_c, bom_plant, sbom_plant,
+           bom_lvl, status, cost_plant
+      FROM MID_eccplant_bom_agg
+     WHERE product_group = v_product_group;
+        
+    INSERT INTO MID_biz_pbom
+        (product_group, model, father, children, item_desc, plant, bom_plant,
+         sbom_plant, oem, brand, asp_prd_family, country, qtyper, altgrup, 
+         altpri, altpercent, costflag, item_type_m, item_type_f, item_type_c, 
+         bom_lvl, cost_plant, is_basesbb, action, status, sys_created_date,
+         sys_created_by,sys_last_modified_date, sys_last_modified_by)
+    SELECT b.product_group, b.model, b.father, b.children, b.item_desc, b.plant, 
+           b.bom_plant, b.sbom_plant, b.oem, b.brand, b.asp_prd_family, b.country, 
+           b.qtyper, b.altgrup, b.altpri, b.altpercent, b.costflag, b.item_type_m, 
+           b.item_type_f, b.item_type_c, b.bom_lvl, b.cost_plant, 0 as is_basesbb, 
+           'INSERT', b.status, current_timestamp, v_full_name, current_timestamp, 
+           v_full_name
+      FROM MID_eccplant_bom b
+     WHERE b.product_group = :v_product_group;        
+
+     IF :v_debug = 'T'
+     THEN
+         v_step_counter := v_step_counter + 1;
+         v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - v_time;
+         
+         IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+         
+         CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                     I_LOGSID     => :v_logidl,
+                                                     I_EVENT_NAME => :v_full_name,
+                                                     I_MODULE     => 'EBGCFE',
+									                 I_MESSAGE    => 'step '||to_char(:v_step_counter)||': ' ||
+									                                  to_char(:v_taking_time) || ' sec'); 
+            
+         v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+     END IF;
+ 
+     update CAL_RUNTIME x 
+        set end_t=CURRENT_DATE
+      where x.pkg_name   = v_g_pkg_name 
+        and x.proc_name  = v_prc_name 
+        and end_t is null 
+        and prd_group    = v_product_group;
+     
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                 I_LOGSID     => :v_logidi,
+                                                 I_EVENT_NAME => :v_full_name,
+                                                 I_MODULE     => 'EBGCFE');
+                                                 
+     exec 'SET ''v_step_counter_bom_calculation'' = '''||v_step_counter||'''';
+     
+     p_out_exitcode := 0;     
+
+END;

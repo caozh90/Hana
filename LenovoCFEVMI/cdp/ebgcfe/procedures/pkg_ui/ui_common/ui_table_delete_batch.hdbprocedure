@@ -1,0 +1,23 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_common::ui_table_delete_batch" (
+IN TABLE_NAME NVARCHAR(100), 	
+IN WHERE_CON  NVARCHAR(1000)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+	AS
+	currentUser varchar(100);
+	
+BEGIN
+	DECLARE  v_sql              VARCHAR(4000);
+	
+	
+	
+	v_sql := 'DELETE FROM '|| :TABLE_NAME || ' WHERE ' || :WHERE_CON;
+	
+	
+                              
+    EXECUTE IMMEDIATE v_sql;
+
+END;

@@ -1,0 +1,41 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteMapRoleGroupForOData" ( 
+IN newInfo "SECURITY"."cdp.security.data::userManagement.MapRoleGroupT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+	
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aID NVARCHAR(10);	
+	aMODULE_ID NVARCHAR(10);	
+    aROLEGROUP_ID BIGINT;	--//ROLEgroup id	
+    aROLE_ID BIGINT;  	--//ROLE ID
+     
+    aMODULE_NAME NVARCHAR(200);
+        
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	将 一些用户加入到某个用户组中。
+ *****************************/
+ 
+select 
+	ID,
+	ROLE_ID 
+	,ROLEGROUP_ID 	--/ROLEgroup id	
+    --,ROLE_ID
+    ,MODULE_NAME
+  into aID,
+ 	aROLE_ID,aROLEGROUP_ID  --//module id	
+	,aMODULE_NAME
+  from :newInfo;
+  
+  CALL "SECURITY"."cdp.security.procedures::deleteMapRoleGroup" ( 
+		aID 	,errorInfo);
+	
+END;

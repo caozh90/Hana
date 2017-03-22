@@ -1,0 +1,102 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::deleteUiDummyPart" ( 
+	    IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_DUMMYPART_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aProduct_group NVARCHAR(10); 
+		aDummyPart NVARCHAR(18);
+		
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		
+		privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::deleteUiDummyPart error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.ui_dummy_part::deleteUiDummyPart'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_dummy_part::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+    
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::deleteUiDummyPart'
+       ,I_MODULE=>'EBGCFE'
+   	);
+
+
+select
+    PRODUCT_GROUP,	
+    DUMMY_PART
+  into  	
+ 	aProduct_group,
+ 	aDummyPart
+  from :newInfo;
+  
+  
+  delete from "EBGCFE"."UI_DUMMYPART"
+  	WHERE PRODUCT_GROUP = :aProduct_group          
+          AND DUMMY_PART = :aDummyPart;
+  
+  delete from EBGCFE.UI_Item
+    where item = :aDummyPart   
+    AND PRODUCT_GROUP = :aProduct_group; 
+           
+/*put operation to log table*/     	
+ insert into "EBGCFE"."UI_DUMMYPART_LOG"
+    (
+    	PRODUCT_GROUP,	
+	    DUMMY_PART,
+    	PART_DESC,     	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    select 
+        a.PRODUCT_GROUP,	
+	    a.DUMMY_PART,	
+    	a.PART_DESC, 	    
+    	current_date,    	
+    	'delete',
+    	session_user,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    FROM :newInfo a;  	  
+                 	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::deleteUiDummyPart successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::deleteUiDummyPart'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

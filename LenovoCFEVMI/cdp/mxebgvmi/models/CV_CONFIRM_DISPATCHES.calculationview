@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_DISPATCH_LIST" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_DISPATCH_LIST"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="DISPATCH_LIST" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="DISPATCH_LIST"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="WERKS"/>
+        <viewAttribute id="PULL_HEADER_ID"/>
+        <viewAttribute id="PULL_TYPE">
+          <filter xsi:type="AccessControl:ListValueFilter" operator="IN" including="true">
+            <operands value="EXCESS"/>
+            <operands value="SHIPPING"/>
+            <operands value="SHIPPING_GROUP"/>
+          </filter>
+        </viewAttribute>
+        <viewAttribute id="DEST_STORAGE_LOC"/>
+        <viewAttribute id="DEST_STORAGE_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_BIN"/>
+        <viewAttribute id="TPL_ID"/>
+        <viewAttribute id="DEST_WERKS"/>
+        <viewAttribute id="SHIPPED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE001"/>
+        <viewAttribute id="SYS_CREATED_DATE001"/>
+        <viewAttribute id="STATUS">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="IN_PROCESS"/>
+        </viewAttribute>
+        <viewAttribute id="SA_LINE_ID"/>
+        <viewAttribute id="SA_NUMBER"/>
+        <viewAttribute id="MATNR"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="SYS_CREATED_DATE" length="30">
+          <formula>if(isnull(&quot;SYS_CREATED_DATE001&quot;) ,string(null),string(component(&quot;SYS_CREATED_DATE001&quot;,1)) +'/' + lpad(string(component(&quot;SYS_CREATED_DATE001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;SYS_CREATED_DATE001&quot;,3)) ,2,'0') +' '+ lpad(string(component(&quot;SYS_CREATED_DATE001&quot;,4)) ,2,'0')+':'+lpad(string(component(&quot;SYS_CREATED_DATE001&quot;,5)) ,2,'0')+':'+lpad(string(component(&quot;SYS_CREATED_DATE001&quot;,6)) ,2,'0'))</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_DATE" length="30">
+          <formula>if(isnull(&quot;SYS_LAST_MODIFIED_DATE001&quot;) ,string(null),string(component(&quot;SYS_LAST_MODIFIED_DATE001&quot;,1)) +'/' + lpad(string(component(&quot;SYS_LAST_MODIFIED_DATE001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;SYS_LAST_MODIFIED_DATE001&quot;,3)) ,2,'0') +' '+ lpad(string(component(&quot;SYS_LAST_MODIFIED_DATE001&quot;,4)) ,2,'0')+':'+lpad(string(component(&quot;SYS_LAST_MODIFIED_DATE001&quot;,5)) ,2,'0')+':'+lpad(string(component(&quot;SYS_LAST_MODIFIED_DATE001&quot;,6)) ,2,'0'))</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#DISPATCH_LIST">
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_TYPE" source="PULL_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_TYPE" source="DEST_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_BIN" source="DEST_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TPL_ID" source="TPL_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_WERKS" source="DEST_WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SHIPPED_DATE" source="SHIPPED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE001" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE001" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_LINE_ID" source="SA_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_NUMBER" source="SA_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="WERKS" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="WERKS"/>
+      </attribute>
+      <attribute id="PULL_HEADER_ID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_HEADER_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PULL_HEADER_ID"/>
+      </attribute>
+      <attribute id="PULL_TYPE" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PULL_TYPE"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_LOC" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_LOC"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEST_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_TYPE" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEST_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_BIN" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_BIN"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEST_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="TPL_ID" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TPL_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="TPL_ID"/>
+      </attribute>
+      <attribute id="DEST_WERKS" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_WERKS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DEST_WERKS"/>
+      </attribute>
+      <attribute id="SHIPPED_DATE_RAW" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SHIPPED_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SHIPPED_DATE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="STATUS" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="STATUS"/>
+      </attribute>
+      <attribute id="SYS_CREATED_DATE_RAW" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_CREATED_DATE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE_RAW" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="SHIPPED_DATE" hidden="false" order="15" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SHIPPED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SHIPPED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="SYS_CREATED_DATE" hidden="false" order="16" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_CREATED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="SYS_LAST_MODIFIED_DATE" hidden="false" order="17" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_LAST_MODIFIED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures>
+      <measure id="COUNT" hidden="false" order="12" aggregationType="sum" measureType="simple" calculatedMeasureType="counter" datatype="INTEGER">
+        <descriptions defaultDescription="COUNT"/>
+        <exceptionAggregation exceptionAggregationType="countDistinct">
+          <attribute attributeName="PULL_HEADER_ID"/>
+          <attribute attributeName="PULL_TYPE"/>
+          <attribute attributeName="DEST_STORAGE_LOC"/>
+          <attribute attributeName="DEST_STORAGE_TYPE"/>
+          <attribute attributeName="DEST_STORAGE_BIN"/>
+          <attribute attributeName="WERKS"/>
+          <attribute attributeName="DEST_WERKS"/>
+          <attribute attributeName="STATUS"/>
+          <attribute attributeName="SYS_LAST_MODIFIED_BY"/>
+          <attribute attributeName="SHIPPED_DATE_RAW"/>
+          <attribute attributeName="TPL_ID"/>
+          <attribute attributeName="SYS_LAST_MODIFIED_DATE_RAW"/>
+          <attribute attributeName="SYS_CREATED_DATE_RAW"/>
+        </exceptionAggregation>
+        <formula>1</formula>
+      </measure>
+    </calculatedMeasures>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="200"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

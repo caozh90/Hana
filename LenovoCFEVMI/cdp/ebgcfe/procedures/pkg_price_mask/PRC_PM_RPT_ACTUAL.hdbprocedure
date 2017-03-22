@@ -1,0 +1,69 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_price_mask::PRC_PM_RPT_ACTUAL"(
+  IN  P_IN_PRODUCT_GROUP   VARCHAR(20),
+  IN  P_IN_TIME_FENCE      VARCHAR(40),
+  IN  P_IN_PROFIT_CENTER   VARCHAR(40),
+  IN  P_IN_OEM_NAME        VARCHAR(40),
+  OUT P_OUT_EXITCODE      INTEGER,
+  OUT P_OUT_EXITMESSAGE   VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA  
+/************************************************************************
+*name       : PRC_PM_RPT_ACTUAL      
+*function   : Generate price mask forecast report
+*input      ：   p_in_product_group, p_in_time_fence, p_in_profit_center, p_in_oem_name
+*output     : p_out_exit_code : error code / p_out_exit_message : error message
+*author     : Binbin Zhou
+*CreateDate : 2016-2-30
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+    -- data
+    DECLARE v_pkg_name          VARCHAR(30) := 'PKG_PRICE_MASK';
+    DECLARE v_prc_name          VARCHAR(30) := 'PRC_PM_RPT_ACTUAL';
+    DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+    DECLARE logidi              INTEGER     := 0;
+    DECLARE v_row_count         INTEGER     := 0;
+    DECLARE v_node_lvl          INTEGER     := 0;
+    
+    DECLARE v_bom_pri           INTEGER;
+
+    -- exception 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN
+        p_out_exitcode    := ::SQL_ERROR_CODE;
+        p_out_exitmessage := ::SQL_ERROR_MESSAGE;
+                          
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+	                                                I_LOGSID     => :logidi,
+		                                            I_EVENT_NAME => :v_full_name, 
+		                                            I_MODULE     => 'EBGCFE',
+		                                            I_MESSAGE    => 'ERROR', 
+		                                            I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || 
+		                                                            substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+    -- process logic
+    p_out_exitcode    := -1;
+    p_out_exitmessage := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');
+    
+    "cdp.ebgcfe.procedures.pkg_price_mask::PRC_PM_RPT_INVENTORY"(:p_in_product_group, :p_in_time_fence, :p_in_profit_center, :p_in_oem_name,
+                                                                   :p_out_exitcode, :p_out_exitmessage);
+		                                        
+    "cdp.ebgcfe.procedures.pkg_price_mask::PRC_PM_RPT_CONSUMPTION"(:p_in_product_group, :p_in_time_fence, :p_in_profit_center, :p_in_oem_name,
+                                                                   :p_out_exitcode, :p_out_exitmessage);
+      
+    p_out_exitcode    := 0;
+    p_out_exitmessage := 'SUCCESSFUL';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+	                                            I_EVENT_NAME => :v_full_name,
+	                                            I_MODULE     => 'EBGCFE');  	
+END;

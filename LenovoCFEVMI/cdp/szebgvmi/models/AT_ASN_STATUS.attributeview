@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_ASN_STATUS" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AV_ASN_STATUS"/>
+  <attributes>
+    <attribute id="PRODUCTIONORDID" hidden="false" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="PRODUCTIONORDID"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="PRODUCTIONORDID"/>
+    </attribute>
+    <attribute id="SITEID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SITEID"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="SITEID"/>
+    </attribute>
+    <attribute id="LINENUM" key="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LINENUM"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="LINENUM"/>
+    </attribute>
+    <attribute id="ITEM" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ITEM"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="ITEM"/>
+    </attribute>
+    <attribute id="ITEMDESC" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ITEMDESC"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="ITEMSITEMASTER" columnName="ITEMDESC"/>
+    </attribute>
+    <attribute id="QTYPER" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="QTYPER"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="QTYPER"/>
+    </attribute>
+    <attribute id="LGORT" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LGORT"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="LGORT"/>
+    </attribute>
+    <attribute id="STATUS" order="8" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="STATUS"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="STATUS"/>
+    </attribute>
+    <attribute id="SYS_CREATION_DATE_RAW" hidden="true" order="9" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SYS_CREATION_DATE"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="SYS_CREATION_DATE"/>
+    </attribute>
+    <attribute id="SCENARIO_ID" key="true" order="10" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SCENARIO_ID"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="SCENARIO_ID"/>
+    </attribute>
+    <attribute id="SYS_ENT_STATE" hidden="true" order="12" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SYS_ENT_STATE"/>
+      <keyMapping schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN" columnName="SYS_ENT_STATE"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes>
+    <calculatedAttribute id="SYS_CREATION_DATE" hidden="false" order="11" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SYS_CREATION_DATE"/>
+      <keyCalculation datatype="VARCHAR" length="23">
+        <formula>leftstr(string(&quot;SYS_CREATION_DATE_RAW&quot;),23)</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="CAL_SYS_ENT_STATE" hidden="false" order="13" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CAL_SYS_ENT_STATESTATE"/>
+      <keyCalculation datatype="INTEGER">
+        <formula>if( &quot;SYS_ENT_STATE&quot;  != 'DELETED' OR isnull(&quot;SYS_ENT_STATE&quot; )  ,0,1)</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+  </calculatedAttributes>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN"/>
+        <columnFilter columnName="SCENARIO_ID">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="0"/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SZEBGVMI" columnObjectName="ITEMSITEMASTER"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN"/>
+        <rightTable schemaName="SZEBGVMI" columnObjectName="ITEMSITEMASTER"/>
+        <leftColumns>
+          <columnName>ITEM</columnName>
+          <columnName>SITEID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>ITEM</columnName>
+          <columnName>SITEID</columnName>
+        </rightColumns>
+        <properties cardinality="C1_1" joinOperator="Equal" joinType="inner"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="PRODUCTIONORDERS_BOM_ASN" modelObjectNameSpace="SZEBGVMI" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="ITEMSITEMASTER" modelObjectNameSpace="SZEBGVMI" modelObjectType="catalog">
+          <upperLeftCorner x="445" y="30"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

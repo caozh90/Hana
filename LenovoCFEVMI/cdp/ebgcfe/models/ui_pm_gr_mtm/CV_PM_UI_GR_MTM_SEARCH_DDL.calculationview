@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_PM_UI_GR_MTM_SEARCH_DDL" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection" hierarchiesSQLEnabled="false" translationRelevant="true">
+  <descriptions defaultDescription="CV_PM_UI_GR_MTM"/>
+  <localVariables>
+    <variable id="TYPE" parameter="true">
+      <descriptions defaultDescription="TYPE"/>
+      <variableProperties datatype="VARCHAR" length="20" mandatory="true" scale="0">
+        <valueDomain type="AttributeValue">
+          <attribute name="ITEM_TYPE"/>
+        </valueDomain>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="PM_UI_GR_MTM" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="PM_UI_GR_MTM"/>
+    </DataSource>
+    <DataSource id="TIME_FENCE$$$$PM_UI_GR_MTM$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="PM_UI_GR_MTM"/>
+    </DataSource>
+    <DataSource id="FUNCTION_TYPE$$$$PM_UI_GR_MTM$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="PM_UI_GR_MTM"/>
+    </DataSource>
+    <DataSource id="STATUS$$$$PM_UI_GR_MTM$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="PM_UI_GR_MTM"/>
+    </DataSource>
+    <DataSource id="PROFIT_CENTER$$$$PM_UI_GR_MTM$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="PM_UI_GR_MTM"/>
+    </DataSource>
+    <DataSource id="TIME_FENCE_TYPE$$$$PM_UI_GR_MTM$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="PM_UI_GR_MTM"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="OEM_NAME">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="20" expressionLanguage="COLUMN_ENGINE">
+          <formula>'OEM_NAME'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#PM_UI_GR_MTM">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="OEM_NAME"/>
+      </input>
+      <filter>&quot;ITEM_TYPE&quot;='$$TYPE$$'</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="TIME_FENCE">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="20" expressionLanguage="COLUMN_ENGINE">
+          <formula>'TIME_FENCE'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#TIME_FENCE$$$$PM_UI_GR_MTM$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="TIME_FENCE"/>
+      </input>
+      <filter>&quot;ITEM_TYPE&quot;='$$TYPE$$'</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="FUNCTION_TYPE">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="20" expressionLanguage="COLUMN_ENGINE">
+          <formula>'FUNCTION_TYPE'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#FUNCTION_TYPE$$$$PM_UI_GR_MTM$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="FUNCTION_TYPE"/>
+      </input>
+      <filter>&quot;ITEM_TYPE&quot;='$$TYPE$$'</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="STATUS">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="20" expressionLanguage="COLUMN_ENGINE">
+          <formula>'STATUS'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#STATUS$$$$PM_UI_GR_MTM$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="STATUS"/>
+      </input>
+      <filter>&quot;ITEM_TYPE&quot;='$$TYPE$$'</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="PROFIT_CENTER">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="20" expressionLanguage="COLUMN_ENGINE">
+          <formula>'PROFIT_CENTER'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#PROFIT_CENTER$$$$PM_UI_GR_MTM$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="PROFIT_CENTER"/>
+      </input>
+      <filter>&quot;ITEM_TYPE&quot;='$$TYPE$$'</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="TIME_FENCE_TYPE">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="20" expressionLanguage="COLUMN_ENGINE">
+          <formula>'TIME_FENCE_TYPE'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#TIME_FENCE_TYPE$$$$PM_UI_GR_MTM$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="TIME_FENCE_TYPE"/>
+      </input>
+      <filter>&quot;ITEM_TYPE&quot; = '$$TYPE$$'</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="ITEM_TYPE"/>
+        <viewAttribute id="ITEM_VALUE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#OEM_NAME">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#TIME_FENCE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#STATUS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#PROFIT_CENTER">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#FUNCTION_TYPE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#TIME_FENCE_TYPE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_VALUE" source="ITEM_VALUE"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Union_1">
+    <attributes>
+      <attribute id="ITEM_TYPE" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_TYPE"/>
+        <keyMapping columnObjectName="Union_1" columnName="ITEM_TYPE"/>
+      </attribute>
+      <attribute id="ITEM_VALUE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_VALUE"/>
+        <keyMapping columnObjectName="Union_1" columnName="ITEM_VALUE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="407" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="OEM_NAME" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="353"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="TIME_FENCE" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="353"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="FUNCTION_TYPE" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="638" y="353"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="STATUS" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="353"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="PROFIT_CENTER" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="484" y="353"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="TIME_FENCE_TYPE" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="792" y="353"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="407" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

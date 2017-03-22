@@ -1,0 +1,124 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_pcdw_to_vmi::PRC_MATERIAL_MASTER" (
+      in p_in_application_id  VARCHAR(50),
+      out p_out_exitcode      NUMBER
+ ) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+    AS
+
+	/************************************************************************
+	*name      : PRC_MATERIAL_MASTER              --函数名
+	*function  : get static data and transaction data from PCDW              --函数功能
+	*input     ：  p_in_application_id  NETCHANGE表中当前的application id        --输入参数
+	*output     :p_out_exitcode 成功为0，否则为发生异常的SQL_ERROR_CODE          --输出参数
+	*author     : Fangyuan               --作者
+	*CreateDate : 20141201                  --创建时间
+	*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+	
+	*************************************************************************/      
+    V_SYNC_UP_DATE SECONDDATE;
+    V_PREVIOUS_SYNC_UP_DATE SECONDDATE;
+    V_OPERATION_STATUS  VARCHAR(40);
+    
+    V_PREVIOUS_MODIFIED_DATE SECONDDATE;
+
+
+    gv_logic_name    VARCHAR2 (40)  := 'PKG_PCDW_TO_VMI';    
+    v_logic_proc_name   VARCHAR(40) := 'PRC_MATERIAL_MASTER';
+    logidi integer:=0;
+    
+    v_current_timestamp timestamp:=CURRENT_TIMESTAMP;
+    v_count INTEGER;
+BEGIN
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+           p_out_exitcode:=::SQL_ERROR_CODE;
+           
+           UPDATE CONF_NETCHANGE SET OPERATION_STATUS='ABORTED',SYNC_UP_DATE=:V_CURRENT_TIMESTAMP 
+           WHERE APPLICATION_ID=:p_in_application_id;
+           
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>p_in_application_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+          
+          --COMMIT; 
+    END;
+
+    p_out_exitcode := -20099;
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>p_in_application_id||'Start!');    
+
+    SELECT OPERATION_STATUS,SYNC_UP_DATE,PREVIOUS_SYNC_UP_DATE INTO V_OPERATION_STATUS,V_SYNC_UP_DATE,V_PREVIOUS_SYNC_UP_DATE 
+    FROM CONF_NETCHANGE 
+    WHERE APPLICATION_ID=:p_in_application_id;
+    
+    IF :V_OPERATION_STATUS='SUCCESS' THEN
+        V_PREVIOUS_MODIFIED_DATE:=V_SYNC_UP_DATE;
+    ELSEIF :V_OPERATION_STATUS='ABORTED' THEN
+        V_PREVIOUS_MODIFIED_DATE:=V_PREVIOUS_SYNC_UP_DATE;
+    END IF;
+    
+    
+    UPDATE CONF_NETCHANGE SET OPERATION_STATUS='IN_PROCESS',SYNC_UP_DATE=:V_CURRENT_TIMESTAMP
+    WHERE APPLICATION_ID=:p_in_application_id;    
+    --COMMIT;
+    
+            
+    UPDATE ITEMSITEMASTER I
+    SET (sys_auth_id,ITEMCLASS,ITEMTYPE,ITEMDESC,MATKL,EPRIO,MMSTA,STRGR,MTART,MTYPE,ABC_CLASS,CATEGORY,UD_STAND_PRICE,PRODFAMILY,
+         PRODFAMILYDESCR,L_MATGR,ABC_ANALYSIS_GROUP,UD_MINLOTSIZE,UD_PURCH_TYPE,UD_COMM_CODE,UD_PROC_TYPE,UD_BACK_FLUSH,UD_PROFIT_CENTER,
+         UD_MAT_GRP1,UD_STORAGE_CONDITION,SYS_CREATED_BY,SYS_CREATED_DATE,SYS_ENT_STATE,SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,SYS_NC_TYPE
+    )=
+    (P.SITEID,P.ITEMCLASS,
+     CASE WHEN P.ITEMCLASS='OPT' OR P.ITEMCLASS='FRU' OR P.ITEMCLASS='COMPONENT' 
+               THEN "MXEBGVMI"."cdp.mxebgvmi.functions.pkg_pcdw_to_vmi::FUNC_GET_ITEMTYPE"(P.EPRIO,P.MTART)
+           WHEN P.ITEMCLASS='MTM' OR P.ITEMCLASS='CTO' OR P.ITEMCLASS='SBB' OR P.ITEMCLASS='DUMMY_ITEM' THEN NULL END,
+     P.MAKTX,P.MATKL,P.EPRIO,P.MMSTA,P.STRGR,P.MTART,'',P.MAABC,P.itemclass,P.STPRS,P.prgrp,P.EXTWG,P.matgr,P.MAABC,P.bstmi,P.ekgrp,P.stawn,P.beskz,P.rgekz,
+     P.prctr,P.mvgr1,P.STORCOND,'BackEnd',:v_current_timestamp,
+     CASE WHEN P.LVORM IS NOT NULL THEN 'DELETED' ELSE 'ACTIVE' END, 
+     'BackEnd',:v_current_timestamp,'UPDATE')
+    FROM "PCDW"."PCDW_ITEMSITEMASTER" P
+    WHERE I.ITEM=P.ITEM AND I.SITEID=P.SITEID AND
+    P.SYS_LAST_MODIFIED_DATE>=:V_PREVIOUS_MODIFIED_DATE AND P.SYS_LAST_MODIFIED_DATE<=:V_CURRENT_TIMESTAMP
+    AND P.SITEID IN(SELECT SITEID FROM CONF_SITEMASTER); 
+
+
+    INSERT INTO ITEMSITEMASTER
+    SELECT P.ITEM,P.SITEID,P.SITEID,P.ITEMCLASS,
+     CASE WHEN P.ITEMCLASS='OPT' OR P.ITEMCLASS='FRU' OR P.ITEMCLASS='COMPONENT' 
+               THEN "MXEBGVMI"."cdp.mxebgvmi.functions.pkg_pcdw_to_vmi::FUNC_GET_ITEMTYPE"(P.EPRIO,P.MTART)
+           WHEN P.ITEMCLASS='MTM' OR P.ITEMCLASS='CTO' OR P.ITEMCLASS='SBB' OR P.ITEMCLASS='DUMMY_ITEM' THEN NULL END,
+     P.MAKTX,P.MATKL,P.EPRIO,P.MMSTA,P.STRGR,P.MTART,'',P.MAABC,P.itemclass,P.STPRS,P.prgrp,P.EXTWG,P.matgr,P.MAABC,P.bstmi,P.ekgrp,P.stawn,P.beskz,P.rgekz,
+     P.prctr,P.mvgr1,P.STORCOND,'BackEnd',:v_current_timestamp,
+     CASE WHEN P.LVORM IS NOT NULL THEN 'DELETED' ELSE 'ACTIVE' END, 
+     'BackEnd',:v_current_timestamp,'UPDATE'
+    FROM "PCDW"."PCDW_ITEMSITEMASTER" P LEFT JOIN ITEMSITEMASTER I
+    ON I.ITEM=P.ITEM AND I.SITEID=P.SITEID
+    WHERE P.SYS_LAST_MODIFIED_DATE>=:V_PREVIOUS_MODIFIED_DATE AND P.SYS_LAST_MODIFIED_DATE<=:V_CURRENT_TIMESTAMP AND I.ITEM IS NULL AND I.SITEID IS NULL
+    AND P.SITEID IN(SELECT SITEID FROM CONF_SITEMASTER); 
+       
+    IF :V_OPERATION_STATUS='SUCCESS' THEN
+
+       UPDATE CONF_NETCHANGE SET OPERATION_STATUS='SUCCESS',PREVIOUS_SYNC_UP_DATE=SYNC_UP_DATE,SYNC_UP_DATE=:V_CURRENT_TIMESTAMP 
+       WHERE APPLICATION_ID=:p_in_application_id;
+        
+       
+    ELSEIF :V_OPERATION_STATUS='ABORTED' THEN
+        
+       UPDATE CONF_NETCHANGE SET OPERATION_STATUS='SUCCESS',SYNC_UP_DATE=:V_CURRENT_TIMESTAMP 
+       WHERE APPLICATION_ID=:p_in_application_id;
+               
+    END IF;
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>p_in_application_id||'Success!');
+    p_out_exitcode := 0;
+    
+END;

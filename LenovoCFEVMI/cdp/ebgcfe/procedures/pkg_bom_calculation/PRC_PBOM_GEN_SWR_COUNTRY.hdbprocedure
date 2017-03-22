@@ -1,0 +1,659 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_PBOM_GEN_SWR_COUNTRY" ( 
+         IN p_change_id     VARCHAR(100),
+         IN p_product_group VARCHAR(20),
+         IN p_user_id       VARCHAR(64),
+         OUT p_out_exitcode  INTEGER,
+         OUT p_out_exitmess  VARCHAR(500)         
+) 
+    LANGUAGE SQLSCRIPT 
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    --READS SQL DATA 
+/************************************************************************
+*name       : PRC_PBOM_GEN_SWR_COUNTRY              
+*function   : Cost BOM - Get software roylty cost from BIZ_SWRCOST table
+*input      ：p_change_id : change id / p_product_group : product group
+              / p_user_id : user id
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : zhoubinbin
+*CreateDate : 2015-9-24
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/    
+    AS
+BEGIN
+    -- data 
+    DECLARE   v_change_id         VARCHAR(100) := p_change_id;
+    DECLARE   v_product_group     VARCHAR(20)  := p_product_group;
+    DECLARE   v_user_id           VARCHAR(64)  := p_user_id;
+    DECLARE   v_prc_name          VARCHAR(30)  := 'PRC_PBOM_GEN_SWR_COUNTRY';
+    DECLARE   v_g_pkg_name        VARCHAR(30)  := 'PKG_BOM_CALCULATION';
+    DECLARE   v_full_name         VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+    
+    DECLARE   v_nobom_ksbb_pg     VARCHAR(10);    
+    DECLARE   v_time              DECIMAL(17,3);
+    DECLARE   v_step_counter      INTEGER;
+    DECLARE   v_taking_time       DECIMAL(17,3);
+    DECLARE   v_debug             VARCHAR(1);
+    DECLARE   logidi              INTEGER := 0;
+    DECLARE   logidj              INTEGER := 0;
+    DECLARE   logidk              INTEGER := 0;
+    DECLARE   v_message           VARCHAR(500);
+    DECLARE   v_isnull            INTEGER :=0;
+    DECLARE   v_default_cost      INTEGER;
+    DECLARE   v_runlvl            VARCHAR(20);
+     
+    -- exception      
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+        p_out_exitcode := ::SQL_ERROR_CODE;             
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidi,
+                                                    I_EVENT_NAME => :v_full_name, 
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR', 
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                    substr(::SQL_ERROR_MESSAGE, 1, 1000));
+    END;            
+     
+    -- process logic
+    p_out_exitcode := -1;
+    p_out_exitmess := 'FAILED';
+    
+    SELECT SESSION_CONTEXT('v_step_counter_bom_calculation') INTO v_step_counter FROM DUMMY; 
+       
+    --log_data_process.proc_start;
+    logidi:=0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START', 
+                                                I_LOGSID     => :logidi, 
+                                                I_EVENT_NAME => :v_full_name, 
+                                                I_MODULE     => 'EBGCFE'); 
+       
+          
+    INSERT INTO CAL_RUNTIME(PKG_NAME,PROC_NAME,START_T,PRD_GROUP)
+    VALUES (:v_g_pkg_name, :v_prc_name, CURRENT_TIMESTAMP, :v_product_group);        
+
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_debug INTO v_debug FROM DUMMY;
+    IF v_debug IS NOT NULL --pkg_cons.c_f_debug
+    THEN
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+    
+    DELETE FROM MID_cbom_swrcost WHERE product_group = :v_product_group;
+    
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().DEFAULT_COST INTO v_default_cost
+      FROM dummy; 
+    
+       
+    INSERT INTO MID_cbom_swrcost
+        (product_group, model, father, children, item_desc, plant, oem,
+         brand, asp_prd_family, subgeo, country, qtyper, altgrup, altpri,
+         altpercent, costflag, item_type_m, item_type_f, item_type_c, bom_lvl,
+         cost_plant, cost_type, cost_name, is_basesbb, sys_created_date)
+    SELECT t1.product_group, t2.model, t2.father, t2.children, t2.item_desc, 
+           t2.plant, t2.oem, t2.brand, t2.asp_prd_family, t1.subgeo, t1.country,
+           t2.qtyper, t2.altgrup, t2.altpri, t2.altpercent, t2.costflag,
+           t2.item_type_m, t2.item_type_f, t2.item_type_c, t2.bom_lvl, 
+           t2.plant AS cost_plant,  'COMP-COST' AS cost_type, 
+           'COMP-COST' AS cost_name, t2.is_basesbb, current_timestamp
+      FROM MID_biz_toplayer_ch t1,
+           MID_costbom_comp    t2
+     WHERE t1.product_group = t2.product_group
+       AND t1.item          = t2.model
+       AND t1.plant         = t2.plant
+       AND t2.bom_lvl       = 'MTM'
+       AND t2.item_type_c   = 'SWR'
+       AND t1.change_id     = :p_change_id;
+       
+    INSERT INTO MID_cbom_swrcost
+        (product_group, model, father, children, item_desc, plant, oem,
+         brand, asp_prd_family, subgeo, country, qtyper, altgrup, altpri,
+         altpercent, costflag, item_type_m, item_type_f, item_type_c, bom_lvl,
+         cost_plant, cost_type, cost_name, is_basesbb, sys_created_date)
+    SELECT t3.product_group, t4.model, t4.father, t4.children, t4.item_desc, 
+           t4.plant, t4.oem, t4.brand, t4.asp_prd_family, t3.subgeo, t3.country,
+           t4.qtyper, t4.altgrup, t4.altpri, t4.altpercent, t4.costflag,
+           t4.item_type_m, t4.item_type_f, t4.item_type_c, t4.bom_lvl, 
+           t4.plant AS cost_plant, 'COMP-COST' AS cost_type, 
+           'COMP-COST' AS cost_name, t4.is_basesbb, current_timestamp
+      FROM (SELECT DISTINCT 
+                   t1.product_group, t2.children, t1.plant, t1.subgeo,
+                   t1.country         
+              FROM MID_biz_toplayer_ch t1,
+                   MID_costbom_sbb     t2
+             WHERE t1.product_group = t2.product_group
+               AND t1.item          = t2.model
+               AND t1.plant         = t2.plant
+               AND t1.change_id     = :p_change_id) t3,
+           MID_costbom_comp    t4
+     WHERE t3.product_group = t4.product_group
+       AND t3.children      = t4.model
+       AND t3.plant         = t4.plant
+       AND t4.bom_lvl       = 'SBB'
+       AND t4.item_type_c   = 'SWR';  
+    
+    --Get SWR cost from RAGRP = 'WW'   
+    UPDATE MID_cbom_swrcost t1
+       SET (t1.m1, t1.m2, t1.m3, t1.m4, t1.m5, t1.m6, t1.m7, t1.m8, t1.m9, t1.m10,
+            t1.m11, t1.m12, t1.m13, t1.m14, t1.m15, t1.m16, t1.m17, t1.m18,
+            t1.lm1, t1.lm2, t1.lm3, t1.lm4, t1.lm5, t1.lm6, t1.lm7, t1.lm8,
+            t1.lm9, t1.lm10, t1.lm11, t1.lm12, t1.lm13, t1.lm14, t1.lm15, t1.lm16,
+            t1.lm17, t1.lm18, t1.weighted_average, t1.lattest_procur, t1.iptyp) 
+           = (t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.iptyp)
+      FROM BIZ_swrcost t2
+     WHERE t1.product_group = :v_product_group
+       AND t1.children      = t2.lenip
+       AND t2.ragrp         = 'WW';   
+    
+    --Get SWR cost FROM RAGRP <> 'WW'   
+    UPDATE MID_cbom_swrcost t1
+       SET (t1.m1, t1.m2, t1.m3, t1.m4, t1.m5, t1.m6, t1.m7, t1.m8, t1.m9, t1.m10,
+            t1.m11, t1.m12, t1.m13, t1.m14, t1.m15, t1.m16, t1.m17, t1.m18,
+            t1.lm1, t1.lm2, t1.lm3, t1.lm4, t1.lm5, t1.lm6, t1.lm7, t1.lm8,
+            t1.lm9, t1.lm10, t1.lm11, t1.lm12, t1.lm13, t1.lm14, t1.lm15, t1.lm16,
+            t1.lm17, t1.lm18, t1.weighted_average, t1.lattest_procur, t1.iptyp) 
+           = (t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.ryrate*t1.qtyper*t1.altpercent/100,
+              t2.iptyp)  
+      FROM BIZ_swrcost t2, BIZ_suprate t3
+     WHERE t1.product_group = :v_product_group
+       AND t1.children      = t2.lenip
+       AND t1.country       = t3.land1
+       AND t2.lifnr         = t3.lifnr
+       AND t2.ragrp         = t3.ragrp
+       AND t2.ragrp        <> 'WW'
+       AND t1.m1 IS NULL;
+    
+    --Get ENT IP's price FROM BIZ_swrentl TABLE
+    UPDATE MID_cbom_swrcost t1
+       SET (t1.m1, t1.m2, t1.m3, t1.m4, t1.m5, t1.m6, t1.m7, t1.m8, t1.m9, t1.m10,
+            t1.m11, t1.m12, t1.m13, t1.m14, t1.m15, t1.m16, t1.m17, t1.m18,
+            t1.lm1, t1.lm2, t1.lm3, t1.lm4, t1.lm5, t1.lm6, t1.lm7, t1.lm8,
+            t1.lm9, t1.lm10, t1.lm11, t1.lm12, t1.lm13, t1.lm14, t1.lm15, t1.lm16,
+            t1.lm17, t1.lm18, t1.weighted_average, t1.lattest_procur) 
+           = (t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100,
+              t3.ent_price*t1.qtyper*t1.altpercent/100)
+      FROM (SELECT product_group, model, children, plant, subgeo, country,
+                   ROW_NUMBER() OVER(PARTITION BY product_group, model, plant, subgeo, country
+                                     ORDER BY children DESC) pri
+              FROM MID_cbom_swrcost 
+             WHERE product_group = :v_product_group
+               AND iptyp         = 'ENT') t2, 
+           (SELECT matnr, SUM(ratio*rate*durat) AS ent_price FROM BIZ_swrentl
+            GROUP BY matnr)               t3
+     WHERE t1.product_group = :v_product_group
+       AND t2.pri           = 1
+       AND t1.model         = t2.model
+       AND t1.children      = t2.children
+       AND t1.plant         = t2.plant
+       AND t1.subgeo        = t2.subgeo
+       AND t1.country       = t2.country 
+       AND t2.model         = t3.matnr;
+       
+    --Get SWR cost from cost tape
+    UPDATE MID_cbom_swrcost t1
+       SET (t1.m1, t1.m2, t1.m3, t1.m4, t1.m5, t1.m6, t1.m7, t1.m8, t1.m9, t1.m10,
+            t1.m11, t1.m12, t1.m13, t1.m14, t1.m15, t1.m16, t1.m17, t1.m18,
+            t1.weighted_average, t1.lattest_procur) 
+         = (t2.m1*t1.qtyper*t1.altpercent/100, 
+            t2.m2*t1.qtyper*t1.altpercent/100, 
+            t2.m3*t1.qtyper*t1.altpercent/100, 
+            t2.m4*t1.qtyper*t1.altpercent/100, 
+            t2.m5*t1.qtyper*t1.altpercent/100, 
+            t2.m6*t1.qtyper*t1.altpercent/100, 
+            t2.m7*t1.qtyper*t1.altpercent/100, 
+            t2.m8*t1.qtyper*t1.altpercent/100, 
+            t2.m9*t1.qtyper*t1.altpercent/100, 
+            t2.m10*t1.qtyper*t1.altpercent/100, 
+            t2.m11*t1.qtyper*t1.altpercent/100, 
+            t2.m12*t1.qtyper*t1.altpercent/100, 
+            t2.m13*t1.qtyper*t1.altpercent/100, 
+            t2.m14*t1.qtyper*t1.altpercent/100, 
+            t2.m15*t1.qtyper*t1.altpercent/100, 
+            t2.m16*t1.qtyper*t1.altpercent/100, 
+            t2.m17*t1.qtyper*t1.altpercent/100, 
+            t2.m18*t1.qtyper*t1.altpercent/100,
+            t2.m1*t1.qtyper*t1.altpercent/100, 
+            t2.m1*t1.qtyper*t1.altpercent/100 )
+       FROM ui_cost_tape t2
+      WHERE t1.product_group = :v_product_group
+        AND t1.product_group = t2.product_group
+        AND t1.children      = t2.part_number
+        AND t1.plant         = t2.plant
+        AND t2.cost_elem     = 'TOTE'
+        AND t1.m1 IS NULL; 
+        
+    --Get SWR cost from cost tape
+    UPDATE MID_cbom_swrcost t1
+       SET (t1.lm1, t1.lm2, t1.lm3, t1.lm4, t1.lm5, t1.lm6, t1.lm7, t1.lm8, 
+            t1.lm9, t1.lm10, t1.lm11, t1.lm12, t1.lm13, t1.lm14, t1.lm15, 
+            t1.lm16, t1.lm17, t1.lm18) 
+         = (t2.m1*t1.qtyper*t1.altpercent/100, 
+            t2.m2*t1.qtyper*t1.altpercent/100, 
+            t2.m3*t1.qtyper*t1.altpercent/100, 
+            t2.m4*t1.qtyper*t1.altpercent/100, 
+            t2.m5*t1.qtyper*t1.altpercent/100, 
+            t2.m6*t1.qtyper*t1.altpercent/100, 
+            t2.m7*t1.qtyper*t1.altpercent/100, 
+            t2.m8*t1.qtyper*t1.altpercent/100, 
+            t2.m9*t1.qtyper*t1.altpercent/100, 
+            t2.m10*t1.qtyper*t1.altpercent/100, 
+            t2.m11*t1.qtyper*t1.altpercent/100, 
+            t2.m12*t1.qtyper*t1.altpercent/100, 
+            t2.m13*t1.qtyper*t1.altpercent/100, 
+            t2.m14*t1.qtyper*t1.altpercent/100, 
+            t2.m15*t1.qtyper*t1.altpercent/100, 
+            t2.m16*t1.qtyper*t1.altpercent/100, 
+            t2.m17*t1.qtyper*t1.altpercent/100, 
+            t2.m18*t1.qtyper*t1.altpercent/100)
+       FROM ui_cost_tape t2
+      WHERE t1.product_group = :v_product_group
+        AND t1.product_group = t2.product_group
+        AND t1.children      = t2.part_number
+        AND t1.plant         = t2.plant
+        AND t2.cost_elem     = 'TOTL'
+        AND t1.lm1 IS NULL;              
+       
+    /*--Set missing part's cost to 99999
+    UPDATE MID_cbom_swrcost
+       SET (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18,
+            lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10,
+            lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18,
+            weighted_average, lattest_procur)
+         = (SELECT map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost), 
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost),
+                   map(ifnull(altpercent*qtyper, 0), 0, 0, :v_default_cost)
+              FROM dummy)
+     WHERE product_group = :v_product_group
+       AND m1 IS NULL; */
+       
+    --Set missing part's cost to 0
+    UPDATE MID_cbom_swrcost
+       SET (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18,
+            lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10,
+            lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18,
+            weighted_average, lattest_procur)
+         = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+     WHERE product_group = :v_product_group
+       AND m1 IS NULL;    
+       
+    tab_agg_ipcost = SELECT product_group, model, plant, subgeo, country,
+                            SUM(m1) AS m1, SUM(m2) AS m2, SUM(m3) AS m3, SUM(m4) AS m4,
+                            SUM(m5) AS m5, SUM(m6) AS m6, SUM(m7) AS m7, SUM(m8) AS m8,
+                            SUM(m9) AS m9, SUM(m10) AS m10, SUM(m11) AS m11, SUM(m12) AS m12,
+                            SUM(m13) AS m13, SUM(m14) AS m14, SUM(m15) AS m15, SUM(m16) AS m16,
+                            SUM(m17) AS m17, SUM(m18) AS m18, SUM(lm1) AS lm1, SUM(lm2) AS lm2,
+                            SUM(lm3) AS lm3, SUM(lm4) AS lm4, SUM(lm5) AS lm5, SUM(lm6) AS lm6,
+                            SUM(lm7) AS lm7, SUM(lm8) AS lm8, SUM(lm9) AS lm9, SUM(lm10) AS lm10,
+                            SUM(lm11) AS lm11, SUM(lm12) AS lm12, SUM(lm13) AS lm13,
+                            SUM(lm14) AS lm14, SUM(lm15) AS lm15, SUM(lm16) AS lm16,
+                            SUM(lm17) AS lm17, SUM(lm18) AS lm18,
+                            SUM(weighted_average) AS weighted_average,
+                            SUM(lattest_procur) AS lattest_procur
+                       FROM MID_cbom_swrcost
+                      WHERE product_group = :v_product_group
+                        AND bom_lvl       = 'SBB'
+                     GROUP BY product_group, model, plant, subgeo, country;    
+       
+    INSERT INTO MID_cbom_swrcost
+        (product_group, model, father, children, item_desc, plant, oem,
+         brand, asp_prd_family, subgeo, country, qtyper, altgrup, altpri,
+         altpercent, costflag, item_type_m, item_type_f, item_type_c, bom_lvl,
+         cost_plant, cost_type, cost_name, is_basesbb, m1, m2, m3, m4, m5, m6, 
+         m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2, lm3, 
+         lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16,
+         lm17, lm18, weighted_average, lattest_procur, sys_created_date)
+    SELECT t1.product_group, t2.model, t2.father, t2.children, t2.item_desc,
+           t1.plant, t2.oem, t2.brand, t2.asp_prd_family, t1.subgeo, t1.country,
+           t2.qtyper, t2.altgrup, t2.altpri, t2.altpercent, t2.costflag, 
+           t2.item_type_m, t2.item_type_f, t2.item_type_c, t2.bom_lvl, t2.cost_plant,
+           'SBB-COST' AS cost_type, 'SBB-COST' AS cost_name, t2.is_basesbb, 
+           t2.qtyper*t2.altpercent*t3.m1/100, t2.qtyper*t2.altpercent*t3.m2/100, 
+           t2.qtyper*t2.altpercent*t3.m3/100, t2.qtyper*t2.altpercent*t3.m4/100, 
+           t2.qtyper*t2.altpercent*t3.m5/100, t2.qtyper*t2.altpercent*t3.m6/100, 
+           t2.qtyper*t2.altpercent*t3.m7/100, t2.qtyper*t2.altpercent*t3.m8/100, 
+           t2.qtyper*t2.altpercent*t3.m9/100, t2.qtyper*t2.altpercent*t3.m10/100,
+           t2.qtyper*t2.altpercent*t3.m11/100, t2.qtyper*t2.altpercent*t3.m12/100, 
+           t2.qtyper*t2.altpercent*t3.m13/100, t2.qtyper*t2.altpercent*t3.m14/100, 
+           t2.qtyper*t2.altpercent*t3.m15/100, t2.qtyper*t2.altpercent*t3.m16/100, 
+           t2.qtyper*t2.altpercent*t3.m17/100, t2.qtyper*t2.altpercent*t3.m18/100,
+           t2.qtyper*t2.altpercent*t3.lm1/100, t2.qtyper*t2.altpercent*t3.lm2/100, 
+           t2.qtyper*t2.altpercent*t3.lm3/100, t2.qtyper*t2.altpercent*t3.lm4/100, 
+           t2.qtyper*t2.altpercent*t3.lm5/100, t2.qtyper*t2.altpercent*t3.lm6/100, 
+           t2.qtyper*t2.altpercent*t3.lm7/100, t2.qtyper*t2.altpercent*t3.lm8/100,
+           t2.qtyper*t2.altpercent*t3.lm9/100, t2.qtyper*t2.altpercent*t3.lm10/100, 
+           t2.qtyper*t2.altpercent*t3.lm11/100, t2.qtyper*t2.altpercent*t3.lm12/100, 
+           t2.qtyper*t2.altpercent*t3.lm13/100, t2.qtyper*t2.altpercent*t3.lm14/100, 
+           t2.qtyper*t2.altpercent*t3.lm15/100, t2.qtyper*t2.altpercent*t3.lm16/100,
+           t2.qtyper*t2.altpercent*t3.lm17/100, t2.qtyper*t2.altpercent*t3.lm18/100, 
+           t2.qtyper*t2.altpercent*t3.weighted_average/100, 
+           t2.qtyper*t2.altpercent*t3.lattest_procur/100, 
+           current_timestamp
+      FROM MID_biz_toplayer_ch t1,
+           MID_costbom_sbb     t2,
+           :tab_agg_ipcost     t3
+     WHERE t1.product_group = t2.product_group
+       AND t1.item          = t2.model
+       AND t1.plant         = t2.plant
+       AND t2.product_group = t3.product_group
+       AND t2.children      = t3.model
+       AND t2.plant         = t3.plant
+       AND t1.subgeo        = t3.subgeo
+       AND t1.country       = t3.country
+       AND t1.change_id     = :p_change_id;
+    
+    UPDATE MID_cbom_swrcost t1
+       SET(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, 
+           m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+           lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+           weighted_average, lattest_procur)
+          =
+          (:v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost,
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost)
+      WHERE t1.product_group = :v_product_group
+        AND t1.bom_lvl       = 'MTM'
+        AND EXISTS(SELECT 1 FROM MID_cbom_swrcost t2
+                    WHERE t2.product_group = t1.product_group
+                      AND t2.model         = t1.children
+                      AND t2.plant         = t1.plant
+                      AND t2.subgeo        = t1.subgeo
+                      AND t2.country       = t1.country 
+                      AND t2.bom_lvl       = 'SBB'
+                      AND IFNULL(TO_CHAR(t2.m1), 'NULL') = IFNULL(TO_CHAR(:v_default_cost), 'NULL'));
+       
+    INSERT INTO MID_adder_final
+        (product_group, model, father, lvl, plant, children, item_desc, subgeo,
+         country, model_type, model_brand, model_family, cost_lvl,
+         cost_geo_lvl, cost_geo_value, cost_plant, cost_type, cost_name,
+         qtyper, altpercent, is_basesbb, tba_type, value_type, m1, m2, 
+         m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, 
+         m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, 
+         lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, weighted_average, 
+         lattest_procur, sys_created_date)
+    SELECT product_group, model, MAP(item_type_m, 'CTO', children, father) AS father, 
+           1 AS lvl, plant, 'XSWR$' AS children, 'Software Royalty' AS item_desc, 
+           subgeo, country, MAX(item_type_m), MAX(brand), MAX(asp_prd_family), 
+           0 AS cost_lvl, 'SUBGEO' AS cost_geo_lvl, subgeo AS cost_geo_value, 
+           plant, 'TBA' AS cost_type, 'XSWR$' AS cost_name, 1 AS qtyper, 
+           100 AS altpercent, MAP(item_type_m, 'CTO', is_basesbb, null) AS is_basesbb,
+           'US_DOLLAR' AS tba_type, 'US_DOLLAR' AS value_type, 
+           SUM(m1) AS m1, SUM(m2) AS m2, SUM(m3) AS m3, SUM(m4) AS m4,
+           SUM(m5) AS m5, SUM(m6) AS m6, SUM(m7) AS m7, SUM(m8) AS m8,
+           SUM(m9) AS m9, SUM(m10) AS m10, SUM(m11) AS m11, SUM(m12) AS m12,
+           SUM(m13) AS m13, SUM(m14) AS m14, SUM(m15) AS m15, SUM(m16) AS m16,
+           SUM(m17) AS m17, SUM(m18) AS m18, SUM(lm1) AS lm1, SUM(lm2) AS lm2,
+           SUM(lm3) AS lm3, SUM(lm4) AS lm4, SUM(lm5) AS lm5, SUM(lm6) AS lm6,
+           SUM(lm7) AS lm7, SUM(lm8) AS lm8, SUM(lm9) AS lm9, SUM(lm10) AS lm10,
+           SUM(lm11) AS lm11, SUM(lm12) AS lm12, SUM(lm13) AS lm13,
+           SUM(lm14) AS lm14, SUM(lm15) AS lm15, SUM(lm16) AS lm16,
+           SUM(lm17) AS lm17, SUM(lm18) AS lm18, SUM(weighted_average) AS weighted_average,
+           SUM(lattest_procur) AS lattest_procur, current_timestamp
+      FROM MID_cbom_swrcost
+     WHERE product_group = :v_product_group
+       AND bom_lvl       = 'MTM'
+    GROUP BY product_group, model, MAP(item_type_m, 'CTO', children, father), plant, 
+             subgeo, country, MAP(item_type_m, 'CTO', is_basesbb, null);
+             
+    UPDATE MID_adder_final t1
+       SET (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, 
+            m15, m16, m17, m18, lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, 
+            lm9, lm10, lm11, lm12, lm13, lm14, lm15, lm16, lm17, lm18, 
+            weighted_average, lattest_procur)
+          =
+          (:v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost,
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost, :v_default_cost, :v_default_cost, 
+           :v_default_cost, :v_default_cost)
+     WHERE t1.product_group = :v_product_group
+       AND t1.model_type   <> 'CTO'
+       AND EXISTS(SELECT 1 FROM MID_cbom_swrcost t2
+                   WHERE t2.product_group = t1.product_group
+                     AND t2.model         = t1.model
+                     AND t2.plant         = t1.plant
+                     AND t2.subgeo        = t1.subgeo
+                     AND t2.country       = t1.country
+                     AND IFNULL(TO_CHAR(t2.m1), 'NULL') = IFNULL(TO_CHAR(:v_default_cost), 'NULL'));     
+                     
+    SELECT run_level INTO v_runlvl FROM biz_toplayer_ch
+     WHERE change_id = :v_change_id
+    LIMIT 1;
+    
+    IF v_runlvl = 'FULL'  
+    THEN
+        DELETE FROM BIZ_cbom_swrcost
+         WHERE product_group = :v_product_group;
+    ELSE
+        DELETE FROM BIZ_cbom_swrcost t1
+         WHERE t1.product_group = :v_product_group
+           AND EXISTS(SELECT 1 FROM BIZ_toplayer_ch t2
+                       WHERE t2.product_group = t1.product_group
+                         AND t2.item          = t1.model
+                         AND t2.plant         = t1.plant
+                         AND t2.subgeo        = t1.subgeo
+                         AND t2.country       = t1.country
+                         AND t2.change_id     = :v_change_id);
+                         
+        DELETE FROM BIZ_cbom_swrcost t1
+         WHERE t1.product_group = :v_product_group
+           AND EXISTS(SELECT 1 FROM MID_cbom_swrcost t2
+                       WHERE t2.product_group = t1.product_group
+                         AND t2.model         = t1.model
+                         AND t2.plant         = t1.plant
+                         AND t2.subgeo        = t1.subgeo
+                         AND t2.country       = t1.country);        
+    END IF;  
+    
+    INSERT INTO BIZ_cbom_swrcost
+        (cycle, product_group, model, father, children, item_desc, plant, oem,
+         brand, asp_prd_family, geo, subgeo, country, qtyper, altgrup, altpri,
+         altpercent, costflag, item_type_m, item_type_f, item_type_c, bom_lvl,
+         cost_plant, cost_type, cost_name, is_basesbb, m1, m2, m3, m4, m5, m6,
+         m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2,
+         lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15,
+         lm16, lm17, lm18, weighted_average, lattest_procur, action, status,
+         sys_created_date, sys_created_by, sys_last_modified_date,
+         sys_last_modified_by)
+    SELECT 'CURRENT', product_group, model, father, children, item_desc, plant, oem,
+           brand, asp_prd_family, geo, subgeo, country, qtyper, altgrup, altpri,
+           altpercent, costflag, item_type_m, item_type_f, item_type_c, bom_lvl,
+           cost_plant, cost_type, cost_name, is_basesbb, m1, m2, m3, m4, m5, m6,
+           m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, lm1, lm2,
+           lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10, lm11, lm12, lm13, lm14, lm15,
+           lm16, lm17, lm18, weighted_average, lattest_procur, 'INSERT', 'ACTIVE',
+           current_timestamp, :v_full_name, current_timestamp, :v_full_name
+      FROM MID_cbom_swrcost
+     WHERE product_group = :v_product_group;            
+
+    IF v_debug IS NOT NULL --pkg_cons.c_f_debug
+    THEN
+        v_step_counter := v_step_counter + 1;
+        v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;          
+
+        SELECT 'step '||to_char(:v_step_counter)||': ' || to_char(:v_taking_time) || ' sec' INTO v_message FROM dummy;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO', 
+                                                    I_LOGSID     => :logidk, 
+                                                    I_EVENT_NAME => :v_full_name, 
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => :v_message); 
+    
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));       
+    END IF;        
+
+    UPDATE CAL_RUNTIME x 
+       SET end_t = CURRENT_TIMESTAMP
+     WHERE x.pkg_name  = :v_g_pkg_name 
+       AND x.proc_name = :v_prc_name 
+       AND end_t IS NULL 
+       AND prd_group   =:v_product_group;
+
+    p_out_exitcode := 0;
+    p_out_exitmess := 'SUCCESSFUL';
+
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+                                                I_EVENT_NAME => :v_full_name,
+                                                I_MODULE     => 'EBGCFE'); 
+                                                
+                                                
+    EXEC 'SET ''v_step_counter_bom_calculation'' = '''|| :v_step_counter ||'''';
+END;

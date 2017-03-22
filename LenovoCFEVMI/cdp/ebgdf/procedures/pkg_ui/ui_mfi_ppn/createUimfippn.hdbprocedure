@@ -1,0 +1,106 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_mfi_ppn::createUimfippn" 
+( 
+	IN newinfo  "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_MFIPPN_T",
+	OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER--INVOKER 
+	DEFAULT SCHEMA EBGDF
+	--READS SQL DATA
+	 AS
+	   aI_DETAIL 	    NVARCHAR(300) :='';
+	   alogide 			INTEGER :=0;
+	   privilegeExists  NVARCHAR(300)  ; 
+	   V_ABCD_T 	 	NVARCHAR(15);
+	   V_SBB		    NVARCHAR(12);
+	   V_PPN            NVARCHAR(12);
+	   v_resourceExists BIGINT;
+	    		
+BEGIN
+/***************************** 
+*name        :    createUimfippn
+*function    :               
+*input       :    newInfo
+*output      :    errorInfo            
+*author      :    chenwh3
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2015.08.12
+ *****************************/
+ 
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN
+    	aI_DETAIL :='cdp.ebgdf.procedures.pkg_ui.ui_mfi_ppn::createUimfippn error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_mfi_ppn::createUimfippn'
+	     	,I_MODULE=>'ebgdf'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END ;  
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_mfi_ppn::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' || :privilegeExists AS error_message, 
+              privilegeExists AS detail from dummy;
+       RETURN ;
+    END IF;
+--LOG START    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_mfi_ppn::createUiMfiPpn'
+       ,I_MODULE=>'ebgdf'
+   	); 
+   		
+SELECT ABCD_T,
+		SBB,
+		PPN
+		INTO V_ABCD_T,V_SBB,V_PPN
+		FROM :NEWINFO;
+--CHECK THE DATA VALIDATION		
+IF V_ABCD_T = '' OR V_ABCD_T IS NULL THEN
+	  errorInfo = select 400 as http_status_code, 
+              'ABCD_T:' || 'SHOUD NOT NULL' AS error_message, 
+              '' AS detail from dummy;
+       RETURN ;  		
+ END IF;
+ IF V_SBB = '' OR V_SBB IS NULL THEN
+ 	 errorInfo = select 400 as http_status_code, 
+              'SBB:' || 'SHOUD NOT NULL' AS error_message, 
+              '' AS detail from dummy;
+       RETURN ;  	
+ END IF;
+ SELECT COUNT(*) INTO 	v_resourceExists 
+ 	FROM UI_MFI_PPN
+ 	WHERE ABCD_T = :V_ABCD_T AND SBB = :V_SBB AND PPN = :V_PPN;
+  IF v_resourceExists > 0 THEN	
+  	errorInfo = select 400 as http_status_code, 
+              'the record exists' AS error_message, 
+              '' AS detail from dummy;
+       RETURN ;  	
+ 	--SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+  END IF; 	
+ --INSERT DATA
+ INSERT INTO UI_MFI_PPN (ABCD_T,SBB,PPN,CREATE_TS,CREATE_USERID)
+ 	VALUES(:V_ABCD_T,:V_SBB,:V_PPN,CURRENT_UTCTIMESTAMP,SESSION_USER);
+ 	   	
+aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_mfi_ppn::createUimfippn successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_mfi_ppn::createUimfippn'
+	     	,I_MODULE=>'ebgdf'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+END;

@@ -1,0 +1,974 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_item_process::PRC_PRODUCT_ITEM_PROCESS" ( 
+  OUT p_out_exitcode     INTEGER
+)  
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    --READS SQL DATA 
+/************************************************************************
+*name       : PRC_PRODUCT_ITEM_PROCESS           
+*function   : Process Product Item
+*input      ：-
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-02-09
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+                     --Modified by Zhoubinbin 20161114, Add mmr_eol, mt_eol, family_eol, sys_eol logic for mmr process
+*************************************************************************/      
+    AS
+BEGIN 
+  -- DATA 
+  DECLARE    v_g_pkg_name        VARCHAR(30) := 'PKG_ITEM_PROCESS';    
+  DECLARE    v_prc_name          VARCHAR(50) := 'PRC_PRODUCT_ITEM_PROCESS';
+  DECLARE    v_prc_full_name     VARCHAR(100) := :v_g_pkg_name || '.' || :v_prc_name;
+  DECLARE    v_pcdw_item_count   INTEGER;
+  
+  DECLARE    logidq              INTEGER := 0;     
+  DECLARE    logidr              INTEGER := 0;  
+  DECLARE    logids              INTEGER := 0;    
+  DECLARE    V_SYSDATE           DATE := CURRENT_DATE; 
+  DECLARE    logidi              INTEGER := 0;  
+  DECLARE    logidj              INTEGER := 0;    
+  DECLARE    logidk              INTEGER := 0;     
+  DECLARE    logidl              INTEGER := 0;  
+  DECLARE    logidm              INTEGER := 0;    
+  DECLARE    logidn              INTEGER := 0;     
+  DECLARE    logido              INTEGER := 0;  
+  DECLARE    logidp              INTEGER := 0;    
+  DECLARE    logidt              INTEGER := 0;       
+  DECLARE    logidu              INTEGER := 0;  
+  DECLARE    logidv              INTEGER := 0;    
+  DECLARE    logidw              INTEGER := 0;    
+  DECLARE    logidx              INTEGER := 0;          
+  DECLARE    v_step_counter      INTEGER := 0;            
+  DECLARE    v_count             INTEGER;
+  DECLARE    v_g_component_type  VARCHAR(10) := 'COMPONENT';
+  DECLARE    v_g_bundle_type     VARCHAR(10) := 'BUNDLE';  
+  DECLARE    v_g_option_type     VARCHAR(10) := 'OPTION';
+  DECLARE    v_g_visual_type     VARCHAR(10) := 'VISUAL';  
+  DECLARE    v_g_sbb_type        VARCHAR(10) := 'SBB';
+  DECLARE    v_g_service_type    VARCHAR(20) := 'SERVICE';  
+  DECLARE    v_g_mtm_type        VARCHAR(10) := 'MTM';
+  DECLARE    v_g_cto_type        VARCHAR(10) := 'CTO';  
+  DECLARE    v_g_group_ebg       VARCHAR(10) := 'EBG';
+  DECLARE    v_g_action_update   VARCHAR(10) := 'UPDATE';
+  DECLARE    v_g_action_insert   VARCHAR(10) := 'INSERT';  
+  DECLARE    v_g_status_active   VARCHAR(10) := 'ACTIVE';
+  DECLARE    v_g_status_inactive VARCHAR(10) := 'INACTIVE';  
+  DECLARE    v_g_eol_enddate     TIMESTAMP := TO_TIMESTAMP ('2099-12-30 01:01:01');
+  
+  DECLARE    v_withdraw_date_switch     VARCHAR(10);
+  DECLARE    v_withdraw_date_addmonths  INTEGER;  
+  DECLARE    v_annc_date_addmonths      INTEGER;
+   
+  -- EXCEPTION
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+    --ROLLBACK;     
+    p_out_exitcode := ::SQL_ERROR_CODE;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+                                    I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                                    I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) ); 
+    --COMMIT;                                  
+  END;    
+  
+  -- PROCESS LOGIC  
+  p_out_exitcode := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_prc_full_name,I_MODULE=>'EBGCFE');  
+                                              
+
+ 
+
+  -- 1) Update detailed item type info according to configuration table. [table content TBD]
+  /*UPDATE mid_item a
+     SET a.item_type = b.item_type
+    FROM CONF_ITEMTYPE b
+   WHERE a.MTART = b.VALUE 
+     And a.ZUCOD is NULL
+     AND a.product_group = :v_g_group_ebg; */
+
+  UPDATE mid_item a
+     SET (a.item_type,a.EOL_STATUS) = (b.item_type,b.EOL_STATUS)
+    FROM CONF_ITEMTYPE b
+   WHERE ( a.MTART = b.VALUE and a.ZUCOD = b.ZUCOD)
+     AND a.product_group = :v_g_group_ebg
+     AND a.ZUCOD is not NULL;
+     
+  UPDATE mid_item a
+     SET (a.item_type, a.eol_status) = (b.item_type, b.eol_status)
+    FROM conf_itemtype b
+   WHERE a.x_entity_type = b.x_entity_type
+     AND b.x_entity_type IS NOT NULL
+     AND b.x_cofsubcat IS NULL
+     AND a.item_type <> 'OPTION';
+     
+  UPDATE mid_item a
+     SET (a.item_type, a.eol_status) = (b.item_type, b.eol_status)
+    FROM conf_itemtype b
+   WHERE a.x_entity_type = b.x_entity_type
+     AND a.x_cofsubcat   = b.x_cofsubcat;
+     
+  UPDATE mid_item a
+     SET (a.item_type, a.eol_status) = (b.item_type, b.eol_status)
+    FROM conf_itemtype b
+   WHERE a.machine_type = b.mt
+     AND b.mt IS NOT NULL;     
+     
+   --Update item_type according to the value of MTART, BESKZ, ZUCOD columns
+   UPDATE mid_item a
+      SET a.item_type = b.item_type
+     FROM conf_itemtype b
+    WHERE a.mtart = b.mtart
+      AND a.beskz = b.beskz
+      AND MAP(IFNULL(b.zucod, 'NULL'), 'NULL', 'NULL', a.zucod) = IFNULL(b.zucod, 'NULL')
+      AND a.item_type IS NULL
+      AND a.product_group = :v_g_group_ebg;
+   
+   --Update item_type according to the value of STRGR column  
+   UPDATE mid_item a
+      SET a.item_type = b.item_type
+     FROM conf_itemtype b
+    WHERE a.strgr         = b.strgr
+      AND a.product_group = :v_g_group_ebg;
+      
+   --Update item_type according to the value of zeinr column
+   UPDATE mid_item a
+      SET a.item_type = b.item_type
+     FROM conf_itemtype b
+    WHERE a.zeinr         = b.zeinr
+      AND a.product_group = :v_g_group_ebg;  
+      
+  --Added by Zhoubinbin 20160719, Update item_type to service when item in ui_servicecost table
+  UPDATE mid_item t1
+     SET t1.item_type  = 'SERVICE'
+   WHERE item_type IS NULL
+     AND EXISTS(SELECT 1 FROM ui_servicecost t2
+                 WHERE t2.product_group = t1.product_group
+                   AND t2.model         = t1.item);
+      
+   --Set item's family by item type
+   UPDATE mid_item a
+      SET a.brand          = b.brand,
+          a.asp_prd_family = b.pvalue
+     FROM conf_parameters b
+    WHERE a.product_group = b.product_group
+      AND a.item_type     = b.ptype
+      AND b.pdomain       = 'ITEM_PROCESS'
+      AND b.pname         = 'ITEMTYPE_FAMILY_MAP';
+   
+   --Set item's family by the value of x_cofcat column
+   UPDATE mid_item a
+      SET a.brand          = b.brand,
+          a.asp_prd_family = b.pvalue
+     FROM conf_parameters b
+    WHERE a.product_group = b.product_group
+      AND a.x_cofcat      = b.ptype
+      AND b.pdomain       = 'ITEM_PROCESS'
+      AND b.pname         = 'XCOFCAT_FAMILY_MAP';  
+      
+   --Set item's family by usage code
+   UPDATE mid_item a
+      SET a.brand          = b.brand,
+          a.asp_prd_family = b.asp_prd_family
+     FROM conf_itemtype b
+    WHERE a.zucod                       = b.zucod
+      AND ifnull(b.brand, '')          <> ''
+      AND ifnull(b.asp_prd_family, '') <> '';
+      
+      
+   UPDATE ui_machinetype a
+      SET a.brand       = b.brand,
+          a.prod_family = b.asp_prd_family
+     FROM mid_item b
+    WHERE a.product_group = b.product_group
+      AND a.machinetype   = b.machine_type
+      AND a.brand         = 'N/A'
+      AND a.prod_family   = 'N/A'
+      AND IFNULL(b.brand, '')          <> ''
+      AND IFNULL(b.asp_prd_family, '') <> '';        
+    
+  v_step_counter := :v_step_counter + 1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidj, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));   
+                       
+  -- 2) Insert into UI_MACHINETYPE using new machine types in MID_ITEM (i.e. MID_ITEM.machine_type not exist in UI_MACHINETYPE.machinetype). 
+  --    Set their Brand and Family to ‘N/A’ , and Product_group to ‘EBG’ as default.
+  INSERT INTO ui_machinetype (cycle, machinetype,
+                                    product_group,
+                                    brand,
+                                    series,
+                                    subseries,
+                                    prod_family,
+                                    action,
+                                    status,
+                                    sys_created_date,
+                                    sys_created_by,
+                                    sys_last_modified_date,
+                                    sys_last_modified_by,
+                                    series_code,
+                                    prod_h,
+                                    group_text,
+                                    brand_text,
+                                    prodh_brand)
+         SELECT 'CURRENT',
+                a.machine_type,
+                a.product_group,
+                MAP(IFNULL(a.brand, ''), '', 'N/A', a.brand) AS brand,
+                series,
+                subseries,
+                MAP(IFNULL(a.asp_prd_family, ''), '', 'N/A', a.asp_prd_family) AS prod_family,
+                :v_g_action_insert,
+                :v_g_status_active,
+                CURRENT_TIMESTAMP,
+                :v_prc_full_name,
+                CURRENT_TIMESTAMP,
+                :v_prc_full_name,
+                SUBSTR (prod_h, 1, 7),
+                prod_h,
+                group_text,
+                brand_text,
+                brand_text
+           FROM mid_item a,
+                (  SELECT product_group, machine_type, MAX ("$rowid$") maxrowid
+                     FROM mid_item
+                    WHERE     machine_type IS NOT NULL
+                          AND length(machine_type)<>0
+                          AND item_type IN
+                                 (:v_g_cto_type,
+                                  :v_g_mtm_type,
+                                  :v_g_option_type,
+                                  :v_g_visual_type, 
+:v_g_bundle_type)
+                          AND  product_group = :v_g_group_ebg
+                 GROUP BY product_group, machine_type) b1
+          WHERE     a.machine_type = b1.machine_type
+                AND a."$rowid$" = b1.maxrowid
+                AND a.item_type IN
+                       (:v_g_cto_type,
+                        :v_g_mtm_type,
+                        :v_g_option_type,
+                        :v_g_visual_type,
+:v_g_bundle_type)
+                AND a.product_group = b1.product_group
+                AND NOT EXISTS
+                           (SELECT NULL
+                              FROM  ui_machinetype a1
+                             WHERE     a1.machinetype = b1.machine_type
+                                   AND a1.product_group = a.product_group); 
+                                   
+    INSERT INTO UI_prodfamily
+        (cycle, product_group, brand, prod_family, eol_status, action,
+         status,  sys_created_date, sys_created_by, sys_last_modified_date,
+         sys_last_modified_by)
+    SELECT DISTINCT
+           'CURRENT', product_group, brand, asp_prd_family, 'OL',
+           :v_g_action_insert, :v_g_status_active, CURRENT_TIMESTAMP,
+           :v_prc_full_name, CURRENT_TIMESTAMP, :v_prc_full_name
+      FROM MID_item t1
+     WHERE IFNULL(t1.brand, '')          <> ''
+       AND IFNULL(t1.asp_prd_family, '') <> ''
+       AND NOT EXISTS(SELECT 1 FROM UI_prodfamily t2
+                       WHERE t2.product_group = t1.product_group
+                         AND t2.brand         = t1.brand
+                         AND t2.prod_family   = t1.asp_prd_family);
+                                   
+  v_step_counter := :v_step_counter + 1;  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidk, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));      
+  
+  -- 3) Update brand and family in UI_MACHINETYPE using UI_PRODFAMILY, regardless of program last run date
+  --v_step_counter := :v_step_counter + 1; 
+/*  UPDATE UI_MACHINETYPE a 
+         SET (BRAND, PROD_FAMILY)  =        
+                (SELECT BRAND, PROD_FAMILY 
+                   FROM UI_PRODFAMILY b
+                  WHERE     a.product_group = b.product_group
+                        AND a.prod_family = b.prod_family                            
+                        )
+                  WHERE  a.product_group = :v_g_group_EBG
+                    AND  a.brand <> 'N/A'
+                    AND a.machinetype IS NOT NULL;
+
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidl, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP)); 
+*/                  
+     -- 3) Update brand and family in MID_ITEM using UI_MACHINETYPE, regardless of program last run date
+     UPDATE mid_item a
+       SET (asp_prd_family, brand ) = 
+           (SELECT prod_family, brand
+              FROM ui_machinetype b
+             WHERE a.product_group = b.product_group
+               AND a.machine_type = b.machinetype )
+      WHERE a.item_type IN (:v_g_cto_type, :v_g_mtm_type,
+                            :v_g_visual_type, :v_g_bundle_type,
+                            :v_g_option_type)
+        AND a.product_group = :v_g_group_EBG
+        AND a.machine_type IS NOT NULL;
+      
+      /*--Update option'family by brand and machine type       
+      UPDATE mid_item a
+         SET (asp_prd_family) = 
+             (SELECT prod_family FROM ui_machinetype b
+               WHERE a.product_group = b.product_group
+                 AND a.machine_type  = b.machinetype 
+                 AND a.brand         = b.brand)
+       WHERE a.item_type IN (:v_g_option_type)
+         AND a.product_group = :v_g_group_ebg
+         AND a.machine_type IS NOT NULL
+         AND EXISTS(SELECT 1 FROM ui_machinetype b
+                     WHERE a.product_group = b.product_group
+                       AND a.machine_type  = b.machinetype 
+                       AND a.brand         = b.brand);*/     
+    
+    --According to family was uploaded by user to reset brand                   
+    UPDATE mid_item t1
+       SET t1.brand          = t3.brand,
+           t1.asp_prd_family = t3.prod_family
+      FROM ui_item t2, ui_prodfamily t3
+     WHERE t1.item                = t2.item
+       AND t2.user_asp_prd_family = t3.prod_family;          
+
+  v_step_counter := :v_step_counter + 1;  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidm, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));   
+  
+  -- 4) EOL rule. Eol items which deleted flag is 'X'
+  UPDATE mid_item t1
+         SET --t1.eol_status = 'EOL'
+             t1.mmr_eol      = 'EOL'
+       WHERE    -- t1.eol_status = 'OL'AND 
+             EXISTS(SELECT 1 FROM z_pcdw_item t2
+                     WHERE t2.item = t1.item AND t2.lvorm = 'X');
+
+  v_step_counter := :v_step_counter + 1;  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidn, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));  
+
+  -- 5) EOL rule. In MID_ITEM, set EOL_status to ‘EOL’ where mmsta not in (97、99、RP、12、98、97、11、99、RP) i.e. conf_parameters.PTYPE <> 'MTM'
+  UPDATE mid_item t1
+     SET --t1.eol_status = 'EOL'
+         t1.mmr_eol = 'EOL'
+   WHERE    t1.item_type in  (:v_g_cto_type,
+                        :v_g_mtm_type,
+                        :v_g_option_type,
+                        :v_g_visual_type,
+:v_g_bundle_type)
+         --AND t1.eol_status = 'OL'
+         AND NOT EXISTS
+                    (SELECT 1
+                       FROM z_pcdw_item t2
+                      WHERE     t2.item = t1.item
+                            AND (   t2.mmsta IS NULL
+                                 OR EXISTS
+                                       (SELECT 1
+                                          FROM conf_parameters t3
+                                         WHERE  t3.pvalue = t2.mmsta
+                                           AND t3.product_group =
+                                                      t1.product_group
+                                               AND t3.pdomain = 'ITEM_OL_STATUS' 
+                                               AND t3.pname = 'MMSTA'
+                                               AND t3.ptype = 'FG')));
+
+  v_step_counter := :v_step_counter + 1;                                               
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logido, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));   
+  
+  -- 6) EOL rule. EOL non-SEO items with mmsta in (OB, OS) i.e. conf_parameters.PTYPE <> 'NOT_MTM',  or mmsta is null 
+  UPDATE mid_item t1
+         SET --t1.eol_status = 'EOL'
+             t1.mmr_eol    = 'EOL',
+             t1.eol_status = 'EOL'
+       WHERE     t1.item_type not in (:v_g_cto_type,
+                        :v_g_mtm_type,
+                        :v_g_option_type,
+                        :v_g_visual_type,
+:v_g_bundle_type)
+             --AND t1.eol_status = 'OL'
+             AND NOT EXISTS
+                        (SELECT 1
+                           FROM z_pcdw_item t2
+                          WHERE     t2.item = t1.item
+                                AND (   t2.mmsta IS NULL
+                                     OR NOT EXISTS
+                                           (SELECT 1
+                                              FROM conf_parameters t3
+                                            WHERE t3.pvalue = t2.mmsta
+                      AND t3.product_group = t1.product_group
+                   AND t3.pdomain ='ITEM_OL_STATUS'
+                     AND t3.pname = 'MMSTA'
+                        AND t3.ptype ='NOT_FG')));
+  
+  v_step_counter := :v_step_counter + 1;  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidp, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP)); 
+                      
+  -- 7) EOL rule. Update MID_ITEM.(EOL_status) according to UI_PRODFAMILY, where a.product_group=b.productgroup and a.brand = b.brand and a. family = b.family
+  UPDATE MID_ITEM a
+         SET --EOL_STATUS =
+             family_eol =        
+                (SELECT EOL_STATUS
+                   FROM UI_PRODFAMILY b
+                  WHERE     a.product_group = b.product_group
+                        AND a.asp_prd_family = b.prod_family  --AND a.prod_family = b.cost_prod_family
+                        AND a.brand = b.brand )
+                  WHERE a.product_group = :v_g_group_ebg
+             AND a.machine_type IS NOT NULL
+             AND EXISTS (SELECT EOL_STATUS
+                   FROM UI_PRODFAMILY b
+                  WHERE     a.product_group = b.product_group
+                        AND a.asp_prd_family = b.prod_family  --AND a.prod_family = b.cost_prod_family
+                        AND a.brand = b.brand ); 
+
+
+  --update eol_status using mt_eol ,add by zhangxj @20160308
+  UPDATE mid_item a
+     SET --eol_status
+         mt_eol 
+         = (SELECT eol_status FROM ui_mt_eol b
+                        WHERE a.machine_type    = b.mt
+                          AND a.product_group   = b.product_group)
+  WHERE a.product_group = :v_g_group_ebg 
+    AND EXISTS (SELECT eol_status FROM ui_mt_eol b
+                        WHERE a.machine_type    = b.mt
+                          AND a.product_group   = b.product_group);
+/*  UPDATE mid_item a
+     SET a.eol_status = 'EOL'
+     WHERE a.mtart = 'ZXMT' AND a.zucod NOT IN ('HPKM','HOKM') AND a.product_group = :v_g_group_ebg
+       AND a.item_type = 'CTO';
+
+  UPDATE mid_item a
+     SET a.eol_status = 'EOL'
+     WHERE a.mtart = 'ZXSW' AND a.product_group = :v_g_group_ebg
+       AND a.item_type = 'MTM';       
+*/       
+  UPDATE mid_item
+     SET eol_status = 'EOL'
+   WHERE (brand IS NULL OR asp_prd_family IS NULL)
+      or (brand='N/A' OR asp_prd_family='N/A')
+     AND item_type IN (:v_g_cto_type,
+                        :v_g_mtm_type,
+                        :v_g_option_type,
+                        :v_g_visual_type,
+                        :v_g_bundle_type);
+     
+  v_step_counter := :v_step_counter + 1;     
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidx, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));    
+                  
+  --8) UPDATE  EOL_STATUS='OL'      
+  UPDATE mid_item
+         SET eol_status = 'OL'
+       WHERE item_type in (:v_g_component_type, v_g_sbb_type);
+  
+  --Modified by Zhoubinbin 20161127, move annc and withdraw date logic to after insert data into ui_item
+  /*SELECT pvalue INTO v_withdraw_date_switch
+    FROM conf_parameters
+   WHERE pdomain = 'ITEM_PROCESS'
+     AND pname   = 'WITHDRAW_DATE_EOL_SWITCH';
+  
+  SELECT pvalue INTO v_withdraw_date_addmonths
+    FROM conf_parameters
+   WHERE pdomain = 'ITEM_PROCESS'
+     AND pname   = 'WITHDRAW_DATE_ADDMONTHS';  
+     
+  SELECT pvalue INTO v_annc_date_addmonths
+    FROM conf_parameters
+   WHERE pdomain = 'ITEM_PROCESS'
+     AND pname   = 'ANNC_DATE_ADDMONTHS';       
+       
+  --Set item's eol status to EOL according to its annouce date and withdraw date
+  IF v_withdraw_date_switch = 'ON'
+  THEN                      
+      UPDATE mid_item 
+         SET eol_status = 'EOL'
+       WHERE eol_status <> 'EOL'
+         AND item_type IN (:v_g_cto_type,
+                           :v_g_mtm_type,
+                           :v_g_option_type,
+                           :v_g_visual_type,
+                           :v_g_bundle_type)
+         AND (current_date > 
+             case when x_ww_withdraw_date < current_date
+                      then add_months(x_ww_withdraw_date, v_withdraw_date_addmonths)
+                  else ifnull(x_ww_withdraw_date, to_date('99991231', 'YYYYMMDD'))
+             end
+             OR
+             current_date < add_months(ifnull(x_ww_annc_date, current_date), v_annc_date_addmonths)
+             );
+  END IF;*/           
+     
+  UPDATE mid_item 
+     SET x_ww_annc_date     = NULL,
+         x_ww_withdraw_date = NULL
+   WHERE item_type NOT IN(:v_g_cto_type,
+                          :v_g_mtm_type,
+                          :v_g_option_type,
+                          :v_g_visual_type,
+                          :v_g_bundle_type);
+  
+  v_step_counter := :v_step_counter + 1;  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidr, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));    
+
+  -- 9)    Record UI_ITEM_LOG regarding UI_ITEM and MID_ITEM
+  INSERT INTO ui_item_log ( cycle, geo,
+                                 subgeo,
+                                 country,
+                                 commodity_code,
+                                 hy_family,
+                                 group_text,
+                                 brand_text,
+                                 series,
+                                 subseries,
+                                 bismt,
+                                 product_group,
+                                 brand,
+                                 ecc_prod_family,
+                                 asp_prd_family,
+                                 machine_type,
+                                 trmodel,
+                                 item,
+                                 item_desc,
+                                 prod_h,
+                                 item_type,
+                                 item_source,
+                                 eol_status,
+                                 eol_startdate,
+                                 eol_enddate,
+                                 action,
+                                 status,
+                                 sys_created_date,
+                                 sys_created_by,
+                                 sys_last_modified_date,
+                                 sys_last_modified_by,
+                                 at_modified_by,
+                                 at_action,
+                                 at_modified_on,
+                                 at_millis,
+                                 brgew,
+                                 gewei,
+                                 custommodelflag,
+                                 basewarranty,
+                                 ZLCOD,
+                                 ZUCOD,
+                                 zeinr,
+                                 x_entity_type,
+                                 x_cofcat,
+                                 x_specmoddesg,
+                                 x_ww_annc_date,
+                                 x_ww_withdraw_date,
+                                 x_cofsubcat,
+                                 user_item_type,
+                                 user_eol_status,
+                                 user_item_desc,
+                                 user_commodity_code,
+                                 user_asp_prd_family,
+                                 mmr_eol, 
+                                 mt_eol,
+                                 family_eol,
+                                 sys_eol)
+         SELECT a.cycle,
+                a.geo,
+                a.subgeo,
+                a.country,
+                a.commodity_code,
+                a.hy_family,
+                a.group_text,
+                a.brand_text,
+                a.series,
+                a.subseries,
+                a.bismt,
+                a.product_group,
+                a.brand,
+                a.ecc_prod_family,
+                a.asp_prd_family,
+                a.machine_type,
+                a.trmodel,
+                a.item,
+                a.item_desc,
+                a.prod_h,
+                a.item_type,
+                a.item_source,
+                a.eol_status,
+                a.eol_startdate,
+                a.eol_enddate,
+                a.action,
+                a.status,
+                a.sys_created_date,
+                a.sys_created_by,
+                a.sys_last_modified_date,
+                a.sys_last_modified_by,
+                :v_prc_full_name,
+                'DELETE',
+                CURRENT_TIMESTAMP, 
+                TO_NUMBER(TO_CHAR(CURRENT_TIMESTAMP, 'ff3')),
+                a.brgew,
+                a.gewei,
+                a.custommodelflag,
+                a.basewarranty,
+                a.ZLCOD,
+                a.ZUCOD,
+                a.zeinr,
+                a.x_entity_type,
+                a.x_cofcat,
+                a.x_specmoddesg,
+                a.x_ww_annc_date,
+                a.x_ww_withdraw_date,
+                a.x_cofsubcat,
+                a.user_item_type,
+                a.user_eol_status,
+                a.user_item_desc,
+                a.user_commodity_code,
+                a.user_asp_prd_family,
+                a.mmr_eol,
+                a.mt_eol,
+                a.family_eol,
+                a.sys_eol
+           FROM ui_item a
+          WHERE EXISTS
+                   (SELECT 1
+                      FROM mid_item b
+                     WHERE     a.product_group = b.product_group
+                           AND a.item = b.item);
+  
+  v_step_counter := :v_step_counter + 1;  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logids, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));                 
+
+  -- 10)    Update UI_ITEM using MID_ITEM
+  UPDATE ui_item a FROM mid_item b
+        SET a.geo = b.geo,
+            a.subgeo = b.subgeo,
+            a.country = b.country,
+            a.brand =  b.brand,
+            a.ecc_prod_family = b.ecc_prod_family,
+            a.asp_prd_family = 
+                      MAP (
+                      --IFNULL(a.user_asp_prd_family, '0'),
+                      CASE WHEN a.user_asp_prd_family IS NULL OR LENGTH(a.user_asp_prd_family)=0 THEN '0' ELSE a.user_asp_prd_family END,
+                              '0', b.asp_prd_family,
+                              a.user_asp_prd_family),
+            a.machine_type = b.machine_type,
+            a.trmodel = b.trmodel,
+            a.item_desc =
+               MAP (
+               --IFNULL (a.user_item_desc, '0'),
+               CASE WHEN a.user_item_desc IS NULL OR LENGTH(a.user_item_desc)=0 THEN '0' ELSE a.user_item_desc END,
+                       '0', b.item_desc,
+                       a.item_desc),
+            a.prod_h = b.prod_h,
+            a.item_type = CASE WHEN a.user_item_type IS NULL OR LENGTH(a.user_item_type)=0 
+                                 THEN b.item_type 
+                               ELSE a.user_item_type END,
+            a.commodity_code =
+               MAP (
+               --IFNULL (a.user_commodity_code, '0'),
+               CASE WHEN a.user_commodity_code IS NULL OR LENGTH(a.user_commodity_code)=0 THEN '0' ELSE a.user_commodity_code END,
+                       '0', b.commodity_code,
+                       a.commodity_code),
+            a.item_source = b.item_source,
+            a.eol_status =  b.eol_status,
+               /*MAP (
+               --IFNULL (a.user_eol_status, '0'),
+               CASE WHEN a.user_eol_status IS NULL OR LENGTH(a.user_eol_status)=0 THEN '0' ELSE a.user_eol_status END,
+                       '0', b.eol_status,
+                       a.user_eol_status),  */
+            a.eol_startdate = IFNULL(b.x_ww_annc_date, a.eol_startdate),
+            a.eol_enddate   = IFNULL(b.x_ww_withdraw_date, a.eol_enddate),                                 
+            a.action = :v_g_action_update,
+            a.status = :v_g_status_active,
+            a.sys_last_modified_date = CURRENT_TIMESTAMP,
+            a.hy_family = b.hy_family,
+            a.stdpd = b.stdpd,
+            a.beskz = b.beskz,
+            a.schgt = b.schgt,
+            a.mtart = b.mtart,
+            a.bismt = b.bismt,
+            a.group_text = b.group_text,
+            a.brand_text = b.brand_text,
+            a.series = b.series,
+            a.subseries = b.subseries,
+            a.brgew = b.brgew,
+            a.gewei = b.gewei,
+            a.custommodelflag = b.custommodelflag,
+            a.basewarranty = b.basewarranty,
+            a.ZLCOD = b.ZLCOD,
+            a.ZUCOD = b.ZUCOD,
+            a.zeinr = b.zeinr,
+            a.x_entity_type      = b.x_entity_type,
+            a.x_cofcat           = b.x_cofcat,
+            a.x_specmoddesg      = b.x_specmoddesg,
+            a.x_ww_annc_date     = b.x_ww_annc_date,
+            a.x_ww_withdraw_date = b.x_ww_withdraw_date,
+            a.x_cofsubcat        = b.x_cofsubcat,
+            a.mmr_eol            = b.mmr_eol,
+            a.mt_eol             = b.mt_eol,
+            a.family_eol         = b.family_eol,
+            a.sys_eol            = b.sys_eol
+        WHERE a.product_group = b.product_group AND a.item = b.item;
+        
+
+        
+    INSERT INTO ui_item 
+                    (cycle,
+                     geo,
+                     subgeo,
+                     country,
+                     product_group,
+                     brand,
+                     ecc_prod_family,
+                     asp_prd_family,
+                     machine_type,
+                     trmodel,
+                     item,
+                     item_desc,
+                     prod_h,
+                     item_type,
+                     item_source,
+                     eol_status,
+                     eol_startdate,
+                     eol_enddate,
+                     commodity_code,
+                     action,
+                     status,
+                     sys_created_date,
+                     sys_created_by,
+                     sys_last_modified_date,
+                     sys_last_modified_by,
+                     hy_family,
+                     group_text,
+                     brand_text,
+                     series,
+                     subseries,
+                     stdpd,
+                     beskz,
+                     schgt,
+                     mtart,
+                     bismt,
+                     brgew,
+                     gewei,
+                     custommodelflag,
+                     basewarranty,
+                     ZLCOD,
+                     ZUCOD,
+                     zeinr,
+                     x_entity_type,
+                     x_cofcat,
+                     x_specmoddesg,
+                     x_ww_annc_date,
+                     x_ww_withdraw_date,
+                     x_cofsubcat,
+                     mmr_eol,
+                     mt_eol,
+                     family_eol,
+                     sys_eol)
+        SELECT DISTINCT 
+                     'CURRENT',
+                     b.geo,
+                     b.subgeo,
+                     b.country,
+                     b.product_group,
+                     b.brand,
+                     b.ecc_prod_family,
+                     b.asp_prd_family,
+                     b.machine_type,
+                     b.trmodel,
+                     b.item,
+                     b.item_desc,
+                     b.prod_h,
+                     b.item_type,
+                     b.item_source,
+                     b.eol_status,
+                     IFNULL(x_ww_annc_date, :V_SYSDATE) ,
+                     IFNULL(x_ww_withdraw_date, :v_g_eol_enddate),
+                     b.commodity_code,
+                     :v_g_action_insert,
+                     :v_g_status_active,
+                     :V_SYSDATE ,
+                     :v_prc_full_name,
+                     :V_SYSDATE ,
+                     :v_prc_full_name,
+                     b.hy_family,
+                     b.group_text,
+                     b.brand_text,
+                     b.series,
+                     b.subseries,
+                     b.stdpd,
+                     b.beskz,
+                     b.schgt,
+                     b.mtart,
+                     b.bismt,
+                     b.brgew,
+                     b.gewei,
+                     b.custommodelflag,
+                     b.basewarranty,
+                     b.ZLCOD,
+                     b.ZUCOD,
+                     b.zeinr,
+                     b.x_entity_type,
+                     b.x_cofcat,
+                     b.x_specmoddesg,
+                     b.x_ww_annc_date,
+                     b.x_ww_withdraw_date,
+                     b.x_cofsubcat,
+                     b.mmr_eol,
+                     b.mt_eol,
+                     b.family_eol,
+                     b.sys_eol
+               FROM mid_item b  --mid_item b
+               WHERE NOT EXISTS (SELECT NULL
+                          FROM ui_item c
+                         WHERE c.product_group = b.product_group
+                           AND c.item = b.item);             
+
+  v_step_counter := :v_step_counter + 1;  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidt, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));   
+
+
+  --Added by Zhoubinbin 20161127, check annc and withdraw data eol logic everyday
+  SELECT pvalue INTO v_withdraw_date_switch
+    FROM conf_parameters
+   WHERE pdomain = 'ITEM_PROCESS'
+     AND pname   = 'WITHDRAW_DATE_EOL_SWITCH';
+  
+  SELECT pvalue INTO v_withdraw_date_addmonths
+    FROM conf_parameters
+   WHERE pdomain = 'ITEM_PROCESS'
+     AND pname   = 'WITHDRAW_DATE_ADDMONTHS';  
+     
+  SELECT pvalue INTO v_annc_date_addmonths
+    FROM conf_parameters
+   WHERE pdomain = 'ITEM_PROCESS'
+     AND pname   = 'ANNC_DATE_ADDMONTHS';       
+       
+  --Set item's eol status to EOL according to its annouce date and withdraw date
+  IF v_withdraw_date_switch = 'ON'
+  THEN
+      tab_change_lis = 
+          SELECT item, 
+                 CASE WHEN ADD_MONTHS(current_date, -v_annc_date_addmonths)     >= IFNULL(x_ww_annc_date, current_date)
+                       AND ADD_MONTHS(current_date, -v_withdraw_date_addmonths) <= IFNULL(x_ww_withdraw_date, current_date)
+                      THEN NULL
+                      ELSE 'EOL' END AS sys_eol
+            FROM ui_item
+           WHERE item_type IN (:v_g_cto_type,
+                               :v_g_mtm_type,
+                               :v_g_option_type,
+                               :v_g_visual_type,
+                               :v_g_bundle_type);
+                               
+      
+      UPDATE ui_item t1
+         SET t1.sys_eol = t2.sys_eol
+        FROM :tab_change_lis t2
+       WHERE t1.item                  =  t2.item
+         AND IFNULL(t1.sys_eol, 'OL') <> IFNULL(t2.sys_eol, 'OL');
+  END IF;  
+  
+  --Added by Zhoubinbin 20161114, set eol status is sorted by priority: user_eol_status/mmr_eol/mt_eol/family_eol/sys_eol/eol_status                 
+  UPDATE ui_item
+     SET eol_status = 
+         IFNULL(MAP(user_eol_status, '', NULL, user_eol_status), 
+         IFNULL(MAP(mmr_eol, '', NULL, mmr_eol), 
+         IFNULL(MAP(mt_eol, '', NULL, mt_eol), 
+         IFNULL(MAP(family_eol, '', NULL, family_eol),
+         IFNULL(MAP(sys_eol, '', NULL, sys_eol), eol_status)))))
+   WHERE item_type IN (:v_g_cto_type,
+                       :v_g_mtm_type,
+                       :v_g_option_type,
+                       :v_g_visual_type,
+                       :v_g_bundle_type)
+     AND IFNULL(eol_status, '') <> 
+         IFNULL(MAP(user_eol_status, '', NULL, user_eol_status), 
+         IFNULL(MAP(mmr_eol, '', NULL, mmr_eol), 
+         IFNULL(MAP(mt_eol, '', NULL, mt_eol), 
+         IFNULL(MAP(family_eol, '', NULL, family_eol),
+         IFNULL(MAP(sys_eol, '', NULL, sys_eol), eol_status)))));            
+                
+  -- 11) Insert dummy items into UI_ITEM from UI_DUMMYPART (insert:Product_group, item, item_desc, item_type='DUMMY', sys_last_modified_date=sysdate. 
+  --     Condition: not exist a.item = b.item.).                
+ /* INSERT INTO ui_item 
+       (             cycle,
+                     product_group,
+                     item,
+                     item_desc,
+                     item_type,
+                     sys_created_date,
+                     sys_created_by,
+                     sys_last_modified_date,
+                     sys_last_modified_by)
+       SELECT 'CURRENT', b.product_group, b.dummy_part, b.part_desc, 'DUMMY', CURRENT_TIMESTAMP,:v_prc_full_name,CURRENT_TIMESTAMP,:v_prc_full_name
+         FROM ui_dummypart b
+         WHERE NOT EXISTS
+                   (SELECT NULL
+                      FROM ui_item a
+                     WHERE a.item = b.dummy_part);  
+
+  v_step_counter := :v_step_counter + 1;                                  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidv, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP));  */ 
+  
+  --Start ui_xoutfr_weight          
+  --Added by Zhoubinbin 20160530, Get option's weight from z_pcdw_item table then insert into UI_XOUTFR_WEIGHT table
+  tab_option_weight = SELECT t1.item, MAX(t1.brgew*t2.pvalue) AS weight
+                        FROM z_pcdw_item t1, conf_parameters t2
+                       WHERE t1.gewei         = t2.ptype
+                         AND IFNULL(brgew, 0) > 0
+                         AND t2.pdomain       = 'GLOBAL'
+                         AND t2.pname         = 'UNIT_OF_WEIGHT'
+                         AND EXISTS(SELECT 1 FROM ui_item t3
+                                     WHERE t3.item      = t1.item
+                                       AND t3.item_type IN(SELECT pvalue FROM conf_parameters
+                                                            WHERE pdomain = 'ITEM_PROCESS'
+                                                              AND pname   = 'OUTFR_WEIGHT'))
+                         AND EXISTS(SELECT 1 FROM mid_item t4
+                                     WHERE t4.item = t1.item)
+                       GROUP BY t1.item;
+                       
+  --Update existing item's weight, Only this program generated
+  UPDATE ui_xoutfr_weight t1
+     SET t1.weight = t2.weight,
+         t1.sys_last_modified_date = current_timestamp
+    FROM :tab_option_weight t2
+   WHERE t1.item                  = t2.item
+     AND t1.sys_last_modified_by  = :v_prc_full_name
+     AND t1.weight               <> t2.weight;
+  
+  --Insert new item's weight   
+  INSERT INTO ui_xoutfr_weight
+      (cycle, product_group, item, brand, family, mt, weight, 
+       action, status, sys_created_by, sys_created_date, 
+       sys_last_modified_by, sys_last_modified_date)
+  SELECT 'CURRENT' AS cycle, 'EBG' AS product_group, item, 
+         'N/A' AS brand, 'N/A' AS family, 'N/A' AS mt, weight,
+         'INSERT', 'ACTIVE', :v_prc_full_name, current_timestamp,
+         :v_prc_full_name, current_timestamp
+    FROM :tab_option_weight t1
+   WHERE NOT EXISTS(SELECT 1 FROM ui_xoutfr_weight t2
+                     WHERE t2.item = t1.item);
+  --End ui_xoutfr_weight           
+
+  v_step_counter := :v_step_counter + 1;  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'INFO', I_LOGSID=>:logidt, 
+                I_EVENT_NAME=>:v_prc_full_name, I_MODULE=>'EBGCFE',
+                I_MESSAGE=>'step ' || to_char(:v_step_counter) || '....' || TO_CHAR(CURRENT_TIMESTAMP)); 
+                
+  p_out_exitcode := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:v_prc_full_name,I_MODULE=>'EBGCFE');                 
+
+END;

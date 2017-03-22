@@ -1,0 +1,138 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::createUiDummyPart" ( 
+	    IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_DUMMYPART_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aProduct_group NVARCHAR(10);
+		aDummyPart NVARCHAR(18);
+		aPartDesc NVARCHAR(100);
+	    
+		resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		
+		privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::createUiDummyPart error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::createUiDummyPart'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_dummy_part::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::createUiDummyPart'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+
+select 
+	PRODUCT_GROUP,	
+    DUMMY_PART,
+    PART_DESC
+  into 
+ 	aProduct_group,
+ 	aDummyPart,
+	aPartDesc
+  from :newInfo;
+  
+    SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_DUMMYPART" A    
+     WHERE A.DUMMY_PART = :aDummyPart
+     and   A.PRODUCT_GROUP = :aProduct_group;
+
+   
+    if  :resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+    end if;
+    
+    insert into "EBGCFE"."UI_DUMMYPART"
+  	(PRODUCT_GROUP, DUMMY_PART, PART_DESC, CYCLE, SYS_LAST_MODIFIED_BY, SYS_LAST_MODIFIED_DATE, SYS_CREATED_BY, SYS_CREATED_DATE)
+  	values('EBG', :aDummyPart, :aPartDesc, 'CURRENT', session_user, CURRENT_TIMESTAMP, session_user, CURRENT_TIMESTAMP);
+
+/*put operation to log table*/
+    insert into "EBGCFE"."UI_DUMMYPART_LOG"
+    (
+    	PRODUCT_GROUP,	
+	    DUMMY_PART,
+    	PART_DESC,	    
+    	SYS_LAST_MODIFIED_DATE,   	
+    	ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    values
+    (
+    	:aProduct_group,
+	 	:aDummyPart,	
+	 	:aPartDesc,	
+    	current_date,    	
+    	'create',
+    	session_user,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    );  
+    
+       INSERT INTO EBGCFE.ui_item 
+       (             cycle,
+                     product_group,
+                     item,
+                     item_desc,
+                     item_type,
+                     sys_created_date,
+                     sys_created_by,
+                     sys_last_modified_date,
+                     sys_last_modified_by)
+       SELECT 'CURRENT', b.product_group, b.dummy_part, b.part_desc, 'DUMMY', CURRENT_TIMESTAMP,session_user,
+       			CURRENT_TIMESTAMP,session_user
+         FROM EBGCFE.ui_dummypart b
+         WHERE NOT EXISTS
+                   (SELECT NULL
+                      FROM EBGCFE.ui_item a
+                     WHERE a.item = b.dummy_part);  
+    
+    	   	
+   	/*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::createUiDummyPart ('||:aDummyPart||' ,) successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_dummy_part::createUiDummyPart'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

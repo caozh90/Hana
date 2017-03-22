@@ -1,0 +1,200 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_create_data_sw::PRC_GET_SHIPMENT" (OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_GET_SHIPMENT        
+*function   : Prepare SHIPMENT Data for SW
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2015-07-30
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_lastrun_time timestamp;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_SHIPMENT', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_SHIPMENT', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1;  
+
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_SHIPMENT', 'Insert', NULL, '', '', '', '', 'step 2');
+    EXEC 'COMMIT';
+ 
+     DELETE FROM z_mid_pcdw_ship_step1;
+     
+       INSERT INTO z_mid_pcdw_ship_step1
+         (order_id, line_item_id, planning_item_id, geo_id, ship_date, shipped_qty, customer_name, source_id,
+          region, country, planning_material, item_type)
+         SELECT t1.vbeln AS order_id, lpad(t1.posnr, 6, '0') AS line_item_id, t2.planning_item_id, t2.geo_id,
+                (SELECT start_dt FROM conf_weekly_calendar WHERE t1.shipdate BETWEEN start_dt AND end_dt) AS ship_date,
+                t1.shipqty,
+                CASE
+                  WHEN ascii(t2.customer_name) <> unicode(t2.customer_name) THEN
+                   to_char(hash_sha256(to_binary(t2.customer_name)))
+                  ELSE
+                   t2.customer_name
+                END AS customer_name, t2.source_id, t2.region, t2.country,
+                t3.variant_planning_material AS planning_material,
+                MAP(t3.product_type_2, 'OPT', 'OPTION', 'LFO', 'MTM', 'CTO', 'CTO') AS item_type
+           FROM pcdw_ship_so t1,
+                pcdw_so_basic_all t2, 
+                pcdw_product_master_all_sw t3
+          WHERE t1.vbeln = t2.order_id
+                AND lpad(t1.posnr, 6, '0') = lpad(t2.line_item_id, 6, '0')
+                AND t2.status = 'ACTIVE'
+                AND t2.planning_item_id = t3.planning_item_id
+                AND t1.werks IN (SELECT name1 FROM conf_parameters_sw WHERE domain = 'PLANT_FILTER')
+                AND t2.order_qty <>'0';
+
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_SHIPMENT', 'Get Itemtype', NULL, '', '', '', '', 'step 3');
+    EXEC 'COMMIT';
+    
+    DELETE FROM z_mid_pcdw_ship_step2;
+     
+    INSERT INTO z_mid_pcdw_ship_step2
+      (assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date,
+       shipped_qty, customer_name, source_id, region, country)
+    --Scenario-I - CTO -> SBB (dependant data)
+      SELECT t1.planning_item_id AS assembly_pk,
+             t2.idnrk AS planning_item_id, t1.planning_item_id AS cto,
+             NULL AS mtm, t1.geo_id, t1.ship_date,
+             t1.shipped_qty * t2.menge AS shipped_qty, t1.customer_name,
+             t1.source_id, t1.region, t1.country
+        FROM z_mid_pcdw_ship_step1 t1, PCDW_ORDBOM_X86 t2
+       WHERE t1.order_id = t2.vbeln
+             AND t1.line_item_id = t2.posnr
+             AND t1.planning_item_id = t2.matnr
+             AND t1.item_type = 'CTO'
+             AND EXISTS 
+                    (SELECT 1 FROM PCDW_ITEMSITEMASTER T3
+                           WHERE T2.IDNRK=T3.ITEM
+                             AND T2.WERKS=T3.SITEID
+                             AND (t3.STRGR = 'ZS' or SUBSTR(t3.ZUCOD,1,4)='HCSB')
+                             AND t3.zucod LIKE 'H%')                
+      UNION ALL
+      --Scenario-II - MTM -> SBB (dependant data)
+      SELECT t1.planning_item_id AS assembly_pk,
+             t2.idnrk AS planning_item_id, t1.planning_material AS cto,
+             t1.planning_item_id AS mtm, t1.geo_id, t1.ship_date,
+             t1.shipped_qty * t2.menge AS shipped_qty, t1.customer_name,
+             t1.source_id, t1.region, t1.country
+        FROM z_mid_pcdw_ship_step1 t1, PCDW_ORDBOM_X86 t2
+       WHERE t1.order_id = t2.vbeln
+             AND t1.line_item_id = t2.posnr
+             AND t1.planning_item_id = t2.matnr
+             AND t1.item_type = 'MTM'
+             AND EXISTS 
+                    (SELECT 1 FROM PCDW_ITEMSITEMASTER T3
+                           WHERE T2.IDNRK=T3.ITEM
+                             AND T2.WERKS=T3.SITEID
+                             AND (t3.STRGR = 'ZS' or SUBSTR(t3.ZUCOD,1,4)='HCSB')
+                             AND t3.zucod LIKE 'H%')                   
+      UNION ALL
+      --Scenario-III - CTO (Independent)
+      SELECT NULL AS assembly_pk, planning_item_id, planning_item_id AS cto,
+             NULL AS mtm, geo_id, ship_date, shipped_qty, customer_name,
+             source_id, region, country
+        FROM z_mid_pcdw_ship_step1
+       WHERE item_type = 'CTO'
+      UNION ALL
+      --Scenario-IV - MTM (Independent)
+      SELECT NULL AS assembly_pk,  planning_item_id,
+             planning_material AS cto, planning_item_id AS mtm, geo_id,
+             ship_date, shipped_qty, customer_name, source_id, region,
+             country
+        FROM z_mid_pcdw_ship_step1
+       WHERE item_type = 'MTM'
+      UNION ALL
+      --Scenario-V -Option
+      SELECT NULL AS assembly_pk, planning_item_id, NULL AS cto, NULL AS mtm,
+             geo_id, ship_date, shipped_qty, customer_name, source_id,
+             region, country
+        FROM z_mid_pcdw_ship_step1
+       WHERE item_type = 'OPTION';
+
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_SHIPMENT', 'Get SBB', NULL, '', '', '', '', 'step 4');
+    EXEC 'COMMIT';
+    
+    DELETE FROM pcdw_ship_sw;
+    
+    ----WO0000000291726 Adjust horizon of the DCG ECC to SW daily Shipment----
+    ----Sunday to Friday:Sent CW-7 to CW shipment----
+    ----Saturday: Full horizon of shipment------
+    ----Changed by yangyue6---- 
+    
+    DELETE FROM PCDW_SHIP_SW_BAK;
+    
+    INSERT INTO PCDW_SHIP_SW_BAK
+      (assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date, shipped_qty,
+       customer_name, source_id, region, country, sys_created_by,
+       sys_created_date, sys_last_modified_by, sys_last_modified_date)
+      SELECT assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date,
+             SUM(shipped_qty) AS shipped_qty, customer_name, source_id, region,
+             country, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC',
+             current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC',
+             current_timestamp
+        FROM z_mid_pcdw_ship_step2
+       GROUP BY assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date,
+                customer_name, source_id, region, country; 
+      
+    IF
+      (WEEKDAY (current_date) = 5)
+    THEN 
+      
+    INSERT INTO pcdw_ship_sw
+      (assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date, shipped_qty,
+       customer_name, source_id, region, country, sys_created_by,
+       sys_created_date, sys_last_modified_by, sys_last_modified_date)
+      SELECT assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date,
+             SUM(shipped_qty) AS shipped_qty, customer_name, source_id, region,
+             country, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC',
+             current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC',
+             current_timestamp
+        FROM z_mid_pcdw_ship_step2
+       GROUP BY assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date,
+                customer_name, source_id, region, country; 
+     
+     ELSE
+     
+     INSERT INTO pcdw_ship_sw
+      (assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date, shipped_qty,
+       customer_name, source_id, region, country, sys_created_by,
+       sys_created_date, sys_last_modified_by, sys_last_modified_date)
+      SELECT assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date,
+             SUM(shipped_qty) AS shipped_qty, customer_name, source_id, region,
+             country, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC',
+             current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC',
+             current_timestamp
+        FROM z_mid_pcdw_ship_step2 
+        WHERE SHIP_DATE >= add_days(add_days(CURRENT_DATE, -weekday(current_date)) , -49)
+       GROUP BY assembly_pk, planning_item_id, cto, mtm, geo_id, ship_date,
+                customer_name, source_id, region, country; 
+     
+     END IF;
+     
+     ----WO0000000291726 END----
+                   
+   PO_RETURNCODE := 0;
+   -- log process end
+    INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_SHIPMENT', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';       
+END;

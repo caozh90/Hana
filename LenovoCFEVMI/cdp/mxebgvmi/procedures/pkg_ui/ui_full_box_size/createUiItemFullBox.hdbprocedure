@@ -1,0 +1,115 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_full_box_size::createUiItemFullBox" ( 
+	        IN newInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_ITEM_FULL_BOX_T",
+			OUT errorInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aItem NVARCHAR(40);
+		aItemDsc NVARCHAR(200);	
+		aVendorId NVARCHAR(40);
+		aVendorName NVARCHAR(200);	
+		aBoxSize BIGINT;
+		resourceExists BIGINT;
+		
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.mxebgvmi.procedures::createUiItemFullBox error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::createUiItemFullBox'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'fullboxsize::createable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::createUiItemFullBox'
+       ,I_MODULE=>'MXEBGVMI'
+   	); 
+  
+  select 
+	ITEM,	
+    ITEMDESC,
+    VENDORID,
+    VENDORNAME,
+    BOX_SIZE
+  into 
+ 	aItem,
+ 	aItemDsc,
+	aVendorId,
+	aVendorName,
+	aBoxSize
+  from :newInfo;
+  
+  SELECT top 1 count(1) into resourceExists FROM "MXEBGVMI"."UI_ITEM_FULL_BOX" A    
+     WHERE A.ITEM = :aItem
+          AND A.VENDORID = :aVendorId;
+   
+    if  :resourceExists > 0 
+    then
+	    errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;
+    end if;
+    
+	  insert into "MXEBGVMI"."UI_ITEM_FULL_BOX"
+	  	(ITEM, ITEMDESC, VENDORID, VENDORNAME, BOX_SIZE,
+	  					SYS_CREATED_BY,
+			 		SYS_CREATED_DATE,
+			 		SYS_LAST_MODIFIED_BY,
+					SYS_LAST_MODIFIED_DATE
+			)
+	  	values(:aItem, :aItemDsc, :aVendorId, :aVendorName, :aBoxSize,
+	  					 session_user,
+				 	 current_timestamp,
+				 	  session_user,
+				 	 current_timestamp);
+	--记录log
+  	insert into "MXEBGVMI"."UI_ITEM_FULL_BOX_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				ITEM, ITEMDESC, VENDORID, VENDORNAME, BOX_SIZE
+			)
+			VALUES
+			 	(session_user,
+			 	'create',
+			 	current_timestamp,
+			 	:aItem, :aItemDsc, :aVendorId, :aVendorName, :aBoxSize
+				 );
+  	    /*END*/
+ 	    aI_DETAIL := 'cdp.mxebgvmi.procedures::createUiItemFullBox ('||:aItem||' ,) successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::createUiItemFullBox'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	 	
+  	
+END;

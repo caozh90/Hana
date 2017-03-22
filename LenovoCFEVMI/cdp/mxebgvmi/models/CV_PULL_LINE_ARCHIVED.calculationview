@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_PULL_LINE_ARCHIVED" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_PULL_LINE_ARCHIEVED"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="SPECIAL_DISPATCH" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="SPECIAL_DISPATCH"/>
+    </DataSource>
+    <DataSource id="BAK_PULL_LINE" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="BAK_PULL_LINE"/>
+    </DataSource>
+    <DataSource id="BAK_DISPATCH_LIST" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="BAK_DISPATCH_LIST"/>
+    </DataSource>
+    <DataSource id="BALANCE_DISPATCH" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="BALANCE_DISPATCH"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="PULL_LINE_ID"/>
+        <viewAttribute id="PULL_HEADER_ID"/>
+        <viewAttribute id="WERKS"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MATNR_DESCR"/>
+        <viewAttribute id="CONFIRM_QTY"/>
+        <viewAttribute id="PULL_QTY"/>
+        <viewAttribute id="FULL_BOX_QTY"/>
+        <viewAttribute id="SHIP_QTY"/>
+        <viewAttribute id="DELIVERY_DATE"/>
+        <viewAttribute id="SRC_STORAGE_TYPE"/>
+        <viewAttribute id="SRC_STORAGE_LOC"/>
+        <viewAttribute id="SRC_STORAGE_BIN"/>
+        <viewAttribute id="DEST_STORAGE_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_LOC"/>
+        <viewAttribute id="DEST_STORAGE_BIN"/>
+        <viewAttribute id="SYS_CREATED_DATE"/>
+        <viewAttribute id="SYS_CREATED_BY"/>
+        <viewAttribute id="INVENTORY_TYPE"/>
+        <viewAttribute id="STATUS"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_TIMESTAMP"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="NVARCHAR" id="HEADER_SUPPLIERID" length="60">
+          <formula>'MFGLS'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="LINE_SUPPLIERID" length="40">
+          <formula>'3PL'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="SA_NUMBER" length="64">
+          <formula>string(null)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="PRODUCTION_LINE" length="40">
+          <formula>'NON'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="PULL_TYPE" length="20">
+          <formula>'LINE_TO_EXCESS'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="PHYSICAL_PLANT" length="40">
+          <formula>string(null)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#SPECIAL_DISPATCH">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_LINE_ID" source="PULL_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR_DESCR" source="MATNR_DESCR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONFIRM_QTY" source="QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_QTY" source="QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FULL_BOX_QTY" source="QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SHIP_QTY" source="QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELIVERY_DATE" source="DELIVERY_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_TYPE" source="SRC_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_LOC" source="SRC_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_BIN" source="SRC_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_TYPE" source="DEST_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_BIN" source="DEST_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_BY" source="SYS_CREATED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="INVENTORY_TYPE" source="INVENTORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_TIMESTAMP" source="SYS_TIMESTAMP"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="PULL_HEADER_ID"/>
+        <viewAttribute id="PULL_LINE_ID"/>
+        <viewAttribute id="HEADER_SUPPLIERID"/>
+        <viewAttribute id="LINE_SUPPLIERID"/>
+        <viewAttribute id="WERKS"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MATNR_DESCR"/>
+        <viewAttribute id="CONFIRM_QTY"/>
+        <viewAttribute id="PULL_QTY"/>
+        <viewAttribute id="FULL_BOX_QTY"/>
+        <viewAttribute id="SHIP_QTY"/>
+        <viewAttribute id="SA_NUMBER"/>
+        <viewAttribute id="DELIVERY_DATE"/>
+        <viewAttribute id="SRC_STORAGE_LOC"/>
+        <viewAttribute id="SRC_STORAGE_TYPE"/>
+        <viewAttribute id="SRC_STORAGE_BIN"/>
+        <viewAttribute id="PRODUCTION_LINE"/>
+        <viewAttribute id="SYS_CREATED_DATE"/>
+        <viewAttribute id="SYS_CREATED_BY"/>
+        <viewAttribute id="PULL_TYPE"/>
+        <viewAttribute id="INVENTORY_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_LOC"/>
+        <viewAttribute id="DEST_STORAGE_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_BIN"/>
+        <viewAttribute id="STATUS"/>
+        <viewAttribute id="PHYSICAL_PLANT"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_TIMESTAMP"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#BAK_PULL_LINE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_LINE_ID" source="PULL_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="HEADER_SUPPLIERID" source="HEADER_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINE_SUPPLIERID" source="LINE_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR_DESCR" source="MATNR_DESCR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONFIRM_QTY" source="CONFIRM_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_QTY" source="PULL_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FULL_BOX_QTY" source="FULL_BOX_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_NUMBER" source="SA_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELIVERY_DATE" source="DELIVERY_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_LOC" source="SRC_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_TYPE" source="SRC_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_BIN" source="SRC_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTION_LINE" source="PRODUCTION_LINE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_BY" source="SYS_CREATED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_TYPE" source="PULL_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="INVENTORY_TYPE" source="INVENTORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_TYPE" source="DEST_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_BIN" source="DEST_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PHYSICAL_PLANT" source="PHYSICAL_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_TIMESTAMP" source="SYS_TIMESTAMP"/>
+      </input>
+      <input node="#BAK_DISPATCH_LIST">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SHIP_QTY" source="DISPATCH_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_LINE_ID" source="PULL_LINE_ID"/>
+      </input>
+      <joinAttribute name="PULL_HEADER_ID"/>
+      <joinAttribute name="PULL_LINE_ID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="PULL_LINE_ID"/>
+        <viewAttribute id="PULL_HEADER_ID"/>
+        <viewAttribute id="HEADER_SUPPLIERID"/>
+        <viewAttribute id="LINE_SUPPLIERID"/>
+        <viewAttribute id="WERKS"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MATNR_DESCR"/>
+        <viewAttribute id="CONFIRM_QTY"/>
+        <viewAttribute id="PULL_QTY"/>
+        <viewAttribute id="FULL_BOX_QTY"/>
+        <viewAttribute id="SHIP_QTY"/>
+        <viewAttribute id="SA_NUMBER"/>
+        <viewAttribute id="SRC_STORAGE_TYPE"/>
+        <viewAttribute id="SRC_STORAGE_LOC"/>
+        <viewAttribute id="SRC_STORAGE_BIN"/>
+        <viewAttribute id="DEST_STORAGE_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_LOC"/>
+        <viewAttribute id="DEST_STORAGE_BIN"/>
+        <viewAttribute id="DELIVERY_DATE"/>
+        <viewAttribute id="SYS_CREATED_BY"/>
+        <viewAttribute id="SYS_CREATED_DATE"/>
+        <viewAttribute id="INVENTORY_TYPE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_TIMESTAMP"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="NVARCHAR" id="PRODUCTION_LINE" length="40">
+          <formula>'NON'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="PULL_TYPE" length="20">
+          <formula>'BALANCE'</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="PHYSICAL_PLANT" length="40">
+          <formula>string(null)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#BALANCE_DISPATCH">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_LINE_ID" source="PULL_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="HEADER_SUPPLIERID" source="TPL_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINE_SUPPLIERID" source="LIFNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR_DESCR" source="MATNR_DESCR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONFIRM_QTY" source="QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_QTY" source="QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FULL_BOX_QTY" source="QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SHIP_QTY" source="QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_NUMBER" source="SA_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_TYPE" source="SRC_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_LOC" source="SRC_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_BIN" source="SRC_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_TYPE" source="DEST_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_BIN" source="DEST_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELIVERY_DATE" source="DELIVERY_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_BY" source="SYS_CREATED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="INVENTORY_TYPE" source="INVENTORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_TIMESTAMP" source="SYS_TIMESTAMP"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <viewAttributes>
+        <viewAttribute id="PULL_HEADER_ID"/>
+        <viewAttribute id="PULL_LINE_ID"/>
+        <viewAttribute id="HEADER_SUPPLIERID"/>
+        <viewAttribute id="LINE_SUPPLIERID"/>
+        <viewAttribute id="WERKS"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MATNR_DESCR"/>
+        <viewAttribute id="CONFIRM_QTY"/>
+        <viewAttribute id="PULL_QTY"/>
+        <viewAttribute id="FULL_BOX_QTY"/>
+        <viewAttribute id="SHIP_QTY"/>
+        <viewAttribute id="SA_NUMBER"/>
+        <viewAttribute id="DELIVERY_DATE"/>
+        <viewAttribute id="SRC_STORAGE_LOC"/>
+        <viewAttribute id="SRC_STORAGE_TYPE"/>
+        <viewAttribute id="SRC_STORAGE_BIN"/>
+        <viewAttribute id="PRODUCTION_LINE"/>
+        <viewAttribute id="SYS_CREATED_DATE"/>
+        <viewAttribute id="SYS_CREATED_BY"/>
+        <viewAttribute id="PULL_TYPE"/>
+        <viewAttribute id="INVENTORY_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_LOC"/>
+        <viewAttribute id="DEST_STORAGE_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_BIN"/>
+        <viewAttribute id="STATUS"/>
+        <viewAttribute id="PHYSICAL_PLANT"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_TIMESTAMP"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_LINE_ID" source="PULL_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="HEADER_SUPPLIERID" source="HEADER_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINE_SUPPLIERID" source="LINE_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR_DESCR" source="MATNR_DESCR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONFIRM_QTY" source="CONFIRM_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_QTY" source="PULL_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FULL_BOX_QTY" source="FULL_BOX_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SHIP_QTY" source="SHIP_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_NUMBER" source="SA_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELIVERY_DATE" source="DELIVERY_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_LOC" source="SRC_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_TYPE" source="SRC_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_BIN" source="SRC_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTION_LINE" source="PRODUCTION_LINE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_BY" source="SYS_CREATED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_TYPE" source="PULL_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="INVENTORY_TYPE" source="INVENTORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_TYPE" source="DEST_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_BIN" source="DEST_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PHYSICAL_PLANT" source="PHYSICAL_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_TIMESTAMP" source="SYS_TIMESTAMP"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_LINE_ID" source="PULL_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="HEADER_SUPPLIERID" source="HEADER_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINE_SUPPLIERID" source="LINE_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR_DESCR" source="MATNR_DESCR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONFIRM_QTY" source="CONFIRM_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_QTY" source="PULL_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FULL_BOX_QTY" source="FULL_BOX_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SHIP_QTY" source="SHIP_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_NUMBER" source="SA_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELIVERY_DATE" source="DELIVERY_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_LOC" source="SRC_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_TYPE" source="SRC_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_BIN" source="SRC_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTION_LINE" source="PRODUCTION_LINE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_BY" source="SYS_CREATED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_TYPE" source="PULL_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="INVENTORY_TYPE" source="INVENTORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_TYPE" source="DEST_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_BIN" source="DEST_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PHYSICAL_PLANT" source="PHYSICAL_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_TIMESTAMP" source="SYS_TIMESTAMP"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_LINE_ID" source="PULL_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="HEADER_SUPPLIERID" source="HEADER_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINE_SUPPLIERID" source="LINE_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR_DESCR" source="MATNR_DESCR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONFIRM_QTY" source="CONFIRM_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_QTY" source="PULL_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FULL_BOX_QTY" source="FULL_BOX_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SHIP_QTY" source="SHIP_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_NUMBER" source="SA_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELIVERY_DATE" source="DELIVERY_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_LOC" source="SRC_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_TYPE" source="SRC_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_BIN" source="SRC_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTION_LINE" source="PRODUCTION_LINE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_BY" source="SYS_CREATED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_TYPE" source="PULL_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="INVENTORY_TYPE" source="INVENTORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_TYPE" source="DEST_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_BIN" source="DEST_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="STATUS" null="true" value=""/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PHYSICAL_PLANT" source="PHYSICAL_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_TIMESTAMP" source="SYS_TIMESTAMP"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_3">
+      <viewAttributes>
+        <viewAttribute id="PULL_HEADER_ID"/>
+        <viewAttribute id="PULL_LINE_ID"/>
+        <viewAttribute id="HEADER_SUPPLIERID"/>
+        <viewAttribute id="LINE_SUPPLIERID"/>
+        <viewAttribute id="WERKS"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MATNR_DESCR"/>
+        <viewAttribute id="CONFIRM_QTY"/>
+        <viewAttribute id="PULL_QTY"/>
+        <viewAttribute id="FULL_BOX_QTY"/>
+        <viewAttribute id="SHIP_QTY"/>
+        <viewAttribute id="SA_NUMBER"/>
+        <viewAttribute id="DELIVERY_DATE"/>
+        <viewAttribute id="SRC_STORAGE_LOC"/>
+        <viewAttribute id="SRC_STORAGE_TYPE"/>
+        <viewAttribute id="SRC_STORAGE_BIN"/>
+        <viewAttribute id="PRODUCTION_LINE"/>
+        <viewAttribute id="SYS_CREATED_DATE"/>
+        <viewAttribute id="SYS_CREATED_BY"/>
+        <viewAttribute id="PULL_TYPE"/>
+        <viewAttribute id="INVENTORY_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_LOC"/>
+        <viewAttribute id="DEST_STORAGE_TYPE"/>
+        <viewAttribute id="DEST_STORAGE_BIN"/>
+        <viewAttribute id="STATUS"/>
+        <viewAttribute id="PHYSICAL_PLANT"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_TIMESTAMP"/>
+        <viewAttribute id="SYS_CREATED_DATE_1"/>
+        <viewAttribute id="SYS_CREATED_DATE_2"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="INTEGER" id="FILTER_COLUMN">
+          <formula>if(&quot;SYS_CREATED_DATE&quot;>=adddays(now(),-90) and &quot;SYS_CREATED_DATE&quot;&lt;=now(),1,0)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Union_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_HEADER_ID" source="PULL_HEADER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_LINE_ID" source="PULL_LINE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="HEADER_SUPPLIERID" source="HEADER_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINE_SUPPLIERID" source="LINE_SUPPLIERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WERKS" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR_DESCR" source="MATNR_DESCR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONFIRM_QTY" source="CONFIRM_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_QTY" source="PULL_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FULL_BOX_QTY" source="FULL_BOX_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SHIP_QTY" source="SHIP_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SA_NUMBER" source="SA_NUMBER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELIVERY_DATE" source="DELIVERY_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_LOC" source="SRC_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_TYPE" source="SRC_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SRC_STORAGE_BIN" source="SRC_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTION_LINE" source="PRODUCTION_LINE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_BY" source="SYS_CREATED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PULL_TYPE" source="PULL_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="INVENTORY_TYPE" source="INVENTORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_LOC" source="DEST_STORAGE_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_TYPE" source="DEST_STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEST_STORAGE_BIN" source="DEST_STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PHYSICAL_PLANT" source="PHYSICAL_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_TIMESTAMP" source="SYS_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE_1" source="SYS_CREATED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE_2" source="SYS_CREATED_DATE"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_3">
+    <attributes>
+      <attribute id="PULL_HEADER_ID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_HEADER_ID"/>
+        <keyMapping columnObjectName="Projection_3" columnName="PULL_HEADER_ID"/>
+      </attribute>
+      <attribute id="PULL_LINE_ID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_LINE_ID"/>
+        <keyMapping columnObjectName="Projection_3" columnName="PULL_LINE_ID"/>
+      </attribute>
+      <attribute id="HEADER_SUPPLIERID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="HEADER_SUPPLIERID"/>
+        <keyMapping columnObjectName="Projection_3" columnName="HEADER_SUPPLIERID"/>
+      </attribute>
+      <attribute id="LINE_SUPPLIERID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LINE_SUPPLIERID"/>
+        <keyMapping columnObjectName="Projection_3" columnName="LINE_SUPPLIERID"/>
+      </attribute>
+      <attribute id="WERKS" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WERKS"/>
+      </attribute>
+      <attribute id="MATNR" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MATNR"/>
+      </attribute>
+      <attribute id="MATNR_DESCR" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR_DESCR"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MATNR_DESCR"/>
+      </attribute>
+      <attribute id="CONFIRM_QTY" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CONFIRM_QTY"/>
+        <keyMapping columnObjectName="Projection_3" columnName="CONFIRM_QTY"/>
+      </attribute>
+      <attribute id="PULL_QTY" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_QTY"/>
+        <keyMapping columnObjectName="Projection_3" columnName="PULL_QTY"/>
+      </attribute>
+      <attribute id="FULL_BOX_QTY" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FULL_BOX_QTY"/>
+        <keyMapping columnObjectName="Projection_3" columnName="FULL_BOX_QTY"/>
+      </attribute>
+      <attribute id="SHIP_QTY" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SHIP_QTY"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SHIP_QTY"/>
+      </attribute>
+      <attribute id="SA_NUMBER" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SA_NUMBER"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SA_NUMBER"/>
+      </attribute>
+      <attribute id="DELIVERY_DATE_RAW" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DELIVERY_DATE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="DELIVERY_DATE"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_LOC" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SRC_STORAGE_LOC"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SRC_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_TYPE" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SRC_STORAGE_TYPE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SRC_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_BIN" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SRC_STORAGE_BIN"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SRC_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="PRODUCTION_LINE" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTION_LINE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="PRODUCTION_LINE"/>
+      </attribute>
+      <attribute id="SYS_CREATED_DATE_RAW" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SYS_CREATED_DATE"/>
+      </attribute>
+      <attribute id="SYS_CREATED_BY" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_BY"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SYS_CREATED_BY"/>
+      </attribute>
+      <attribute id="PULL_TYPE" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_TYPE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="PULL_TYPE"/>
+      </attribute>
+      <attribute id="INVENTORY_TYPE" order="21" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="INVENTORY_TYPE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="INVENTORY_TYPE"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_LOC" order="22" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_LOC"/>
+        <keyMapping columnObjectName="Projection_3" columnName="DEST_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_TYPE" order="23" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_TYPE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="DEST_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_BIN" order="24" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DEST_STORAGE_BIN"/>
+        <keyMapping columnObjectName="Projection_3" columnName="DEST_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="STATUS" order="25" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping columnObjectName="Projection_3" columnName="STATUS"/>
+      </attribute>
+      <attribute id="PHYSICAL_PLANT" order="26" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PHYSICAL_PLANT"/>
+        <keyMapping columnObjectName="Projection_3" columnName="PHYSICAL_PLANT"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="27" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE_RAW" order="28" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="SYS_TIMESTAMP_RAW" order="29" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SYS_TIMESTAMP"/>
+      </attribute>
+      <attribute id="FILTER_COLUMN" order="30" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FILTER_COLUMN"/>
+        <keyMapping columnObjectName="Projection_3" columnName="FILTER_COLUMN"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="DELIVERY_DATE" hidden="false" order="31" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DELIVERY_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;DELIVERY_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="SYS_CREATED_DATE" hidden="false" order="32" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_CREATED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="SYS_LAST_MODIFIED_DATE" hidden="false" order="33" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_LAST_MODIFIED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="SYS_TIMESTAMP" hidden="false" order="34" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_TIMESTAMP_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="176" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="377"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="377"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="377"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="243"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,43 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createInfoRoleGroupForOData" (
+IN newInfo "SECURITY"."cdp.security.data::userManagement.InfoRoleGroupT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+     
+    aROLEGROUP_NAME NVARCHAR(200);
+    aCOMMENT NVARCHAR(200);      	
+    aMODULE_NAME NVARCHAR(200);
+BEGIN
+
+/***************************** 
+	create new ROLE group
+	
+
+	example:
+	
+
+)
+ *****************************/
+
+ select 
+    NAME
+    ,MODULE_NAME
+    ,COMMENT 
+  into 
+    aROLEGROUP_NAME
+    ,aMODULE_NAME
+    ,aCOMMENT 
+  from :newInfo;
+
+
+CALL "SECURITY"."cdp.security.procedures::createInfoRoleGroup" (
+	aROLEGROUP_NAME,
+	aCOMMENT     	
+	--aMODULE_NAME
+	,errorInfo);
+
+END;

@@ -1,0 +1,117 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_report::PRC_PREPARE_INVENTORY" (
+	  iv_id               VARCHAR2(10),
+      tpl_id              VARCHAR2(20),
+      OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA
+/************************************************************************
+*name      : PRC_PREPARE_INVENTORY              --函数名
+*function    :               --函数功能
+*input     ：  iv_id,tpl_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/05                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		 
+	AS
+	  v_logidi INTEGER := 0;	
+	  v_pkg_name          VARCHAR (40)            := 'PKG_REPORT';
+	  v_logic_proc_name   VARCHAR (40)            := 'PRC_PREPARE_INVENTORY';
+	  v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- COMMIT;      --comment by Eric Zhou
+	END;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+on_exitcode := -20099;
+
+----------------------- add by xwu 2015/11/11 --------------------------
+     delete from z_pcdw_inventory_comp;
+     insert into z_pcdw_inventory_comp
+     select * from z_pcdw_inventory;
+
+     update z_pcdw_inventory_comp t
+     set ( storage_location, storage_type, storage_bin ) = (a.tpl_storage_location, a.tpl_storage_type, a.tpl_storage_bin)
+     from conf_inv_comp_map as a
+     where a.whs_no = t.whs_no
+        and a.werks = t.werks
+        and a.storage_location = t.storage_location
+        and a.storage_type = t.storage_type
+        and a.storage_bin = t.storage_bin;
+-------------------------end ----------------------------------------------
+
+      DELETE FROM Z_PCDW_INVENTORY_SNAPSHOT
+            WHERE sys_source = tpl_id AND sys_created_date < ADD_DAYS(CURRENT_TIMESTAMP, - 7);
+
+      DELETE FROM Z_PCDW_INVENTORY_SNAPSHOT
+            WHERE sys_source = tpl_id
+              AND to_date(sys_created_date) = CURRENT_DATE;
+
+      -- COMMIT;      --comment by Eric Zhou
+
+      INSERT INTO Z_PCDW_INVENTORY_SNAPSHOT
+                  (matnr, whs_no, werks, storage_location, storage_type,
+                   storage_bin, qty, hold_type, lifnr, sys_source, 
+                   special_stock, SYS_CREATED_DATE,SYS_CREATED_BY)
+         SELECT  /* CASE
+                     WHEN a.matnr LIKE '00000%'
+                        THEN SUBSTR (a.matnr, 6, 20)
+                     ELSE a.matnr
+                  END matnr,*/ a.matnr,
+                  a.whs_no, a.werks, a.storage_location, a.storage_type,
+                  a.storage_bin, SUM (a.qty), a.hold_type, a.lifnr, b.owner,
+                  a.special_stock, a.SYS_CREATED_DATE,a.SYS_CREATED_BY
+             FROM z_pcdw_inventory_comp a, conf_wahrehouse_info b   -- change z_pcdw_inventory to z_pcdw_inventory_comp by xwu 2015/11/11
+            WHERE a.storage_location = b.storage_location
+              AND a.storage_type = b.storage_type
+              AND a.storage_bin = b.storage_bin
+              AND a.werks = b.werks
+              AND b.owner = tpl_id
+              AND to_date(a.SYS_CREATED_DATE) >= CURRENT_DATE
+              AND a.werks IN (SELECT siteid
+                                FROM CONF_SITE_SCHEDULE
+                               WHERE ID = :iv_id)
+         GROUP BY 
+                  a.matnr,
+                  a.whs_no,
+                  a.werks,
+                  a.storage_location,
+                  a.storage_type,
+                  a.storage_bin,
+                  a.hold_type,
+                  a.lifnr,
+                  b.owner,
+                  a.special_stock,
+                  a.SYS_CREATED_DATE,
+                  a.SYS_CREATED_BY;
+
+      
+      DELETE FROM Z_PCDW_INVENTORY_SNAPSHOT
+            WHERE sys_source NOT IN (SELECT DISTINCT owner
+                                                FROM conf_wahrehouse_info);
+
+      on_exitcode := 0;
+      -- COMMIT;      --comment by Eric Zhou             
+             
+             
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');            
+END;

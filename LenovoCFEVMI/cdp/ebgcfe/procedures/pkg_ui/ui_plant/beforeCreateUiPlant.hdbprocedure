@@ -1,0 +1,61 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_plant::beforeCreateUiPlant" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PLANT_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError" 
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      :                     createUiPlant
+*function    :               
+*input     ：               
+*output     :                
+*author     :                     Fangyuan
+*CreateDate    :                  20150121
+*UpdateDate  :        
+*************************************************************************/	
+		aPlant NVARCHAR(20); 
+		aPlantType NVARCHAR(20);
+		aPlantDesc NVARCHAR(100);
+		aPlantSubGeo NVARCHAR(20);
+		
+		validate integer;
+BEGIN
+
+select 
+	--PRODUCT_GROUP,	
+    PLANT,
+    PLANT_TYPE,
+    PLANT_DESC,
+    PLANT_SUBGEO
+  into 
+ 	--aProduct_group,
+ 	aPlant,
+	aPlantType,
+	aPlantDesc,
+	aPlantSubGeo
+  from :newInfo;
+   
+  --plant type  
+  select count(1) into validate from  conf_parameters 
+  where pdomain='UI_PLANT' and Pname='PLANT_TYPE' and PVALUE=:aPlantType; 
+  if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'PLANT_TYPE: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if; 
+    
+  --plant geo
+   select count(1) into validate from  ui_region 
+  where SUBGEO=:aPlantSubGeo; 
+  if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'PLANT_SUBGEO: VALIDATION FAILED, NOT EXIST IN UI_REGION' error_message, 
+            '' detail from dummy;
+        return;
+    end if;                  
+  
+   	
+END;

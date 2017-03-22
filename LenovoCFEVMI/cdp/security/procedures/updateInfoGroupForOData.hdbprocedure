@@ -1,0 +1,53 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::updateInfoGroupForOData" (
+IN newInfo "SECURITY"."cdp.security.data::userManagement.InfoGroupT"
+,IN oldInfo  "SECURITY"."cdp.security.data::userManagement.InfoGroupT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	aGROUP_ID BIGINT; 
+    aGROUP_NAME NVARCHAR(200);
+    aGROUP_NAME_OLD NVARCHAR(200);
+    aCOMMENT NVARCHAR(200); 
+    aMODULE_NAME NVARCHAR(200);
+BEGIN
+
+/***************************** 
+	UPDATE user group
+	
+
+	example:
+	
+
+)
+ *****************************/
+
+  
+ select NAME
+    ,COMMENT 
+  into 
+ 	aGROUP_NAME
+    ,aCOMMENT 
+  from :newInfo;
+
+ select ID 
+   -- ,MODULE_NAME
+    ,NAME
+  into 
+ 	aGROUP_ID  
+  --  ,aMODULE_NAME
+    ,aGROUP_NAME_OLD
+  from :oldInfo;
+  
+ CALL "SECURITY"."cdp.security.procedures::updateInfoGroup" (
+		aGROUP_NAME,
+		aCOMMENT ,
+		aGROUP_ID ,
+		aGROUP_NAME_OLD 
+   		--aMODULE_NAME 
+		,errorInfo );
+ 
+END;

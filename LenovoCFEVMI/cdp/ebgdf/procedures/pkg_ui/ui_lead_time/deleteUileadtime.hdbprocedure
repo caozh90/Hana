@@ -1,0 +1,150 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_lead_time::deleteUileadtime" 
+( 
+	IN oldInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_LEADTIME_T" ,
+    OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError" 
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	
+/************************************************************************
+*name        :      deleteUileadtime
+*function    :               
+*input       ：                 oldInfo
+*output      :      errorInfo
+*author      :      billy Qiao
+*CreateDate  :      2015.8.21
+*UpdateDate  :      2015.8.21  
+*************************************************************************/
+	
+	AS
+	
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	
+	V_MFI_FFI_FC_IND NVARCHAR(3);
+	V_MFI_FFI_FC NVARCHAR(20);
+	V_PPN NVARCHAR(12);
+	
+BEGIN
+--Exception Defination
+	DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+--Exception Handler Defination
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+			aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_lead_time::deleteUileadtime error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+			
+	    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    	 I_TYPE=>'PROC_ERROR'	
+		     	,I_LOGSID=>:alogide
+		     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_lead_time::deleteUileadtime'
+		     	,I_MODULE=>'EBGDF'
+		     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+		     	,I_DETAIL=>:aI_DETAIL
+	     	);	
+	 
+	 		errorInfo = select 400 as http_status_code, 
+	     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+	     		aI_DETAIL detail from dummy;
+			
+		END;
+
+--Check Privilege
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_lead_time::deleteable',privilegeExists);
+    
+    IF  privilegeExists != 'OK' THEN
+    	errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+       	RETURN ;
+    END IF;
+
+--Log Start
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    I_TYPE=>'PROC_START',
+	        I_LOGSID=>:alogide,
+	        I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_lead_time::deleteUileadtime',
+	        I_MODULE=>'EBGDF'
+	   	); 
+
+--Get key of records to be deleted
+	select
+		MFI_FFI_FC_IND,
+		MFI_FFI_FC,
+		ppn
+	into
+		V_MFI_FFI_FC_IND,
+		V_MFI_FFI_FC,
+		V_PPN
+	from
+		:oldInfo
+	;--end select;
+
+--Delete records from DB
+	delete from
+		"EBGDF"."RPT_LEADTIME"
+	where
+		MFI_FFI_FC_IND = :V_MFI_FFI_FC_IND
+		and MFI_FFI_FC = :V_MFI_FFI_FC
+		and PPN = :V_PPN
+	;--end delete;
+
+--Raise exception if no records were deleted
+	if ::rowcount < 1 then
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';
+	end if;
+
+--Insert log table
+	insert into
+		"EBGDF"."RPT_LEADTIME_LOG"(
+			CYCLE_ID,
+			MFI_FFI_FC_IND,
+			MFI_FFI_FC,
+			PPN,
+			ABCD_T,
+			ABCD,
+			LEADTIME,
+			CREATE_TS,
+			CREATE_USERID,
+			LAST_UPDATE_TS,
+			LAST_UPDATE_USERID,
+			AT_MODIFIED_BY,
+			AT_ACTION,
+			AT_MODIFIED_ON,
+			AT_MILLIS
+		)select
+			a.CYCLE_ID,
+			a.MFI_FFI_FC_IND,
+			a.MFI_FFI_FC,
+			a.PPN,
+			a.ABCD_T,
+			a.ABCD,
+			a.LEADTIME,
+			CURRENT_UTCTIMESTAMP,		--CREATE_TS
+			SESSION_USER,			--CREATE_USERID
+			CURRENT_UTCTIMESTAMP,		--LAST_UPDATE_TS
+			SESSION_USER,			--LAST_UPDATE_USERI
+			SESSION_USER,			--AT_MODIFIED_BY
+			'delete',				--AT_ACTION
+			CURRENT_UTCTIMESTAMP,		--AT_MODIFIED_ON
+			TO_DECIMAL( TO_VARCHAR( CURRENT_UTCTIMESTAMP, 'HH24MISSFF3' ) )	--AT_MILLIS
+		from 
+			:oldInfo as a
+	;--end insert
+
+--Log End
+	aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_lead_time::deleteUileadtime successfully deleted . ';
+	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		I_TYPE=>'PROC_END',
+		I_LOGSID=>:alogide,
+		I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_lead_time::deleteUileadtime',
+		I_MODULE=>'EBGDF',
+		I_DETAIL=>:aI_DETAIL
+	);
+
+END;

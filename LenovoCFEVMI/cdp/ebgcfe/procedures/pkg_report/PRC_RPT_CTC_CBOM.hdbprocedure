@@ -1,0 +1,389 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_CTC_CBOM" ( 
+  IN V_CYCLE VARCHAR(40),
+  IN V_DeltaCYCLE VARCHAR(40),
+  OUT p_out_exitcode  NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+    /************************************************************************
+    *name       : PRC_RPT_CTC_CBOM       
+    *function   : 
+    *input      ：v_cycle :                 cycle 
+                           V_deltacycle ： deltacycle
+    *output     : p_out_exitcode : error code 
+    *author     : zhangxj
+    *CreateDate : 2016-04-20
+    *UpdateDate :         
+     *************************************************************************/
+      v_pkg_name        VARCHAR(30)  := 'PKG_REPORT';
+      v_prc_name        VARCHAR(50)  := 'PRC_RPT_CTC_CBOM';
+      v_full_name       VARCHAR(100) := :v_pkg_name || '.' || :v_prc_name;  
+      logidi            INTEGER := 0;
+      v_cycle_mon       VARCHAR(10);
+      v_delta_mon       VARCHAR(10); 
+      v_cycle_fcst      VARCHAR(10);
+           
+BEGIN
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+      p_out_exitcode:=::SQL_ERROR_CODE;            
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+        I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+        I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+  
+    p_out_exitcode := -1;
+    --start
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+
+    DELETE FROM RPT_CTC_BOM;
+    DELETE FROM RPT_CTC_COSTBOM;
+    
+    SELECT cycle_fcst_month INTO v_cycle_fcst FROM ui_cycle WHERE cycle = :V_CYCLE;
+    
+	SELECT CASE WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),0) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M1'  
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),1) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M2' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),2) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M3' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),3) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M4' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),4) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M5' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),5) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M6' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),6) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M7' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),7) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M8' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),8) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M9' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),9) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M10' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),10) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M11' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),11) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M12' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),12) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M13' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),13) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M14' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),14) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M15' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),15) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M16' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),16) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M17' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),17) = to_date(cycle_fcst_month,'MONYYYY') THEN 'M18' 
+			ELSE 'M1' END INTO v_cycle_mon  
+	   FROM ui_cycle WHERE cycle = :V_CYCLE;
+
+
+	SELECT CASE WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),0) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M1'  
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),1) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M2' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),2) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M3' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),3) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M4' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),4) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M5' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),5) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M6' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),6) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M7' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),7) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M8' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),8) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M9' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),9) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M10' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),10) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M11' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),11) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M12' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),12) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M13' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),13) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M14' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),14) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M15' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),15) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M16' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),16) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M17' 
+				WHEN add_months(to_date(cycle_cur_month,'MONYYYY'),17) = to_date(v_cycle_fcst,'MONYYYY') THEN 'M18' 
+			ELSE 'M1' END INTO v_delta_mon  
+	   FROM ui_cycle WHERE cycle = :V_DeltaCYCLE;
+    
+    --If cycle is current then get data from current table, otherwise get data from history table
+    IF :V_CYCLE='CURRENT'
+    THEN
+        --Get MTM Cost Bom
+        tab1 =SELECT DISTINCT model,children AS father,'' AS children,qtyper,altpercent,
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1,t1.item_type_m,t1.plant
+	             FROM biz_cbom_mtmsbb t1
+	            WHERE item_type_c<>'SBB'
+	            UNION ALL 
+	               SELECT DISTINCT t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_mtmsbb t1,biz_cbom_sbb t2 
+	               WHERE t1.children = t2.model
+	                     AND t1.plant      = t2.plant
+	                     AND t1.item_type_c='SBB'
+               UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_mtmsbb t1,biz_cbom_swrcost t2 
+	               WHERE t1.children = t2.model
+	                     AND t1.plant       = t2.plant;
+	    
+	    --Get CTO Cost Bom
+	    tab1 = SELECT * FROM :tab1
+	           UNION ALL
+	           SELECT DISTINCT model,children AS father,'' AS children,qtyper,altpercent,
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1,t1.item_type_m,t1.plant
+	             FROM biz_cbom_ctosbb t1
+	            WHERE item_type_c<>'SBB'
+	            UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_ctosbb t1,biz_cbom_sbb t2 
+	               WHERE t1.children = t2.model
+	                     AND t1.plant       = t2.plant
+	                     AND t1.item_type_c='SBB'
+               UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_ctosbb t1,biz_cbom_swrcost t2 
+	               WHERE t1.children = t2.model
+	                     AND t1.plant       = t2.plant;
+ 	ELSE
+         --Get MTM Cost Bom
+        tab1 =SELECT DISTINCT model,children AS father,'' AS children,qtyper,altpercent,
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1,t1.item_type_m,t1.plant
+	             FROM biz_cbom_mtmsbb_his t1
+	            WHERE item_type_c<>'SBB'
+	                  AND cycle_productgroup = v_cycle||'EBG'
+	            UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_mtmsbb_his t1,biz_cbom_sbb_his t2 
+	               WHERE t1.children                       =  t2.model
+	                     AND t1.plant                             = t2.plant
+	                     AND t1.item_type_c                = 'SBB'
+	                     AND t1.cycle_productgroup  = t2.cycle_productgroup 
+	                     AND t2.cycle_productgroup  = v_cycle||'EBG'
+               UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_mtmsbb_his t1,biz_cbom_swrcost_his t2 
+	               WHERE t1.children = t2.model
+	                     AND t2.plant       = t2.plant 
+	               	     AND t1.cycle_productgroup  = t2.cycle_productgroup 
+	                     AND t2.cycle_productgroup  = v_cycle||'EBG';
+  	    --Get CTO Cost Bom
+	    tab1 = SELECT * FROM :tab1
+	           UNION ALL
+	           SELECT DISTINCT model,children AS father,'' AS children,qtyper,altpercent,
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1,t1.item_type_m,t1.plant
+	             FROM biz_cbom_ctosbb_his t1
+	            WHERE item_type_c<>'SBB'
+	                  AND cycle_productgroup = v_cycle||'EBG'
+	            UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_ctosbb_his t1,biz_cbom_sbb_his t2 
+	               WHERE t1.children                       =  t2.model
+	                     AND t1.plant                             = t2.plant
+	                     AND t1.item_type_c                = 'SBB'
+	                     AND t1.cycle_productgroup  = t2.cycle_productgroup 
+	                     AND t2.cycle_productgroup  = v_cycle||'EBG'
+               UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_ctosbb_his t1,biz_cbom_swrcost_his t2 
+	               WHERE t1.children                        = t2.model
+	                     AND t1.plant                              = t2.plant
+	               	     AND t1.cycle_productgroup  = t2.cycle_productgroup 
+	                     AND t2.cycle_productgroup  = v_cycle||'EBG';
+    END IF;    
+ 
+    --If deltacycle is current then get data from current table, otherwise get data from history table
+    IF :V_DELTACYCLE='CURRENT'
+    THEN
+              --Get MTM Cost Bom
+        tab2 =SELECT DISTINCT model,children AS father,'' AS children,qtyper,altpercent,
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1,t1.item_type_m,t1.plant
+	             FROM biz_cbom_mtmsbb t1
+	            WHERE item_type_c<>'SBB'
+	            UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_mtmsbb t1,biz_cbom_sbb t2 
+	               WHERE t1.children      = t2.model
+	                     AND t1.plant            = t2.plant
+	                     AND t1.item_type_c='SBB'
+               UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_mtmsbb t1,biz_cbom_swrcost t2 
+	               WHERE t1.children = t2.model
+	                     AND  t1.plant      = t2.plant;
+	    
+	    --Get CTO Cost Bom
+	    tab2 = SELECT * FROM :tab2
+	           UNION ALL
+	           SELECT DISTINCT model,children AS father,'' AS children,qtyper,altpercent,
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1,t1.item_type_m,t1.plant
+	             FROM biz_cbom_ctosbb t1
+	            WHERE item_type_c<>'SBB'
+	            UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_ctosbb t1,biz_cbom_sbb t2 
+	               WHERE t1.children = t2.model
+	                     AND t1.plant       = t2.plant
+	                     AND t1.item_type_c='SBB'
+               UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_ctosbb t1,biz_cbom_swrcost t2 
+	               WHERE t1.children = t2.model
+	                     AND t1.plant       = t2.plant;
+ 	ELSE
+         --Get MTM Cost Bom
+        tab2 =SELECT DISTINCT model,children AS father,'' AS children,qtyper,altpercent,
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1,t1.item_type_m,t1.plant
+	             FROM biz_cbom_mtmsbb_his t1
+	            WHERE item_type_c               <>'SBB'
+	                  AND cycle_productgroup = v_deltacycle||'EBG'
+	            UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_mtmsbb_his t1,biz_cbom_sbb_his t2 
+	               WHERE t1.children                       =  t2.model
+	                     AND t1.plant                             = t2.plant
+	                     AND t1.item_type_c                = 'SBB'
+	                     AND t1.cycle_productgroup  = t2.cycle_productgroup 
+	                     AND t2.cycle_productgroup  = v_deltacycle||'EBG'
+               UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_mtmsbb_his t1,biz_cbom_swrcost_his t2 
+	               WHERE t1.children                       = t2.model
+	                     AND t1.plant                             = t2.plant
+	               	     AND t1.cycle_productgroup  = t2.cycle_productgroup 
+	                     AND t2.cycle_productgroup  = v_deltacycle||'EBG';
+  	    --Get CTO Cost Bom
+	    tab2 = SELECT * FROM :tab2
+	           UNION ALL
+	           SELECT DISTINCT model,children AS father,'' AS children,qtyper,altpercent,
+	                  MAP(v_cycle_mon,'M1',T1.M1,'M2',T1.M2,'M3',T1.M3,'M4',T1.M4,'M5',T1.M5,'M6',T1.M6,
+	                                  'M7',T1.M7,'M8',T1.M8,'M9',T1.M9,'M10',T1.M10,'M11',T1.M11,'M12',T1.M12,
+	                                  'M13',T1.M13,'M14',T1.M14,'M15',T1.M15,'M16',T1.M16,'M17',T1.M17,'M18',T1.M18,
+	                                   T1.M1) AS M1,t1.item_type_m,t1.plant
+	             FROM biz_cbom_ctosbb_his t1
+	            WHERE item_type_c<>'SBB'
+	                  AND cycle_productgroup = v_deltacycle||'EBG'
+	            UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_ctosbb_his t1,biz_cbom_sbb_his t2 
+	               WHERE t1.children                       =  t2.model
+	                     AND t1.plant                             = t2.plant
+	                     AND t1.item_type_c                = 'SBB'
+	                     AND t1.cycle_productgroup  = t2.cycle_productgroup 
+	                     AND t2.cycle_productgroup  = v_deltacycle||'EBG'
+               UNION ALL 
+	               SELECT DISTINCT  t1.model,t1.children AS father,t2.children,t2.qtyper,t2.altpercent,
+	            		           MAP(v_cycle_mon,'M1',T2.M1,'M2',T2.M2,'M3',T2.M3,'M4',T2.M4,'M5',T2.M5,'M6',T2.M6,
+	                                 'M7',T2.M7,'M8',T2.M8,'M9',T2.M9,'M10',T2.M10,'M11',T2.M11,'M12',T2.M12,
+	                                 'M13',T2.M13,'M14',T2.M14,'M15',T2.M15,'M16',T2.M16,'M17',T2.M17,'M18',T2.M18,
+	                                  T2.M1) AS M1,t1.item_type_m,t1.plant
+	                 FROM biz_cbom_ctosbb_his t1,biz_cbom_swrcost_his t2 
+	               WHERE t1.children                       = t2.model
+	                     AND t1.plant                             = t2.plant
+	               	     AND t1.cycle_productgroup  = t2.cycle_productgroup 
+	                     AND t2.cycle_productgroup  = v_deltacycle||'EBG';
+     END IF;    
+         
+      INSERT INTO rpt_ctc_bom
+     (product_group,cycle,model,father,children,qtyper,altpercent,delta_cycle,delta_model,delta_father,delta_children,delta_qtyper,delta_altpercent,item_type,plant,sys_created_by,sys_last_modified_by)
+    SELECT 'EBG',v_cycle,t1.model,t1.father,t1.children,t1.qtyper,t1.altpercent,v_deltacycle,t2.model,t2.father,t2.children,t2.qtyper,t2.altpercent,
+                    CASE WHEN t1.model IS NULL THEN t2.item_type WHEN t2.model IS NULL THEN t1.item_type ELSE t1.item_type END AS item_type,
+                    CASE WHEN t1.model IS NULL THEN t2.plant  WHEN t2.model IS NULL THEN t1.plant ELSE t1.plant END AS  plant,v_full_name,v_full_name
+     FROM (SELECT model,father,children,qtyper,altpercent,item_type_m AS item_type,plant FROM :tab1 a  
+                   WHERE NOT EXISTS (  SELECT 1 FROM :tab2 b WHERE a.model = b.model and a.father = b.father and a.children = b.children 
+                                                                                                                 and a.qtyper = b.qtyper and a.altpercent = b.altpercent)
+                                                                                              ) t1
+    FULL JOIN  (SELECT model,father,children,qtyper,altpercent,item_type_m AS item_type,plant FROM :tab2 a 
+                             WHERE NOT EXISTS (  SELECT 1 FROM :tab1   b WHERE a.model = b.model and a.father = b.father and a.children = b.children 
+                                                                                                                 and a.qtyper = b.qtyper and a.altpercent = b.altpercent) ) t2
+         ON (t1.model = t2.model and t1.father  = t2.father and t1.children = t2.children );
+
+        INSERT INTO rpt_ctc_costbom  
+     (product_group,cycle,model,father,children,qtyper,altpercent,m1,delta_cycle,delta_model,delta_father,delta_children,delta_qtyper,delta_altpercent,delta_m1,item_type,plant,sys_created_by,sys_last_modified_by)
+    SELECT 'EBG',v_cycle,t1.model,t1.father,t1.children,t1.qtyper,t1.altpercent,t1.m1,v_deltacycle,t2.model,t2.father,t2.children,t2.qtyper,t2.altpercent,t2.m1,
+                    CASE WHEN t1.model IS NULL THEN t2.item_type WHEN t2.model IS NULL THEN t1.item_type ELSE t1.item_type END AS item_type,
+                    CASE WHEN t1.model IS NULL THEN t2.plant  WHEN t2.model IS NULL THEN t1.plant ELSE t1.plant END AS  plant,v_full_name,v_full_name
+     FROM (SELECT * FROM (SELECT model,father,children,qtyper,altpercent,m1,item_type_m AS item_type,plant  FROM :tab1 a  
+                                                     WHERE NOT EXISTS (SELECT 1 FROM  :tab2 b WHERE  a.model = b.model and a.father = b.father and a.children = b.children 
+                                                                                                                 and a.qtyper = b.qtyper and a.altpercent = b.altpercent AND a.m1 = b.m1) ) aa
+                    WHERE  NOT EXISTS (SELECT 1 FROM rpt_ctc_bom bb WHERE aa.model =bb.model AND aa.plant = bb.plant AND bb.delta_model IS NULL )--filter bom change,such as add or del in current cycle
+                    )  t1
+    INNER JOIN 
+                 (SELECT * FROM  (SELECT model,father,children,qtyper,altpercent,m1,item_type_m AS item_type,plant  FROM :tab2  a
+                                                      WHERE NOT EXISTS (SELECT 1 FROM :tab1 b  WHERE  a.model = b.model and a.father = b.father and a.children = b.children 
+                                                                                                                 and a.qtyper = b.qtyper and a.altpercent = b.altpercent AND a.m1 = b.m1)  ) aa
+                 WHERE  NOT EXISTS (SELECT 1 FROM rpt_ctc_bom bb WHERE aa.model =bb.delta_model  AND aa.plant = bb.plant AND bb.model IS NULL )  --filter bom change,such as add or del in current cycle                                                          
+                   ) t2
+         ON (t1.model = t2.model and t1.father = t2.father and t1.children = t2.children AND t1.qtyper=t2.qtyper AND t1.altpercent = t2.altpercent );
+    
+    --del bom change data 
+    DELETE FROM rpt_ctc_costbom a WHERE EXISTS(SELECT 1 FROM rpt_ctc_bom b WHERE a.model = b.model AND a.plant = b.plant );
+    DELETE FROM rpt_ctc_costbom a WHERE EXISTS(SELECT 1 FROM rpt_ctc_bom b WHERE a.delta_model = b.delta_model  AND a.plant = b.plant );
+     
+    P_OUT_EXITCODE := 0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END(',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+END;

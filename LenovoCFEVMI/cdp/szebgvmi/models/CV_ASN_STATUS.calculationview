@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_ASN_STATUS" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="cd"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="PRODUCTIONORDERS_BOM_ASN" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SZEBGVMI" columnObjectName="PRODUCTIONORDERS_BOM_ASN"/>
+    </DataSource>
+    <DataSource id="ITEMSITEMASTER" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SZEBGVMI" columnObjectName="ITEMSITEMASTER"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="SCENARIO_ID"/>
+        <viewAttribute id="PRODUCTIONORDID"/>
+        <viewAttribute id="LINENUM"/>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="QTYPER"/>
+        <viewAttribute id="LGORT"/>
+        <viewAttribute id="STATUS"/>
+        <viewAttribute id="SITEID"/>
+        <viewAttribute id="SYS_CREATION_DATE_RAW" transparentFilter="false"/>
+        <viewAttribute id="SYS_ENT_STATE"/>
+        <viewAttribute id="ITEMTYPE"/>
+        <viewAttribute id="SYS_ENT_STATE_1"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="INTEGER" id="CAL_SYS_ENT_STATE">
+          <formula>if( &quot;SYS_ENT_STATE&quot; != 'DELETED' OR isnull(&quot;SYS_ENT_STATE&quot; ) ,0,1)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="SYS_CREATION_DATE" length="23">
+          <formula>leftstr(string(&quot;SYS_CREATION_DATE_RAW&quot;),23)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#PRODUCTIONORDERS_BOM_ASN">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SCENARIO_ID" source="SCENARIO_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTIONORDID" source="PRODUCTIONORDID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINENUM" source="LINENUM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LGORT" source="LGORT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SITEID" source="SITEID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATION_DATE_RAW" source="SYS_CREATION_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_ENT_STATE" source="SYS_ENT_STATE"/>
+      </input>
+      <input node="#ITEMSITEMASTER">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEMTYPE" source="ITEMTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_ENT_STATE_1" source="SYS_ENT_STATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SITEID" source="SITEID"/>
+      </input>
+      <joinAttribute name="ITEM"/>
+      <joinAttribute name="SITEID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="SCENARIO_ID">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="0"/>
+        </viewAttribute>
+        <viewAttribute id="PRODUCTIONORDID"/>
+        <viewAttribute id="LINENUM"/>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="QTYPER"/>
+        <viewAttribute id="SCENARIO_ID_1"/>
+        <viewAttribute id="PRODUCTIONORDID_1"/>
+        <viewAttribute id="LINENUM_1"/>
+        <viewAttribute id="ITEM_1"/>
+        <viewAttribute id="QTYPER_1"/>
+        <viewAttribute id="LGORT"/>
+        <viewAttribute id="STATUS"/>
+        <viewAttribute id="SITEID"/>
+        <viewAttribute id="SYS_CREATION_DATE_RAW"/>
+        <viewAttribute id="SYS_ENT_STATE"/>
+        <viewAttribute id="ITEMTYPE"/>
+        <viewAttribute id="SYS_CREATION_DATE"/>
+        <viewAttribute id="CAL_SYS_ENT_STATE">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="0"/>
+        </viewAttribute>
+        <viewAttribute id="SYS_ENT_STATE_1">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="false" value="DELETED"/>
+        </viewAttribute>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SCENARIO_ID" source="SCENARIO_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTIONORDID" source="PRODUCTIONORDID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINENUM" source="LINENUM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SCENARIO_ID_1" source="SCENARIO_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTIONORDID_1" source="PRODUCTIONORDID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LINENUM_1" source="LINENUM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_1" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTYPER_1" source="QTYPER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LGORT" source="LGORT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STATUS" source="STATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SITEID" source="SITEID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATION_DATE_RAW" source="SYS_CREATION_DATE_RAW"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_ENT_STATE" source="SYS_ENT_STATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEMTYPE" source="ITEMTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATION_DATE" source="SYS_CREATION_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CAL_SYS_ENT_STATE" source="CAL_SYS_ENT_STATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_ENT_STATE_1" source="SYS_ENT_STATE_1"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="SCENARIO_ID" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SCENARIO_ID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SCENARIO_ID"/>
+      </attribute>
+      <attribute id="PRODUCTIONORDID" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTIONORDID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PRODUCTIONORDID"/>
+      </attribute>
+      <attribute id="LINENUM" key="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LINENUM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LINENUM"/>
+      </attribute>
+      <attribute id="ITEM" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ITEM"/>
+      </attribute>
+      <attribute id="QTYPER" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QTYPER"/>
+        <keyMapping columnObjectName="Projection_1" columnName="QTYPER"/>
+      </attribute>
+      <attribute id="LGORT" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LGORT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LGORT"/>
+      </attribute>
+      <attribute id="STATUS" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping columnObjectName="Projection_1" columnName="STATUS"/>
+      </attribute>
+      <attribute id="SITEID" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SITEID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SITEID"/>
+      </attribute>
+      <attribute id="SYS_ENT_STATE" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_ENT_STATE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SYS_ENT_STATE"/>
+      </attribute>
+      <attribute id="ITEMTYPE" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEMTYPE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ITEMTYPE"/>
+      </attribute>
+      <attribute id="SYS_CREATION_DATE" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATION_DATE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SYS_CREATION_DATE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="280"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="180"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

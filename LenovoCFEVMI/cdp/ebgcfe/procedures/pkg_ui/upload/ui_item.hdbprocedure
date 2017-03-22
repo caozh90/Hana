@@ -1,0 +1,114 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_item" (
+IN   CYCLE NVARCHAR(40),
+IN   ITEM NVARCHAR(40),
+IN   ITEM_DESC NVARCHAR(200),
+IN   EOL_STATUS NVARCHAR(10),
+IN   EOL_STARTDATE NVARCHAR(100),
+IN   EOL_ENDDATE NVARCHAR(100),
+IN	 	business_name nvarchar(200),
+IN		SEQ	int,
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      : ui_item              --函数名
+*function  : upload数据至表ui_item并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-01-22       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_item';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_ITEM';
+		validate1 int;
+		validate2 int;
+		PRODUCT_GROUP NVARCHAR(10):='EBG';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_item_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:CYCLE,:ITEM,:ITEM_DESC,:EOL_STATUS,:EOL_STARTDATE,:EOL_ENDDATE,:SEQ,:position);
+     	
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_item_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:CYCLE,:ITEM,:ITEM_DESC,:EOL_STATUS,:EOL_STARTDATE,:EOL_ENDDATE,:SEQ,:position);
+     	
+    END; 
+    --exception 
+	
+
+	--procedure begin
+	
+	
+	
+	business_code := :SEQ;
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	select  count(1) into validate1 from "EBGCFE"."CONF_PARAMETERS"  where  pdomain='UI_ITEM'  and Pname='EOL_STATUS' and Pvalue= :EOL_STATUS; 
+	if(validate1>0) then
+		select count(1) into n from "EBGCFE"."UI_ITEM" 
+		where item = :item and PRODUCT_GROUP= :PRODUCT_GROUP;
+		if n>0 then
+			update "EBGCFE"."UI_ITEM" 
+			set	ITEM_DESC = :item_desc,
+				EOL_STATUS = :eol_status,
+				EOL_StartDate = :eol_startdate,
+				EOL_EndDate = :eol_enddate,
+				SYS_LAST_MODIFIED_BY = :currentuser,
+				SYS_LAST_MODIFIED_DATE = :create_time,
+				CYCLE = :CYCLE
+			WHERE item = :item and PRODUCT_GROUP= :PRODUCT_GROUP;
+			--update操作需要写入日志
+			insert into "EBGCFE"."UI_ITEM_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				CYCLE,ITEM,ITEM_DESC,PRODUCT_GROUP,EOL_STATUS,EOL_STARTDATE,EOL_ENDDATE,
+		 		SYS_LAST_MODIFIED_BY,
+		 		SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+				(:currentUser,
+				'update',
+				:create_time,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:CYCLE,:ITEM,:ITEM_DESC,:PRODUCT_GROUP,:EOL_STATUS,:EOL_STARTDATE,:EOL_ENDDATE,
+				:currentUser,
+				:create_time);
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+		ELSEIF n=0 THEN
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_item_err"('"ITEM"::'||:ITEM||' does not exist',:business_name,
+			:CYCLE,:ITEM,:ITEM_DESC,:EOL_STATUS,:EOL_STARTDATE,:EOL_ENDDATE,:SEQ,:position);
+			--error log
+			
+	 		return;	
+		END IF;
+	END IF;
+	
+	if(validate1<=0) then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_item_err"('"EOL_STATUS"::'||:EOL_STATUS||' is illegal',:business_name,
+			:CYCLE,:ITEM,:ITEM_DESC,:EOL_STATUS,:EOL_STARTDATE,:EOL_ENDDATE,:SEQ,:position);
+		--error log
+		
+	 	return;	
+	end if;
+	
+
+END;

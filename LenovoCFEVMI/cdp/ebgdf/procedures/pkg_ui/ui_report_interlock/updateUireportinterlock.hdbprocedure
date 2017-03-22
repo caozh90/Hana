@@ -1,0 +1,173 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::updateUireportinterlock" 
+( 
+         IN newInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_REPORTINTERLOCK_T",
+		 IN oldInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_REPORTINTERLOCK_T",
+		 OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      updateUireportinterlock
+*function    :               
+*input       ：              newInfo&oldInfo
+*output      :      errorInfo
+*author      :      leon Bian
+*CreateDate  :      2015.8.17
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	resourceExists BIGINT;
+	privilegeExists  NVARCHAR(300)  ; 
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::updateUireportinterlock error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::updateUireportinterlock'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_report_interlock::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::updateUireportinterlock'
+       ,I_MODULE=>'EBGDF'
+   	); 
+			   	
+SELECT COUNT(*) into resourceExists 
+	FROM :oldInfo a,:newInfo b 
+where a.ABCD_T = b.ABCD_T 
+	and a.SBB_DES = b.SBB_DES
+	and a.MFI_FFI_FC_IND = b.MFI_FFI_FC_IND
+	and a.GAD = b.GAD
+	and a.LOD = b.LOD
+	and a.PP_DES = b.PP_DES
+	and a.LENOVO_PPN_OHQ = b.LENOVO_PPN_OHQ
+	and a.PPN_HIQ = b.PPN_HIQ
+	and a.SBB_3M_FORECAST = b.SBB_3M_FORECAST
+	and a.SBB_3M_SHIPMENT = b.SBB_3M_SHIPMENT
+	and a.PPN_3M_SHIPMENT = b.PPN_3M_SHIPMENT
+	and a.PRIOR_ABCD = b.PRIOR_ABCD
+	and a.REC_ABCD = b.REC_ABCD;
+
+if resourceExists > 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;	     		
+	     	return;*/
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists'; 
+	 return;
+end if;			
+--update into RPT_INTERLOCK table
+update "EBGDF"."RPT_INTERLOCK" a set (a.SBB_DES,
+									  a.MFI_FFI_FC_IND,
+									  a.GAD,
+									  a.LOD,
+									  a.PP_DES,
+									  a.REC_ABCD,
+									  a.LAST_UPDATE_TS,
+									  a.LAST_UPDATE_USERID) = 
+									 (b.SBB_DES,
+									  b.MFI_FFI_FC_IND,
+									  b.GAD,
+									  b.LOD,
+									  b.PP_DES,
+									  b.REC_ABCD,
+									  CURRENT_UTCTIMESTAMP,
+									  SESSION_USER)
+		FROM "EBGDF"."RPT_INTERLOCK" a,:newInfo b 
+		where a.SBB_OPT = b.SBB_OPT
+		  and a.PPN = b.PPN
+		  AND a.SUPPLIER = b.SUPPLIER; 
+
+--insert log table
+--INSERT INTO RPT_INTERLOCK_LOG TABLE
+insert into "EBGDF"."RPT_INTERLOCK_LOG"(
+	"ABCD_T",
+	"SBB_OPT",
+	"SBB_DES",
+	"MFI_FFI_FC_IND",
+	"GAD",
+	"LOD",
+	"PPN",
+	"PP_DES",
+	"SUPPLIER",
+	"LENOVO_PPN_OHQ",
+	"PPN_HIQ",
+	"SBB_3M_FORECAST",
+	"SBB_3M_SHIPMENT",
+	"PPN_3M_SHIPMENT",
+	"PRIOR_ABCD",
+	"REC_ABCD",
+	"CREATE_TS",
+	"CREATE_USERID",
+	"LAST_UPDATE_TS",
+	"LAST_UPDATE_USERID",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+	 )SELECT 
+	        a."ABCD_T",
+			a."SBB_OPT",
+			a."SBB_DES",
+			a."MFI_FFI_FC_IND",
+			a."GAD",
+			a."LOD",
+			a."PPN",
+			a."PP_DES",
+			a."SUPPLIER",
+			a."LENOVO_PPN_OHQ",
+			a."PPN_HIQ",
+			a."SBB_3M_FORECAST",
+			a."SBB_3M_SHIPMENT",
+			a."PPN_3M_SHIPMENT",
+			a."PRIOR_ABCD",
+			a."REC_ABCD",
+			CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+	 		CURRENT_UTCTIMESTAMP,
+	 		'update',
+	 		CURRENT_UTCTIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a; 	
+
+   	
+aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::updateUireportinterlock successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_report_interlock::updateUireportinterlock'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

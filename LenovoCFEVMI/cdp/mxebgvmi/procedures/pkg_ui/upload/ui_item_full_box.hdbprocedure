@@ -1,0 +1,167 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_item_full_box" (
+IN		item nvarchar(40),
+IN	 	vendorid nvarchar(40),
+IN		box_size integer,
+IN	 	business_name varchar(200),
+IN		seq	nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      : ui_item_full_box              --函数名
+*function  : upload数据至表ui_item_full_box并记录信息              --函数功能
+*input     ：    item, vendorid, box_size, table_name, business_name, seq_in, position  --输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014/12/10       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+
+		path varchar(100):='cdp.mxebgvmi.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_item_full_box';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		validate1 int;
+		validate2 int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name NVARCHAR(20) :='UI_ITEM_FULL_BOX';
+				privilegeExists  NVARCHAR(30);
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN 
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_item_full_box_err"
+     	(::SQL_ERROR_MESSAGE,:business_name,:item,:vendorid,:box_size,:seq,:position);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_item_full_box_err"
+     	(::SQL_ERROR_MESSAGE,:business_name,:item,:vendorid,:box_size,:seq,:position);     	
+    END; 
+    --exception 
+	
+	--procedure begin
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+	
+	--设置businesscode:: table_name+business_code	
+	business_code := :seq;
+
+	select count(1) into validate1 from "MXEBGVMI"."ITEMSITEMASTER" where ITEM = :item;
+	select count(1) into validate2 from "MXEBGVMI"."SUPITEM" where SUPPLIERID = :vendorid;
+	
+	if(validate1 >0 and validate2>0) then
+		DECLARE item_desc nvarchar(200);
+		DECLARE vendorname varchar(35);
+		
+		select top 1 ITEMDESC into item_desc from "MXEBGVMI"."ITEMSITEMASTER" where ITEM = :item; 
+		select top 1 SUPPLIERDESC into vendorname from "MXEBGVMI"."SUPITEM" where SUPPLIERID = :vendorid;
+		
+		select count(1) into n from "MXEBGVMI"."UI_ITEM_FULL_BOX" where ITEM = :item and VENDORID = :vendorid;
+	
+		if n>0 then
+			update "MXEBGVMI"."UI_ITEM_FULL_BOX" set
+				BOX_SIZE = :box_size,
+				SYS_LAST_MODIFIED_BY = :currentUser,
+				SYS_LAST_MODIFIED_DATE = :create_time,
+				ITEMDESC = :item_desc,
+				VENDORNAME = :vendorname
+			where ITEM = :item and VENDORID = :vendorid;
+			--update操作需要写入日志
+			insert into "MXEBGVMI"."UI_ITEM_FULL_BOX_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				Item,
+				ITEMDESC,
+		 		VENDORID,
+		 		VENDORNAME,
+			 	BOX_SIZE,
+			 	SYS_LAST_MODIFIED_BY,
+			 	SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+			 	(:currentUser,
+			 	'update',
+			 	:create_time,
+			 	:item,
+			 	:item_desc,
+			 	:vendorid,
+			 	:vendorname,
+			 	:box_size,
+			 	:currentUser,
+			 	:create_time);
+				
+		ELSEIF n=0 THEN
+			INSERT INTO "MXEBGVMI"."UI_ITEM_FULL_BOX"(Item,
+			ITEMDESC,
+	 		VENDORID,
+	 		VENDORNAME,
+		 	BOX_SIZE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		 	)
+		 	VALUES
+		 	(:item,
+		 	:item_desc,
+		 	:vendorid,
+		 	:vendorname,
+		 	:box_size,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+			--insert操作需要写入日志
+			insert into "MXEBGVMI"."UI_ITEM_FULL_BOX_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				Item,
+				ITEMDESC,
+		 		VENDORID,
+		 		VENDORNAME,
+			 	BOX_SIZE,
+				SYS_CREATED_BY,
+		 		SYS_CREATION_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+			 	(:currentUser,
+			 	'create',
+			 	:create_time,
+			 	:item,
+			 	:item_desc,
+			 	:vendorid,
+			 	:vendorname,
+			 	:box_size,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time
+				 );
+		 	
+		END IF;
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+		ELSEIF validate1<=0 then
+	     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_item_full_box_err"
+     		('"ITEM":'||:item||' is illegal',:business_name,:item,:vendorid,:box_size,:seq,:position);
+     	 	--error log
+			return;
+		ELSEIF validate2<=0 then
+	     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_item_full_box_err"
+     		('"VENDORID":'||:vendorid||' is illegal',:business_name,:item,:vendorid,:box_size,:seq,:position);
+     		--error log
+     		return;
+	END IF;
+	
+END;

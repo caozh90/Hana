@@ -1,0 +1,39 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteMapGroupUserForOData" ( 
+IN newInfo "SECURITY"."cdp.security.data::userManagement.MapGroupUserT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+	
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aID NVARCHAR(10);	
+	aMODULE_ID NVARCHAR(10);	
+    aGROUP_ID BIGINT;	--//usergroup id	
+    aUSER_ID BIGINT;  	--//USER ID
+     
+    aMODULE_NAME NVARCHAR(200);
+        
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	将 一些用户加入到某个用户组中。
+	
+
+	
+ *****************************/
+
+ 	select 
+	ID
+  into 
+ 	aID	
+  from :newInfo;
+  
+CALL "SECURITY"."cdp.security.procedures::deleteMapGroupUser" ( 
+		 aID , errorInfo ); 
+
+END;

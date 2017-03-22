@@ -1,0 +1,154 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_pm_sales_report::updateUiPmSalesReport" ( 
+         IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_SALES_REPORT_T",
+		 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_SALES_REPORT_T",
+		 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      updateUiPmSalesReport
+*function    :               
+*input       ：              newInfo&oldInfo
+*output      :      errorInfo            
+*author      :      leon Bian
+*CreateDate  :      2016.3.8
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	resourceExists BIGINT;
+	privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_pm_sales_report::updateUiPmSalesReport error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_sales_report::updateUiPmSalesReport'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_pm_sales_report::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+   
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_sales_report::updateUiPmSalesReport'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+SELECT COUNT(1) into resourceExists 
+FROM :oldInfo a,:newInfo b 
+where a.PROFIT_CENTER = b.PROFIT_CENTER
+and a.TIME_FENCE = b.TIME_FENCE
+and a.FUNCTION_TYPE = b.FUNCTION_TYPE
+and a.SALES_DATE = b.SALES_DATE
+and a.OEM_NAME = b.OEM_NAME
+and a.PART_NO = b.PART_NO
+and a.PART_DESC = b.PART_DESC
+and a.SALES_QTY = b.SALES_QTY
+and a.SALES_TOTAL_INCOMING = b.SALES_TOTAL_INCOMING
+and a.SALES_TOTAL_COST = b.SALES_TOTAL_COST
+and a.SALES_TOTAL_MASK = b.SALES_TOTAL_MASK
+;
+if resourceExists > 0
+then
+	 --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists'; 
+	 return;
+end if;		
+
+--update into PM_UI_SALES_PART table
+update "EBGCFE"."PM_UI_SALES_PART" a set (a.PROFIT_CENTER,a.TIME_FENCE,a.FUNCTION_TYPE,a.SALES_DATE,a.OEM_NAME,
+										  a.PART_NO,a.PART_DESC,a.SALES_QTY,a.SALES_TOTAL_INCOMING,
+										  a.SALES_TOTAL_COST,a.SALES_TOTAL_MASK,
+										  a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY) = 
+				(b.PROFIT_CENTER,b.TIME_FENCE,b.FUNCTION_TYPE,b.SALES_DATE,b.OEM_NAME,
+				 b.PART_NO,b.PART_DESC,b.SALES_QTY,b.SALES_TOTAL_INCOMING,
+				 b.SALES_TOTAL_COST,b.SALES_TOTAL_MASK,
+				 CURRENT_TIMESTAMP,SESSION_USER)
+		FROM "EBGCFE"."PM_UI_SALES_PART" a,:newInfo b 
+		where a.DUMMY_PK = b.DUMMY_PK ;  
+
+--insert log table
+--INSERT INTO PM_UI_SALES_PART_LOG TABLE
+insert into "EBGCFE"."PM_UI_SALES_PART_LOG"(
+		PRODUCT_GROUP,
+		PROFIT_CENTER,
+		TIME_FENCE,
+		FUNCTION_TYPE,
+		SALES_DATE,
+		OEM_NAME,
+		PART_NO,
+		PART_DESC,
+		SALES_QTY,
+		SALES_TOTAL_INCOMING,
+		SALES_TOTAL_COST,
+		SALES_TOTAL_MASK,
+		DUMMY_PK,
+		STATUS,
+		UPLOAD_ID,
+		SYS_CREATED_BY,
+		SYS_CREATED_DATE,
+		SYS_ENT_STATE,
+		SYS_LAST_MODIFIED_BY,
+		SYS_LAST_MODIFIED_DATE,
+		AT_ACTION,
+		LOG_DATE
+	 )SELECT 
+		    'EBG',
+		    a.PROFIT_CENTER,
+			a.TIME_FENCE,
+			a.FUNCTION_TYPE,
+			a.SALES_DATE,
+			a.OEM_NAME,
+			a.PART_NO,
+			a.PART_DESC,
+			a.SALES_QTY,
+			a.SALES_TOTAL_INCOMING,
+			a.SALES_TOTAL_COST,
+			a.SALES_TOTAL_MASK,
+			a.DUMMY_PK,
+		    '',--STATUS
+		    '',--UPLOAD_ID
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    '',--SYS_ENT_STATE
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+	 		'update',
+	 		CURRENT_TIMESTAMP 
+	 		FROM :oldInfo a; 	
+
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_pm_sales_report::updateUiPmSalesReport successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_sales_report::updateUiPmSalesReport'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+   
+END;

@@ -1,0 +1,138 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_mo_destination_change::PRC_MO_DEST_CHANGE_RESPONSE" (
+    IN iv_id VARCHAR(10), OUT on_exitcode DECIMAL
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_MO_DEST_CHANGE_RESPONSE              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141203                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+
+    AS
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_MO_DESTINATION_CHANGE';    
+      v_logic_proc_name   VARCHAR2 (40) := 'PRC_MO_DEST_CHANGE_RESPONSE';
+      logidi integer:=0;
+BEGIN
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         
+          on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+    
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!'); 
+
+      on_exitcode := -20099;
+      /*
+          update MO_DEST_CHANGE t
+             set (STATUS,REASON_CODE)=
+                   (select distinct 'OLD',REASON_CODE
+                      from R3_RSP_MO_DEST_CHANGE
+                     where t.PRODUCTIONORDID = PRODUCTIONORDID
+                       and t.BOMNAME = BOMNAME
+                       and t.POSNR   = POSNR
+                    )
+           where exists(select 'x' from R3_RSP_MO_DEST_CHANGE s
+                         where s.PRODUCTIONORDID=t.PRODUCTIONORDID
+                           and s.BOMNAME=t.BOMNAME
+                           and s.POSNR=t.POSNR
+                           and upper(s.status)='SUCCESS')
+             and WERKS in (select siteid from ud_site_schedule where id=iv_id);
+      */
+      UPDATE mo_dest_change t
+         SET (status, reason_code) =
+                (SELECT 'OLD', r.reason_code
+                   FROM Z_PCDW_RSP_MO_DEST_CHANGE r
+                  WHERE t.productionordid = r.productionordid
+                    AND t.posnr = r.posnr
+                    AND UPPER (r.status) = 'SUCCESS')
+       WHERE werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_RSP_MO_DEST_CHANGE s
+                 WHERE s.productionordid = t.productionordid
+                   AND s.posnr = t.posnr
+                   AND UPPER (s.status) = 'SUCCESS')
+         AND status = 'SENT';                             --added @2007-11-12;
+
+      UPDATE mo_dest_change t
+         SET (status, reason_code) =
+                (SELECT 'OLD', r.reason_code
+                   FROM Z_PCDW_RSP_MO_DEST_CHANGE r
+                  WHERE t.productionordid = r.productionordid
+                    AND r.posnr IS NULL
+                    AND UPPER (r.status) = 'SUCCESS')
+       WHERE werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_RSP_MO_DEST_CHANGE s
+                 WHERE s.productionordid = t.productionordid
+                   AND s.posnr IS NULL
+                   AND UPPER (s.status) = 'SUCCESS')
+         AND status = 'SENT';                             --added @2007-11-12;
+
+      /*
+         update MO_DEST_CHANGE t
+             set (STATUS,REASON_CODE)=
+                   (select distinct 'ERROR',REASON_CODE
+                      from R3_RSP_MO_DEST_CHANGE
+                     where t.PRODUCTIONORDID = PRODUCTIONORDID
+                       and t.BOMNAME = BOMNAME
+                       and t.POSNR   = POSNR
+                    )
+           where exists(select 'x' from R3_RSP_MO_DEST_CHANGE s
+                         where s.PRODUCTIONORDID=t.PRODUCTIONORDID
+                           and s.BOMNAME=t.BOMNAME
+                           and s.POSNR=t.POSNR
+                           and upper(s.status)='FAIL')
+             and WERKS in (select siteid from ud_site_schedule where id=iv_id);
+      */
+      
+      UPDATE mo_dest_change t
+         SET (status, reason_code) =
+                (SELECT 'ERROR', r.reason_code
+                   FROM Z_PCDW_RSP_MO_DEST_CHANGE r
+                  WHERE t.productionordid = r.productionordid
+                    AND t.posnr = r.posnr
+                    AND UPPER (r.status) IN ('FAIL', 'ERROR'))
+       WHERE werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_RSP_MO_DEST_CHANGE s
+                 WHERE s.productionordid = t.productionordid
+                   AND s.posnr = t.posnr
+                   AND UPPER (s.status) IN ('FAIL', 'ERROR'))
+         AND status = 'SENT';                             --added @2007-11-12;
+               
+      --COMMIT;
+      on_exitcode := 0;
+      
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!');         
+END;

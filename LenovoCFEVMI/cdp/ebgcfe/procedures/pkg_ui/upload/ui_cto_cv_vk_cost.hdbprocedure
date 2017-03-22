@@ -1,0 +1,396 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cto_cv_vk_cost" ( 
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int	,
+	IN CYCLE NVARCHAR(40),
+	IN PRODUCT_GROUP NVARCHAR(10),
+	IN CHARACTERISTIC NVARCHAR(30),
+	IN VARIANT NVARCHAR(30),
+	IN SALES_ORG NVARCHAR(30),
+	IN PH_1 NVARCHAR(30),
+	IN PH_2 NVARCHAR(30),
+	IN PH_3 NVARCHAR(30),
+	IN PH_4 NVARCHAR(30),
+	IN M1 Decimal(15,4)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      ui_cto_cv_vk_cost
+*function    :      upload data  
+*input       ：              error_message&business_name etc
+*output      :                
+*author      :      leon Bian
+*CreateDate  :      2015.8.31
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_cto_cv_vk_cost';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	table_name varchar(1000) := 'UI_CTO_CV_VK_COST';
+	validate int;
+	PRODUCT_GROUP NVARCHAR(10) :='EBG';
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cto_cv_vk_cost_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:CYCLE,:PRODUCT_GROUP,:CHARACTERISTIC,:VARIANT,:SALES_ORG,:PH_1,:PH_2,:PH_3,:PH_4,:M1);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cto_cv_vk_cost_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:CYCLE,:PRODUCT_GROUP,:CHARACTERISTIC,:VARIANT,:SALES_ORG,:PH_1,:PH_2,:PH_3,:PH_4,:M1);
+    END; 
+       
+	--procedure begin
+
+	business_code := :SEQ;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	--validate CYCLE
+	IF :CYCLE <> 'CURRENT' THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cto_cv_vk_cost_err"
+			('CYCLE MUST BE "CURRENT"',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:CHARACTERISTIC,:VARIANT,:SALES_ORG,:PH_1,:PH_2,:PH_3,:PH_4,:M1);
+			 	 --ERR_LOG
+	RETURN;
+	END IF ;
+	
+	--validate PRODUCT_GROUP
+	IF :PRODUCT_GROUP <> 'EBG' THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cto_cv_vk_cost_err"
+			('PRODUCT_GROUP MUST BE "EBG"',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:CHARACTERISTIC,:VARIANT,:SALES_ORG,:PH_1,:PH_2,:PH_3,:PH_4,:M1);
+			 	 --ERR_LOG
+	RETURN;
+	END IF ;
+	
+	--validate Sales Org
+	select  count(1) into validate from "EBGCFE".UI_COUNTRY_SALESORG_MAPPING where SALES_ORG =:SALES_ORG;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cto_cv_vk_cost_err"
+			('"SALES_ORG"::'||:SALES_ORG||' is illegal',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:CHARACTERISTIC,:VARIANT,:SALES_ORG,:PH_1,:PH_2,:PH_3,:PH_4,:M1);
+	RETURN;
+	END IF ;
+	
+	
+	--Characteristic & Variant
+	SELECT COUNT(1) INTO validate
+	          FROM ebgcfe.biz_fcsbbmap
+	          WHERE varcond = :VARIANT
+	            AND atnam = upper(:CHARACTERISTIC)
+	            AND product_group = :PRODUCT_GROUP;
+	 IF :validate = 0 THEN
+	 	 call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cto_cv_vk_cost_err"
+			('characeristic,value,variant key not match in z_cvsbbvarmap',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:CHARACTERISTIC,:VARIANT,:SALES_ORG,:PH_1,:PH_2,:PH_3,:PH_4,:M1);  
+		 RETURN;
+	 END IF ;
+/*	 
+	--Characteristic
+	select  count(1) into validate from "EBGCFE".BIZ_FCSBBMAP where atnam =:CHARACTERISTIC AND product_group = :PRODUCT_GROUP;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cto_cv_vk_cost_err"
+			('"CHARACTERISTIC"::'||:CHARACTERISTIC||' is illegal',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:CHARACTERISTIC,:VARIANT,:SALES_ORG,:PH_1,:PH_2,:PH_3,:PH_4,:M1);
+	RETURN;
+	END IF ;
+	
+	--Variant
+	select  count(1) into validate from "EBGCFE".BIZ_FCSBBMAP where  varcond =:VARIANT AND product_group = :PRODUCT_GROUP;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_cto_cv_vk_cost_err"
+			('"VARIANT"::'||:VARIANT||' is illegal',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:CHARACTERISTIC,:VARIANT,:SALES_ORG,:PH_1,:PH_2,:PH_3,:PH_4,:M1);
+	RETURN;
+	END IF ;
+*/
+
+	--validate key
+	select count(1) into n from "EBGCFE"."UI_CTO_CV_VK_COST" 
+	where CYCLE = :CYCLE 
+	AND PRODUCT_GROUP = :PRODUCT_GROUP 
+	AND CHARACTERISTIC = :CHARACTERISTIC 
+    AND VARIANT = :VARIANT
+	and SALES_ORG = :SALES_ORG
+	and PH_1 = :PH_1
+	and PH_2 = :PH_2
+	and PH_3 = :PH_3
+	and PH_4 = :PH_4; 
+		
+	if n>0 then
+		update "EBGCFE"."UI_CTO_CV_VK_COST" 
+		set	M1 = :M1,
+			SYS_LAST_MODIFIED_BY = :currentUser,
+			SYS_LAST_MODIFIED_DATE =:create_time,
+			ACTION = 'update'
+		where CYCLE = :CYCLE 
+		AND PRODUCT_GROUP = :PRODUCT_GROUP 
+		AND CHARACTERISTIC = :CHARACTERISTIC 
+	    AND VARIANT = :VARIANT
+		and SALES_ORG = :SALES_ORG
+		and PH_1 = :PH_1
+		and PH_2 = :PH_2
+		and PH_3 = :PH_3
+		and PH_4 = :PH_4; 
+	
+		--update操作需要写入日志
+		insert into "EBGCFE"."UI_CTO_CV_VK_COST_LOG"(
+							CYCLE,
+							PRODUCT_GROUP,
+							CTO_NUMBER,
+							CHARACTERISTIC,
+							VARIANT,
+							SALES_ORG,
+							PH_1,
+							PH_2,
+							PH_3,
+							PH_4,
+							M1,
+							M2,
+							M3,
+							M4,
+							M5,
+							M6,
+							M7,
+							M8,
+							M9,
+							M10,
+							M11,
+							M12,
+							M13,
+							M14,
+							M15,
+							M16,
+							M17,
+							M18,
+							STATUS,
+							CHANGE_ID,
+							CHANGE_ACTION,
+							SYS_CREATED_DATE,
+							SYS_CREATED_BY,
+							SYS_LAST_MODIFIED_DATE,
+							SYS_LAST_MODIFIED_BY,
+							AT_MODIFIED_BY,
+							AT_ACTION,
+							AT_MODIFIED_ON,
+							AT_MILLIS)
+		VALUES ( 
+			'CURRENT',
+		    'EBG',
+		    '',
+		    :CHARACTERISTIC,
+		    :VARIANT,
+		    :SALES_ORG,
+		    :PH_1,
+		    :PH_2,
+		    :PH_3,
+		    :PH_4,
+		    :M1,--M1
+		    :M1,--M2
+		    :M1,--M3
+		    :M1,--M4
+		    :M1,--M5
+		    :M1,--M6
+		    :M1,--M7
+		    :M1,--M8
+		    :M1,--M9
+		    :M1,--M10
+		    :M1,--M11
+		    :M1,--M12
+		    :M1,--M13
+		    :M1,--M14
+		    :M1,--M15
+		    :M1,--M16
+		    :M1,--M17
+		    :M1,--M18
+		    '',--STATUS
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+			SESSION_USER,
+	 		'update',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))); 	
+	ELSEIF n=0 THEN
+		INSERT INTO "EBGCFE"."UI_CTO_CV_VK_COST"(
+		 					CYCLE,
+							PRODUCT_GROUP,
+							CTO_NUMBER,
+							CHARACTERISTIC,
+							VARIANT,
+							SALES_ORG,
+							PH_1,
+							PH_2,
+							PH_3,
+							PH_4,
+							M1,
+							M2,
+							M3,
+							M4,
+							M5,
+							M6,
+							M7,
+							M8,
+							M9,
+							M10,
+							M11,
+							M12,
+							M13,
+							M14,
+							M15,
+							M16,
+							M17,
+							M18,
+							ACTION,
+							STATUS,
+							CHANGE_ID,
+							CHANGE_ACTION,
+							SYS_CREATED_DATE,
+							SYS_CREATED_BY,
+							SYS_LAST_MODIFIED_DATE,
+							SYS_LAST_MODIFIED_BY)
+			
+	 	VALUES(
+		 	   'CURRENT',
+			   'EBG',
+			   '',
+			   CHARACTERISTIC,
+			   VARIANT,
+			   SALES_ORG,
+			   PH_1,
+			   PH_2,
+			   PH_3,
+			   PH_4,
+			   M1,--M1
+			   M1,--M2
+			   M1,--M3
+			   M1,--M4
+			   M1,--M5
+			   M1,--M6
+			   M1,--M7
+			   M1,--M8
+			   M1,--M9
+			   M1,--M10
+			   M1,--M11
+			   M1,--M12
+			   M1,--M13
+			   M1,--M14
+			   M1,--M15
+			   M1,--M16
+			   M1,--M17
+			   M1,--M18
+			   'insert',--ACTION
+			   '',--STATUS
+			   '',--CHANGE_ID
+			   '',--CHANGE_ACTION
+			   CURRENT_TIMESTAMP,
+			   SESSION_USER,
+			   CURRENT_TIMESTAMP,
+			   SESSION_USER
+			   );
+	 	
+	 	--insert操作需要写入日志
+		insert into "EBGCFE"."UI_CTO_CV_VK_COST_LOG"(
+							CYCLE,
+							PRODUCT_GROUP,
+							CTO_NUMBER,
+							CHARACTERISTIC,
+							VARIANT,
+							SALES_ORG,
+							PH_1,
+							PH_2,
+							PH_3,
+							PH_4,
+							M1,
+							M2,
+							M3,
+							M4,
+							M5,
+							M6,
+							M7,
+							M8,
+							M9,
+							M10,
+							M11,
+							M12,
+							M13,
+							M14,
+							M15,
+							M16,
+							M17,
+							M18,
+							STATUS,
+							CHANGE_ID,
+							CHANGE_ACTION,
+							SYS_CREATED_DATE,
+							SYS_CREATED_BY,
+							SYS_LAST_MODIFIED_DATE,
+							SYS_LAST_MODIFIED_BY,
+							AT_MODIFIED_BY,
+							AT_ACTION,
+							AT_MODIFIED_ON,
+							AT_MILLIS)
+		VALUES ( 
+			'CURRENT',
+		    'EBG',
+		    '',
+		    :CHARACTERISTIC,
+		    :VARIANT,
+		    :SALES_ORG,
+		    :PH_1,
+		    :PH_2,
+		    :PH_3,
+		    :PH_4,
+		    :M1,--M1
+		    :M1,--M2
+		    :M1,--M3
+		    :M1,--M4
+		    :M1,--M5
+		    :M1,--M6
+		    :M1,--M7
+		    :M1,--M8
+		    :M1,--M9
+		    :M1,--M10
+		    :M1,--M11
+		    :M1,--M12
+		    :M1,--M13
+		    :M1,--M14
+		    :M1,--M15
+		    :M1,--M16
+		    :M1,--M17
+		    :M1,--M18
+		    '',--STATUS
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+			SESSION_USER,
+	 		'insert',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))); 	 			 	
+	END IF;
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+END;

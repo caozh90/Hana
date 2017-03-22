@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_RPT_SALES_OFFICE_SEARCH_MTM_DDL" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_RPT_SALES_OFFICE_SEARCH_MTM_DDL"/>
+  <defaultSchema schemaName="EBGCFE"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="ITEM_VALUE" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="ITEM_TYPE" length="10"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = 
+ 	 SELECT ITEM_VALUE,ITEM_TYPE
+ 	 FROM(
+ 	 	select distinct CYCLE AS ITEM_VALUE,'CYCLE' AS ITEM_TYPE
+ 	 		from pcdw.EXP_CFE_MTM_SALES_OFFICE_ALL
+ 	 	UNION 
+ 	 	SELECT  SALES_ORG as ITEM_VALUE,'Sales' AS ITEM_TYPE 
+ 	 	FROM(
+ 	 		select distinct SALES_ORG 
+ 	 			from pcdw.EXP_CFE_MTM_SALES_OFFICE_ALL 
+ 	 			order by SALES_ORG
+ 	 		)
+ 	 	UNION 
+ 	 	SELECT  SALES_OFFICE as ITEM_VALUE,'SalesOffice' AS ITEM_TYPE 
+ 	 	FROM(
+ 	 		select distinct SALES_OFFICE 
+ 	 			from pcdw.EXP_CFE_MTM_SALES_OFFICE_ALL 
+ 	 			order by SALES_OFFICE
+ 	 		)
+ 	 	UNION 
+ 	 	SELECT  COST_TYPE as ITEM_VALUE,'COST_TYPE' AS ITEM_TYPE 
+ 	 	FROM(
+ 	 		select distinct COST_TYPE 
+ 	 			from pcdw.EXP_CFE_MTM_SALES_OFFICE_ALL 
+ 	 			order by COST_TYPE
+ 	 		)
+ 	 	UNION 
+ 	 	select distinct CURRENCY_NAME as ITEM_VALUE,'Currency' AS ITEM_TYPE
+ 	 	from(
+ 	 		select  CURRENCY_NAME
+ 	 			from pcdw.EXP_CFE_MTM_SALES_OFFICE_ALL 
+ 	 			order by CURRENCY_NAME
+			)
+ 	 	UNION 
+ 	 	select distinct MTM_NO  AS ITEM_VALUE,'MTM' AS ITEM_TYPE
+ 	 		from pcdw.EXP_CFE_MTM_SALES_OFFICE_ALL
+
+ 	 )
+ 	 
+    ;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="ITEM_VALUE" order="1">
+        <descriptions defaultDescription="ITEM_VALUE"/>
+        <keyMapping columnObjectName="Script_View" columnName="ITEM_VALUE"/>
+      </attribute>
+      <attribute id="ITEM_TYPE" order="2">
+        <descriptions defaultDescription="ITEM_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="ITEM_TYPE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

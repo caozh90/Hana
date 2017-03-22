@@ -1,0 +1,56 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_manual_pull_err" (
+IN 	 	error_message	varchar(4096),
+IN 	 	business_name varchar(200),
+IN   DEST_STORAGE_LOC NVARCHAR(4096),
+IN   DEST_STORAGE_TYPE NVARCHAR(4096),
+IN   DEST_STORAGE_BIN NVARCHAR(4096),
+IN   SRC_WERKS NVARCHAR(4096),
+IN   PHYSICAL_PLANT NVARCHAR(4096),
+IN   INVENTORY_TYPE NVARCHAR(4096),
+IN   PRODUCTION_LINE NVARCHAR(4096),
+IN   HEAD_SUPPLIERID NVARCHAR(4096),
+IN   DELIVERY_DATE NVARCHAR(4096),
+IN   MATNR NVARCHAR(4096),
+IN   PULL_QTY NVARCHAR(4096),
+IN   SRC_STORAGE_TYPE NVARCHAR(4096),
+IN   SRC_STORAGE_BIN NVARCHAR(4096),
+IN   SRC_STORAGE_LOC NVARCHAR(4096),
+IN   LINE_SUPPLIERID NVARCHAR(4096),
+IN   REMARK NVARCHAR(4096),
+IN		seq	integer,
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	AS
+/************************************************************************
+*name      : ui_manual_pull_err              --函数名
+*function  : 保存在上传数据至表ui_manual_pull时产生的错误信息              --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-23       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	business_code varchar(20);
+	table_name NVARCHAR(20) :='UI_MANUAL_PULL';
+			privilegeExists1  NVARCHAR(30);
+			privilegeExists2  NVARCHAR(30);
+			privilegeExists3  NVARCHAR(30);	
+BEGIN
+
+	    --添加business信息
+	    business_code := :seq;
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,0,1,:table_name);    
+			
+     	--记录upload的错误
+     	INSERT INTO "SZEBGVMI"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("SZEBGVMI"."cdp.szebgvmi.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || :business_code,:position,:error_message,:table_name,:business_name); 
+     	--详细记录upload的数据信息
+     	insert into "SZEBGVMI"."UI_MANUAL_PULL_ERR_DETAIL"(CODE,POSITION,
+			DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK)
+		VALUES(:table_name || :business_code,:position,
+			:DEST_STORAGE_LOC,:DEST_STORAGE_TYPE,:DEST_STORAGE_BIN,:SRC_WERKS,:PHYSICAL_PLANT,:INVENTORY_TYPE,:PRODUCTION_LINE,:HEAD_SUPPLIERID,:DELIVERY_DATE,:MATNR,:PULL_QTY,:SRC_STORAGE_TYPE,:SRC_STORAGE_BIN,:SRC_STORAGE_LOC,:LINE_SUPPLIERID,:REMARK);
+END;

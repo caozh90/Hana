@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_RPT_OUTLOOK_Q1Q6" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_RPT_OUTLOOK_Q1Q6"/>
+  <localVariables>
+    <variable id="INPUT_CYCLE" parameter="true">
+      <descriptions defaultDescription="INPUT_CYCLE"/>
+      <variableProperties datatype="VARCHAR" length="50" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="UI_CYCLE" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="UI_CYCLE"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="Q1"/>
+        <viewAttribute id="Q2"/>
+        <viewAttribute id="Q3"/>
+        <viewAttribute id="Q4"/>
+        <viewAttribute id="Q5"/>
+        <viewAttribute id="Q6"/>
+        <viewAttribute id="PRODUCT_GROUP"/>
+        <viewAttribute id="CYCLE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#UI_CYCLE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="Q1" source="Q1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Q2" source="Q2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Q3" source="Q3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Q4" source="Q4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Q5" source="Q5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Q6" source="Q6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCT_GROUP" source="PRODUCT_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CYCLE" source="CYCLE"/>
+      </input>
+      <filter>(&quot;PRODUCT_GROUP&quot; ='EBG' )and ('$$INPUT_CYCLE$$'=&quot;CYCLE&quot; )</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="Q1" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Q1"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="Q1"/>
+      </attribute>
+      <attribute id="Q2" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Q2"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="Q2"/>
+      </attribute>
+      <attribute id="Q3" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Q3"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="Q3"/>
+      </attribute>
+      <attribute id="Q4" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Q4"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="Q4"/>
+      </attribute>
+      <attribute id="Q5" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Q5"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="Q5"/>
+      </attribute>
+      <attribute id="Q6" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Q6"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="Q6"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="CYCLE" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="CYCLE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="320"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

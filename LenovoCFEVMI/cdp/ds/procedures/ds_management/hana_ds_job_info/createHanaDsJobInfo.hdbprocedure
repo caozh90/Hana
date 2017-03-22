@@ -1,0 +1,117 @@
+PROCEDURE "DS_INFO"."cdp.ds.procedures.ds_management.hana_ds_job_info::createHanaDsJobInfo" (
+IN newInfo "DS_INFO"."HANA_DS_JOB_INFO",
+OUT errorInfo "DS_INFO"."cdp.ds.data::DS_INFO_T.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA DS_INFO
+	AS
+/************************************************************************
+*name      : createHanaDsJobInfo              --函数名
+*function  : 在表HANA_DS_JOB_INFO中创建数据              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-1-14       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	 PROCESS_NAME NVARCHAR(100);
+	 JOB_NAME NVARCHAR(100);
+	 G_JOB_INIT_FLAG INTEGER;
+	 G_DEBUG INTEGER;
+	 G_STARTFROMSTEP INTEGER;
+	 G_IVID NVARCHAR(20);
+	 G_WFNAME NVARCHAR(20);
+	 TARGET NVARCHAR(25);
+	 
+	 n int;
+	 error_message nvarchar(1024);
+	 	privilegeExists  NVARCHAR(30) ;
+	 path varchar(100):='cdp.ds.procedures.ds_management.hana_ds_job_info';
+	 proc_name varchar(100) :='createHanaDsJobInfo';
+	 logid0 INTEGER :=0;	
+BEGIN
+	--验证权限
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'configuration::access'		,privilegeExists           );
+    IF  :privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		:privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+	--start log
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'DS',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+	select 
+	 PROCESS_NAME,
+	 JOB_NAME,
+	 G_JOB_INIT_FLAG,
+	 G_DEBUG,
+	 G_STARTFROMSTEP,
+	 G_IVID,
+	 G_WFNAME,
+	 TARGET
+	into
+	 PROCESS_NAME,
+	 JOB_NAME,
+	 G_JOB_INIT_FLAG,
+	 G_DEBUG,
+	 G_STARTFROMSTEP,
+	 G_IVID,
+	 G_WFNAME,
+	 TARGET
+	from :newInfo;
+	
+	SELECT COUNT(1) INTO n 
+	from "DS_INFO"."DS_JOB_INFO"
+	where JOBNAME = :JOB_NAME;
+	
+	if(n<=0) then
+		error_message := '"JOB"('||:JOB_NAME||') does not exist!';
+		errorInfo = select 400 as http_status_code, 
+	    	'ERROR' error_message, 
+	    	:error_message DETAIL from dummy;
+	    return;
+	end if;
+	
+	
+	select count(1) into n from "DS_INFO"."HANA_DS_JOB_INFO"
+	where PROCESS_NAME = :PROCESS_NAME;
+	
+	IF(n>0) then
+		error_message := '"PROCESS_NAME"('||:PROCESS_NAME||')::Duplicated record!';
+		errorInfo = select 400 as http_status_code, 
+	    	'ERROR::'||:error_message ERROR_MESSAGE, 
+	    	:error_message DETAIL from dummy;
+	    return;
+	end if;
+	
+	insert into "DS_INFO"."HANA_DS_JOB_INFO"
+	(
+	 PROCESS_NAME,
+	 JOB_NAME,
+	 G_JOB_INIT_FLAG,
+	 G_DEBUG,
+	 G_STARTFROMSTEP,
+	 G_IVID,
+	 G_WFNAME,
+	 TARGET
+	)
+	values(
+	 :PROCESS_NAME,
+	 :JOB_NAME,
+	 :G_JOB_INIT_FLAG,
+	 :G_DEBUG,
+	 :G_STARTFROMSTEP,
+	 :G_IVID,
+	 :G_WFNAME,
+	 :TARGET
+	);
+ 	--end log
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'DS',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');		
+	
+END;

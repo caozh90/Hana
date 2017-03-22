@@ -1,0 +1,188 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::createUiMtEol" ( 
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MT_EOL",
+	OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	SQL SECURITY DEFINER	
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name        :      createUiMtEol
+*function    :               
+*input       ：              newInfo
+*output      :      errorInfo            
+*author      :      zhaodan
+*CreateDate  :      2016.1.15
+*UpdateDate  :        
+*************************************************************************/ 			
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	v_resourceExists BIGINT;
+	
+	V_CYCLE NVARCHAR(40);
+	V_PRODUCT_GROUP NVARCHAR(10);
+	V_MT NVARCHAR(10);
+	V_EOL_STATUS NVARCHAR(10);
+	
+	v_event_name  VARCHAR(200) := 'cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::createUiMtEol';
+    v_exitcode    DECIMAL;
+
+
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::createUiMtEol error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::createUiMtEol'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_mt_eol::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::createUiMtEol'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+select CYCLE,
+	   PRODUCT_GROUP,
+	   MT,
+	   EOL_STATUS
+into   V_CYCLE,
+	   V_PRODUCT_GROUP,
+	   V_MT,
+	   V_EOL_STATUS
+from :newInfo;  
+		
+select count(1) into v_resourceExists from "EBGCFE"."UI_MT_EOL" 
+where CYCLE = :V_CYCLE 
+  and PRODUCT_GROUP = :V_PRODUCT_GROUP 
+  and MT = :V_MT; 
+
+--if item exits in database
+if  :v_resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+	    
+end if;	
+
+           
+--insert into UI_CTOFC_FLAG table
+
+insert into "EBGCFE"."UI_MT_EOL"
+        (CYCLE,
+		 PRODUCT_GROUP,
+		 MT,
+	     EOL_STATUS,
+		 ACTION,
+		 STATUS,
+		 CHANGE_ID,
+		 CHANGE_ACTION,
+		 SYS_CREATED_DATE,
+		 SYS_CREATED_BY,
+		 SYS_LAST_MODIFIED_DATE,
+		 SYS_LAST_MODIFIED_BY
+		) 
+	values ('CURRENT',
+	   V_PRODUCT_GROUP,
+	   V_MT,
+	   V_EOL_STATUS,
+	   'insert',--ACTION
+	   '',--STATUS
+	   '',--CHANGE_ID
+	   '',--CHANGE_ACTION
+	   CURRENT_TIMESTAMP,
+	   SESSION_USER,
+	   CURRENT_TIMESTAMP,
+	   SESSION_USER
+	   );
+	
+--INSERT INTO UI_CTOFC_FLAG_LOG TABLE
+insert into "EBGCFE"."UI_MT_EOL_LOG"(
+		 CYCLE,
+		 PRODUCT_GROUP,
+		 MT,
+	     EOL_STATUS,
+		 ACTION,
+		 STATUS,
+		 CHANGE_ID,
+		 CHANGE_ACTION,
+		 SYS_CREATED_DATE,
+		 SYS_CREATED_BY,
+		 SYS_LAST_MODIFIED_DATE,
+		 SYS_LAST_MODIFIED_BY,
+		 AT_MODIFIED_BY,
+		 AT_ACTION,
+		 AT_MODIFIED_ON,
+		 AT_MILLIS
+	 )SELECT 
+	        'CURRENT',
+		    'EBG',
+		    a.MT,
+		    a.EOL_STATUS,
+		    'insert',
+		    '',--STATUS
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+	 		SESSION_USER,
+	 		'insert',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :newInfo a; 							
+		
+/*-- added by zhangxj 20160311 start
+ --use mt_eol_status to set eol_status
+	UPDATE "EBGCFE".UI_ITEM T1
+       SET --Modified by Zhoubinbin 20161115, set eol status by priority.
+           --T1.EOL_STATUS = T2.EOL_STATUS,
+           T1.MT_EOL     = T2.EOL_STATUS,
+           T1.EOL_STATUS = IFNULL(MAP(LENGTH(t1.user_eol_status), 0, NULL, t1.user_eol_status), 
+                           IFNULL(MAP(LENGTH(t1.mmr_eol), 0, NULL, t1.mmr_eol), 
+                           IFNULL(MAP(LENGTH(t2.eol_status), 0, NULL, t2.eol_status), 
+                           IFNULL(MAP(LENGTH(t1.family_eol), 0, NULL, t1.family_eol), t1.eol_status))))
+      FROM :newInfo  T2
+     WHERE T1.MACHINE_TYPE               = T2.MT;   	
+-- added by zhangxj 20160311 end */ 	
+
+    --Added by Zhoubinbin 20161127, Set eol status logic
+    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.base_funcs::updateEolStatus"('MT', :V_MT, :v_event_name, :v_exitcode);    
+	  	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::createUiMtEol successfully inserted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_mt_eol::createUiMtEol'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   	
+END;

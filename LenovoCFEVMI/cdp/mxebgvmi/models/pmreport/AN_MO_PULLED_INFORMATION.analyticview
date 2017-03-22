@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cube:cube xmlns:Cube="http://www.sap.com/ndb/BiModelCube.ecore" schemaVersion="1.5" id="AN_MO_PULLED_INFORMATION" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled">
+  <descriptions defaultDescription="AN_MO_PULLED_INFORMATION"/>
+  <localVariables/>
+  <privateMeasureGroup id="MeasureGroup">
+    <attributes>
+      <attribute id="LOGICAL_PLANT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOGICAL_PLANT"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="LOGICAL_PLANT"/>
+      </attribute>
+      <attribute id="MO_NO" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MO_NO"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="PRODUCTIONORDID"/>
+      </attribute>
+      <attribute id="DELIVERY_DATE" hidden="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DELIVERY_DATE"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="DELIVERY_DATE"/>
+      </attribute>
+      <attribute id="NORMAL_PULLS" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="NORMAL_PULLS"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="NORMAL_PULLS"/>
+      </attribute>
+      <attribute id="EXCESS_PULLS" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EXCESS_PULLS"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="EXCESS_PULLS"/>
+      </attribute>
+      <attribute id="SHIPPING_PULLS" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SHIPPING_PULLS"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="SHIPPING_PULLS"/>
+      </attribute>
+      <attribute id="PACKAGING_PULLS" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PACKAGING_PULLS"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="PACKAGING_PULLS"/>
+      </attribute>
+      <attribute id="MTM" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MTM"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="MTM"/>
+      </attribute>
+      <attribute id="FAMILY" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FAMILY"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="FAMILY"/>
+      </attribute>
+      <attribute id="ORDER_TYPE" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ORDER_TYPE"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="ORDER_TYPE"/>
+      </attribute>
+      <attribute id="REMARK" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="REMARK"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="REMARK"/>
+      </attribute>
+      <attribute id="PRODUCTION_LINE" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTION_LINE"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="PRODUCTION_LINE"/>
+      </attribute>
+      <attribute id="MRP_CONTROLLER" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MRP_CONTROLLER"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="MRP_CONTROLLER"/>
+      </attribute>
+      <attribute id="SYS_TIMESTAMP001" hidden="true" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP001"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="SYS_TIMESTAMP"/>
+      </attribute>
+      <attribute id="CANDYMAN_PULLS" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CANDYMAN_PULLS"/>
+        <keyMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="CANDYMAN_PULLS"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="PLAN_DATE" hidden="false" order="16" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLAN_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(seconddate(&quot;DELIVERY_DATE&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="SYS_TIMESTAMP" hidden="false" order="17" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>string(component(&quot;SYS_TIMESTAMP001&quot;,1)) +'-' + lpad(string(component(&quot;SYS_TIMESTAMP001&quot;,2)) ,2,'0')+'-'+lpad(string(component(&quot;SYS_TIMESTAMP001&quot;,3)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="SYS_TIMESTAMP_T" hidden="false" order="18" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP_T"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>lpad(string(component(&quot;SYS_TIMESTAMP001&quot;,4)) ,2,'0') +':' + lpad(string(component(&quot;SYS_TIMESTAMP001&quot;,5)) ,2,'0')+':'+lpad(string(component(&quot;SYS_TIMESTAMP001&quot;,6)) ,2,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies>
+        <tableProxy centralTable="true">
+          <table schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO"/>
+        </tableProxy>
+      </tableProxies>
+      <joins/>
+      <layout>
+        <shapes>
+          <shape modelObjectName="RPT_PULL_INFO" modelObjectNameSpace="MXEBGVMI" modelObjectType="catalog">
+            <upperLeftCorner x="70" y="30"/>
+          </shape>
+        </shapes>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="MO_QTY" order="15" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MO_QTY"/>
+        <measureMapping schemaName="MXEBGVMI" columnObjectName="RPT_PULL_INFO" columnName="BOM_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <sharedDimensions/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="MEASURE_GROUP" modelObjectType="repository">
+          <upperLeftCorner x="300" y="200"/>
+        </shape>
+        <shape modelObjectName="LogicalView" modelObjectNameSpace="MeasureGroup" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateMeasureGroup>
+</Cube:cube>

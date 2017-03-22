@@ -1,0 +1,105 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.failed_dispatches::updateFailedDispatches" (
+	IN newInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.DISPATCH_LIST_T"
+		,IN oldInfo  "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.DISPATCH_LIST_T"
+		,OUT errorInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+		PULL_HEADER_ID varchar(10);
+		PULL_LINE_ID  varchar(14);
+		SA_NUMBER varchar(10);
+		LIFNR varchar(40);		
+		PART_NUMBER varchar(18);  --MATNR
+		LOGICAL_PLANT varchar(4); --WERKS
+		SA_LINE_ID varchar(10); --SA_LINE_ID ADD BY ZHAODAN1
+		
+		n int;
+		
+		resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+-------exception-------
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.mxebgvmi.procedures.pkg_ui.failed_dispatches::updateFailedDispatches error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.mxebgvmi.procedures.pkg_ui.failed_dispatches::updateFailedDispatches'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		:aI_DETAIL detail from dummy;
+    END;  
+  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'faileddispatches::editable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		:privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+	
+	select PULL_HEADER_ID,PULL_LINE_ID,SA_NUMBER,LIFNR,MATNR,WERKS,SA_LINE_ID
+	INTO PULL_HEADER_ID,PULL_LINE_ID,SA_NUMBER,LIFNR,PART_NUMBER,LOGICAL_PLANT,SA_LINE_ID--Add sa line id by zhaodan1
+	FROM :newInfo;
+	
+	--validation---
+
+	--SA_NUMBER--
+	select count(1) into n
+	from "MXEBGVMI"."SA"
+	where lifnr = :LIFNR and SA_NUMBER=:SA_NUMBER;
+	IF :n=0 then
+		errorinfo = select 400 as http_status_code, 
+     		'SA_NUMBER: VALIDATION FAILED, NOT EXIST IN SA' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+	--SUPPLIER --
+	select count(1) into n
+	from "MXEBGVMI"."SUPITEM"
+	where ITEM = :PART_NUMBER AND SITEID = :LOGICAL_PLANT AND SUPPLIERID = :LIFNR;
+	IF :n=0 then
+		errorinfo = select 400 as http_status_code, 
+     		'SUPPLIER: VALIDATION FAILED, NOT EXIST IN SUPITEM' error_message, 
+     		'' detail from dummy;
+     	return;
+	end if;
+	
+	--UPDATE--
+	UPDATE "MXEBGVMI"."DISPATCH_LIST"
+	SET SA_NUMBER = :SA_NUMBER,
+		LIFNR = :LIFNR,
+		SA_LINE_ID = :SA_LINE_ID,--ADD SA_LINE_ID BY ZHAODAN1
+		SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+		SYS_LAST_MODIFIED_BY = SESSION_USER
+	WHERE PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :PULL_LINE_ID;
+	--log--
+	
+	insert into "MXEBGVMI"."UI_DISPATCH_LIST_LOG"
+  	(PULL_HEADER_ID,PULL_LINE_ID,SA_NUMBER,LIFNR,MATNR,WERKS,SA_LINE_ID,--ADD SA_LINE_ID BY ZHAODAN1
+  	AT_MODIFIED_BY,
+	AT_ACTION,
+	AT_MODIFIED_TIME
+  	)
+  	values 
+  	(
+	 :PULL_HEADER_ID,:PULL_LINE_ID,:SA_NUMBER,:LIFNR,:PART_NUMBER,:LOGICAL_PLANT,:SA_LINE_ID,--ADD SA_LINE_ID BY ZHAODAN1
+	 SESSION_USER,
+     'update',
+     CURRENT_DATE
+  	);
+	
+
+END;

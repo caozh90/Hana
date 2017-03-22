@@ -1,0 +1,65 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_prodfamily::beforeCreateUiProdFamily" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PRODFAMILY_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      :                     beforeCreateUiProdFamily
+*function    :               
+*input     ：               
+*output     :                
+*author     :                     FangYuan
+*CreateDate    :                  2015.1.21
+*UpdateDate  :        
+*************************************************************************/	
+		aProduct_group NVARCHAR(10); 
+		aBrand NVARCHAR(40);
+		aProd_family NVARCHAR(100);
+		aEol_status NVARCHAR(10);
+		aEol_startdate TIMESTAMP;
+		aEol_enddate TIMESTAMP;
+		
+        validate1 int;
+        validate2 int;
+BEGIN
+
+   	
+select 
+	--PRODUCT_GROUP,	
+    BRAND,
+    PROD_FAMILY,
+    EOL_STATUS,
+    EOL_STARTDATE,
+    EOL_ENDDATE
+  into 
+ 	--aProduct_group,
+ 	aBrand,
+	aProd_family,
+	aEol_status,
+	aEol_startdate,
+	aEol_enddate
+  from :newInfo;
+  
+    --BRAND
+    select count(1) into validate1 from "EBGCFE"."CONF_PARAMETERS" where pdomain='BrandSetting' and BRAND=:aBrand;
+    if validate1 = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'BRAND: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --EOL_STATUS
+    select count(1) into validate2 from "EBGCFE"."CONF_PARAMETERS" 
+    where pdomain='UI_PRODFAMILY'  and Pname='EOL_STATUS' AND PVALUE=:aEol_status;  
+    if validate2 = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'EOL_STATUS: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+END;

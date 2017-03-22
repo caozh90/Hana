@@ -1,0 +1,109 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_elem::deleteUiCostElem" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_ELEM_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER  
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aElement_name NVARCHAR(20);
+		
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui::deleteUiCostElem error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::deleteUiCostElem'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+     
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_cost_elem::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::deleteUiCostElem'
+       ,I_MODULE=>'EBGCFE'
+   	);
+   	
+ select
+    ELEMENT_NAME
+  into  	
+ 	aElement_name
+  from :newInfo;
+  
+  
+  delete from "EBGCFE"."UI_COST_ELEM"
+  	where ELEMENT_NAME = :aElement_name;
+
+/*put operation to log table*/
+    insert into "EBGCFE"."UI_COST_ELEM_LOG"
+    (
+        CYCLE,
+    	ELEMENT_NAME,
+	    ELEMENT_TYPE,
+	    DESC,
+	    --NEGATIVE_FLAG,
+	    TOTE,
+	    TOTL,
+	    ASP_PROD_FAMILY,
+	    --STATUS,    	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	CHANGE_ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	--SYS_BAK_DATE,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    select
+        'CURRENT',
+    	A.ELEMENT_NAME,
+	    A.ELEMENT_TYPE,
+	    A.DESC,
+	    --A.NEGATIVE_FLAG,
+	    A.TOTE,
+	    A.TOTL,
+	    A.ASP_PROD_FAMILY,
+	    --A.STATUS,    	
+    	current_date,    	
+    	'delete',
+    	SESSION_USER,
+    	--current_date,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    from "EBGCFE"."UI_COST_ELEM" A where A.ELEMENT_NAME = :aElement_name;
+                
+ /*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui::deleteUiCostElem ('||:aElement_name||' ,) successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::deleteUiCostElem'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	 
+END;

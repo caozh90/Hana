@@ -1,0 +1,143 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_manual_pull::deleteUiManualPull" (
+	        IN newInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_MANUAL_PULL_T",
+			OUT errorInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.HttpError"
+ )  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+/************************************************************************
+*name      : deleteUiManualPull              --函数名
+*function  : 删除ui_manual_pull表中的记录              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-01-04       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.mxebgvmi.procedures.pkg_ui.ui_manual_pull';
+		proc_name varchar(100) :='deleteUiManualPull';
+		logid0 INTEGER :=0;
+		PULL_LINE_ID nvarchar(20);
+		PULL_HEADER_ID nvarchar(20);
+		currentUser varchar(100);
+		create_time NVARCHAR(200);
+		n1 int;
+		n2 int;
+		error_message nvarchar(400);
+		PULL_TYPE NVARCHAR(40);
+		
+		privilegeExists  NVARCHAR(300)  ;
+		
+BEGIN
+
+	 select PULL_TYPE
+ 	 INTO 		
+ 		PULL_TYPE
+	 from :newInfo;
+	 
+	IF :PULL_TYPE = 'MANUAL' THEN
+        call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    	'manualpull::editable'		,:privilegeExists           );
+    ELSEIF :PULL_TYPE = 'SHIPPING_GROUP' THEN
+         call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    	'pullfromsupplier::editable'		,:privilegeExists           );
+    ELSEIF :PULL_TYPE = 'MANUAL_PACKAGING' THEN
+         call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    	'manualpackaging::editable'		,:privilegeExists           );
+    END IF;
+
+    IF  :privilegeExists != 'OK' THEN
+   	 	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		:privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+	 
+ 	--开始，日志
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'MXEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');    
+	 select PULL_HEADER_ID,PULL_LINE_ID
+ 	 INTO 		
+ 		PULL_HEADER_ID ,
+		PULL_LINE_ID
+	 from :newInfo;
+	 
+	 select session_user into currentUser from dummy;
+	 select CURRENT_TIMESTAMP into create_time from dummy;
+	 
+	 --若记录不存在则报错
+	 	select count(1) into n1 from "MXEBGVMI"."UI_MANUAL_PULL"
+	 	where PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :PULL_LINE_ID;
+ 		
+ 		select count(1) into n2 from "MXEBGVMI"."UI_MANUAL_PULL"
+	 	where PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :PULL_LINE_ID AND STATUS = 'DRAFT';
+ 		
+ 		if(n1<=0) then
+			error_message := 'The record does not exist!';
+		 	errorInfo = select 400 as http_status_code, 
+	     		:error_message ERROR_MESSAGE, 
+	     		:error_message DETAIL from dummy;
+	     	--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);
+	     	return;
+	    elseif n2 <= 0 then
+	     	error_message := 'The record can be deleted only when its STATUS is "DRAFT"!';
+		 	errorInfo = select 400 as http_status_code, 
+	     		:error_message ERROR_MESSAGE, 
+	     		:error_message DETAIL from dummy;
+	     	--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);	     		
+	     	return;
+	     
+ 		end if; 
+ 		
+ 		n1 :=  LENGTH(:PULL_LINE_ID) ;
+ 		
+ 		if (n2>0) then
+ 			-- delete log
+			insert into "MXEBGVMI"."UI_MANUAL_PULL_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+					 	PULL_HEADER_ID,PULL_LINE_ID,
+						DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK,
+					 	PULL_TYPE,
+				 		STATUS,
+				 		MANUAL_PULL_TYPE,
+				 		SYS_SOURCE,
+						SYS_CREATED_BY,
+				 		SYS_CREATED_DATE,
+				 		SYS_LAST_MODIFIED_BY,
+						SYS_LAST_MODIFIED_DATE
+					)
+			SELECT
+				SESSION_USER ,'delete',current_timestamp,
+					 	PULL_HEADER_ID,PULL_LINE_ID,
+						DEST_STORAGE_LOC,DEST_STORAGE_TYPE,DEST_STORAGE_BIN,SRC_WERKS,PHYSICAL_PLANT,INVENTORY_TYPE,PRODUCTION_LINE,HEAD_SUPPLIERID,DELIVERY_DATE,MATNR,PULL_QTY,SRC_STORAGE_TYPE,SRC_STORAGE_BIN,SRC_STORAGE_LOC,LINE_SUPPLIERID,REMARK,
+					 	PULL_TYPE,
+				 		STATUS,
+				 		MANUAL_PULL_TYPE,
+				 		SYS_SOURCE,
+					 	 SESSION_USER,
+					 	 current_timestamp,
+					 	 SESSION_USER,
+					 	 current_timestamp
+			from "MXEBGVMI"."UI_MANUAL_PULL"
+			where PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :PULL_LINE_ID 
+			 AND STATUS = 'DRAFT';
+ 		
+ 			DELETE FROM "MXEBGVMI"."UI_MANUAL_PULL" 
+			 where PULL_HEADER_ID = :PULL_HEADER_ID AND PULL_LINE_ID = :PULL_LINE_ID 
+			 AND STATUS = 'DRAFT';
+ 		
+ 		END IF;
+		CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'MXEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+ 	
+END;

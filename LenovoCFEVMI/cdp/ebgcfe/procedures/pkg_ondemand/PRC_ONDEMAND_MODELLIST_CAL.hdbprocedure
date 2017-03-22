@@ -1,0 +1,66 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ondemand::PRC_ONDEMAND_MODELLIST_CAL" ( 
+  IN  P_CHANGE_ID     VARCHAR(100),
+  IN  P_PRODUCT_GROUP VARCHAR(20),
+  IN  P_USER_ID       VARCHAR(64),
+  OUT P_EXIT_CODE       INTEGER,
+  OUT P_EXIT_MESSAGE    VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_ONDEMAND_MODELLIST_CAL
+*function   : On-demand Model List Calculation
+*input      ：p_change_id : change id / p_product_group : product group
+              p_user_id : user id
+*output     : p_exit_code : error code / p_exit_message : error message
+*author     : Leonard Ling
+*CreateDate : 2015-01-15
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+  -- data
+  DECLARE v_pkg_name          VARCHAR(30) := 'PKG_ONDEMAND';
+  DECLARE v_prc_name          VARCHAR(30) := 'PRC_ONDEMAND_MODELLIST_CAL';
+  DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  DECLARE v_subprc_exitcode   INTEGER;
+
+  -- exception
+  DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;   
+  DECLARE EXIT HANDLER FOR exp_procedure   
+    BEGIN
+        p_exit_code := ::SQL_ERROR_CODE;
+        p_exit_message := ::SQL_ERROR_MESSAGE;    
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>:p_exit_message); 			           
+    END;      
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+        p_exit_code := ::SQL_ERROR_CODE;
+        p_exit_message := ::SQL_ERROR_MESSAGE;            
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+  -- process logic
+  P_EXIT_CODE := -1;
+  P_EXIT_MESSAGE := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  
+  -- model list net change		                                      
+  CALL "cdp.ebgcfe.procedures.pkg_cost_model_list::PRC_NETCHG_COST_MODEL_LIST"(:p_product_group, :v_subprc_exitcode);
+  IF :V_SUBPRC_EXITCODE <> 0  THEN
+    P_EXIT_MESSAGE := 'Error occurred in pkg_cost_model_list::PRC_NETCHG_COST_MODEL_LIST';
+    SIGNAL exp_procedure SET MESSAGE_TEXT = :P_EXIT_MESSAGE;   
+  END IF;      
+  
+  p_exit_code := 0;
+  p_exit_message := 'SUCCESSFUL';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+	                                          I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  	 
+END;

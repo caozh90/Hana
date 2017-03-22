@@ -1,0 +1,171 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::deleteUirelconfigclass" 
+( 
+	IN oldInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_RELCONFCLASS_T" ,
+    OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError" 
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUirelconfigclass
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo
+*author      :      leon Bian
+*CreateDate  :      2015.8.21
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	V_CYCLE_ID NVARCHAR(9);
+	V_MTM NVARCHAR(18);
+	V_MACH_T NVARCHAR(4);
+	V_BIZ_LINE NVARCHAR(15);
+	V_X_NAME NVARCHAR(30);
+	V_PROJECT NVARCHAR(30);
+	V_LOD LONGDATE;
+	V_ABCD NVARCHAR(1);
+	V_ABCD_1 NVARCHAR(1);
+	V_ABCD_2 NVARCHAR(1);
+	V_ABCD_3 NVARCHAR(1);
+	V_ABCD_4 NVARCHAR(1);
+	V_ABCD_5 NVARCHAR(1);
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::deleteUirelconfigclass error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::deleteUirelconfigclass'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_rel_config_class::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::deleteUirelconfigclass'
+       ,I_MODULE=>'EBGDF'
+   	); 
+ 
+select top 1 CYCLE_ID,
+	   MTM,
+	   MACH_T,
+	   BIZ_LINE,
+	   X_NAME,
+	   PROJECT,
+	   LOD,
+	   ABCD,
+	   ABCD_1,
+	   ABCD_2,
+	   ABCD_3,
+	   ABCD_4,
+	   ABCD_5
+into   V_CYCLE_ID,
+	   V_MTM,
+	   V_MACH_T,
+	   V_BIZ_LINE,
+	   V_X_NAME,
+	   V_PROJECT,
+	   V_LOD,
+	   V_ABCD,
+	   V_ABCD_1,
+	   V_ABCD_2,
+	   V_ABCD_3,
+	   V_ABCD_4,
+	   V_ABCD_5
+ from :oldInfo; 
+	 
+-- delete record from table	  	
+delete from "EBGDF"."RPT_RELCONFCLASS" 
+  where MTM = :V_MTM; 
+
+if ::rowcount < 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;*/
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';
+	 
+end if;		
+
+
+--INSERT INTO RPT_RELCONFCLASS_LOG TABLE
+insert into "EBGDF"."RPT_RELCONFCLASS_LOG"(
+									CYCLE_ID,
+								    MTM,
+								    MACH_T,
+								    BIZ_LINE,
+								    X_NAME,
+								    PROJECT,
+								    LOD,
+								    ABCD,
+								    ABCD_1,
+								    ABCD_2,
+								    ABCD_3,
+								    ABCD_4,
+								    ABCD_5,
+								    CREATE_TS,
+								    CREATE_USERID,
+								    LAST_UPDATE_TS,
+								    LAST_UPDATE_USERID,
+									AT_MODIFIED_BY,
+									AT_ACTION,
+									AT_MODIFIED_ON,
+									AT_MILLIS
+	 )SELECT 
+	        CYCLE_ID,
+		    MTM,
+		    MACH_T,
+		    BIZ_LINE,
+		    X_NAME,
+		    PROJECT,
+		    LOD,
+		    ABCD,
+		    ABCD_1,
+		    ABCD_2,
+		    ABCD_3,
+		    ABCD_4,
+		    ABCD_5,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+	 		CURRENT_UTCTIMESTAMP,
+	 		'delete',
+	 		CURRENT_UTCTIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a;  
+   	
+aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::deleteUirelconfigclass successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_rel_config_class::deleteUirelconfigclass'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);    
+END;

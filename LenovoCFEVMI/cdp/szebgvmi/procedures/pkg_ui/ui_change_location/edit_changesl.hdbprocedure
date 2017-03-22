@@ -1,0 +1,79 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_change_location::edit_changesl" (
+IN   MATNR NVARCHAR(18),
+IN   MATNR_DESCR NVARCHAR(40),
+IN   MO_NUM NVARCHAR(12),
+IN   STORAGE_LOC NVARCHAR(40),
+IN   LINE_NUM NVARCHAR(10),
+IN   STATUS  VARCHAR(40),
+OUT  result_status int,--0 for error, 1 for success
+OUT  error_message nvarchar(4096)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+	 
+	 CURRENTUSER VARCHAR(100);
+	 CURRENTDATE VARCHAR(1024);
+	 N INT;
+	 REMARK NVARCHAR(40);
+	 
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ SELECT SESSION_USER INTO CURRENTUSER FROM DUMMY;
+ SELECT CURRENT_TIMESTAMP INTO CURRENTDATE FROM DUMMY;
+ 
+ 
+ SELECT COUNT(1) INTO N FROM "SZEBGVMI"."UI_CHANGE_SL"
+ 	WHERE MATNR = :MATNR 
+ 	AND MO_NUM = :MO_NUM
+ 	AND STORAGE_LOC =:STORAGE_LOC
+ 	AND STATUS = 'DRAFT'  ;
+ 
+ IF(N > 0) THEN
+ 	UPDATE "SZEBGVMI"."UI_CHANGE_SL" 
+ 	SET
+	 	 MATNR = :MATNR,
+	 	 MATNR_DESCR = :MATNR_DESCR,
+	 	 MO_NUM = :MO_NUM,
+	 	 STORAGE_LOC = :STORAGE_LOC,
+	 	 LINE_NUM = :LINE_NUM,
+	 	 STATUS = :STATUS,
+	 	 SYS_LAST_MODIFIED_BY = :CURRENTUSER,
+	 	 SYS_LAST_MODIFIED_DATE = :CURRENTDATE
+	 WHERE MATNR = :MATNR 
+ 	 AND MO_NUM = :MO_NUM ;
+ 	 
+ 	 result_status :=1;
+ 	 
+ ELSEIF N <= 0 THEN
+INSERT INTO "SZEBGVMI"."UI_CHANGE_SL"(
+				 MATNR,
+				 MATNR_DESCR,
+				 MO_NUM,
+				 STORAGE_LOC,
+				 LINE_NUM,
+				 STATUS,
+				 REMARK,
+				 SYS_CREATED_DATE,
+				 SYS_CREATED_BY
+
+		 	)
+		 VALUES( :MATNR,
+				 :MATNR_DESCR,
+				 :MO_NUM,
+				 :STORAGE_LOC,
+				 :LINE_NUM,
+			 	 :STATUS,
+				 :REMARK,
+				 :CURRENTDATE,
+			 	 :CURRENTUSER
+			 	 );
+			 	 
+ 	result_status :=1;
+ 	
+ END IF;	
+ 	
+END;

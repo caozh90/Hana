@@ -1,0 +1,150 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_sos::updateUiSOS" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_SOS_T"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_SOS_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER  
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aProdFamily NVARCHAR(100);
+		aPlant NVARCHAR(30);
+		aSubGeo NVARCHAR(20);
+		aBrand NVARCHAR(40);
+		aEol_status NVARCHAR(20);
+		
+        resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :=''; 
+		privilegeExists  NVARCHAR(300)  ;     
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui::updateUiSOS error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiSOS'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_sos::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;  
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiSOS'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+ select 
+    EOL_STATUS    
+  into 
+	aEol_status	
+  from :newInfo;
+ 
+ 
+ select
+    PROD_FAMILY,
+	PLANT,
+    SUBGEO,
+    BRAND
+  into  	
+ 	aProdFamily,
+	aPlant,
+	aSubGeo,
+	aBrand
+  from :oldInfo;
+  
+  	SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_SOS" A    
+     WHERE A.EOL_STATUS = :aEol_status
+     AND   A.PROD_FAMILY = :aProdFamily
+     AND   A.PLANT = :aPlant
+     AND   A.SUBGEO = :aSubGeo
+     AND   A.BRAND = :aBrand; 
+         
+    if  :resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;*/
+	    --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before';
+	    return;
+    end if;
+ 
+ /*put operation to log table*/
+    insert into "EBGCFE"."UI_SOS_LOG"
+    (
+    	PRODUCT_GROUP,
+    	PROD_FAMILY,
+		PLANT,
+	    SUBGEO,
+	    BRAND,
+	    EOL_STATUS,   	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	AT_ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    select 
+    	PRODUCT_GROUP,
+    	:aProdFamily,
+		:aPlant,
+		:aSubGeo,
+		:aBrand,
+		EOL_STATUS,		
+    	current_date,    	
+    	'update',
+    	SESSION_USER,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    from "EBGCFE"."UI_SOS" where
+       PROD_FAMILY = :aProdFamily
+    	and   PLANT = :aPlant
+	    and   SUBGEO = :aSubGeo
+	    and   BRAND = :aBrand;
+    
+        
+    update "EBGCFE"."UI_SOS" set
+    	EOL_STATUS = :aEol_status,
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user
+    where
+    	PROD_FAMILY = :aProdFamily
+    	AND   PLANT = :aPlant
+	    AND   SUBGEO = :aSubGeo
+	    AND   BRAND = :aBrand; 
+
+/*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui::updateUiSOS ('||:aProdFamily||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiSOS'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

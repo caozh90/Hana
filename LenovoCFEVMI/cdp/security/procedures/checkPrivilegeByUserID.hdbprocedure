@@ -1,0 +1,32 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::checkPrivilegeByUserID" (	      
+    IN	 as_privilege NVARCHAR(300)   
+    ,IN	 aUSER_ID BIGINT
+,OUT  result NVARCHAR(300)             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	privilegeExists Integer := 0;
+BEGIN
+/***************************** 
+	call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    IN	 as_privilege NVARCHAR(300)   
+			,?             ) 
+ *****************************/
+ SELECT COUNT(*) INTO privilegeExists
+ FROM "_SYS_BIC"."cdp.security.models/CV_GETMAPALL_USERROLE" A
+  ,"SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" C
+ WHERE A."USER_ID" = :aUSER_ID
+ AND A."DISPLAY_ROLE_NAME" = :as_privilege
+ AND A."USER_ID" = C."USER_ID"
+ AND A."MODULE_ID" = C."MODULE_ID";
+ 
+  IF  :privilegeExists > 0 THEN
+  	result := 'OK';
+  ELSE
+  	--result :=  '"' + as_privilege +'" privilege: Not authorized';
+  	result :=  ' privilege: Not authorized';
+  END IF;
+  
+ 
+END;

@@ -1,0 +1,85 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_dest_mapping::deleteUiLineFloorMapping" ( 
+		IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.UI_LINE_FLOOR_MAPPING_T",
+		OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aDsLine NVARCHAR(200);
+		aPhysicPlant NVARCHAR(40);
+	
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.szebgvmi.procedures::deleteUiLineFloorMapping error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures::deleteUiLineFloorMapping'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'destinationmapping::deleteable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.szebgvmi.procedures::deleteUiLineFloorMapping'
+       ,I_MODULE=>'SZEBGVMI'
+   	);
+   	
+ select
+    DS_LINE,	
+    PHYSICAL_PLANT
+ into
+ 	aDsLine,
+ 	aPhysicPlant
+ from :newInfo; 
+  
+  
+  --delete log	
+  insert into "SZEBGVMI"."UI_LINE_FLOOR_MAPPING_LOG"
+  	(DS_LINE, PHYSICAL_PLANT, FLOOR,SYS_SOURCE,SYS_AUTH_ID,
+	 AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME)
+  select DS_LINE, PHYSICAL_PLANT, FLOOR,SYS_SOURCE,SYS_AUTH_ID,SESSION_USER ,'delete',CURRENT_TIMESTAMP
+  from "SZEBGVMI"."UI_LINE_FLOOR_MAPPING"
+  	where DS_LINE = :aDsLine
+          and PHYSICAL_PLANT = :aPhysicPlant;
+  	
+  --delete
+  delete from "SZEBGVMI"."UI_LINE_FLOOR_MAPPING"
+  	where DS_LINE = :aDsLine
+          and PHYSICAL_PLANT = :aPhysicPlant;
+          
+ /*END*/
+ 	    aI_DETAIL := 'cdp.szebgvmi.procedures::deleteUiLineFloorMapping ('||:aDsLine||' ,) successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures::deleteUiLineFloorMapping'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+END;

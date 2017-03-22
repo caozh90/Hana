@@ -1,0 +1,364 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_comp_cost_upload_validate" (
+IN	 	table_name nvarchar(200),
+IN	 	business_name nvarchar(200),
+IN		business_code	int 
+ ) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+		n int;
+		i int;
+		total int;
+		errors int;
+		errorMsg nvarchar(1024);
+/************************************************************************
+*name      : ui_comp_cost_upload_validate              --函数名
+*function  : 从中间表中选取数据至目标表中             --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-03-04       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+
+    v_full_name       VARCHAR(100) := 'cdp.ebgcfe.procedures.pkg_ui.upload::ui_comp_cost_upload_raw';
+    logidi            INTEGER := 0;  	
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :logidi,
+									                I_EVENT_NAME => :v_full_name, 
+									                I_MODULE     => 'EBGCFE',
+									                I_MESSAGE    => 'ERROR', 
+									                I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || 
+									                                ::SQL_ERROR_MESSAGE);       
+    
+    	select ::SQL_ERROR_MESSAGE SQL_ERROR_MESSAGE from dummy;
+    END;  
+    --exception 
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');     
+    
+    UPDATE UI_COST_TAPE_ORI_BUFFER
+       SET PART_NUMBER    = UPPER(PART_NUMBER),
+           MFG_PLANT      = UPPER(MFG_PLANT),
+           COST_ELEM      = UPPER(COST_ELEM),
+           COMMODITY      = UPPER(COMMODITY),
+           OWNER_COSTTAPE = UPPER(OWNER_COSTTAPE)
+     WHERE BUSINESS_CODE = :BUSINESS_CODE;    
+    
+    --首先，删除UI_COST_TAPE_ORI可能存在的冲突数据
+    delete from "EBGCFE"."UI_COST_TAPE_ORI"
+    where (PART_NUMBER,MFG_PLANT,COST_ELEM) IN
+    (
+    	SELECT A.PART_NUMBER,A.MFG_PLANT,A.COST_ELEM 
+    	FROM "EBGCFE"."UI_COST_TAPE_ORI_BUFFER" A,"EBGCFE"."UI_COST_TAPE_ORI" B
+    	WHERE A.PRODUCT_GROUP = B.PRODUCT_GROUP
+          AND A.PART_NUMBER = B.PART_NUMBER 
+          AND A.MFG_PLANT = B.MFG_PLANT
+          AND A.COST_ELEM = B.COST_ELEM
+          AND A.CYCLE = B.CYCLE
+          AND A.business_code = :business_code
+    );
+    
+	--获取记录总数,若0个则退出
+	select count(1) into total from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where business_code = :business_code;
+	if :total = 0 then
+		return;
+	end if;
+	--INSERT正确的数据
+	INSERT INTO "EBGCFE"."UI_COST_TAPE_ORI"(CYCLE,PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,COST_ELEM,
+		 	COMMODITY,CURRENCY_NAME,DESCRIPTION,M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,
+		 	M16,M17,M18,STATUS,OWNER_COSTTAPE,IS_VALIDATE,SYS_CREATED_BY,SYS_CREATED_DATE,
+	 		SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE)
+	SELECT distinct A.CYCLE,A.PRODUCT_GROUP,A.PART_NUMBER,A.MFG_PLANT,A.COST_ELEM,A.COMMODITY,A.CURRENCY_NAME,
+			 	A.DESCRIPTION,A.M1,A.M2,A.M3,A.M4,A.M5,A.M6,A.M7,A.M8,A.M9,A.M10,A.M11,A.M12,
+			 	A.M13,A.M14,A.M15,A.M16,A.M17,A.M18,A.STATUS,A.OWNER_COSTTAPE,A.IS_VALIDATE,
+			 	SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP
+	FROM "EBGCFE"."UI_COST_TAPE_ORI_BUFFER" A,"EBGCFE"."UI_ITEM" B, "EBGCFE"."UI_PLANT"C,
+		EBGCFE.UI_COST_ELEM D, EBGCFE.UI_EXCHANGE_RATE E,EBGCFE.CONF_PARAMETERS F
+	WHERE F.PDOMAIN='UI_COST_TAPE_ORI' AND F.PNAME='COMMODITY'AND A.PART_NUMBER = B.ITEM AND 
+		A.MFG_PLANT = C.PLANT AND A.COST_ELEM=D.ELEMENT_NAME AND A.CURRENCY_NAME=E.CURRENCY_NAME
+		AND A.COMMODITY=F.PVALUE and A.business_code = :business_code;
+	
+	--记录log
+	INSERT INTO "EBGCFE"."UI_COST_TAPE_ORI_LOG"(CYCLE,PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,COST_ELEM,
+		 	COMMODITY,CURRENCY_NAME,DESCRIPTION,M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,
+		 	M16,M17,M18,OWNER_COSTTAPE,SYS_CREATED_BY,SYS_CREATED_DATE,
+	 		SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,
+	 		AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS	 		
+	 		)
+	SELECT distinct A.CYCLE,A.PRODUCT_GROUP,A.PART_NUMBER,A.MFG_PLANT,A.COST_ELEM,A.COMMODITY,A.CURRENCY_NAME,
+			 	A.DESCRIPTION,A.M1,A.M2,A.M3,A.M4,A.M5,A.M6,A.M7,A.M8,A.M9,A.M10,A.M11,A.M12,
+			 	A.M13,A.M14,A.M15,A.M16,A.M17,A.M18,A.OWNER_COSTTAPE,
+			 	SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP,
+			 	SESSION_USER,'create',current_timestamp,TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+	FROM "EBGCFE"."UI_COST_TAPE_ORI_BUFFER" A,"EBGCFE"."UI_ITEM" B, "EBGCFE"."UI_PLANT"C,
+		EBGCFE.UI_COST_ELEM D, EBGCFE.UI_EXCHANGE_RATE E,EBGCFE.CONF_PARAMETERS F
+	WHERE F.PDOMAIN='UI_COST_TAPE_ORI' AND F.PNAME='COMMODITY'AND A.PART_NUMBER = B.ITEM AND 
+		A.MFG_PLANT = C.PLANT AND A.COST_ELEM=D.ELEMENT_NAME AND A.CURRENCY_NAME=E.CURRENCY_NAME
+		AND A.COMMODITY=F.PVALUE and A.business_code = :business_code;
+	
+	--在中间表中，删除正确的记录
+	update "EBGCFE"."UI_COST_TAPE_ORI_BUFFER" A
+	set a.CORRECT = 1
+	FROM "EBGCFE"."UI_ITEM" B, "EBGCFE"."UI_PLANT"C,
+			EBGCFE.UI_COST_ELEM D, EBGCFE.UI_EXCHANGE_RATE E,EBGCFE.CONF_PARAMETERS F
+	WHERE F.PDOMAIN='UI_COST_TAPE_ORI' AND F.PNAME='COMMODITY'AND A.PART_NUMBER = B.ITEM AND 
+			A.MFG_PLANT = C.PLANT AND A.COST_ELEM=D.ELEMENT_NAME AND A.CURRENCY_NAME=E.CURRENCY_NAME
+					AND A.COMMODITY=F.PVALUE and A.business_code = :business_code;
+			
+	delete from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where CORRECT =1 and business_code = :business_code;	
+	
+	/**这条sql会删除所有的记录
+		delete 
+		FROM "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+		where exists(
+		SELECT 1
+		FROM "EBGCFE"."UI_COST_TAPE_ORI_BUFFER" A,"EBGCFE"."UI_ITEM" B, "EBGCFE"."UI_PLANT"C,
+			EBGCFE.UI_COST_ELEM D, EBGCFE.UI_EXCHANGE_RATE E,EBGCFE.CONF_PARAMETERS F
+		WHERE F.PDOMAIN='UI_COST_TAPE_ORI' AND F.PNAME='COMMODITY'AND A.PART_NUMBER = B.ITEM AND 
+			A.MFG_PLANT = C.PLANT AND A.COST_ELEM=D.ELEMENT_NAME AND A.CURRENCY_NAME=E.CURRENCY_NAME
+			AND A.COMMODITY=F.PVALUE
+		);
+	**/
+
+	--更新记录的个数，错误的记录数是errors，正确的是total-errors
+	select count(1) into errors from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where business_code = :business_code;
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,:total - :errors,:errors,:table_name);
+	
+	--判断中间表是否还有数据。如果没有数据则退出，没有错误的记录
+	if errors =0 then
+		return;
+	end if;
+	
+	/**
+	* 1.校验PART_NUMBER
+	**/
+	errorMsg :='"PART_NUMBER" is illegal!';
+	
+	--记录upload的错误
+	insert into "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+	select "EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+	POSITION,:errorMsg,:table_name,:business_name
+	from  "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where PART_NUMBER not in
+	(
+		select item from "EBGCFE"."UI_ITEM"
+	) and business_code = :business_code;
+	--详细记录upload的错误数据
+    insert into "EBGCFE"."UI_COST_TAPE_ORI_ERR_DETAIL"(CODE,POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE)
+	select 	:table_name || to_varchar(:business_code),POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE
+	from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where PART_NUMBER not in
+	(
+		select item from "EBGCFE"."UI_ITEM"
+	) and business_code = :business_code;
+	--删除掉PART_NUMBER不合法的数据
+	delete from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where PART_NUMBER IN (
+		select PART_NUMBER from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+		WHERE PART_NUMBER not in
+		(
+			select item from "EBGCFE"."UI_ITEM"
+		)
+	) and business_code = :business_code;
+	--是否还有需要处理的数据
+	select count(1) into n from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where business_code = :business_code;
+	if n = 0 then
+		return;
+	end if;
+	
+	/**
+	* 2.校验MFG_PLANT
+	**/
+	errorMsg :='"MFG_PLANT" is illegal!';
+	
+	--记录upload的错误
+	insert into "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+	select "EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+	POSITION,:errorMsg,:table_name,:business_name
+	from  "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where MFG_PLANT not in
+	(
+		select PLANT from "EBGCFE"."UI_PLANT"
+	) and business_code = :business_code;
+	--详细记录upload的错误数据
+    insert into "EBGCFE"."UI_COST_TAPE_ORI_ERR_DETAIL"(CODE,POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE)
+	select 	:table_name || to_varchar(:business_code),POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE
+	from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where MFG_PLANT not in
+	(
+		select PLANT from "EBGCFE"."UI_PLANT"
+	) and business_code = :business_code;
+	--删除掉MFG_PLANT不合法的数据
+	delete from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where MFG_PLANT IN(
+		select MFG_PLANT from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+		where MFG_PLANT not in
+		(
+			select PLANT from "EBGCFE"."UI_PLANT"
+		)
+	) and business_code = :business_code;
+	--是否还有需要处理的数据
+	select count(1) into n from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where business_code = :business_code;
+	if n = 0 then
+		return;
+	end if;
+	
+	/**
+	* 3.校验COST_ELEM
+	**/
+	errorMsg :='"COST_ELEM" is illegal!';
+	
+	--记录upload的错误
+	insert into "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+	select "EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+	POSITION,:errorMsg,:table_name,:business_name
+	from  "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where COST_ELEM not in
+	(
+		select ElEMENT_NAME from "EBGCFE"."UI_COST_ELEM"
+	) and business_code = :business_code;
+	--详细记录upload的错误数据
+    insert into "EBGCFE"."UI_COST_TAPE_ORI_ERR_DETAIL"(CODE,POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE)
+	select 	:table_name || to_varchar(:business_code),POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE
+	from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where COST_ELEM not in
+	(
+		select ElEMENT_NAME from "EBGCFE"."UI_COST_ELEM"
+	) and business_code = :business_code;
+	--删除掉COST_ELEM不合法的数据
+	delete from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where COST_ELEM IN(
+		select COST_ELEM from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+		where COST_ELEM not in
+		(
+			select ElEMENT_NAME from "EBGCFE"."UI_COST_ELEM"
+		)
+	) and business_code = :business_code;
+	--是否还有需要处理的数据
+	select count(1) into n from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where business_code = :business_code;
+	if n = 0 then
+		return;
+	end if;
+	
+	/**
+	* 4.校验COMMODITY
+	**/
+	errorMsg :='"COMMODITY" is illegal!';
+	
+	--记录upload的错误
+	insert into "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+	select "EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+	POSITION,:errorMsg,:table_name,:business_name
+	from  "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where COMMODITY not in
+	(
+		select PVALUE from "EBGCFE"."CONF_PARAMETERS"
+		where pdomain='UI_COST_TAPE_ORI' and pname='COMMODITY'
+	) and business_code = :business_code;
+	--详细记录upload的错误数据
+    insert into "EBGCFE"."UI_COST_TAPE_ORI_ERR_DETAIL"(CODE,POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE)
+	select 	:table_name || to_varchar(:business_code),POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE
+	from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where COMMODITY not in
+	(
+		select PVALUE from "EBGCFE"."CONF_PARAMETERS"
+		where pdomain='UI_COST_TAPE_ORI' and pname='COMMODITY'
+	) and business_code = :business_code;
+	--删除掉COMMODITY不合法的数据
+	delete from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where COMMODITY IN(
+		select COMMODITY from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+		where COMMODITY not in
+		(
+			select PVALUE from "EBGCFE"."CONF_PARAMETERS"
+			where pdomain='UI_COST_TAPE_ORI' and pname='COMMODITY'
+		)
+	) and business_code = :business_code;
+	--是否还有需要处理的数据
+	select count(1) into n from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where business_code = :business_code;
+	if n = 0 then
+		return;
+	end if;
+	
+	/**
+	* 5.校验CURRENCY_NAME
+	**/
+	errorMsg :='"CURRENCY_NAME" is illegal!';
+	
+	--记录upload的错误
+	insert into "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+	select "EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,:table_name || to_varchar(:business_code),
+	POSITION,:errorMsg,:table_name,:business_name
+	from  "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where CURRENCY_NAME not in
+	(
+		select CURRENCY_NAME from "EBGCFE"."UI_EXCHANGE_RATE"
+	) and business_code = :business_code;
+	--详细记录upload的错误数据
+    insert into "EBGCFE"."UI_COST_TAPE_ORI_ERR_DETAIL"(CODE,POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE)
+	select 	:table_name || to_varchar(:business_code),POSITION,
+		PRODUCT_GROUP,PART_NUMBER,MFG_PLANT,CYCLE,COST_ELEM,COMMODITY,CURRENCY_NAME,
+		M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,OWNER_COSTTAPE
+	from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where CURRENCY_NAME not in
+	(
+		select CURRENCY_NAME from "EBGCFE"."UI_EXCHANGE_RATE"
+	) and business_code = :business_code;
+	--删除掉CURRENCY_NAME不合法的数据
+	delete from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where CURRENCY_NAME IN (
+		select CURRENCY_NAME from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+		where CURRENCY_NAME not in
+		(
+			select CURRENCY_NAME from "EBGCFE"."UI_EXCHANGE_RATE"
+		)
+	) and business_code = :business_code;
+	--是否还有需要处理的数据
+	select count(1) into n from "EBGCFE"."UI_COST_TAPE_ORI_BUFFER"
+	where business_code = :business_code;
+	if n = 0 then
+		return;
+	end if;
+	
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                              I_LOGSID     => :logidi,
+                                              I_EVENT_NAME => :v_full_name,
+                                              I_MODULE     => 'EBGCFE');	
+	
+END;

@@ -1,0 +1,11 @@
+PROCEDURE "SZEBGVMI"."cdp.wf.sz::PRC_INVENTORY" ( 
+ 	IN p_wfname VARCHAR(10), OUT p_out_exitcode NUMBER
+)  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+BEGIN
+	CALL "cdp.szebgvmi.procedures.pkg_pcdw_to_vmi::PRC_INVENTORY"(:p_wfname,p_out_exitcode);
+END;

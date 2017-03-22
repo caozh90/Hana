@@ -1,0 +1,142 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::updateUiPmBom" ( 
+         IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_BOM",
+		 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_BOM",
+		 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      updateUiPmBom
+*function    :               
+*input       ：              newInfo&oldInfo
+*output      :      errorInfo            
+*author      :      leon Bian
+*CreateDate  :      2015.10.10
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	resourceExists BIGINT;
+	privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::updateUiPmBom error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::updateUiPmBom'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_pm_bom::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::updateUiPmBom'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+SELECT COUNT(*) into resourceExists 
+FROM :oldInfo a,:newInfo b 
+where a.PART_QTY = b.PART_QTY;
+if resourceExists > 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;	     		
+	     	return;*/
+	 --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists'; 
+	 return;
+end if;		
+ 	
+--update into UI_PM_BOM table
+update "EBGCFE"."UI_PM_BOM" a set (a.PART_QTY,a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY,a.ACTION) = 
+				(b.PART_QTY,CURRENT_TIMESTAMP,SESSION_USER,'update')
+		FROM :newInfo b 
+		where a.PRODUCT_GROUP = b.PRODUCT_GROUP 
+		  AND a.OEM_NAME = b.OEM_NAME 
+		  AND a.ITEM = b.ITEM
+		  and a.BS_PART = b.BS_PART;  
+
+--insert log table
+--INSERT INTO UI_PM_BOM_LOG TABLE
+insert into "EBGCFE"."UI_PM_BOM_LOG"(
+	CYCLE,
+	PRODUCT_GROUP,
+	OEM_NAME,
+	ITEM,
+	ITEM_DESC,
+	ITEM_TYPE,
+	BS_PART,
+	COMMODITY,
+	PART_DESC,
+	PART_QTY,
+	ACTION,
+	STATUS,
+	CHANGE_ID,
+	CHANGE_ACTION,
+	SYS_CREATED_DATE,
+	SYS_CREATED_BY,
+	SYS_LAST_MODIFIED_DATE,
+	SYS_LAST_MODIFIED_BY,
+	AT_MODIFIED_BY,
+	AT_ACTION,
+	AT_MODIFIED_ON,
+	AT_MILLIS
+	 )SELECT 
+	        'CURRENT',
+		    'EBG',
+		    a.OEM_NAME,
+			a.ITEM,
+			a.ITEM_DESC,
+			a.ITEM_TYPE,
+			a.BS_PART,
+			a.COMMODITY,
+			a.PART_DESC,
+			a.PART_QTY,
+			'',--ACTION
+		    '',--STATUS
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+	 		SESSION_USER,
+	 		'update',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a; 	
+
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::updateUiPmBom successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_pm_bom::updateUiPmBom'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

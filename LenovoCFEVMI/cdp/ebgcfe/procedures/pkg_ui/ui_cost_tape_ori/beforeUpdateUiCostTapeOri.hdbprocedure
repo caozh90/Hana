@@ -1,0 +1,39 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_tape_ori::beforeUpdateUiCostTapeOri" (
+	    IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_TAPE_ORI"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_TAPE_ORI"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	--SQL SECURITY DEFINER
+	SQL SECURITY DEFINER  
+	DEFAULT SCHEMA EBGCFE
+	AS
+	
+/************************************************************************
+*name      :                     beforeUpdateUiCostTapeOri
+*function    :               
+*input     ：               
+*output     :                
+*author     :                     FangYuan
+*CreateDate    :                  2014.01.22
+*UpdateDate  :        
+*************************************************************************/
+           aPart_number NVARCHAR(40);
+                      
+           validate integer;	
+BEGIN
+ 
+ select
+    PART_NUMBER
+  into  	
+ 	aPart_number
+  from :newInfo;
+    
+    select count(1) into validate from UI_item where item_type in('COMPONENT','OPTION','DUMMY') and item=aPart_number;
+      if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'PART_NUMBER: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;
+        return;
+       end if;    
+END;

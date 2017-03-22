@@ -1,0 +1,141 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cycle::PRC_GEN_NEW_QUARTER" ( 
+   IN    p_in_product_group   VARCHAR(10),
+   IN    p_in_cycle_cur_month VARCHAR(100),
+   OUT   p_out_exitcode       INTEGER,
+   OUT   p_out_exitmessage    VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_GEN_NEW_QUARTER      
+*function   : Generate new quarter for cycle
+*input      ：p_in_product_group : product group / p_in_cycle_cur_month :
+              cycle of current month, format 'MM/DD/YYYY'
+*output     : p_out_exitcode : error code / p_out_exitmessage : error message 
+*author     : Leonard Ling
+*CreateDate : 2015-01-16
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+  -- data
+  DECLARE v_pkg_name        VARCHAR(30) := 'PKG_CYCLE';   
+  DECLARE v_proc_name       VARCHAR(50) := 'PRC_GEN_NEW_QUARTER';
+  DECLARE v_full_name       VARCHAR(60)  := :v_pkg_name ||'.'|| :v_proc_name;  
+  DECLARE v_row_count       INTEGER;
+  DECLARE v_count_current   INTEGER;
+  DECLARE logidi            INTEGER := 0;   
+  DECLARE v_cycle_name      VARCHAR(50);
+  DECLARE v_q1, v_q2, v_q3, v_q4, v_q5, v_q6  VARCHAR(20);
+
+  -- exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmessage := substr(::SQL_ERROR_MESSAGE, 1, 500 );     
+ 	   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );         
+   END;    
+
+  -- process logic
+    p_out_exitcode := -1;
+    p_out_exitmessage := 'Error';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                        I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+		                                          
+  --Update the row that cycle = 'CURRENT' to status 'HISTORY'
+  --first, check if the record with history cycle = cycle name exists
+/*
+  SELECT count(*) INTO v_count_current FROM UI_CYCLE
+	    			WHERE PRODUCT_GROUP = :p_in_product_group AND CYCLE = 'CURRENT';  
+  IF :v_count_current > 0 THEN    			
+	  SELECT CYCLE_NAME	INTO V_CYCLE_NAME FROM UI_CYCLE
+		    			WHERE PRODUCT_GROUP = :p_in_product_group  AND CYCLE = 'CURRENT';  
+	  SELECT count(*) INTO v_row_count FROM ui_cycle WHERE product_group = :p_in_product_group AND cycle = :v_cycle_name;
+	  IF :v_row_count = 0 THEN
+	    --insert a history record for last current cycle
+	    INSERT INTO UI_CYCLE
+		    (PRODUCT_GROUP,CYCLE,LAST_CYCLE,CYCLE_STATUS,CYCLE_TYPE,CYCLE_CUR_MONTH,CYCLE_SEQ,
+		     M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,Q1,Q2,Q3,Q4,Q5,Q6,CYCLE_NAME,CYCLE_FCST_MONTH,ACTION,STATUS,
+		     SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY)
+		    SELECT PRODUCT_GROUP, :V_CYCLE_NAME, LAST_CYCLE, 'HISTORY', CYCLE_TYPE,CYCLE_CUR_MONTH,CYCLE_SEQ,
+		           M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,Q1,Q2,Q3,Q4,Q5,Q6,CYCLE_NAME,CYCLE_FCST_MONTH,ACTION,STATUS,
+		           CURRENT_TIMESTAMP,:V_FULL_NAME,CURRENT_TIMESTAMP,:V_FULL_NAME
+		    FROM UI_CYCLE
+		    WHERE PRODUCT_GROUP = :P_IN_PRODUCT_GROUP
+		       AND CYCLE = 'CURRENT';
+	  END IF;
+  END IF;*/
+    
+  --get the new current month and Q1 ~ Q6 name
+  SELECT replace(QUARTER(TO_DATE(:p_in_cycle_cur_month, 'MM/DD/YYYY')),'-','') INTO v_q1 FROM DUMMY;
+  SELECT replace(QUARTER(ADD_MONTHS(TO_DATE(:p_in_cycle_cur_month, 'MM/DD/YYYY'),3)),'-','') INTO v_q2 FROM DUMMY;
+  SELECT replace(QUARTER(ADD_MONTHS(TO_DATE(:p_in_cycle_cur_month, 'MM/DD/YYYY'),6)),'-','') INTO v_q3 FROM DUMMY;
+  SELECT replace(QUARTER(ADD_MONTHS(TO_DATE(:p_in_cycle_cur_month, 'MM/DD/YYYY'),9)),'-','') INTO v_q4 FROM DUMMY;
+  SELECT replace(QUARTER(ADD_MONTHS(TO_DATE(:p_in_cycle_cur_month, 'MM/DD/YYYY'),12)),'-','') INTO v_q5 FROM DUMMY;
+  SELECT replace(QUARTER(ADD_MONTHS(TO_DATE(:p_in_cycle_cur_month, 'MM/DD/YYYY'),15)),'-','') INTO v_q6 FROM DUMMY;
+  
+  --update the row of cycle = 'CURRENT', to set Quarter names
+  --IF :v_count_current > 0 THEN
+	    UPDATE ui_cycle
+	       SET --last_cycle = ifnull(:v_cycle_name, ''),
+	           --cycle_name = :p_cycle_name,
+	           --cycle_type = :p_cycle_type,
+	           --cycle_cur_month = to_char(:v_cycle_cur_mon, :v_cycle_mon_date_format),
+	           --cycle_fcst_month = to_char(:v_cycle_fcst_mon,:v_cycle_mon_date_format),
+	           --m1 = to_char(:v_cycle_cur_mon, :v_cycle_mon_date_format),
+	           --m2 = to_char(add_months(:v_cycle_cur_mon, 1), :v_cycle_mon_date_format),
+	           --m3 = to_char(add_months(:v_cycle_cur_mon, 2), :v_cycle_mon_date_format),
+	           --m4 = to_char(add_months(:v_cycle_cur_mon, 3), :v_cycle_mon_date_format),
+	           --m5 = to_char(add_months(:v_cycle_cur_mon, 4), :v_cycle_mon_date_format),
+	           --m6 = to_char(add_months(:v_cycle_cur_mon, 5), :v_cycle_mon_date_format),
+	           --m7 = to_char(add_months(:v_cycle_cur_mon, 6), :v_cycle_mon_date_format),
+	           --m8 = to_char(add_months(:v_cycle_cur_mon, 7), :v_cycle_mon_date_format),
+	           --m9 = to_char(add_months(:v_cycle_cur_mon, 8), :v_cycle_mon_date_format),
+	           --m10= to_char(add_months(:v_cycle_cur_mon, 9), :v_cycle_mon_date_format),
+	           --m11= to_char(add_months(:v_cycle_cur_mon, 10), :v_cycle_mon_date_format),
+	           --m12= to_char(add_months(:v_cycle_cur_mon, 11), :v_cycle_mon_date_format),
+	           --m13= to_char(add_months(:v_cycle_cur_mon, 12), :v_cycle_mon_date_format),
+	           --m14= to_char(add_months(:v_cycle_cur_mon, 13), :v_cycle_mon_date_format),
+	           --m15= to_char(add_months(:v_cycle_cur_mon, 14), :v_cycle_mon_date_format),
+	           --m16= to_char(add_months(:v_cycle_cur_mon, 15), :v_cycle_mon_date_format),
+	           --m17= to_char(add_months(:v_cycle_cur_mon, 16), :v_cycle_mon_date_format),
+	           --m18= to_char(add_months(:v_cycle_cur_mon, 17), :v_cycle_mon_date_format),
+	           q1 = :v_q1, q2 = :v_q2, q3 = :v_q3, q4 = :v_q4, q5 = :v_q5, q6 = :v_q6,            
+	           --action = 'INSERT',
+	           --status = 'ACTIVE',
+	           sys_created_date = CURRENT_TIMESTAMP, 
+	           sys_created_by = :v_full_name,
+	           sys_last_modified_date = CURRENT_TIMESTAMP, 
+	           sys_last_modified_by = :v_full_name
+	     WHERE product_group = :p_in_product_group
+	       AND cycle = 'CURRENT';    	
+  /* --commented, only works if additional parameters are supplied
+  ELSE
+      INSERT INTO ui_cycle (product_group, cycle, last_cycle, cycle_status, cycle_name, cycle_type, cycle_cur_month, cycle_fcst_month,
+                  m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, action, status, sys_created_date, sys_created_by) 
+             VALUES (:p_in_product_group, 'CURRENT', '', 'CURRENT', :p_cycle_name, :p_cycle_type,
+             to_char(:v_cycle_cur_mon, :v_cycle_mon_date_format), to_char(:v_cycle_fcst_mon,:v_cycle_mon_date_format),
+             to_char(:v_cycle_cur_mon, :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 1), :v_cycle_mon_date_format),
+             to_char(add_months(:v_cycle_cur_mon, 2), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 3), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 4), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 5), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 6), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 7), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 8), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 9), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 10), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 11), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 12), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 13), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 14), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 15), :v_cycle_mon_date_format),
+	         to_char(add_months(:v_cycle_cur_mon, 16), :v_cycle_mon_date_format), to_char(add_months(:v_cycle_cur_mon, 17), :v_cycle_mon_date_format),
+	         :v_q1, :v_q2, :v_q3, :v_q4, :v_q5, :v_q6,   
+	         'INSERT', 'ACTIVE', CURRENT_TIMESTAMP,:v_proc_name
+             );  
+  */
+  --END IF;
+  
+  p_out_exitcode := 0;
+  p_out_exitmessage := 'SUCCESS'; 
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');    
+END;

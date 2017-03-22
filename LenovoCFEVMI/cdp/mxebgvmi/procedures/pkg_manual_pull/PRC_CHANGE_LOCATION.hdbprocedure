@@ -1,0 +1,286 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_manual_pull::PRC_CHANGE_LOCATION" (
+	IN iv_id VARCHAR(10), OUT exitcode DECIMAL
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA
+/************************************************************************
+*name      : PRC_CHANGE_LOCATION             --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : exitcode               --输出参数
+*author     : Annie Hao               --作者
+*CreateDate    : 2016/09/06                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/ 
+	AS
+	  v_logic_proc_name   VARCHAR2 (30) := 'PRC_CHANGE_LOCATION';
+      n_count             NUMBER;
+      v_matnr_desc        VARCHAR2(255);
+      i INTEGER;
+      v_flag_continue INTEGER := 0;
+      gv_logic_name   VARCHAR2 (30) := 'PRC_CHANGE_LOCATION';
+      v_full_name VARCHAR(2000) := gv_logic_name||'.'||v_logic_proc_name;
+      v_logidi            INTEGER := 0;
+      gv_dept             VARCHAR(40) := 'MEXEBG';
+      v_matnr        VARCHAR2(40);
+      v_mo_num        VARCHAR2(40);
+      v_posnr         VARCHAR2(10);
+      n_num             NUMBER;
+      
+      
+BEGIN
+    DECLARE next_posnr CONDITION FOR SQL_ERROR_CODE 10001;    --user defined exception for goto next loop;
+	DECLARE CURSOR cu FOR SELECT   MATNR,
+                   MO_NUM,
+                   Storage_Loc,
+                   Line_Num
+            FROM   UI_Change_SL
+           WHERE   STATUS = 'SEND_IN_PROCESS'
+                   ORDER BY SYS_CREATED_DATE DESC;
+   
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+        
+	END;
+	  exitcode := -1;
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Start');                                                   
+	  
+
+      UPDATE   UI_Change_SL
+         SET   status = 'SEND_IN_PROCESS',SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+         SYS_LAST_MODIFIED_DATE =CURRENT_TIMESTAMP
+       WHERE   status = 'NEW';
+
+      FOR cur_item as cu 
+      DO
+
+         BEGIN
+            DECLARE GOTO CONDITION FOR SQL_ERROR_CODE 10001;
+            DECLARE EXIT HANDLER FOR GOTO       
+            
+            BEGIN
+            END;
+                        
+            v_matnr_desc := '';
+            n_count := 0;
+            v_matnr := cur_item.MATNR;
+            v_mo_num := cur_item.MO_NUM;
+            
+---Step1：Validation the material attribute
+            BEGIN
+               SELECT   COUNT ( * )
+                 INTO   n_count
+                 FROM   ITEMSITEMASTER ITM
+                WHERE       ITM.ITEM = v_matnr
+                        AND ITM.SITEID = 'X470'
+                        AND ITM.MMSTA IN ('99', '98', '97', '04');
+               IF n_count > 0
+               THEN
+                  UPDATE   UI_Change_SL A
+                     SET   Remark = 'ITEM IS INACTIVE',
+                           STATUS = 'DRAFT',
+                           SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+                           SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+                   WHERE   A.matnr = v_matnr
+                           AND status = 'SEND_IN_PROCESS';
+                  SIGNAL GOTO;
+               END IF;
+            END;
+---Step2：Add the material desciption for null value
+            BEGIN
+               DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+               BEGIN                  
+                     v_matnr_desc := '';
+               END;
+               SELECT itemdesc 
+                INTO  v_matnr_desc
+                FROM ITEMSITEMASTER
+                WHERE ITEM = v_matnr
+                 AND  SITEID = 'X470' limit 1;
+            END;
+            
+            IF v_matnr_desc <> '' THEN
+                UPDATE UI_Change_SL SL
+                  SET matnr_descr = v_matnr_desc
+                  WHERE   SL.MATNR = v_matnr
+                           AND status = 'SEND_IN_PROCESS'
+                           AND SL.matnr_descr IS NULL; 
+            END IF;
+---Step3：Validation the MO number is correct            
+            BEGIN
+               IF (cur_item.line_num = '' or cur_item.line_num is NULL )
+               THEN
+	               SELECT   COUNT ( * )
+	                 INTO   n_count
+	                 FROM   BAK_PCDW_MO_BOM  ITM
+	                WHERE       ITM.productionordid = v_mo_num
+	                        AND ITM.matnr = v_matnr
+	                        AND sys_created_date > ADD_DAYS(CURRENT_TIMESTAMP, -90);
+	           ELSE
+	           	   SELECT   COUNT ( * )
+	                 INTO   n_count
+	                 FROM   BAK_PCDW_MO_BOM  BOM
+	                WHERE       BOM.productionordid = v_mo_num
+	                        AND BOM.matnr = v_matnr
+	                        AND BOM.posnr = :cur_item.line_num
+	                        AND sys_created_date > ADD_DAYS(CURRENT_TIMESTAMP, -90);
+	           END IF;
+	           
+               IF n_count = 0
+               THEN
+                  UPDATE   UI_Change_SL A
+                     SET   Remark = 'MATERIAL AND MO NUM MAPPING DO NOT EXIST',
+                           STATUS = 'DRAFT',
+                           SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+                           SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+                   WHERE      A.MO_NUM = v_mo_num
+                           AND A.matnr = v_matnr
+                           AND status = 'SEND_IN_PROCESS';
+                  SIGNAL GOTO;
+               END IF;
+            END;
+      
+---Step4：Get the Line Number is correct    
+            if (cur_item.line_num = '' or cur_item.line_num is NULL)
+            THEN                 
+            	BEGIN
+	              DECLARE CURSOR cu_po FOR 
+	        	    (SELECT  DISTINCT ITM.POSNR
+	                 FROM   BAK_PCDW_MO_BOM  ITM
+	                WHERE       ITM.productionordid = v_mo_num
+	                        AND ITM.matnr = v_matnr
+	                        AND ITM.sys_created_date > ADD_DAYS(CURRENT_TIMESTAMP, -90));
+		             FOR cur_posn as cu_po
+		             DO
+		                DECLARE EXIT HANDLER FOR next_posnr
+                        BEGIN
+                        
+                        END;
+		                v_posnr := cur_posn.posnr;
+				        SELECT   COUNT ( * )
+				                 INTO   n_num
+				                 FROM   MO_DEST_CHANGE ITM
+				                WHERE       ITM.PRODUCTIONORDID = v_mo_num
+				                        AND ITM.MATNR = v_matnr
+				                        AND ITM.WERKS = 'X470'
+				                        AND ITM.POSNR = v_posnr;
+				               
+				        IF n_num > 0
+				        THEN
+				           UPDATE   UI_Change_SL A
+				             SET   Remark = 'ITEM SL HAVE BEEN CHANGED',
+				                    STATUS = 'DRAFT',
+				                    SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+				                    SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+				             WHERE   A.matnr = v_matnr
+				                AND A.MO_NUM= v_mo_num
+				                AND status = 'SEND_IN_PROCESS';
+				            SIGNAL GOTO;
+				         END IF;              
+				            
+	             	---Insert into MO_dest_change table
+		             	INSERT INTO MO_DEST_CHANGE (PRODUCTIONORDID,
+		                                   MATNR,
+		                                   DEST_STORAGE_LOC,
+		                                   WERKS,
+		                                   DEPT,
+		                                   POSNR,
+		                                   STATUS,
+		                                   SYS_TIMESTAMP)
+			               SELECT   DISTINCT
+			                        a.MO_NUM,
+			                        a.MATNR,
+			                        a.STORAGE_LOC,
+			                        'X470',
+			                        'X470',
+			                        v_posnr,
+			                        'COMPLETED',
+			                        CURRENT_TIMESTAMP
+			                 FROM   UI_Change_SL a
+			                WHERE       a.status = 'SEND_IN_PROCESS'
+			                        AND a.MATNR = v_matnr
+			                        AND a.MO_NUM = v_mo_num;
+		               SIGNAL next_posnr;
+		           END FOR; 
+		        END;
+            ELSE
+            --Validate the line num if it exist
+            	SELECT   COUNT ( * )
+				           INTO   n_num
+				          FROM   MO_DEST_CHANGE ITM
+				WHERE      ITM.PRODUCTIONORDID = v_mo_num
+				           AND ITM.MATNR = v_matnr
+				           AND ITM.WERKS = 'X470'
+				           AND ITM.POSNR = :cur_item.line_num;
+				               
+				IF n_num > 0
+				THEN
+				     UPDATE   UI_Change_SL A
+				       SET   Remark = 'ITEM SL HAVE BEEN CHANGED',
+				             STATUS = 'DRAFT',
+				             SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+				             SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+				       WHERE   A.matnr = v_matnr
+				          AND  A.MO_NUM = v_mo_num
+				          AND  A.line_num = :cur_item.line_num
+				          AND  status = 'SEND_IN_PROCESS';
+				      SIGNAL GOTO;
+				END IF;                   
+                ---Insert into MO_dest_change table.
+	            INSERT INTO MO_DEST_CHANGE (PRODUCTIONORDID,
+	                                   MATNR,
+	                                   DEST_STORAGE_LOC,
+	                                   WERKS,
+	                                   DEPT,
+	                                   POSNR,
+	                                   STATUS,
+	                                   SYS_TIMESTAMP)
+	               SELECT   DISTINCT
+	                        a.MO_NUM,
+	                        a.MATNR,
+	                        a.STORAGE_LOC,
+	                        'X470',
+	                        'X470',
+	                        LINE_NUM,
+	                        'COMPLETED',
+	                        CURRENT_TIMESTAMP
+	                 FROM   UI_Change_SL a
+	                WHERE       a.status = 'SEND_IN_PROCESS'
+	                        AND a.MATNR = v_matnr
+	                        AND a.MO_NUM = v_mo_num
+	                        AND a.LINE_NUM = :cur_item.LINE_NUM
+	                        AND NOT EXISTS
+	                              (SELECT   1
+	                                 FROM   MO_DEST_CHANGE B
+	                                WHERE   A.MO_NUM = B.PRODUCTIONORDID
+	                                        AND A.MATNR = B.MATNR
+	                                        AND a.LINE_NUM = B.POSNR
+	                                        AND a.Storage_Loc = B.DEST_STORAGE_LOC);    
+            END IF;        
+         END;
+      END FOR;
+
+--------Step5, Update the UI status
+
+      UPDATE   UI_Change_SL
+         SET   status = 'COMPLETED',SYS_LAST_MODIFIED_BY = v_logic_proc_name,
+         SYS_LAST_MODIFIED_DATE =CURRENT_TIMESTAMP
+       WHERE   status = 'SEND_IN_PROCESS';
+
+      exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');                                                         
+END;

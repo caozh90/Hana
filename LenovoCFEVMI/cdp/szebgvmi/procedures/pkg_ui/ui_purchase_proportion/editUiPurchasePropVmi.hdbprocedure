@@ -1,0 +1,269 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_purchase_proportion::editUiPurchasePropVmi" (
+IN	    LOGICAL_PLANT nvarchar(40),
+IN		ITEM nvarchar(40),
+IN		ITEM_DESC nvarchar(200),
+IN		VENDORID nvarchar(40),
+IN		START_DATE nvarchar(200),
+IN		END_DATE nvarchar(200),
+IN		VENDOR_NAME nvarchar(200),
+IN		PROPORTION DECIMAL(10,3),
+IN	 	create_time nvarchar(200),
+OUT  	result_status int,--0 for error, 1 for success
+OUT  	error_message nvarchar(4096)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+/************************************************************************
+*name      : editUiManualPull              --函数名
+*function  : create或者update数据至表ui_purchase_prop_vmi并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-01-04       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.ui_purchase_prop_vmi';
+		proc_name varchar(100) :='editUiPurchasePropVmi';
+		logid0 INTEGER :=0;
+		SOURCE nvarchar(25);
+		
+		validate1 int;
+		validate2 int;
+		validate3 int;
+		validate4 int;
+		validate5 int;
+		n int;
+		currentUser varchar(100);
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+--exception
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN
+     	--如果一条记录有错，则所有该次操作插入的记录全部作废,包括目标表和log表
+		DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM  
+ 		 		AND START_DATE =:START_DATE;
+ 				
+ 		DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI_LOG"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND AT_ACTION = 'insert'
+ 		 		AND START_DATE =:START_DATE AND AT_MODIFIED_TIME = :create_time;              
+    	
+    	result_status :=0;
+    	error_message :='cdp.szebgvmi.procedures.pkg_ui.ui_purchase_prop_vmi::editUiPurchasePropVmi:: '
+    	||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);
+    	
+    END;  
+  
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'vmipurchaseproportion::editable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+ --START
+ 		
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+ 	
+ 	SOURCE :='UI';
+ 	select session_user into currentUser from dummy;
+
+ 	
+ 	SELECT COUNT(1) into validate1 FROM ITEMSITEMASTER WHERE ITEM=:ITEM AND SITEID= :LOGICAL_PLANT;    
+ 	
+ 	select count(1) into validate2 from "SZEBGVMI"."SUPITEM" where SUPPLIERID = :VENDORID;
+ 	
+ 	select count(1) into validate3 from CONF_SITEMASTER where SITEID = :LOGICAL_PLANT ;
+ 
+ 	--判断ITEMDESC是否为空
+ 	SELECT LENGTH(:ITEM_DESC) into n FROM dummy;
+ 	
+ 	if n<=0 then
+ 		SELECT ITEMDESC FROM ITEMSITEMASTER WHERE ITEM=:ITEM;
+ 	end if;
+ 	
+ 	--判断VENDORNAME是否为空
+ 	select LENGTH(:VENDOR_NAME) INTO n FROM dummy;
+ 	
+ 	if n<=0 then
+ 		SELECT SUPPLIERDESC FROM SUPITEM WHERE SUPPLIERID =:VENDORID||'_'||:LOGICAL_PLANT;
+ 	end if;
+ 	
+ 	 	
+ 	SELECT COUNT(1) INTO n FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI"
+ 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND START_DATE =:START_DATE
+ 		and SYS_CREATED_DATE != :create_time;
+ 		--and SYS_CREATED_DATE != TO_TIMESTAMP(:create_time,'YYYY-MM-DD HH24:MI:SS');
+ 	
+ 	if(validate1>0 and validate2>0 and validate3>0 and :PROPORTION>=0 and :PROPORTION<=1) then
+ 	/*
+ 	***在create操作时，会检测主键冲突机制，如果有冲突则报错
+ 	***在update操作时，会根据主键情况选择Update操作或者Insert操作
+ 	*/
+ 	
+	
+		SELECT COUNT(1) INTO n FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI"
+ 			WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND START_DATE =:START_DATE
+ 		 		AND VENDORID = :VENDORID;
+		if(n>0) then
+			UPDATE "SZEBGVMI"."UI_PURCHASE_PROP_VMI"
+			SET ITEMDESC = :ITEM_DESC,
+			 			END_DATE = :END_DATE,
+			 			VENDORNAME = :VENDOR_NAME,
+			 			PROPORTION = :PROPORTION,
+			 			SYS_SOURCE = :SOURCE,
+			 			SYS_LAST_MODIFIED_BY = :currentUser,
+					    SYS_LAST_MODIFIED_DATE = :create_time
+			WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND START_DATE = :START_DATE
+			 			AND VENDORID = :VENDORID;
+			 		
+			--update操作需要写入日志
+			insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+							ITEM,VENDORID,LOGICAL_PLANT,PROPORTION,START_DATE,END_DATE,
+						 	SYS_LAST_MODIFIED_BY,
+						 	SYS_LAST_MODIFIED_DATE,SYS_SOURCE
+			 	 		)
+			VALUES
+			(:currentUser,
+			 'update',
+			 :create_time,
+			 :ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,
+			 :currentUser,
+			 :create_time,:SOURCE);	
+			 result_status := 1;
+		elseif(n <= 0) THEN
+			INSERT INTO "SZEBGVMI"."UI_PURCHASE_PROP_VMI"(
+				LOGICAL_PLANT ,
+				ITEM,
+				ITEMDESC,
+				VENDORID,
+				START_DATE,
+				END_DATE,
+				VENDORNAME,
+				PROPORTION,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,
+				SYS_SOURCE)
+			VALUES
+			(
+				:LOGICAL_PLANT ,
+				:ITEM,
+				:ITEM_DESC,
+				:VENDORID,
+				:START_DATE,
+				:END_DATE,
+				:VENDOR_NAME,
+				:PROPORTION,
+				:currentUser,
+				:create_time,
+				:currentUser,
+				:create_time,
+				:SOURCE
+			);
+			--insert操作需要写入日志
+			insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				ITEM,VENDORID,LOGICAL_PLANT,PROPORTION,START_DATE,END_DATE,
+				SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,SYS_SOURCE
+			)
+			VALUES
+			(:currentUser,
+			 'insert',
+			 :create_time,
+			 :ITEM,:VENDORID,:LOGICAL_PLANT,:PROPORTION,:START_DATE,:END_DATE,
+			 :currentUser,
+			 :create_time,:SOURCE);	
+			 result_status := 1;	 	
+		end if;
+	 	 	
+ 	elseif (:PROPORTION<0 and :PROPORTION>1) then
+ 			--如果一条记录有错，则所有该次操作插入的记录全部作废,包括目标表和log表
+		 	DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM  
+ 		 		AND START_DATE =:START_DATE;
+ 		 		
+ 		 	DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI_LOG"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND AT_ACTION = 'insert'
+ 		 		AND START_DATE =:START_DATE AND AT_MODIFIED_TIME = :create_time;
+ 		 	
+ 		 	result_status :=0;
+ 			error_message := '"PROPORTION" is illegal.';
+ 			--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);
+	     	return;
+	elseif(validate1 <= 0) then
+			--如果一条记录有错，则所有该次操作插入的记录全部作废
+		 	DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM  AND START_DATE =:START_DATE;
+ 		 		
+ 		 	DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI_LOG"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND AT_ACTION = 'insert'
+ 		 	AND START_DATE =:START_DATE AND AT_MODIFIED_TIME = :create_time;
+			
+			result_status :=0;
+			error_message := '"ITEM" is illegal.';
+			--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);
+	     	return;
+	elseif(validate2 <= 0) then
+			--如果一条记录有错，则所有该次操作插入的记录全部作废
+		 	DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM  AND START_DATE =:START_DATE;
+ 		 		
+ 		 	DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI_LOG"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND  AT_ACTION = 'insert'
+ 		 		AND START_DATE =:START_DATE AND AT_MODIFIED_TIME = :create_time;
+ 		 	
+ 		 	result_status :=0;
+			error_message := '"VENDORID" is illegal.';
+			--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);
+	     	return;
+	elseif(validate3 <= 0) then
+			--如果一条记录有错，则所有该次操作插入的记录全部作废
+		 	DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND START_DATE =:START_DATE;
+ 		 		
+ 		 	DELETE FROM "SZEBGVMI"."UI_PURCHASE_PROP_VMI_LOG"
+ 		 	WHERE LOGICAL_PLANT = :LOGICAL_PLANT AND ITEM = :ITEM AND  AT_ACTION = 'insert'
+ 		 		AND START_DATE =:START_DATE AND AT_MODIFIED_TIME = :create_time;
+ 		 	
+ 		 	result_status :=0;	
+		 	error_message := '"LOGICAL_PLANT" is illegal.';
+		 	--error log
+ 		 	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>:error_message);
+	     	return;
+ 	end if;
+
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'SZEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');
+ 	
+ 	
+END;

@@ -1,0 +1,16 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_common::ui_delete_all" ( 
+	IN TABLE_NAME NVARCHAR(100)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGDF
+	--READS SQL DATA 
+	AS
+BEGIN
+	DECLARE  v_sql              VARCHAR(4000);
+
+	v_sql := 'DELETE FROM '|| :TABLE_NAME;
+                              
+    EXECUTE IMMEDIATE v_sql;
+
+END;

@@ -1,0 +1,90 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cycle::PRC_CYCLE_CLOSURE" (
+   IN    p_in_cycle         VARCHAR(20),
+   IN    p_in_productgroup  VARCHAR(10),
+   OUT   p_exitcode         INTEGER,
+   OUT   p_exitmess         VARCHAR(500) 
+ ) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER  
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_CYCLE_CLOSURE            
+*function   : Cycle Closure
+*input      ：p_product_group : product group
+*output     : p_exitcode : error code / p_exitmess : error message 
+*author     : Leonard Ling
+*CreateDate : 2014-12-31
+*UpdateDate : 2015-01-16 Add M13~M18, Q1~Q6
+              2015-12-21 Add input:p_in_cycle
+*************************************************************************/		
+	AS
+BEGIN
+
+  -- data
+  DECLARE      v_pkg_name        VARCHAR(30) := 'PKG_CYCLE';   
+  DECLARE      v_proc_name       VARCHAR(50) := 'PRC_CYCLE_CLOSURE';
+  DECLARE      V_CYCLE_NAME      VARCHAR(50);
+  DECLARE      V_CYCLE_TYPE      VARCHAR(20);
+  DECLARE      v_full_name       VARCHAR(60)  := :v_pkg_name ||'.'|| :v_proc_name;
+  DECLARE      v_count           INTEGER := 0;
+  DECLARE      logidi            INTEGER := 0;  
+  DECLARE      logidj            INTEGER := 0;  
+  
+  -- exception
+ DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found 
+   BEGIN
+     p_exitcode := ::SQL_ERROR_CODE;
+     p_exitmess := 'Current cycle does not exist.';  
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'WARN', 
+                                                 I_LOGSID     => :logidj, 
+                                                 I_EVENT_NAME => :v_full_name, 
+                                                 I_MODULE     => 'EBGCFE', 
+                                                 I_MESSAGE    => :p_exitmess,
+                                                 I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                 substr(::SQL_ERROR_MESSAGE , 1, 500));      
+   END;  
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+       p_exitcode := ::SQL_ERROR_CODE;
+       p_exitmess := 'Internal error, please contact system administrator.';  
+ 	   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+ 	                                               I_LOGSID     => :logidi,
+								                   I_EVENT_NAME => :v_full_name, 
+								                   I_MODULE     => 'EBGCFE',
+								                   I_MESSAGE    => 'ERROR', 
+								                   I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || 
+								                                   substr(::SQL_ERROR_MESSAGE , 1, 500) );         
+   END;    
+              
+  -- process logic
+    p_exitcode := -1;
+    p_exitmess := 'Error';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+	
+	
+	INSERT INTO UI_CYCLE
+	    (PRODUCT_GROUP,CYCLE,LAST_CYCLE,CYCLE_STATUS,CYCLE_TYPE,CYCLE_CUR_MONTH,CYCLE_SEQ,
+	     M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,Q1,Q2,Q3,Q4,Q5,Q6,CYCLE_NAME,CYCLE_FCST_MONTH,ACTION,STATUS,
+	     SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY)
+	    SELECT PRODUCT_GROUP,
+	           :p_in_cycle,
+	           LAST_CYCLE,
+	           'HISTORY',
+	           CYCLE_TYPE,CYCLE_CUR_MONTH,CYCLE_SEQ,
+	           M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,Q1,Q2,Q3,Q4,Q5,Q6,CYCLE_NAME,CYCLE_FCST_MONTH,ACTION,STATUS,
+	           --Modified by Zhoubinbin 20161017, Keep the date when create cycle
+	           --CURRENT_TIMESTAMP,:V_FULL_NAME,
+	           SYS_CREATED_DATE,SYS_CREATED_BY,
+	           CURRENT_TIMESTAMP,:V_FULL_NAME
+	    FROM UI_CYCLE
+	    WHERE PRODUCT_GROUP = :P_IN_PRODUCTGROUP
+	       AND CYCLE = 'CURRENT';
+
+       p_exitcode := 0;
+       p_exitmess := 'SUCCESS'; 
+       CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                   I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  
+END;

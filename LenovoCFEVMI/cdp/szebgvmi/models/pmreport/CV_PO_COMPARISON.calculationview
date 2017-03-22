@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_PO_COMPARISON" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_PO_COMPARISON"/>
+  <defaultSchema schemaName="SZEBGVMI"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="PO_ID" length="10"/>
+        <viewAttribute datatype="NVARCHAR" id="PO_LINE_ID" length="5"/>
+        <viewAttribute datatype="NVARCHAR" id="MATNR" length="18"/>
+        <viewAttribute datatype="NVARCHAR" id="WERKS" length="4"/>
+        <viewAttribute datatype="NVARCHAR" id="LIFNR" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="R3_PO_LPB_SA_SNAPSHOT_START_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="R3_PO_LPB_SA_SNAPSHOT_END_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="TPL_PO_START_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="TPL_PO_END_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="R3_TIMESTAMP" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="TPL_TIMESTAMP" length="20"/>
+        <viewAttribute datatype="DECIMAL" id="R3_QTY" length="18" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="TPL_QTY" length="18" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="R3_OPEN_QTY" length="18" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="TPL_OPEN_QTY" length="18" scale="3"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> /********* &#xD;
+Begin Procedure Script ************/ &#xD;
+BEGIN &#xD;
+var_out = SELECT &#xD;
+	 IFNULL (A.PO_ID,	B.PO_ID) AS PO_ID,&#xD;
+	IFNULL ( A.PO_LINE_ID,	B.PO_LINE_ID) AS PO_LINE_ID,&#xD;
+	 IFNULL (A.MATNR,	B.MATNR) AS MATNR,&#xD;
+	 IFNULL (A.WERKS,	B.WERKS) AS WERKS,&#xD;
+	 IFNULL (A.LIFNR,	B.LIFNR) AS LIFNR,&#xD;
+	 TO_VARCHAR(A.START_DATE,'YYYY-MM-DD') AS R3_PO_LPB_SA_SNAPSHOT_START_DATE,&#xD;
+	 TO_VARCHAR(A.END_DATE,'YYYY-MM-DD') AS R3_PO_LPB_SA_SNAPSHOT_END_DATE,&#xD;
+	 TO_VARCHAR(B.START_DATE,	 'YYYY-MM-DD') AS TPL_PO_START_DATE,&#xD;
+	 TO_VARCHAR(B.END_DATE,	 'YYYY-MM-DD') AS TPL_PO_END_DATE,&#xD;
+	 TO_VARCHAR(A.SYS_TIMESTAMP,'YYYY-MM-DD HH24:MI:SS') AS R3_TIMESTAMP,&#xD;
+	 TO_VARCHAR(B.SYS_TIMESTAMP,'YYYY-MM-DD HH24:MI:SS') AS TPL_TIMESTAMP,&#xD;
+	 (SUM(A.QTY)) AS R3_QTY,&#xD;
+	 (SUM(B.QTY)) AS TPL_QTY,&#xD;
+	 (SUM(A.OPEN_QTY)) AS R3_OPEN_QTY,&#xD;
+	 (SUM(B.OPEN_QTY)) AS TPL_OPEN_QTY&#xD;
+FROM &quot;SZEBGVMI&quot;.Z_PCDW_PO_LPB_SA_SNAPSHOT A &#xD;
+		FULL OUTER JOIN &quot;SZEBGVMI&quot;.TPL_PO B &#xD;
+			ON A.PO_ID = B.PO_ID &#xD;
+			AND A.PO_LINE_ID = B.PO_LINE_ID &#xD;
+			AND A.LIFNR = B.LIFNR &#xD;
+			AND A.WERKS = B.WERKS &#xD;
+			AND A.MATNR = B.MATNR &#xD;
+GROUP BY IFNULL (A.PO_ID,	B.PO_ID),&#xD;
+	IFNULL ( A.PO_LINE_ID,	B.PO_LINE_ID),&#xD;
+	 IFNULL (A.MATNR,	B.MATNR),&#xD;
+	 IFNULL (A.WERKS,	B.WERKS),&#xD;
+	 IFNULL (A.LIFNR,	B.LIFNR),&#xD;
+	 TO_VARCHAR(A.START_DATE,'YYYY-MM-DD'),&#xD;
+	 TO_VARCHAR(A.END_DATE,'YYYY-MM-DD'),&#xD;
+	 TO_VARCHAR(B.START_DATE,	 'YYYY-MM-DD'),&#xD;
+	 TO_VARCHAR(B.END_DATE,	 'YYYY-MM-DD'),&#xD;
+	 TO_VARCHAR(A.SYS_TIMESTAMP,	 'YYYY-MM-DD HH24:MI:SS'),&#xD;
+	 TO_VARCHAR(B.SYS_TIMESTAMP,	 'YYYY-MM-DD HH24:MI:SS') &#xD;
+ORDER BY 1,2,3,4,5,6,7,8,9,10,11;&#xD;
+&#xD;
+END /********* &#xD;
+End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="PO_ID" hidden="false" order="1">
+        <descriptions defaultDescription="PO_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="PO_ID"/>
+      </attribute>
+      <attribute id="PO_LINE_ID" hidden="false" order="2">
+        <descriptions defaultDescription="PO_LINE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="PO_LINE_ID"/>
+      </attribute>
+      <attribute id="MATNR" hidden="false" order="3">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR"/>
+      </attribute>
+      <attribute id="WERKS" hidden="false" order="4">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping columnObjectName="Script_View" columnName="WERKS"/>
+      </attribute>
+      <attribute id="LIFNR" hidden="false" order="5">
+        <descriptions defaultDescription="LIFNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="LIFNR"/>
+      </attribute>
+      <attribute id="R3_PO_LPB_SA_SNAPSHOT_START_DATE" hidden="false" order="6">
+        <descriptions defaultDescription="R3_PO_LPB_SA_SNAPSHOT_START_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="R3_PO_LPB_SA_SNAPSHOT_START_DATE"/>
+      </attribute>
+      <attribute id="R3_PO_LPB_SA_SNAPSHOT_END_DATE" hidden="false" order="7">
+        <descriptions defaultDescription="R3_PO_LPB_SA_SNAPSHOT_END_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="R3_PO_LPB_SA_SNAPSHOT_END_DATE"/>
+      </attribute>
+      <attribute id="TPL_PO_START_DATE" hidden="false" order="8">
+        <descriptions defaultDescription="TPL_PO_START_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_PO_START_DATE"/>
+      </attribute>
+      <attribute id="TPL_PO_END_DATE" hidden="false" order="9">
+        <descriptions defaultDescription="TPL_PO_END_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_PO_END_DATE"/>
+      </attribute>
+      <attribute id="R3_TIMESTAMP" hidden="false" order="10">
+        <descriptions defaultDescription="R3_TIMESTAMP"/>
+        <keyMapping columnObjectName="Script_View" columnName="R3_TIMESTAMP"/>
+      </attribute>
+      <attribute id="TPL_TIMESTAMP" hidden="false" order="11">
+        <descriptions defaultDescription="TPL_TIMESTAMP"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_TIMESTAMP"/>
+      </attribute>
+      <attribute id="R3_QTY" hidden="false" order="12">
+        <descriptions defaultDescription="R3_QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="R3_QTY"/>
+      </attribute>
+      <attribute id="TPL_QTY" hidden="false" order="13">
+        <descriptions defaultDescription="TPL_QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_QTY"/>
+      </attribute>
+      <attribute id="R3_OPEN_QTY" hidden="false" order="14">
+        <descriptions defaultDescription="R3_OPEN_QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="R3_OPEN_QTY"/>
+      </attribute>
+      <attribute id="TPL_OPEN_QTY" hidden="false" order="15">
+        <descriptions defaultDescription="TPL_OPEN_QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_OPEN_QTY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

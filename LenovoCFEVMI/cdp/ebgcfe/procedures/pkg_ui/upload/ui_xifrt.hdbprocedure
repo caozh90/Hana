@@ -1,0 +1,232 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xifrt" (
+IN  CYCLE NVARCHAR(40),
+IN   BRAND NVARCHAR(40),
+IN   FAMILY NVARCHAR(40),
+IN   PLANT NVARCHAR(20),
+IN   SUBGEO NVARCHAR(20),
+IN   TBA_TYPE NVARCHAR(10),
+IN   M1 DECIMAL(15,4),
+IN   M2 DECIMAL(15,4),
+IN   M3 DECIMAL(15,4),
+IN   M4 DECIMAL(15,4),
+IN   M5 DECIMAL(15,4),
+IN   M6 DECIMAL(15,4),
+IN   M7 DECIMAL(15,4),
+IN   M8 DECIMAL(15,4),
+IN   M9 DECIMAL(15,4),
+IN   M10 DECIMAL(15,4),
+IN   M11 DECIMAL(15,4),
+IN   M12 DECIMAL(15,4),
+IN   M13 DECIMAL(15,4),
+IN   M14 DECIMAL(15,4),
+IN   M15 DECIMAL(15,4),
+IN   M16 DECIMAL(15,4),
+IN   M17 DECIMAL(15,4),
+IN   M18 DECIMAL(15,4),
+IN	 	business_name nvarchar(200),
+IN		SEQ	int,
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      : ui_xifrt              --函数名
+*function  : upload数据至表ui_xifrt并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-01-22       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_xifrt';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_XIFRT';
+		validate1 int;
+		validate2 int;
+		PRODUCT_GROUP nvarchar(40) :='EBG';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xifrt_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:CYCLE,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,:SEQ,:position);
+     	
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xifrt_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:CYCLE,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,:SEQ,:position);
+     	
+    END; 
+    --exception 
+
+
+	--procedure begin
+	
+	business_code := :SEQ;
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	select count(1) into validate1 from "EBGCFE"."UI_PRODFAMILY" 
+	where BRAND = :BRAND;
+	IF validate1<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xifrt_err"('"BRAND"::'||:BRAND||' is illegal',:business_name,
+			 	 :CYCLE,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,
+				:SEQ,:position);
+		--error log
+		
+		RETURN;
+	END IF;
+	
+	select count(1) into validate1 from "EBGCFE"."UI_PRODFAMILY" 
+	where PROD_FAMILY = :FAMILY;
+	IF :FAMILY='ALL' THEN
+	 	validate1 := 1;
+	END IF;	
+	
+	IF validate1<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xifrt_err"('"FAMILY"::'||:FAMILY||' is illegal',:business_name,
+			 	 :CYCLE,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,
+				:SEQ,:position);
+		--error log
+		
+		RETURN;
+	END IF;
+	
+	select count(1) into validate1 from "EBGCFE"."UI_PLANT" 
+	where PLANT = :PLANT;
+	IF validate1<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xifrt_err"('"PLANT"::'||:PLANT||' is illegal',:business_name,
+			 	 :CYCLE,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,
+				:SEQ,:position);
+		--error log
+		
+		RETURN;
+	END IF;
+	
+	select count(1) into validate1 from "EBGCFE"."UI_REGION" 
+	where SUBGEO = :SUBGEO;
+	IF :SUBGEO = 'ALL' THEN
+		validate1 := 1;
+	END IF;
+	
+	IF validate1<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xifrt_err"('"SUBGEO"::'||:SUBGEO||' is illegal',:business_name,
+			 	 :CYCLE,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,
+				:SEQ,:position);
+		--error log
+		
+		RETURN;
+	END IF;
+	
+	select count(1) into validate1 from "EBGCFE"."CONF_PARAMETERS"
+	where pdomain='UI_MVA' and pname='TBA_TYPE' and pvalue= :TBA_TYPE;
+	IF validate1<=0 then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xifrt_err"('"TBA_TYPE"::'||:TBA_TYPE||' is illegal',:business_name,
+			 	 :CYCLE,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,
+				:SEQ,:position);
+		--error log
+		
+		RETURN;
+	END IF;
+	
+	if(validate1 >0) then
+	
+		select count(1) into n from "EBGCFE"."UI_XIFRT"
+		where TBA_TYPE = :TBA_TYPE AND CYCLE = :CYCLE AND
+		BRAND = :BRAND AND PLANT = :PLANT AND FAMILY = :FAMILY AND
+		SUBGEO = :SUBGEO AND PRODUCT_GROUP = :PRODUCT_GROUP;
+
+		if n>0 then
+			update "EBGCFE"."UI_XIFRT" 
+			set	M1 = :M1,
+				M2 = :M2,
+				M3 = :M3,
+				M4 = :M4,
+				M5 = :M5,
+				M6 = :M6,
+				M7 = :M7,
+				M8 = :M8,
+				M9 = :M9,
+				M10 = :M10,
+				M11 = :M11,
+				M12 = :M12,		
+				M13 = :M13,
+				M14 = :M14,
+				M15 = :M15,
+				M16 = :M16,
+				M17 = :M17,
+				M18 = :M18,
+				SYS_LAST_MODIFIED_BY = :currentUser,
+			 	SYS_LAST_MODIFIED_DATE = :create_time
+			where TBA_TYPE = :TBA_TYPE AND CYCLE = :CYCLE AND
+			BRAND = :BRAND AND PLANT = :PLANT AND FAMILY = :FAMILY AND
+			SUBGEO = :SUBGEO AND PRODUCT_GROUP = :PRODUCT_GROUP;
+			
+			--update操作需要写入日志
+			insert into "EBGCFE"."UI_XIFRT_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				PRODUCT_GROUP,BRAND,FAMILY,PLANT,SUBGEO,TBA_TYPE,M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+		 	SYS_LAST_MODIFIED_BY,
+		 	SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+				(:currentUser,
+				'update',
+				:create_time,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:PRODUCT_GROUP,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,
+				:currentUser,
+				:create_time);
+			
+		ELSEIF n=0 THEN
+			INSERT INTO "EBGCFE"."UI_XIFRT"(
+				CYCLE,PRODUCT_GROUP,BRAND,FAMILY,PLANT,SUBGEO,TBA_TYPE,M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+		 		SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+		 		SYS_LAST_MODIFIED_DATE
+		 	)
+		 	VALUES(
+			 	 :CYCLE,:PRODUCT_GROUP,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,
+			 	 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+		 	--insert操作需要写入日志
+			insert into "EBGCFE"."UI_XIFRT_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				PRODUCT_GROUP,BRAND,FAMILY,PLANT,SUBGEO,TBA_TYPE,M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14,M15,M16,M17,M18,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+			 	(:currentUser,
+			 	'create',
+			 	:create_time,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:PRODUCT_GROUP,:BRAND,:FAMILY,:PLANT,:SUBGEO,:TBA_TYPE,:M1,:M2,:M3,:M4,:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);	 			 	
+		END IF;
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+	END IF;	
+	
+END;

@@ -1,0 +1,349 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::SP_ZMATMAST_IDOC_PCDW_MARC" (
+IN PI_MATNR VARCHAR(100),
+IN PI_WERKS VARCHAR(100),
+IN PI_PSTAT VARCHAR(100),
+IN PI_MMSTA VARCHAR(100),
+IN PI_MAABC VARCHAR(100),
+IN PI_BESKZ VARCHAR(100),
+IN PI_EPRIO VARCHAR(100),
+IN PI_STRGR VARCHAR(100),
+IN PI_LVORM VARCHAR(100), 
+IN PI_SOBSL VARCHAR(100),
+IN PI_DISPO VARCHAR(100),
+IN PI_MATGR VARCHAR(100),
+IN PI_SCHGT VARCHAR(100),
+IN PI_BSTMI DECIMAL,
+IN PI_BSTRF DECIMAL,
+IN PI_BSTFE DECIMAL,
+IN PI_EKGRP VARCHAR(100),
+IN PI_STAWN VARCHAR(100),
+IN PI_PRGRP VARCHAR(100),
+IN PI_RGEKZ VARCHAR(100),
+IN PI_ATWRT VARCHAR(100),
+IN PI_PRCTR VARCHAR(100),
+IN PI_MFRGR VARCHAR(100),
+IN PI_STDPD VARCHAR(100),
+IN PI_ART   VARCHAR(100),
+IN PI_PLIFZ DECIMAL,
+IN PI_DZEIT DECIMAL,
+IN PI_WEBAZ DECIMAL,
+IN PI_KZKRI VARCHAR(100),
+IN PI_FABKZ VARCHAR(100),
+IN PI_FHORI VARCHAR(100),
+IN PI_LGFSB VARCHAR(100),
+IN PI_LOSGR DECIMAL,
+IN PI_QMATV VARCHAR(100),
+IN PI_INSMK VARCHAR(100),
+IN PI_FLAG  VARCHAR(100),
+IN PI_IDOCNUM DECIMAL,
+IN PI_IDOCTIME VARCHAR(100),
+IN PI_SYS_CREATED_BY VARCHAR(100),
+IN PI_SYS_LAST_MODIFIED_BY VARCHAR(100))
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	AS
+  /***********************************************************************/
+  /* PROCEDURE          ?SP_ZMATMAST_IDOC_PCDW_MARC
+  /* DESCRIPTION        ?INSERT IDOC DATA TO ECC_MARC TABLE
+  /* PARAMETERS         ?PI_MATNR, PI_ERSDA, PI_MTART, PI_MATKL
+  /* SOURCE             ?IDOC
+  /* TARGET TABLE       ?ECC_MARC
+  /* VERSION            ?V1.0
+  /***********************************************************************/
+
+  V_IDOCTIME TIMESTAMP;
+  V_ERRMSG   NVARCHAR(200);
+  n 	 	 INT;
+  logid1	 	 int:=1;
+ -- v_full_name		varchar(100):='IDOC/SP_ZMATMAST_IDOC_PCDW_MARC';
+  vMsg	 	 VARCHAR(1024);
+  vCode	     int;
+BEGIN
+	-- exception
+    --定义异常
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+	  vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+        VALUES   (CURRENT_TIMESTAMP,
+                  'SP_ZMATMAST_IDOC_PCDW_MARC',
+                  'ERROR',
+                  :vCode,
+                  :vMsg,
+                  '',
+                  '',
+                  '',
+                  'END');
+        --exec 'commit';         --2017.02.08 PI issue by baying deleted  
+    	INSERT INTO Ecc_Marc_Err
+	      (matnr,
+	       werks,
+	       pstat,
+	       mmsta,
+	       maabc,
+	       beskz,
+	       eprio,
+	       strgr,
+	       lvorm,
+	       sobsl,
+	       dispo,
+	       matgr,
+	       schgt,
+	       bstmi,
+	       bstrf,
+	       bstfe,
+	       ekgrp,
+	       stawn,
+	       prgrp,
+	       rgekz,
+	       atwrt,
+	       prctr,
+	       mfrgr,
+	       stdpd,
+	       art,
+	       --ADD BY LICH 20121127
+	       PLIFZ,
+	       DZEIT,
+	       WEBAZ,
+	       KZKRI,
+	       FABKZ,
+	       FHORI,
+	       LGFSB,
+	       LOSGR,
+	       QMATV,
+	       --END BY LICH 20121127
+	       --ADD BY LICH 20130509
+	       INSMK,
+	       ---END BY LICH 20130509
+	       flag,
+	       idocnum,
+	       idoctime,
+	       sys_created_date,
+	       sys_created_by,
+	       z_errmsg)
+	    VALUES
+	      (:PI_MATNR,
+	       :PI_WERKS,
+	       :PI_PSTAT,
+	       :PI_MMSTA,
+	       :PI_MAABC,
+	       :PI_BESKZ,
+	       :PI_EPRIO,
+	       :PI_STRGR,
+	       :PI_LVORM,
+	       :PI_SOBSL,
+	       :PI_DISPO,
+	       :PI_MATGR,
+	       :PI_SCHGT,
+	       :PI_BSTMI,
+	       :PI_BSTRF,
+	       :PI_BSTFE,
+	       :PI_EKGRP,
+	       :PI_STAWN,
+	       :PI_PRGRP,
+	       :PI_RGEKZ,
+	       :PI_ATWRT,
+	       :PI_PRCTR,
+	       :PI_MFRGR,
+	       :PI_STDPD,
+	       :PI_ART,
+	       --ADD BY LICH 20121127
+	       :PI_PLIFZ,
+	       :PI_DZEIT,
+	       :PI_WEBAZ,
+	       :PI_KZKRI,
+	       :PI_FABKZ,
+	       :PI_FHORI,
+	       :PI_LGFSB,
+	       :PI_LOSGR,
+	       :PI_QMATV,
+	       --END BY LICH 20121127
+	       --ADD BY LICH 20130509
+	       :PI_INSMK,
+	       --END BY LICH 20130509
+	       :PI_FLAG,
+	       :PI_IDOCNUM,
+	       :PI_IDOCTIME,
+	       CURRENT_TIMESTAMP,
+	       :PI_SYS_CREATED_BY,
+	       :vMsg);
+	       --exec 'commit';     --2017.02.08 PI issue by baying deleted  
+    END;
+	-- exception
+
+
+	V_IDOCTIME := TO_TIMESTAMP(:PI_IDOCTIME);
+
+  IF :PI_MATNR IS NOT NULL THEN
+	
+	SELECT COUNT(1) INTO n FROM ecc_marc WHERE matnr = :PI_MATNR
+       AND werks = :PI_WERKS
+       AND (idoctime < :V_IDOCTIME OR
+           (idoctime = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR
+           idoctime IS NULL);
+	IF(n>0) THEN
+	    UPDATE ecc_marc
+	       SET pstat                  = :PI_PSTAT,
+	           mmsta                  = :PI_MMSTA,
+	           maabc                  = :PI_MAABC,
+	           beskz                  = :PI_BESKZ,
+	           eprio                  = :PI_EPRIO,
+	           strgr                  = :PI_STRGR,
+	           lvorm                  = :PI_LVORM,
+	           sobsl                  = :PI_SOBSL,
+	           dispo                  = :PI_DISPO,
+	           matgr                  = :PI_MATGR,
+	           schgt                  = :PI_SCHGT,
+	           bstmi                  = :PI_BSTMI,
+	           bstrf                  = :PI_BSTRF,
+	           bstfe                  = :PI_BSTFE,
+	           ekgrp                  = :PI_EKGRP,
+	           stawn                  = :PI_STAWN,
+	           prgrp                  = :PI_PRGRP,
+	           rgekz                  = :PI_RGEKZ,
+	           atwrt                  = :PI_ATWRT,
+	           prctr                  = :PI_PRCTR,
+	           mfrgr                  = :PI_MFRGR,
+	           stdpd                  = :PI_STDPD,
+	           art                    = :PI_ART,
+	           --ADD BY LICH 20121126
+	           PLIFZ = :PI_PLIFZ,
+	           DZEIT = :PI_DZEIT,
+	           WEBAZ = :PI_WEBAZ,
+	           KZKRI = :PI_KZKRI,
+	           FABKZ = :PI_FABKZ,
+	           FHORI = :PI_FHORI,
+	           LGFSB = :PI_LGFSB,
+	           LOSGR = :PI_LOSGR,
+	           QMATV = :PI_QMATV,
+	           --END BY LICH 20121126
+	           ---add BY LICH 20130509
+	           INSMK = :PI_INSMK,
+	           ---END BY LICH 20130509
+	           flag                   = :PI_FLAG,
+	           idocnum                = :PI_IDOCNUM,
+	           idoctime               = :V_IDOCTIME,
+	           sys_last_modified_date = CURRENT_TIMESTAMP,
+	           sys_last_modified_by   = :PI_SYS_LAST_MODIFIED_BY,
+	           NEWFLAG = 'N' --added by shenghui on 20140912
+	     WHERE matnr = :PI_MATNR
+	       AND werks = :PI_WERKS
+	       AND (idoctime < V_IDOCTIME OR
+	           (idoctime = V_IDOCTIME AND IDOCNUM < PI_IDOCNUM) OR
+	           idoctime IS NULL);
+	 --exec 'commit';     --2017.02.08 PI issue by baying deleted  
+
+	 ELSEIF n=0 THEN
+	 
+	 	SELECT COUNT(1) INTO n FROM ecc_marc WHERE matnr = :PI_MATNR
+	 	       AND werks = :PI_WERKS;
+	 	if n=0  then
+	 		INSERT INTO ecc_marc
+	        (matnr,
+	         werks,
+	         pstat,
+	         mmsta,
+	         maabc,
+	         beskz,
+	         eprio,
+	         strgr,
+	         lvorm,
+	         sobsl,
+	         dispo,
+	         matgr,
+	         schgt,
+	         bstmi,
+	         bstrf,
+	         bstfe,
+	         ekgrp,
+	         stawn,
+	         prgrp,
+	         rgekz,
+	         atwrt,
+	         prctr,
+	         mfrgr,
+	         stdpd,
+	         art,
+	         --ADD BY LICH 20121126
+	         PLIFZ,
+	         DZEIT,
+	         WEBAZ,
+	         KZKRI,
+	         FABKZ,
+	         FHORI,
+	         LGFSB,
+	         LOSGR,
+	         QMATV,
+	         --END BY LICH 20121126
+	         ---add BY LICH 20130509
+	         INSMK,
+	         ---END BY LICH 20130509
+	         flag,
+	         idocnum,
+	         idoctime,
+	         sys_created_date,
+	         sys_created_by,
+	         NEWFLAG) --added by shenghui on 20140912
+	      VALUES
+	        (:PI_MATNR,
+	         :PI_WERKS,
+	         :PI_PSTAT,
+	         :PI_MMSTA,
+	         :PI_MAABC,
+	         :PI_BESKZ,
+	         :PI_EPRIO,
+	         :PI_STRGR,
+	         :PI_LVORM,
+	         :PI_SOBSL,
+	         :PI_DISPO,
+	         :PI_MATGR,
+	         :PI_SCHGT,
+	         :PI_BSTMI,
+	         :PI_BSTRF,
+	         :PI_BSTFE,
+	         :PI_EKGRP,
+	         :PI_STAWN,
+	         :PI_PRGRP,
+	         :PI_RGEKZ,
+	         :PI_ATWRT,
+	         :PI_PRCTR,
+	         :PI_MFRGR,
+	         :PI_STDPD,
+	         :PI_ART,
+	         --ADD BY LICH 20121126
+	         :PI_PLIFZ,
+	         :PI_DZEIT,
+	         :PI_WEBAZ,
+	         :PI_KZKRI,
+	         :PI_FABKZ,
+	         :PI_FHORI,
+	         :PI_LGFSB,
+	         :PI_LOSGR,
+	         :PI_QMATV,
+	         --END BY LICH 20121126
+	         ---add BY LICH 20130509
+	         :PI_INSMK,
+	         ---END BY LICH 20130509
+	         :PI_FLAG,
+	         :PI_IDOCNUM,
+	         :V_IDOCTIME,
+	         CURRENT_TIMESTAMP,
+	         :PI_SYS_CREATED_BY,
+	         'Y');
+	 	end if;
+      	--EXEC 'COMMIT';        --2017.02.08 PI issue by baying deleted  
+      END IF;
+    END IF;
+END;

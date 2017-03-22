@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Privilege:analyticPrivilege xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Privilege="http://www.sap.com/ndb/BiModelPrivilege.ecore" schemaVersion="1.1" id="AP_ASN_STATUS">
+  <descriptions defaultDescription="asn pull status change "/>
+  <securedModels allInformationModels="false">
+    <modelUri>/cdp.szebgvmi.models/calculationviews/CV_ASN_STATUS</modelUri>
+    <modelUri>/cdp.szebgvmi.models/attributeviews/AT_ASN_STATUS</modelUri>
+  </securedModels>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="SITEID">
+      <procedureFilter operator="IN" procedureName="cdp.security.procedures::getResourceUserByPLANT"/>
+    </filter>
+    <attributeName>SITEID</attributeName>
+    <originInformationModelUri>/cdp.szebgvmi.models/calculationviews/CV_ASN_STATUS</originInformationModelUri>
+  </restriction>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="SITEID">
+      <procedureFilter operator="IN" procedureName="cdp.security.procedures::getResourceUserByPLANT"/>
+    </filter>
+    <dimensionUri>/cdp.szebgvmi.models/attributeviews/AT_ASN_STATUS</dimensionUri>
+  </restriction>
+</Privilege:analyticPrivilege>

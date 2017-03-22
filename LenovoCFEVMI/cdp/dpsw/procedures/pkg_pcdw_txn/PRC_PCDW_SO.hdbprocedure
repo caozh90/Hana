@@ -1,0 +1,285 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_pcdw_txn::PRC_PCDW_SO" (IN PI_ID  VARCHAR(12),OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA  
+  AS
+/************************************************************************
+*name       : PRC_PCDW_SO        
+*function   : Merge data FROM ECC_* INTO PCDW_*
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2015-07-28
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_lastrun_time timestamp;
+   v_current_timestamp timestamp:=current_timestamp;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SO', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SO', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1;
+   
+   -- Step 1. Merge data FROM ECC_SO_N INTO PCDW_SO
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SO', 'SUCCESS', NULL, '', '', '', '', 'step1');
+   EXEC 'COMMIT';   
+ 
+ --Add by Castor for ODM reroute scenario, Begin.
+ DELETE FROM PCDW.PCDW_SO a
+  WHERE EXISTS (SELECT 1 
+                  FROM PCDW.PCDW_ODM_REROUTE b
+                 WHERE a.VBELN = b.VBELN
+                   AND a.POSNR = b.POSNR);
+  
+ DELETE FROM PCDW.PCDW_SO_BASIC_ALL a
+  WHERE EXISTS (SELECT 1
+                  FROM PCDW.PCDW_ODM_REROUTE b
+                 WHERE a.ORDER_ID = b.VBELN
+                   AND a.LINE_ITEM_ID = b.POSNR);    
+
+ INSERT INTO PCDW.PCDW_ODM_REROUTE_BAK 
+ SELECT VBELN, POSNR, current_timestamp 
+   FROM PCDW.PCDW_ODM_REROUTE;
+ 
+ DELETE FROM PCDW.PCDW_ODM_REROUTE;                 
+ --Add by Castor for ODM reroute scenario, End.
+ 
+ DELETE FROM Z_MID_ECC_SO_N;
+ 
+ INSERT INTO Z_MID_ECC_SO_N
+      (vbeln, posnr, matnr, werks, erdat, erzet, auart, augru, lifsk, vkorg,
+       vtweg, spart, bstzd, ctlpc, autlf, vdatu, vsbed, cmgst, inact, isapp,
+       promisearrivald1, promisearrivald2, h_textz021, h_textz022, l_abgru,
+       bedae, kwmeng, lprio, pstyv, grkor, kztlf, lgort, sobkz, cuobj, vkaus,
+       vstel, route, pmatn, upmat, uepos, zzgeo, zzsgeo, zsreg, zzodmfd,
+       zzodmcad, z_crcad, z_crmad, z_crgid, z_mad, z_gid, z_ccad, newdate,
+       l_lifsp, l_textyb23, kvgr4, inco1, bstkd, bzirk, kdkg1, bstdk_e, konda,
+       sold2_kunnr, sold2_land1, ship2_kunnr, ship2_land1, ship2_pstlz,
+       ship2_regio, kkber, cmpre, bsark, vsart, lfsta, netpr, reseller,
+       reseller_name, udate, utime, augru_desc, region_name, ship2_pstlz_sadr,
+       ship2_pstlz_adrc, zz_socdate, zz_shipearly, zz_stopreli, zz_stopshpi,
+       name1,name2,rssd,AD_NAME1,AD_COUNTRY,AD_COUNTRY_CODE,RSD,ID,
+       sys_ent_state, sys_created_by, sys_creation_date, sys_last_modified_by,sys_last_modified_date)
+      SELECT vbeln, posnr, matnr, werks, erdat, erzet, auart, augru, lifsk,
+             vkorg, vtweg, spart, bstzd, ctlpc, autlf, vdatu, vsbed, cmgst,
+             inact, isapp, promisearrivald1, promisearrivald2, h_textz021,
+             h_textz022, l_abgru, bedae, kwmeng, lprio, pstyv, grkor, kztlf,
+             lgort, sobkz, cuobj, vkaus, vstel, route, pmatn, upmat, uepos,
+             zzgeo, zzsgeo, zsreg, zzodmfd, zzodmcad, z_crcad, z_crmad, z_crgid,
+             z_mad, z_gid, z_ccad, newdate, l_lifsp, l_textyb23, kvgr4, inco1,
+             bstkd, bzirk, kdkg1, bstdk_e, konda, sold2_kunnr, sold2_land1,
+             ship2_kunnr, ship2_land1, ship2_pstlz, ship2_regio, kkber, cmpre,
+             bsark, vsart, lfsta, netpr, reseller, reseller_name, udate, utime,
+             augru_desc, region_name, ship2_pstlz_sadr, ship2_pstlz_adrc,
+             zz_socdate, zz_shipearly, zz_stopreli, zz_stopshpi, 
+             --TRIM(name1),name2,rssd,SUBSTR(TRIM(AD_NAME1),1,100),AD_COUNTRY,AD_COUNTRY_CODE,
+             --INC000003087856, remove substr function on ad_name1 column. 
+             TRIM(name1),name2,rssd,TRIM(AD_NAME1),AD_COUNTRY,AD_COUNTRY_CODE,
+             CASE
+              WHEN t1.rssd    >= to_date('2015-01-01', 'YYYY-MM-DD')   THEN t1.rssd
+              WHEN t1.z_crgid = to_date('9999-12-31', 'yyyy-mm-dd')    THEN t1.erdat
+              WHEN t1.z_crgid < t1.erdat                               THEN t1.erdat
+              ELSE t1.z_crgid                      
+             END AS rsd,
+             ROW_NUMBER()OVER(PARTITION BY vbeln, posnr 
+             ORDER BY CASE
+                      WHEN t1.rssd    >= to_date('2015-01-01', 'YYYY-MM-DD')   THEN t1.rssd
+                      WHEN t1.z_crgid = to_date('9999-12-31', 'yyyy-mm-dd')    THEN t1.erdat
+                      WHEN t1.z_crgid < t1.erdat                               THEN t1.erdat
+                      ELSE t1.z_crgid                      
+                      END DESC,TO_NUMBER(T1.kwmeng) DESC) AS ID,--若相同订单相同行项目存在多条，以rsd最大的为准
+             'ACTIVE','pkg_pcdw_txn.PRC_PCDW_SO', v_current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SO', v_current_timestamp
+        FROM ecc_so_n t1
+       WHERE     t1.z_wfname = 'GLOBAL'
+             AND t1.posnr <> '000000'
+             AND EXISTS (SELECT 1
+                          FROM pcdw_itemsitemaster t2
+                          WHERE   t1.matnr = t2.item
+                              AND t1.werks = t2.siteid
+                              AND t2.zucod LIKE 'H%' 
+                              --AND (t2.zucod LIKE 'H%' or t2.prodh like '7%' or t2.prodh like '5EPG%') --add by liuyg5 judgment is X86 matertial
+                              );         
+                              
+     EXEC 'COMMIT';  
+     --若订单rsd变化则更新历史数据中quantity为0
+     UPDATE pcdw_so t1
+       SET matnr = t2.matnr, werks = t2.werks, auart = t2.auart,
+           augru = t2.augru, lifsk = t2.lifsk, vkorg = t2.vkorg,
+           vtweg = t2.vtweg, spart = t2.spart, bstzd = t2.bstzd,
+           ctlpc = t2.ctlpc, autlf = t2.autlf, vdatu = t2.vdatu,
+           vsbed = t2.vsbed, cmgst = t2.cmgst, inact = t2.inact,
+           isapp = t2.isapp, promisearrivald1 = t2.promisearrivald1,
+           promisearrivald2 = t2.promisearrivald2, h_textz021 = t2.h_textz021,
+           h_textz022 = t2.h_textz022, l_abgru = t2.l_abgru, bedae = t2.bedae,
+           lprio = t2.lprio, pstyv = t2.pstyv,
+           grkor = t2.grkor, kztlf = t2.kztlf, lgort = t2.lgort,
+           sobkz = t2.sobkz, cuobj = t2.cuobj, vkaus = t2.vkaus,
+           vstel = t2.vstel, route = t2.route, pmatn = t2.pmatn,
+           upmat = t2.upmat, uepos = t2.uepos, zzgeo = t2.zzgeo,
+           zzsgeo = t2.zzsgeo, zsreg = t2.zsreg, zzodmfd = t2.zzodmfd,
+           zzodmcad = t2.zzodmcad, z_crcad = t2.z_crcad, z_crmad = t2.z_crmad,
+           z_mad = t2.z_mad, z_gid = t2.z_gid,
+           z_ccad = t2.z_ccad, newdate = t2.newdate, l_lifsp = t2.l_lifsp,
+           l_textyb23 = t2.l_textyb23, kvgr4 = t2.kvgr4, inco1 = t2.inco1,
+           bstkd = t2.bstkd, bzirk = t2.bzirk, kdkg1 = t2.kdkg1,
+           bstdk_e = t2.bstdk_e, konda = t2.konda, sold2_kunnr = t2.sold2_kunnr,
+           sold2_land1 = t2.sold2_land1, ship2_kunnr = t2.ship2_kunnr,
+           ship2_land1 = t2.ship2_land1, ship2_pstlz = t2.ship2_pstlz,
+           ship2_regio = t2.ship2_regio, sys_ent_state = 'ACTIVE',
+           sys_last_modified_by = 'pkg_pcdw_txn.PRC_PCDW_SO', sys_last_modified_date = v_current_timestamp,
+           kkber = t2.kkber, cmpre = t2.cmpre, bsark = t2.bsark,
+           vsart = t2.vsart, lfsta = t2.lfsta, netpr = t2.netpr,
+           reseller = t2.reseller, reseller_name = t2.reseller_name,
+           udate = t2.udate, utime = t2.utime, augru_desc = t2.augru_desc,
+           region_name = t2.region_name, ship2_pstlz_sadr = t2.ship2_pstlz_sadr,
+           ship2_pstlz_adrc = t2.ship2_pstlz_adrc, zz_socdate = t2.zz_socdate,
+           zz_shipearly = t2.zz_shipearly, zz_stopreli = t2.zz_stopreli,
+           zz_stopshpi = t2.zz_stopshpi ,name1=t2.name1,name2=t2.name2,
+           T1.rssd = CASE WHEN T1.RSD=T2.RSD THEN t2.rssd ELSE t1.rssd END,   
+           T1.z_crgid = CASE WHEN T1.RSD=T2.RSD THEN t2.z_crgid ELSE t1.z_crgid END,   
+           T1.AD_NAME1 = CASE WHEN T1.RSD=T2.RSD THEN t2.AD_NAME1 ELSE t1.AD_NAME1 END,   
+           T1.AD_COUNTRY = CASE WHEN T1.RSD=T2.RSD THEN t2.AD_COUNTRY ELSE t1.AD_COUNTRY END,                                      
+           T1.AD_COUNTRY_CODE = CASE WHEN T1.RSD=T2.RSD THEN t2.AD_COUNTRY_CODE ELSE t1.AD_COUNTRY_CODE END,
+           T1.kwmeng = CASE WHEN T1.RSD=T2.RSD THEN t2.kwmeng ELSE '0' END 
+     FROM (SELECT * FROM Z_MID_ECC_SO_N WHERE ID=1 ) t2
+     WHERE     t1.vbeln = t2.vbeln
+           AND t1.posnr = t2.posnr;
+
+    EXEC 'COMMIT';     
+    --若同一时间段相同订单相同项目存在多条,则保留RSD最大的,其他的quantity为0
+    INSERT INTO pcdw_so
+      (vbeln, posnr, matnr, werks, erdat, erzet, auart, augru, lifsk, vkorg,
+       vtweg, spart, bstzd, ctlpc, autlf, vdatu, vsbed, cmgst, inact, isapp,
+       promisearrivald1, promisearrivald2, h_textz021, h_textz022, l_abgru,
+       bedae, kwmeng, lprio, pstyv, grkor, kztlf, lgort, sobkz, cuobj, vkaus,
+       vstel, route, pmatn, upmat, uepos, zzgeo, zzsgeo, zsreg, zzodmfd,
+       zzodmcad, z_crcad, z_crmad, z_crgid, z_mad, z_gid, z_ccad, newdate,
+       l_lifsp, l_textyb23, kvgr4, inco1, bstkd, bzirk, kdkg1, bstdk_e, konda,
+       sold2_kunnr, sold2_land1, ship2_kunnr, ship2_land1, ship2_pstlz,
+       ship2_regio, kkber, cmpre, bsark, vsart, lfsta, netpr, reseller,
+       reseller_name, udate, utime, augru_desc, region_name, ship2_pstlz_sadr,
+       ship2_pstlz_adrc, zz_socdate, zz_shipearly, zz_stopreli, zz_stopshpi,
+       name1,name2,rssd,AD_NAME1,AD_COUNTRY,AD_COUNTRY_CODE,rsd,
+       sys_ent_state, sys_created_by, sys_creation_date, sys_last_modified_by,sys_last_modified_date)
+      SELECT vbeln, posnr, matnr, werks, erdat, erzet, auart, augru, lifsk,
+             vkorg, vtweg, spart, bstzd, ctlpc, autlf, vdatu, vsbed, cmgst,
+             inact, isapp, promisearrivald1, promisearrivald2, h_textz021,
+             h_textz022, l_abgru, bedae, 
+             CASE 
+               WHEN T1.ID=1 THEN kwmeng
+               ELSE '0'
+              END AS kwmeng,
+             lprio, pstyv, grkor, kztlf,
+             lgort, sobkz, cuobj, vkaus, vstel, route, pmatn, upmat, uepos,
+             zzgeo, zzsgeo, zsreg, zzodmfd, zzodmcad, z_crcad, z_crmad, z_crgid,
+             z_mad, z_gid, z_ccad, newdate, l_lifsp, l_textyb23, kvgr4, inco1,
+             bstkd, bzirk, kdkg1, bstdk_e, konda, sold2_kunnr, sold2_land1,
+             ship2_kunnr, ship2_land1, ship2_pstlz, ship2_regio, kkber, cmpre,
+             bsark, vsart, lfsta, netpr, reseller, reseller_name, udate, utime,
+             augru_desc, region_name, ship2_pstlz_sadr, ship2_pstlz_adrc,
+             zz_socdate, zz_shipearly, zz_stopreli, zz_stopshpi,
+             name1,name2,rssd,AD_NAME1,AD_COUNTRY,AD_COUNTRY_CODE,rsd,
+             sys_ent_state, sys_created_by, sys_creation_date, sys_last_modified_by,sys_last_modified_date
+        FROM Z_MID_ECC_SO_N t1
+       WHERE NOT EXISTS (SELECT 1
+                              FROM pcdw_so t2
+                             WHERE     t1.vbeln = t2.vbeln
+                                   AND t1.posnr = t2.posnr
+                                   AND t1.rsd=t2.rsd);                      
+
+   -- Step 2. Update the PCDW_SO deleted posnr's status  
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SO', 'SUCCESS', NULL, '', '', '', '', 'step2');
+   EXEC 'COMMIT';    
+    UPDATE pcdw_so p
+       SET p.sys_ent_state = 'DELETED',
+           p.sys_last_modified_by = 'pkg_pcdw_txn.PRC_PCDW_SO',
+           p.sys_last_modified_date = v_current_timestamp
+     WHERE     EXISTS
+                  (SELECT 1
+                     FROM ecc_so_n e1
+                    WHERE e1.z_wfname = 'GLOBAL' AND e1.vbeln = p.vbeln)
+           AND NOT EXISTS
+                      (SELECT 1
+                         FROM ecc_so_n e2
+                        WHERE     e2.z_wfname = 'GLOBAL'
+                              AND e2.vbeln = p.vbeln
+                              AND e2.posnr = p.posnr);
+
+   -- Step 3. Merge data FROM ECC_SO_SL INTO PCDW_SO_SL
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SO', 'SUCCESS', NULL, '', '', '', '', 'step3');
+   EXEC 'COMMIT';    
+                                 
+     UPDATE pcdw_so_sl t1
+        SET wmeng = t2.wmeng, lifsp = t2.lifsp, edatu = t2.edatu,
+            wadat = t2.wadat, mbdat = t2.mbdat, banfn = t2.banfn,
+            bnfpo = t2.bnfpo, bmeng = t2.bmeng, --erdat = t2.erdat,
+            sys_ent_state = 'ACTIVE',
+            sys_last_modified_by = 'pkg_pcdw_txn.PRC_PCDW_SO',
+            sys_last_modified_date = v_current_timestamp 
+      FROM ecc_so_sl t2
+      WHERE     t2.z_wfname = 'GLOBAL'
+            AND t1.vbeln = t2.vbeln
+            AND t1.posnr = t2.posnr
+            AND t1.etenr = t2.etenr;
+            
+    EXEC 'COMMIT';         
+    
+    INSERT INTO pcdw_so_sl
+      (vbeln, posnr, etenr, wmeng, lifsp, edatu, wadat, mbdat, banfn, bnfpo,
+       bmeng, erdat, sys_ent_state, sys_created_by, sys_creation_date,
+       sys_last_modified_by, sys_last_modified_date)
+      SELECT vbeln, posnr, etenr, wmeng, lifsp, edatu, wadat, mbdat, banfn,
+             bnfpo, bmeng, erdat, 'ACTIVE', 'pkg_pcdw_txn.PRC_PCDW_SO',
+             v_current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SO',
+             v_current_timestamp
+        FROM ecc_so_sl t1
+       WHERE    t1.z_wfname = 'GLOBAL'
+             AND NOT EXISTS (SELECT 1
+                              FROM pcdw_so_sl t2
+                             WHERE t1.vbeln = t2.vbeln
+                               AND t1.posnr = t2.posnr
+                               AND t1.etenr = t2.etenr);       
+
+   -- Step 4. Update the PCDW_SO deleted posnr's status
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SO', 'SUCCESS', NULL, '', '', '', '', 'step4');
+   EXEC 'COMMIT';    
+                        
+    UPDATE pcdw_so_sl p
+       SET p.sys_ent_state = 'DELETED',
+           p.sys_last_modified_by = 'pkg_pcdw_txn.PRC_PCDW_SO',
+           p.sys_last_modified_date = v_current_timestamp
+     WHERE     EXISTS
+                  (SELECT 1
+                     FROM ecc_so_n e1
+                    WHERE e1.z_wfname = 'GLOBAL' AND e1.vbeln = p.vbeln)
+           AND NOT EXISTS
+                      (SELECT 1
+                         FROM ecc_so_sl e2
+                        WHERE     e2.z_wfname = 'GLOBAL'
+                              AND e2.vbeln = p.vbeln
+                              AND e2.posnr = p.posnr
+                              AND e2.etenr = p.etenr);
+ 
+   PO_RETURNCODE := 0;
+   -- log process end
+   INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SO', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';       
+END;
+

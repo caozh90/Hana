@@ -1,0 +1,95 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_source_priority::createSourcePriority" (
+	 IN LOGICAL_PLANT NVARCHAR(40),
+	 IN MO_TYPE NVARCHAR(40),
+	 IN WAREHOUSE_NUMBER NVARCHAR(40),
+	 IN STORAGE_LOCATION NVARCHAR(40),
+	 IN STORAGE_TYPE NVARCHAR(40),
+	 IN PRIORITY INTEGER,
+	 IN OWNER NVARCHAR(40),
+	 IN INVENTORY_TYPE NVARCHAR(40)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+BEGIN              
+    	aI_DETAIL :='createSourcePriority error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'createSourcePriority'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+END;  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'sourcingpriority::createable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ --START
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'createSourcePriority'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+
+insert into "SZEBGVMI"."UI_SOURCING_PRIORITY"(LOGICAL_PLANT,
+								 MO_TYPE,
+								 WAREHOUSE_NUMBER,
+								 STORAGE_LOCATION,
+								 STORAGE_TYPE,
+								 PRIORITY,
+								 OWNER,
+								 INVENTORY_TYPE,SYS_SOURCE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE								
+)
+		values(:LOGICAL_PLANT,
+								 :MO_TYPE,
+								 :WAREHOUSE_NUMBER,
+								 :STORAGE_LOCATION,
+								 :STORAGE_TYPE,
+								 :PRIORITY,
+								 :OWNER,
+								 :INVENTORY_TYPE,
+								 'UI',
+								 SESSION_USER,
+								 CURRENT_TIMESTAMP,
+								 SESSION_USER,
+								 CURRENT_TIMESTAMP);  	
+--insert操作需要写入日志
+ insert into "SZEBGVMI"."UI_SOURCING_PRIORITY_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				LOGICAL_PLANT,MO_TYPE,WAREHOUSE_NUMBER,STORAGE_LOCATION,STORAGE_TYPE,PRIORITY,OWNER,INVENTORY_TYPE
+	 	)
+VALUES
+	(SESSION_USER,
+	'create',
+	CURRENT_TIMESTAMP,
+	:LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE
+				);	    	
+--END
+aI_DETAIL := 'createSourcePriority successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'createSourcePriority'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	   	
+END;

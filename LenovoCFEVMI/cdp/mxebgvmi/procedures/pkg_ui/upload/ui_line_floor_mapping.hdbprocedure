@@ -1,0 +1,128 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_line_floor_mapping" (
+IN   DS_LINE NVARCHAR(200),
+IN   PHYSICAL_PLANT NVARCHAR(40),
+IN   FLOOR NVARCHAR(20),
+IN	 	business_name nvarchar(200),
+IN		seq	 nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+/************************************************************************
+*name      : ui_line_floor_mapping              --函数名
+*function  : upload数据至表ui_line_floor_mapping并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-29       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.mxebgvmi.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_line_floor_mapping';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_LINE_FLOOR_MAPPING';
+		SYS_SOURCE nvarchar(25) := 'UI';
+		SYS_AUTH_ID NVARCHAR(50);
+		validate1 int;
+		validate2 int;
+		validate3 int;
+					privilegeExists  NVARCHAR(30);
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_line_floor_mapping_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:DS_LINE,:PHYSICAL_PLANT,:FLOOR,:seq,:position);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_line_floor_mapping_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:DS_LINE,:PHYSICAL_PLANT,:FLOOR,:seq,:position);
+    END; 
+    --exception 
+	
+	--procedure begin
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     	
+	--设置businesscode:: table_name+business_code	
+	business_code := :seq;
+
+	SELECT COUNT(1) into n FROM  "MXEBGVMI"."UI_LINE_FLOOR_MAPPING"
+	WHERE DS_LINE= :DS_LINE AND PHYSICAL_PLANT= :PHYSICAL_PLANT;
+
+	--PHYSICAL_PLANT，验证在表SITEMASTER中存在
+	select count(1) into validate1 from CONF_SITEMASTER where PHYSICALPLANT = :PHYSICAL_PLANT ;
+	
+	IF validate1<=0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_line_floor_mapping_err"('"PHYSICAL_PLANT"::'||:PHYSICAL_PLANT||' is illegal',:business_name,
+			 	 :DS_LINE,:PHYSICAL_PLANT,:FLOOR,
+				:seq,:position);
+			--error log
+			return;	
+	ELSEIF n > 0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_line_floor_mapping_err"('Duplicate primary key',:business_name,
+			 	 :DS_LINE,:PHYSICAL_PLANT,:FLOOR,
+				:seq,:position);
+		 	--error log
+			return;	
+	end if;
+	
+	--SYS_AUTH_ID:根据PHYSICAL_PLANT的值，在CONF_SITEMASTER中取到SITEID的值
+	select SITEID into SYS_AUTH_ID from CONF_SITEMASTER where PHYSICALPLANT = :PHYSICAL_PLANT ;
+	
+	if(validate1 >0 and n <= 0) then
+	
+		INSERT INTO "MXEBGVMI"."UI_LINE_FLOOR_MAPPING"(
+				DS_LINE,PHYSICAL_PLANT,FLOOR,SYS_AUTH_ID,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,
+		 		SYS_SOURCE
+		 	) 
+		VALUES(
+		 	 :DS_LINE,:PHYSICAL_PLANT,:FLOOR,:SYS_AUTH_ID,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time,
+		 	 :SYS_SOURCE
+		 	 );
+		 	
+		--insert操作需要写入日志
+		insert into "MXEBGVMI"."UI_LINE_FLOOR_MAPPING_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				DS_LINE,PHYSICAL_PLANT,FLOOR,SYS_AUTH_ID,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,
+			 	SYS_SOURCE
+			)
+		VALUES
+			 	(:currentUser,
+			 	'create',
+			 	:create_time,
+				:DS_LINE,:PHYSICAL_PLANT,:FLOOR,:SYS_AUTH_ID,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time,
+			 	:SYS_SOURCE
+			 	);	 			 	
+		call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+	END IF;
+	
+END;

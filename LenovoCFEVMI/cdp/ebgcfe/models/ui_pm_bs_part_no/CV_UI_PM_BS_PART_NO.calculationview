@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_PM_BS_PART_NO" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_UI_PM_BS_PART_NO"/>
+  <localVariables/>
+  <variableMappings/>
+  <informationModelLayout relativeWidthScenario="45"/>
+  <dataSources>
+    <DataSource id="PM_UI_BS_PART" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="PM_UI_BS_PART"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews/>
+  <logicalModel id="PM_UI_BS_PART">
+    <descriptions/>
+    <attributes>
+      <attribute id="PART_NO" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PART_NO"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="PM_UI_BS_PART" columnName="PART_NO"/>
+      </attribute>
+      <attribute id="PART_DESC" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PART_DESC"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="PM_UI_BS_PART" columnName="PART_DESC"/>
+      </attribute>
+      <attribute id="CREATED_BY" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CREATED_BY"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="PM_UI_BS_PART" columnName="CREATED_BY"/>
+      </attribute>
+      <attribute id="CREATION_DATE_RAW" hidden="true" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CREATION_DATE_RAW"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="PM_UI_BS_PART" columnName="CREATION_DATE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="CREATION_DATE" hidden="false" order="5" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CREATION_DATE"/>
+        <keyCalculation datatype="VARCHAR" expressionLanguage="COLUMN_ENGINE" length="20">
+          <formula>&#xD;
+string(seconddate(&quot;CREATION_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="110"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

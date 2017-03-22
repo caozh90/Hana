@@ -1,0 +1,506 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost" 
+( 
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int,
+	
+	--IN CYCLE NVARCHAR(40),
+	--IN PRODUCT_GROUP NVARCHAR(10),
+	IN MODEL NVARCHAR(40),
+	IN BRAND NVARCHAR(40),
+	--IN SUBGEO NVARCHAR(20),
+	IN COUNTRY NVARCHAR(20),
+	IN M1 DECIMAL(15,4),
+	IN M2 DECIMAL(15,4),
+	IN M3 DECIMAL(15,4),
+	IN M4 DECIMAL(15,4),
+	IN M5 DECIMAL(15,4),
+	IN M6 DECIMAL(15,4),
+	IN M7 DECIMAL(15,4),
+	IN M8 DECIMAL(15,4),
+	IN M9 DECIMAL(15,4),
+	IN M10 DECIMAL(15,4),
+	IN M11 DECIMAL(15,4),
+	IN M12 DECIMAL(15,4),
+	IN M13 DECIMAL(15,4),
+	IN M14 DECIMAL(15,4),
+	IN M15 DECIMAL(15,4),
+	IN M16 DECIMAL(15,4),
+	IN M17 DECIMAL(15,4),
+	IN M18 DECIMAL(15,4)
+	
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	
+/************************************************************************
+*name        :      ui_service_cost
+*function    :               
+*input       ：                 business_name,SEQ,position,......
+*output      :      
+*author      :      billy Qiao
+*CreateDate  :      2015.9.8
+*UpdateDate  :      2015.9.8
+*************************************************************************/
+	
+	AS
+	
+	path varchar(100):='cdp.egbdf.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_service_cost';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	table_name varchar(1000) := 'UI_SERVICECOST';
+	validate int;
+	
+	V_SUBGEO VARCHAR(20);
+	
+	v_item_type       VARCHAR(20);
+	v_proc_name       VARCHAR(100) := 'cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost';
+	v_resourceExists  BIGINT;
+	
+BEGIN
+--Exception Declare
+	DECLARE NO_DATA_FOUND CONDITION FOR SQL_ERROR_CODE 1299;
+	
+--Exception Handler Declare
+	DECLARE EXIT HANDLER FOR NO_DATA_FOUND
+		BEGIN
+	     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost_err"
+	     						(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+								'CURRENT','EBG',:MODEL,:BRAND,:V_SUBGEO,:COUNTRY,:M1,:M2,:M3,:M4,
+     							:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+		
+		
+		END;
+		
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+	     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost_err"
+	     						(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+								'CURRENT','EBG',:MODEL,:BRAND,:V_SUBGEO,:COUNTRY,:M1,:M2,:M3,:M4,
+     							:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+		
+		
+		END;
+
+--Get business code
+	business_code := :SEQ;
+
+--Data validation, key must not be null
+	IF :MODEL = '' OR :MODEL IS NULL THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost_err"
+	     						('MODEL MUST NOT BE NULL',:business_name,:SEQ,:position,
+								'CURRENT','EBG',:MODEL,:BRAND,:V_SUBGEO,:COUNTRY,:M1,:M2,:M3,:M4,
+     							:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+			 	 
+		RETURN;
+	END IF;
+
+	IF :COUNTRY = '' OR :COUNTRY IS NULL THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost_err"
+	     						('COUNTRY MUST NOT BE NULL',:business_name,:SEQ,:position,
+								'CURRENT','EBG',:MODEL,:BRAND,:V_SUBGEO,:COUNTRY,:M1,:M2,:M3,:M4,
+     							:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+			 	 
+		RETURN;
+	END IF;
+	
+--Get subgeo
+	T_UI_REGION = select distinct 
+		   			PRODUCT_GROUP,
+		   			GEO,
+		   			SUBGEO,
+		   			COUNTRY,
+		   			COUNTRY_NAME
+				  from 
+				  	"EBGCFE"."UI_REGION"
+				  where 
+				  	COUNTRY = :COUNTRY;
+				  	
+	select count(*) into validate from :T_UI_REGION;
+	IF validate <> 1  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost_err"
+								('"COUNTRY"::'||:COUNTRY||' is illegal',:business_name,:SEQ,:position,
+								'CURRENT','EBG',:MODEL,:BRAND,:V_SUBGEO,:COUNTRY,:M1,:M2,:M3,:M4,
+     							:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+     							
+		RETURN;
+	END IF ;
+
+	select SUBGEO into V_SUBGEO from :T_UI_REGION;
+	
+--Data validation, data range check
+	/*select  count(1) into validate from "EBGCFE"."UI_ITEM" where ITEM =:MODEL;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost_err"
+								('"MODEL"::'||:MODEL||' is illegal',:business_name,:SEQ,:position,
+								'CURRENT','EBG',:MODEL,:BRAND,:V_SUBGEO,:COUNTRY,:M1,:M2,:M3,:M4,
+     							:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+     							
+		RETURN;
+	END IF ;*/
+	
+	--Added by Zhoubinbin 20160718, Validate master data for service parts
+	SELECT COUNT(0) INTO v_resourceExists 
+	  FROM ui_item
+	 WHERE product_group = 'EBG'
+	   AND item          = :model;
+	   
+	IF v_resourceExists = 0 AND :brand = 'SERVICE'
+	THEN
+        INSERT INTO ui_item
+	       (cycle, product_group, brand, asp_prd_family, item, item_desc, 
+	        item_type, eol_status, sys_created_date, sys_created_by, 
+	        sys_last_modified_date, sys_last_modified_by)
+	    VALUES('CURRENT', 'EBG', :brand, :brand, :model, :brand,
+	           :brand, 'OL', CURRENT_TIMESTAMP, :v_proc_name, CURRENT_TIMESTAMP,
+	           :v_proc_name);
+	          
+    ELSEIF :v_resourceExists > 0
+    THEN
+	    SELECT item_type INTO v_item_type
+	      FROM ui_item
+	     WHERE product_group = 'EBG'
+	       AND item          = :model;
+	       
+	    IF :v_item_type IS NOT NULL AND :v_item_type <> 'SERVICE'
+	    THEN
+		    CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost_err"
+	     						('Item type is not SERVICE in UI_ITEM',:business_name,:SEQ,:position,
+								'CURRENT','EBG',:MODEL,:BRAND,:V_SUBGEO,:COUNTRY,:M1,:M2,:M3,:M4,
+     							:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+			 	 
+		    RETURN;
+	    ELSEIF v_item_type IS NULL AND :brand = 'SERVICE'
+	    THEN
+	        INSERT INTO ui_item_log
+	            (cycle, product_group, brand, asp_prd_family, ecc_prod_family,
+                 machine_type, trmodel, item, item_desc, prod_h, item_type,
+                 item_source, eol_status, eol_startdate, eol_enddate, action, 
+                 status,sys_created_date, sys_created_by, sys_last_modified_date,
+                 sys_last_modified_by, geo, subgeo, country, commodity_code, hy_family,
+                 group_text, brand_text, series, subseries, stdpd, beskz, schgt, mtart,
+                 bismt, user_item_type, user_eol_status, user_item_desc, user_commodity_code, 
+                 user_asp_prd_family, brgew, gewei, custommodelflag, basewarranty, zlcod, zeinr, 
+                 zucod, x_entity_type, x_cofcat, x_specmoddesg, x_ww_annc_date, x_ww_withdraw_date, 
+                 x_cofsubcat, at_modified_by, at_action, at_modified_time)
+            SELECT cycle, product_group, brand, asp_prd_family, ecc_prod_family,
+                   machine_type, trmodel, item, item_desc, prod_h, item_type,
+                   item_source, eol_status, eol_startdate, eol_enddate, action, 
+                   status,sys_created_date, sys_created_by, sys_last_modified_date,
+                   sys_last_modified_by, geo, subgeo, country, commodity_code, hy_family,
+                   group_text, brand_text, series, subseries, stdpd, beskz, schgt, mtart,
+                   bismt, user_item_type, user_eol_status, user_item_desc, user_commodity_code, 
+                   user_asp_prd_family, brgew, gewei, custommodelflag, basewarranty, zlcod, zeinr, 
+                   zucod, x_entity_type, x_cofcat, x_specmoddesg, x_ww_annc_date, x_ww_withdraw_date, 
+                   x_cofsubcat, v_proc_name, 'UPDATE', CURRENT_TIMESTAMP
+              FROM ui_item
+             WHERE product_group = 'EBG'
+	           AND item          = :model;
+	           
+	       UPDATE ui_item
+	          SET item_type  = 'SERVICE',
+	              eol_status = 'OL'
+	        WHERE product_group = 'EBG'
+	          AND item          = :model;
+	          
+	   END IF;
+   END IF;
+	
+	select  count(1) into validate from "EBGCFE"."UI_PRODFAMILY" where BRAND =:BRAND;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_service_cost_err"
+								('"BRAND"::'||:BRAND||' is illegal',:business_name,:SEQ,:position,
+								'CURRENT','EBG',:MODEL,:BRAND,:V_SUBGEO,:COUNTRY,:M1,:M2,:M3,:M4,
+     							:M5,:M6,:M7,:M8,:M9,:M10,:M11,:M12,:M13,:M14,:M15,:M16,:M17,:M18);
+     							
+		RETURN;
+	END IF ;
+	
+--Update or Insert according to table key
+	select count(1) into n from "EBGCFE"."UI_SERVICECOST" 
+	where 
+		CYCLE = 'CURRENT'
+		and PRODUCT_GROUP = 'EBG'
+		and MODEL = :MODEL
+		and COUNTRY = :COUNTRY
+	;--end select;
+	
+	--Update record when data exists
+	IF n > 0 THEN
+		update
+			"EBGCFE"."UI_SERVICECOST"
+		set
+			BRAND = :BRAND,
+			SUBGEO = :V_SUBGEO,
+			M1 = :M1,
+			M2 = :M2,
+			M3 = :M3,
+			M4 = :M4,
+			M5 = :M5,
+			M6 = :M6,
+			M7 = :M7,
+			M8 = :M8,
+			M9 = :M9,
+			M10 = :M10,
+			M11 = :M11,
+			M12 = :M12,
+			M13 = :M13,
+			M14 = :M14,
+			M15 = :M15,
+			M16 = :M16,
+			M17 = :M17,
+			M18 = :M18,
+			SYS_LAST_MODIFIED_DATE= CURRENT_UTCTIMESTAMP,
+			SYS_LAST_MODIFIED_BY = SESSION_USER,
+			CHANGE_ID = SESSION_USER,
+			CHANGE_ACTION = 'update',
+			ACTION = 'update'
+		where
+			CYCLE = 'CURRENT'
+			and PRODUCT_GROUP = 'EBG'
+			and MODEL = :MODEL
+			and COUNTRY = :COUNTRY
+		;--end update;
+	
+		insert into
+			"EBGCFE"."UI_SERVICECOST_LOG"(
+				CYCLE,
+				PRODUCT_GROUP,
+				MODEL,
+				BRAND,
+				SUBGEO,
+				COUNTRY,
+				M1,
+				M2,
+				M3,
+				M4,
+				M5,
+				M6,
+				M7,
+				M8,
+				M9,
+				M10,
+				M11,
+				M12,
+				M13,
+				M14,
+				M15,
+				M16,
+				M17,
+				M18,
+				--ACTION,
+				--STATUS,
+				SYS_CREATED_DATE,
+				SYS_CREATED_BY,
+				SYS_LAST_MODIFIED_DATE,
+				SYS_LAST_MODIFIED_BY,
+				CHANGE_ID,
+				CHANGE_ACTION,
+				AT_MODIFIED_BY,
+				AT_ACTION,
+				AT_MODIFIED_ON,
+				AT_MILLIS
+			)values(
+				'CURRENT',
+				'EBG',
+				:MODEL,
+				:BRAND,
+				:V_SUBGEO,
+				:COUNTRY,
+				:M1,
+				:M2,
+				:M3,
+				:M4,
+				:M5,
+				:M6,
+				:M7,
+				:M8,
+				:M9,
+				:M10,
+				:M11,
+				:M12,
+				:M13,
+				:M14,
+				:M15,
+				:M16,
+				:M17,
+				:M18,
+				--'update',
+				CURRENT_UTCTIMESTAMP,		--SYS_CREATED_DATE,
+				SESSION_USER,				--SYS_CREATED_BY,
+				CURRENT_UTCTIMESTAMP,		--SYS_LAST_MODIFIED_DATE,
+				SESSION_USER,				--SYS_LAST_MODIFIED_BY,
+				SESSION_USER,				--CHANGE_ID,
+				'update',					--CHANGE_ACTION,
+				SESSION_USER,				--AT_MODIFIED_BY,
+				'update',					--AT_ACTION,
+				CURRENT_UTCTIMESTAMP,		--AT_MODIFIED_ON,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3'))		--AT_MILLIS		
+			)
+		;--end insert;	
+	
+	END IF;
+	
+	
+	--Insert new record
+	IF n = 0 THEN
+		insert into
+			"EBGCFE"."UI_SERVICECOST"(
+				CYCLE,
+				PRODUCT_GROUP,
+				MODEL,
+				BRAND,
+				SUBGEO,
+				COUNTRY,
+				M1,
+				M2,
+				M3,
+				M4,
+				M5,
+				M6,
+				M7,
+				M8,
+				M9,
+				M10,
+				M11,
+				M12,
+				M13,
+				M14,
+				M15,
+				M16,
+				M17,
+				M18,
+				ACTION,
+				--STATUS,
+				SYS_CREATED_DATE,
+				SYS_CREATED_BY,
+				SYS_LAST_MODIFIED_DATE,
+				SYS_LAST_MODIFIED_BY,
+				CHANGE_ID,
+				CHANGE_ACTION
+			)values(
+				'CURRENT',
+				'EBG',
+				:MODEL,
+				:BRAND,
+				:V_SUBGEO,
+				:COUNTRY,
+				:M1,
+				:M2,
+				:M3,
+				:M4,
+				:M5,
+				:M6,
+				:M7,
+				:M8,
+				:M9,
+				:M10,
+				:M11,
+				:M12,
+				:M13,
+				:M14,
+				:M15,
+				:M16,
+				:M17,
+				:M18,
+				'insert',--:ACTION,
+				--:STATUS,
+				CURRENT_UTCTIMESTAMP,			--SYS_CREATED_DATE,
+				SESSION_USER,					--SYS_CREATED_BY,
+				CURRENT_UTCTIMESTAMP,			--SYS_LAST_MODIFIED_DATE,
+				SESSION_USER,					--SYS_LAST_MODIFIED_BY,
+				SESSION_USER,					--CHANGE_ID,
+				'insert'						--CHANGE_ACTION
+			);		
+	
+	--Insert log table
+		insert into
+			"EBGCFE"."UI_SERVICECOST_LOG"(
+				CYCLE,
+				PRODUCT_GROUP,
+				MODEL,
+				BRAND,
+				SUBGEO,
+				COUNTRY,
+				M1,
+				M2,
+				M3,
+				M4,
+				M5,
+				M6,
+				M7,
+				M8,
+				M9,
+				M10,
+				M11,
+				M12,
+				M13,
+				M14,
+				M15,
+				M16,
+				M17,
+				M18,
+				--ACTION,
+				--STATUS,
+				SYS_CREATED_DATE,
+				SYS_CREATED_BY,
+				SYS_LAST_MODIFIED_DATE,
+				SYS_LAST_MODIFIED_BY,
+				CHANGE_ID,
+				CHANGE_ACTION,
+				AT_MODIFIED_BY,
+				AT_ACTION,
+				AT_MODIFIED_ON,
+				AT_MILLIS
+			)values(
+				'CURRENT',
+				'EBG',
+				:MODEL,
+				:BRAND,
+				:V_SUBGEO,
+				:COUNTRY,
+				:M1,
+				:M2,
+				:M3,
+				:M4,
+				:M5,
+				:M6,
+				:M7,
+				:M8,
+				:M9,
+				:M10,
+				:M11,
+				:M12,
+				:M13,
+				:M14,
+				:M15,
+				:M16,
+				:M17,
+				:M18,
+				--:V_ACTION,
+				--:V_STATUS,
+				CURRENT_UTCTIMESTAMP,		--SYS_CREATED_DATE,
+				SESSION_USER,				--SYS_CREATED_BY,
+				CURRENT_UTCTIMESTAMP,		--SYS_LAST_MODIFIED_DATE,
+				SESSION_USER,				--SYS_LAST_MODIFIED_BY,
+				SESSION_USER,				--CHANGE_ID,
+				'insert',					--CHANGE_ACTION,
+				SESSION_USER,				--AT_MODIFIED_BY,
+				'insert',					--AT_ACTION,
+				CURRENT_UTCTIMESTAMP,		--AT_MODIFIED_ON,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3'))		--AT_MILLIS		
+			);
+	END IF;
+
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+		:table_name || :business_code,:business_name,1,0,:table_name);
+
+END;

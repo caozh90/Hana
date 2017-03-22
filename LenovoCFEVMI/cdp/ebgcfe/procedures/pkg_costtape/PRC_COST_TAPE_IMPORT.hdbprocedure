@@ -1,0 +1,336 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_costtape::PRC_COST_TAPE_IMPORT" (
+  --IN    p_part_list         "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.PROC_T.PART_LIST",
+  IN    p_part_list_str     VARCHAR(5000),
+  OUT   P_EXITCODE          INTEGER,
+  OUT   P_EXITMESS          VARCHAR(500) 
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_COST_TAPE_IMPORT            
+*function   : Import Cost Tape from UI
+*input      ：p_part_list : part list (material no. and plant)
+*output     : p_exitcode : error code / p_exitmess : error message 
+*author     : Leonard Ling
+*CreateDate : 2014-12-11
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS 
+BEGIN
+  -- DATA
+  DECLARE      v_pkg_name        VARCHAR(30) := 'PKG_COSTTAPE';    
+  DECLARE      v_proc_name       VARCHAR(50) := 'PRC_COST_TAPE_IMPORT';
+  DECLARE      v_full_name       VARCHAR(60) := :v_pkg_name ||'.'|| :v_proc_name;
+  DECLARE      logidi            INTEGER := 0;  
+  DECLARE      v_count           INTEGER := 0;
+  declare v_str varchar(5000);
+  declare v_idx integer;  
+  declare v_line varchar(100);
+  declare v_part_number varchar(40);
+  declare v_mfg_plant varchar(20);
+  declare part_array varchar(40) ARRAY;
+  declare plant_array varchar(20) ARRAY;  
+  
+  -- EXCEPTION
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+    p_exitcode := ::SQL_ERROR_CODE;
+    p_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500);
+    
+    EXEC 'ROLLBACK';
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+									I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+									I_MESSAGE=>'ERROR', I_DETAIL=>to_char(:p_exitcode) || ':' || :p_exitmess );   
+  END;    
+     
+  -- PROCESS LOGIC
+  p_exitcode := -1;
+  p_exitmess := 'Error Message';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                        I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');   
+  
+  -- Start parse input string
+  -- due to security issue, the input table type is replaced by input string
+  v_str := ifnull(:p_part_list_str, '');
+  v_str := substr_before(substr_after(:v_str, '['), ']');
+
+  v_idx := LOCATE(:v_str, '}');
+  WHILE :v_idx > 0 DO
+  
+    	v_line := substr_after(substr_before(:v_str, '}'), '{'); --获取第1条数据
+  		v_count := :v_count + 1;
+		
+		v_part_number := ltrim(substr_after(substr_before(:v_line, ','), ':'));--获取PART_NUMBER
+		v_part_number := substring(:v_part_number, 2, length(:v_part_number)-2);--删掉"
+		
+		v_line := ltrim(substr_after(:v_line,','));--删掉第1个参数
+	    v_mfg_plant := ltrim(substr_after(substr_before(:v_line, ','), ':'));--获取MFG_PLANT
+	    v_mfg_plant := substring(:v_mfg_plant,2,length(:v_mfg_plant)-2);--去除"
+	    
+	    part_array[:v_count] := :v_part_number;
+    	plant_array[:v_count] := :v_mfg_plant;
+	    	
+	    v_str := substr_after(:v_str,'}');
+	    v_idx := LOCATE(:v_str, '}');
+  
+  /* Deleted by Gavin
+	v_line := substr_after(substr_before(:v_str, '}'), '{');
+	v_count := :v_count + 1;
+
+    v_part_number := ltrim(substr_after(substr_before(:v_line, ','), ':'));
+    v_part_number := substring(:v_part_number, 2, length(:v_part_number)-2);
+
+    v_mfg_plant := ltrim(substr_after(substr_after(:v_line, ','), ':'));
+    --v_mfg_plant := substring(:v_mfg_plant, 2, length(:v_mfg_plant)-2);
+    if locate(v_mfg_plant,',')=0 then
+        v_mfg_plant:=substring(:v_mfg_plant, 2, length(:v_mfg_plant)-2);
+    else
+        v_mfg_plant:=substring(:v_mfg_plant, 2, locate(:v_mfg_plant,',')-3);
+    end if;
+    
+    part_array[:v_count] := :v_part_number;
+    plant_array[:v_count] := :v_mfg_plant;
+	  
+	v_str := replace(:v_str, '{'||:v_line||'}', '');
+	v_idx := LOCATE(:v_str, '}');*/
+	
+	
+  END WHILE;
+  
+  p_part_list = UNNEST(:part_array, :plant_array) AS ("PART_NUMBER", "MFG_PLANT"); 
+  -- End parse input string
+  
+  DELETE FROM mid_ui_cost_tape;  
+  
+  -- get all the selected parts from UI, or select all entries if parts are not specified
+  v_part_list = SELECT * FROM :p_part_list WHERE part_number <> 'null';
+  SELECT count(*) INTO v_count FROM :v_part_list;       
+  IF :v_count = 0 THEN
+    INSERT INTO mid_ui_cost_tape 
+        (cycle, product_group, part_number, plant, cost_elem, pg, spec, commodity,
+         source, used, description, currency_name, m1, m2, m3, m4, m5, m6, m7, m8, 
+         m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, weighted_average, 
+         lattest_procur, owner_costtape, sys_created_date, sys_created_by, 
+         sys_last_modified_date, sys_last_modified_by)
+    SELECT a.cycle, a.product_group, b.real_part, a.mfg_plant, a.cost_elem, a.pg, 
+           a.spec, a.commodity, null, null, c.item_desc, a.currency_name, a.m1, 
+           a.m2, a.m3, a.m4, a.m5, a.m6, a.m7, a.m8, a.m9, a.m10, a.m11, a.m12, a.m13, 
+           a.m14, a.m15, a.m16, a.m17, a.m18, a.m1, a.m1, a.owner_costtape, 
+           current_timestamp, a.sys_created_by, current_timestamp, a.sys_last_modified_by           
+      FROM ui_cost_tape_ori a, ui_real_dummy_mapping b, ui_item c
+     WHERE a.product_group      = b.product_group
+       AND UPPER(a.part_number) = UPPER(b.dummy_part)
+       AND b.product_group      = c.product_group
+       AND b.real_part          = c.item; 
+                            
+    INSERT INTO mid_ui_cost_tape (cycle, product_group, part_number, plant, cost_elem, pg, spec, commodity,
+           source, used, description, currency_name, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12,
+           m13, m14, m15, m16, m17, m18,
+           weighted_average, lattest_procur, owner_costtape, sys_created_date, sys_created_by, sys_last_modified_date, sys_last_modified_by)
+      SELECT cycle, product_group, part_number, mfg_plant, cost_elem, pg, spec, commodity,
+           null, null, description, currency_name, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12,
+           m13, m14, m15, m16, m17, m18,
+           m1, m1, owner_costtape, current_timestamp, sys_created_by, current_timestamp, sys_last_modified_by           
+      FROM ui_cost_tape_ori a
+      WHERE NOT EXISTS(SELECT 1 FROM mid_ui_cost_tape b
+                        WHERE b.product_group = a.product_group
+                          AND b.part_number   = a.part_number
+                          AND b.plant         = a.mfg_plant);
+          
+  ELSE
+    INSERT INTO mid_ui_cost_tape 
+        (cycle, product_group, part_number, plant, cost_elem, pg, spec, commodity,
+         source, used, description, currency_name, m1, m2, m3, m4, m5, m6, m7, m8, 
+         m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, weighted_average, 
+         lattest_procur, owner_costtape, sys_created_date, sys_created_by, 
+         sys_last_modified_date, sys_last_modified_by)
+    SELECT a.cycle, a.product_group, b.real_part, a.mfg_plant, a.cost_elem, a.pg, 
+           a.spec, a.commodity, null, null, c.item_desc, a.currency_name, a.m1, 
+           a.m2, a.m3, a.m4, a.m5, a.m6, a.m7, a.m8, a.m9, a.m10, a.m11, a.m12, a.m13, 
+           a.m14, a.m15, a.m16, a.m17, a.m18, a.m1, a.m1, a.owner_costtape, 
+           current_timestamp, a.sys_created_by, current_timestamp, a.sys_last_modified_by           
+      FROM ui_cost_tape_ori a, ui_real_dummy_mapping b, ui_item c
+     WHERE a.product_group      = b.product_group
+       AND UPPER(a.part_number) = UPPER(b.dummy_part)
+       AND ((b.real_part)  IN(SELECT part_number FROM :v_part_list) OR
+            (b.dummy_part) IN(SELECT part_number FROM :v_part_list))
+       AND b.product_group      = c.product_group
+       AND b.real_part          = c.item;       
+  
+    INSERT INTO mid_ui_cost_tape (cycle, product_group, part_number, plant, cost_elem, pg, spec, commodity,
+           source, used, description, currency_name, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12,
+           m13, m14, m15, m16, m17, m18,
+           weighted_average, lattest_procur, owner_costtape, sys_created_date, sys_created_by, sys_last_modified_date, sys_last_modified_by)
+      SELECT cycle, product_group, part_number, mfg_plant, cost_elem, pg, spec, commodity,
+           null, null, description, currency_name, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12,
+           m13, m14, m15, m16, m17, m18,
+           m1, m1, owner_costtape, current_timestamp, sys_created_by, current_timestamp, sys_last_modified_by 
+           FROM ui_cost_tape_ori a
+           WHERE (a.part_number) IN (SELECT part_number FROM :v_part_list)
+             AND NOT EXISTS(SELECT 1 FROM mid_ui_cost_tape b
+                        WHERE b.product_group = a.product_group
+                          AND b.part_number   = a.part_number
+                          AND b.plant         = a.mfg_plant);              
+  END IF;
+  
+  -- unify the currency into USD
+   UPDATE mid_ui_cost_tape a
+      SET (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, weighted_average, lattest_procur, currency_name) =
+             (SELECT a.m1 / b.m1, a.m2 / b.m2, a.m3 / b.m3, a.m4 / b.m4,
+                     a.m5 / b.m5, a.m6 / b.m6, a.m7 / b.m7, a.m8 / b.m8,
+                     a.m9 / b.m9, a.m10 / b.m10, a.m11 / b.m11, a.m12 / b.m12,
+                     a.m13 / b.m13, a.m14 / b.m14, a.m15 / b.m15, a.m16 / b.m16, a.m17 / b.m17, a.m18 / b.m18,
+                     a.m1 / b.m1, a.m1 / b.m1,
+                     'USD'
+                FROM ui_exchange_rate b
+               WHERE a.currency_name = b.currency_name
+                 AND a.currency_name <> 'USD'
+                 AND a.product_group = b.product_group
+                 AND a.cycle = b.cycle )
+    WHERE a.currency_name <> 'USD';  
+    
+  -- extend cost tape to all plants that are specified in the mapping table
+  -- in case user input cost tape for 1 plant, the cost tape will be copied to all the cost plants
+	INSERT INTO mid_ui_cost_tape (cycle, product_group, part_number, plant, cost_elem, pg, spec, commodity, 
+	      source, used, description, currency_name, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, 
+	      m13, m14, m15, m16, m17, m18,
+	      weighted_average, lattest_procur, owner_costtape, sys_created_date, sys_created_by, sys_last_modified_date, sys_last_modified_by) 
+	SELECT a.cycle, a.product_group, a.part_number, b.cost_plant, a.cost_elem, a.pg, a.spec, a.commodity,
+	       a.source, a.used, a.description, a.currency_name, a.m1, a.m2, a.m3, a.m4, a.m5, a.m6, a.m7, a.m8, a.m9, a.m10, a.m11, a.m12,
+	       a.m13, a.m14, a.m15, a.m16, a.m17, a.m18,
+	       a.weighted_average, a.lattest_procur, a.owner_costtape, current_timestamp, session_user, current_timestamp, session_user
+	  FROM mid_ui_cost_tape a , ui_plant_costplant b 
+	 WHERE a.plant         = b.plant 
+	   AND a.product_group = b.product_group 
+	   AND b.plant        <> b.cost_plant   --do not duplicate same plant field
+	   AND NOT EXISTS(SELECT 1 FROM mid_ui_cost_tape c
+	                   WHERE c.product_group = a.product_group
+	                     AND c.part_number   = a.part_number
+	                     AND c.cost_elem     = a.cost_elem
+	                     AND c.plant         = b.cost_plant)
+	   ;
+	   
+	
+	
+	DELETE FROM mid_ui_cost_tape 
+	WHERE (product_group, plant) NOT IN
+	      (SELECT product_group, cost_plant FROM ui_plant_costplant);
+  
+  -- calculate TOTE and TOTL for each part if these 2 elements are not uploaded
+  -- update TOTE and TOTL from the setting in ui_cost_elem
+  -- calculate Weighted Average and Latest Procur for each part
+    UPDATE mid_ui_cost_tape a SET a.tote = b.tote, a.totl = b.totl
+      FROM ui_cost_elem b
+      WHERE a.cost_elem = b.element_name
+        AND a.cycle = b.cycle; 
+
+   tab_tote = SELECT cycle, product_group, part_number, plant, 'TOTE' as cost_elem, max(pg) as pg, max(spec) as spec, max(commodity) as commodity,
+           max(source) as source, max(used) as used, max(description) as description, max(currency_name) as currency_name, sum(m1) as m1, 
+           sum(m2) as m2, sum(m3) as m3, sum(m4) as m4, sum(m5) as m5, sum(m6) as m6, 
+           sum(m7) as m7, sum(m8) as m8, sum(m9) as m9, sum(m10) as m10, sum(m11) as m11, sum(m12) as m12,             
+           '' as TOTE, '' as TOTL, 
+           sum(weighted_average) as weighted_average, sum(lattest_procur) as lattest_procur, max(owner_costtape) as owner_costtape, 
+           current_timestamp as sys_created_date, session_user as sys_created_by, 
+           current_timestamp as sys_last_modified_date, session_user as sys_last_modified_by,
+           sum(m13) as m13, sum(m14) as m14, sum(m15) as m15, sum(m16) as m16, sum(m17) as m17, sum(m18) as m18,TOTE old_tote
+           FROM mid_ui_cost_tape 
+           WHERE tote = 'Y'
+           GROUP BY cycle, product_group, part_number, plant, TOTE; 
+           
+   tab_totl = SELECT cycle, product_group, part_number, plant, 'TOTL' as cost_elem, max(pg) as pg, max(spec) as spec, max(commodity) as commodity,
+           max(source) as source, max(used) as used, max(description) as description, max(currency_name) as currency_name, sum(m1) as m1, 
+           sum(m2) as m2, sum(m3) as m3, sum(m4) as m4, sum(m5) as m5, sum(m6) as m6, 
+           sum(m7) as m7, sum(m8) as m8, sum(m9) as m9, sum(m10) as m10, sum(m11) as m11, sum(m12) as m12, 
+           '' as TOTE, '' as TOTL, 
+           sum(weighted_average) as weighted_average, sum(lattest_procur) as lattest_procur, max(owner_costtape) as owner_costtape, 
+           current_timestamp as sys_created_date, session_user as sys_created_by, 
+           current_timestamp as sys_last_modified_date, session_user as sys_last_modified_by,
+           sum(m13) as m13, sum(m14) as m14, sum(m15) as m15, sum(m16) as m16, sum(m17) as m17, sum(m18) as m18,totl old_totl
+           FROM mid_ui_cost_tape
+           WHERE totl = 'Y'
+           GROUP BY cycle, product_group, part_number, plant, TOTL;   
+                  
+             
+   --avoid conflict results (if user has input TOTE/TOTL entries, remove the calculation result for this part)                     
+      INSERT INTO  mid_ui_cost_tape (
+    SELECT b.cycle,b.product_group, b.part_number, b.plant,b.cost_elem,b.pg,b.spec,b.commodity,b.source,b.used,b.description,b.currency_name,b.m1,
+      b.m2,b.m3,b.m4,b.m5,b.m6,b.m7,b.m8,b.m9,b.m10,b.m11,b.m12,b.tote,b.totl,b.weighted_average,lattest_procur,owner_costtape,sys_created_date,
+      sys_created_by,sys_last_modified_date,sys_last_modified_by,m13,m14,m15,m16,m17,m18
+    FROM (select * from
+           (SELECT cycle, product_group, part_number, plant, 'TOTE' as cost_elem,tote
+           FROM mid_ui_cost_tape 
+           WHERE tote = 'Y'
+           GROUP BY cycle, product_group, part_number, plant, TOTE)
+           WHERE ( cycle, product_group, part_number, plant, cost_elem ) 
+                                    NOT IN ( SELECT cycle, product_group, part_number, plant, cost_elem FROM mid_ui_cost_tape ))a,   
+    :tab_tote b WHERE 
+    a.cycle=b.cycle and a.product_group=b.product_group and a.part_number=b.part_number and a.plant=b.plant and a.TOTE=b.old_tote
+    UNION 
+    SELECT b.cycle,b.product_group, b.part_number, b.plant,b.cost_elem,b.pg,b.spec,b.commodity,b.source,b.used,b.description,b.currency_name,b.m1,
+      b.m2,b.m3,b.m4,b.m5,b.m6,b.m7,b.m8,b.m9,b.m10,b.m11,b.m12,b.tote,b.totl,b.weighted_average,lattest_procur,owner_costtape,sys_created_date,
+      sys_created_by,sys_last_modified_date,sys_last_modified_by,m13,m14,m15,m16,m17,m18 
+    FROM (select * from
+           (SELECT cycle, product_group, part_number, plant, 'TOTL' as cost_elem,totl
+           FROM mid_ui_cost_tape 
+           WHERE totl = 'Y'
+           GROUP BY cycle, product_group, part_number, plant, TOTl)
+           WHERE ( cycle, product_group, part_number, plant, cost_elem ) 
+                                    NOT IN ( SELECT cycle, product_group, part_number, plant, cost_elem FROM mid_ui_cost_tape )) a,
+    :tab_totl b WHERE
+    a.cycle=b.cycle and a.product_group=b.product_group and a.part_number=b.part_number and a.plant=b.plant and a.TOTl=b.old_totl);
+    
+    /*INSERT INTO  mid_ui_cost_tape (SELECT * FROM :tab_tote WHERE ( cycle, product_group, part_number, plant, cost_elem ) 
+                                    NOT IN ( SELECT cycle, product_group, part_number, plant, cost_elem FROM mid_ui_cost_tape )
+                            UNION SELECT * FROM :tab_totl WHERE ( cycle, product_group, part_number, plant, cost_elem ) 
+                                    NOT IN ( SELECT cycle, product_group, part_number, plant, cost_elem FROM mid_ui_cost_tape ));       
+  */--modified by FangYuan
+    
+  
+  EXEC 'COMMIT';
+    
+  -- merge calculation results into ui_cost_tape (delete existing cost tape of selected parts first)
+    --Added by Zhoubinbin 20160720, Get the date which the data was created at the first time
+    UPDATE mid_ui_cost_tape t1
+       SET t1.sys_created_date = t2.sys_created_date,
+           t1.sys_created_by   = t2.sys_created_by
+      FROM ui_cost_tape t2
+     WHERE t1.product_group = t2.product_group
+       AND t1.part_number   = t2.part_number
+       AND t1.plant         = t2.plant
+       AND t1.cost_elem     = t2.cost_elem;
+    
+    /*2015-02-15 weibonan add plant*/
+    DELETE FROM ui_cost_tape WHERE (part_number,plant) IN ( SELECT DISTINCT part_number,plant FROM mid_ui_cost_tape );
+   
+   INSERT INTO ui_cost_tape (cycle, product_group, part_number, plant, cost_elem, pg, spec, commodity,
+           source, used, description, currency_name, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12,
+           m13, m14, m15, m16, m17, m18, action, status,
+           weighted_average, lattest_procur, owner_costtape, sys_created_date, sys_created_by, sys_last_modified_date, sys_last_modified_by)
+      SELECT cycle, product_group, part_number, plant, cost_elem, pg, spec, commodity,
+           source, used, description, currency_name, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12,
+           m13, m14, m15, m16, m17, m18, 'CREATE', 'ACTIVE',
+           weighted_average, lattest_procur, owner_costtape, 
+           --Modified by Zhoubinbin 20160720, Get the data was created at the first time
+           --current_timestamp, session_user, 
+           sys_created_date, sys_created_by,
+           current_timestamp, session_user 
+           FROM mid_ui_cost_tape;  
+           
+  -- update the status to ‘Imported’ in UI_COST_TAPE_ORI table
+  SELECT count(*) INTO v_count FROM :v_part_list;
+  IF :v_count = 0 THEN
+    UPDATE ui_cost_tape_ori SET status = 'IMPORTED' ;
+  ELSE
+    UPDATE ui_cost_tape_ori SET status = 'IMPORTED'
+           WHERE (part_number, mfg_plant) IN (SELECT part_number, mfg_plant FROM :v_part_list);  
+  END IF;  
+  
+  p_exitcode := 0;
+  p_exitmess := 'SUCCESS';  
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                              I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');   
+                                                   
+END;

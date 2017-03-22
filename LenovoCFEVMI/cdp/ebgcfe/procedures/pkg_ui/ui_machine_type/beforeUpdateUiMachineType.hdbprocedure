@@ -1,0 +1,62 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_machine_type::beforeUpdateUiMachineType" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MACHINETYPE_T"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MACHINETYPE_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aMachineType NVARCHAR(40);
+	    aProdFamily NVARCHAR(100);
+		aBrand NVARCHAR(40);
+		    	
+
+		validate INTEGER;
+
+BEGIN
+
+   	
+ select 
+    PROD_FAMILY,
+    BRAND,
+    MACHINETYPE    
+  into 
+	aProdFamily,
+	aBrand,
+	aMachineType	
+  from :newInfo;
+  
+    --BRAND
+    select count(1) into validate from ebgcfe.UI_PRODFAMILY where BRAND = :aBRAND;
+    if validate = 0  then
+         errorinfo = select 400 as http_status_code, 
+            'BRAND: VALIDATION FAILED, NOT EXIST IN UI_PRODFAMILY' error_message, 
+            '' detail from dummy;
+            
+        return;
+    end if;
+    
+    --PROD_FAMILY
+    select count(1) into validate from ebgcfe.UI_PRODFAMILY where prod_family=:aProdFamily and brand=:aBRAND;
+    if validate = 0  then
+         errorinfo = select 400 as http_status_code, 
+            'BRAND: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+            
+        return;
+    end if;
+    
+    --MT
+    SELECT  count(1) into validate FROM "EBGCFE"."UI_MACHINETYPE" A    
+     WHERE A.MACHINETYPE = :aMACHINETYPE;
+                
+    if validate = 0
+    then
+         errorinfo = select 400 as http_status_code, 
+            'MACHINETYPE: VALIDATION FAILED, NOT EXIST IN UI_MACHINETYPE' error_message, 
+            '' detail from dummy;
+         return;
+    end if;
+
+END;

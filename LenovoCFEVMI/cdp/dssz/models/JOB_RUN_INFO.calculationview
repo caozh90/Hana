@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="JOB_RUN_INFO" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="JOB_RUN_INFO"/>
+  <metadata changedAt="2016-06-17 16:23:52.521"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="cdp.dssz.data::JOB_INFO" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="DS_INFO_SZ" columnObjectName="cdp.dssz.data::JOB_INFO"/>
+    </DataSource>
+    <DataSource id="DS_JOB_RUN_INFO" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="DS_INFO_SZ" columnObjectName="DS_JOB_RUN_INFO"/>
+    </DataSource>
+    <DataSource id="MX_JOB_RUN$$$$cdp.dssz.data::JOB_INFO$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="DS_INFO_SZ" columnObjectName="cdp.dssz.data::JOB_INFO"/>
+    </DataSource>
+    <DataSource id="MX_JOB_RUN$$$$DS_JOB_RUN_INFO$$" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO"/>
+    </DataSource>
+    <DataSource id="CV_MO_ITEM_MEASURE" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/cdp.dssz.models/calculationviews/CV_MO_ITEM_MEASURE</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="SZ_JOB_RUN" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="CHECK_POINT"/>
+        <viewAttribute id="MODULE"/>
+        <viewAttribute id="JOBNAME"/>
+        <viewAttribute id="PROCESS_NAME"/>
+        <viewAttribute id="GATETIME"/>
+        <viewAttribute id="JOBRUNID"/>
+        <viewAttribute id="JOBSTATUS"/>
+        <viewAttribute id="STARTTIME"/>
+        <viewAttribute id="ENDTIME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#cdp.dssz.data::JOB_INFO">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHECK_POINT" source="CHECK_POINT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE" source="MODULE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROCESS_NAME" source="PROCESS_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GATETIME" source="GATETIME"/>
+      </input>
+      <input node="#DS_JOB_RUN_INFO">
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBRUNID" source="JOBRUNID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBSTATUS" source="JOBSTATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STARTTIME" source="STARTTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ENDTIME" source="ENDTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE" source="TARGET"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+      </input>
+      <joinAttribute name="MODULE"/>
+      <joinAttribute name="JOBNAME"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="MX_JOB_RUN" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="CHECK_POINT"/>
+        <viewAttribute id="MODULE"/>
+        <viewAttribute id="JOBNAME"/>
+        <viewAttribute id="PROCESS_NAME"/>
+        <viewAttribute id="GATETIME"/>
+        <viewAttribute id="JOBRUNID"/>
+        <viewAttribute id="JOBSTATUS"/>
+        <viewAttribute id="STARTTIME"/>
+        <viewAttribute id="ENDTIME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#MX_JOB_RUN$$$$cdp.dssz.data::JOB_INFO$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHECK_POINT" source="CHECK_POINT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE" source="MODULE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROCESS_NAME" source="PROCESS_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GATETIME" source="GATETIME"/>
+      </input>
+      <input node="#MX_JOB_RUN$$$$DS_JOB_RUN_INFO$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBRUNID" source="JOBRUNID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBSTATUS" source="JOBSTATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STARTTIME" source="STARTTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ENDTIME" source="ENDTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE" source="TARGET"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+      </input>
+      <joinAttribute name="MODULE"/>
+      <joinAttribute name="JOBNAME"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="VMI_JOB_RUN">
+      <viewAttributes>
+        <viewAttribute id="CHECK_POINT"/>
+        <viewAttribute id="MODULE"/>
+        <viewAttribute id="JOBNAME"/>
+        <viewAttribute id="PROCESS_NAME"/>
+        <viewAttribute id="GATETIME"/>
+        <viewAttribute id="JOBRUNID"/>
+        <viewAttribute id="JOBSTATUS"/>
+        <viewAttribute id="STARTTIME"/>
+        <viewAttribute id="ENDTIME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#SZ_JOB_RUN">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHECK_POINT" source="CHECK_POINT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE" source="MODULE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROCESS_NAME" source="PROCESS_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GATETIME" source="GATETIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBRUNID" source="JOBRUNID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBSTATUS" source="JOBSTATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STARTTIME" source="STARTTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ENDTIME" source="ENDTIME"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#MX_JOB_RUN">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHECK_POINT" source="CHECK_POINT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE" source="MODULE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROCESS_NAME" source="PROCESS_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GATETIME" source="GATETIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBRUNID" source="JOBRUNID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBSTATUS" source="JOBSTATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STARTTIME" source="STARTTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ENDTIME" source="ENDTIME"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="JOB_RUN_MEASURE">
+      <viewAttributes>
+        <viewAttribute id="TARGET"/>
+        <viewAttribute id="JOBNAME"/>
+        <viewAttribute id="JOBRUNID"/>
+        <viewAttribute id="MEASURE_NAME"/>
+        <viewAttribute id="MEASURE_VAL"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#CV_MO_ITEM_MEASURE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="TARGET" source="TARGET"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBRUNID" source="JOBRUNID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEASURE_NAME" source="MEASURE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEASURE_VAL" source="MEASURE_VAL"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="TARGET"/>
+        <viewAttribute id="JOBNAME"/>
+        <viewAttribute id="JOBRUNID"/>
+        <viewAttribute id="MEASURE_NAME"/>
+        <viewAttribute id="MEASURE_VAL"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="INTEGER" id="MO_ITEM">
+          <formula>case(&quot;MEASURE_NAME&quot;='MO_ITEM',&quot;MEASURE_VAL&quot;)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#JOB_RUN_MEASURE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="TARGET" source="TARGET"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBRUNID" source="JOBRUNID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEASURE_NAME" source="MEASURE_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEASURE_VAL" source="MEASURE_VAL"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="JOB_RUN_WITH_MEASURE" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="CHECK_POINT"/>
+        <viewAttribute id="MODULE"/>
+        <viewAttribute id="JOBNAME"/>
+        <viewAttribute id="PROCESS_NAME"/>
+        <viewAttribute id="GATETIME"/>
+        <viewAttribute id="JOBRUNID"/>
+        <viewAttribute id="JOBSTATUS"/>
+        <viewAttribute id="STARTTIME"/>
+        <viewAttribute id="ENDTIME"/>
+        <viewAttribute id="MO_ITEM"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#VMI_JOB_RUN">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHECK_POINT" source="CHECK_POINT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE" source="MODULE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBNAME" source="JOBNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROCESS_NAME" source="PROCESS_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GATETIME" source="GATETIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBRUNID" source="JOBRUNID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBSTATUS" source="JOBSTATUS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STARTTIME" source="STARTTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ENDTIME" source="ENDTIME"/>
+      </input>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MO_ITEM" source="MO_ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE" source="TARGET"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOBRUNID" source="JOBRUNID"/>
+      </input>
+      <joinAttribute name="MODULE"/>
+      <joinAttribute name="JOBRUNID"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="JOB_RUN_WITH_MEASURE">
+    <attributes>
+      <attribute id="CHECK_POINT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CHECK_POINT"/>
+        <keyMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="CHECK_POINT"/>
+      </attribute>
+      <attribute id="MODULE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODULE"/>
+        <keyMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="MODULE"/>
+      </attribute>
+      <attribute id="JOBNAME" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="JOBNAME"/>
+        <keyMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="JOBNAME"/>
+      </attribute>
+      <attribute id="PROCESS_NAME" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PROCESS_NAME"/>
+        <keyMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="PROCESS_NAME"/>
+      </attribute>
+      <attribute id="JOBRUNID" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="JOBRUNID"/>
+        <keyMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="JOBRUNID"/>
+      </attribute>
+      <attribute id="JOBSTATUS" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="JOBSTATUS"/>
+        <keyMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="JOBSTATUS"/>
+      </attribute>
+      <attribute id="STARTTIME" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STARTTIME"/>
+        <keyMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="STARTTIME"/>
+      </attribute>
+      <attribute id="ENDTIME" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ENDTIME"/>
+        <keyMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="ENDTIME"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="DATE_LABEL" hidden="false" order="11" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Run Date"/>
+        <keyCalculation datatype="VARCHAR" length="16">
+          <formula>midstr(string(&quot;STARTTIME&quot;),1,16)</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="START_DATE" hidden="false" order="12" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="START_DATE"/>
+        <keyCalculation datatype="DATE">
+          <formula>&quot;STARTTIME&quot;</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="GATETIME" order="5" aggregationType="max" measureType="simple">
+        <descriptions defaultDescription="GATETIME"/>
+        <measureMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="GATETIME"/>
+      </measure>
+      <measure id="MO_ITEM" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MO_ITEM"/>
+        <measureMapping columnObjectName="JOB_RUN_WITH_MEASURE" columnName="MO_ITEM"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures>
+      <measure id="RUN_TIME" hidden="false" order="13" aggregationType="sum" measureType="simple" datatype="INTEGER">
+        <descriptions defaultDescription="Run Time"/>
+        <formula>CEIL(secondsbetween(&quot;STARTTIME&quot;,&quot;ENDTIME&quot;)/60)</formula>
+      </measure>
+    </calculatedMeasures>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="280" y="79"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="SZ_JOB_RUN" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="50" y="506"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="MX_JOB_RUN" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="270" y="506"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="VMI_JOB_RUN" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="150" y="400"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="JOB_RUN_MEASURE" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="560" y="440"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="560" y="280"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="JOB_RUN_WITH_MEASURE" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="280" y="245"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

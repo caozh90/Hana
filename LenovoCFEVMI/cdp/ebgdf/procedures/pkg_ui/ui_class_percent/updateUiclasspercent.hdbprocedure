@@ -1,0 +1,152 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_class_percent::updateUiclasspercent"
+( 
+         IN newInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_CLASS_PERCENT_T",
+		 IN oldInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_CLASS_PERCENT_T",
+		 OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      updateUiclasspercent
+*function    :               
+*input       ：                 newinfo&oldInfo
+*output      :      errorInfo
+*author      :      leon bian
+*CreateDate  :      2015.9.10
+*UpdateDate  :      2015.9.10
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	resourceExists BIGINT;
+	privilegeExists  NVARCHAR(300)  ; 
+	V_ABCD_T NVARCHAR(30)  ; 
+	V_A DECIMAL(4,2) ;
+	V_B DECIMAL(4,2) ;
+	V_C DECIMAL(4,2) ;
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgdf.procedures.pkg_ui.ui_class_percent::updateUiclasspercent error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_class_percent::updateUiclasspercent'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_class_percent::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_class_percent::updateUiclasspercent'
+       ,I_MODULE=>'EBGDF'
+   	); 
+		   	
+SELECT COUNT(*) into resourceExists 
+	FROM :oldInfo a,:newInfo b 
+where a.A = b.A
+	and a.B = b.B
+	and a.C = b.C;
+
+if resourceExists > 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;	     		
+	     	return;*/
+	 --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists'; 
+	 return;
+end if;			
+
+select ABCD_T,
+	   A,
+	   B,
+	   C
+into   V_ABCD_T,
+	   V_A,
+	   V_B,
+	   V_C
+from :newInfo;  
+
+IF :V_A + :V_B + :V_C <> 1 THEN
+	 errorinfo = select 400 as http_status_code, 
+	            'the sum total A, B, C values must equal to 1 and for each A, B, C value need to be in the format like 0.1 (means 10%)' error_message, 
+	            '' detail from dummy;        
+	 RETURN;
+ END IF ;
+ 
+--update into UI_CLASS_PERCENT table
+update "EBGDF"."UI_CLASS_PERCENT" a set (a.A,
+										a.B,
+										a.C,
+										a.LAST_UPDATE_TS,
+										a.LAST_UPDATE_USERID) = 
+									 (b.A,
+									  b.B,
+									  b.C,
+									  CURRENT_UTCTIMESTAMP,
+									  SESSION_USER)
+		FROM :newInfo b 
+		where a.ABCD_T = b.ABCD_T; 
+
+--insert log table
+--INSERT INTO UI_CLASS_PERCENT_LOG TABLE
+insert into "EBGDF"."UI_CLASS_PERCENT_LOG"(
+	ABCD_T,
+	A,
+	B,
+	C,
+	CREATE_TS,
+	CREATE_USERID,
+	LAST_UPDATE_TS,
+	LAST_UPDATE_USERID,
+	AT_MODIFIED_BY,
+	AT_ACTION,
+	AT_MODIFIED_ON,
+	AT_MILLIS
+	 )SELECT 
+	        a.ABCD_T,
+			a.A,
+			a.B,
+			a.C,
+			CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_UTCTIMESTAMP,
+		    SESSION_USER,
+	 		SESSION_USER,
+	 		'update',
+	 		CURRENT_UTCTIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3')) FROM :oldInfo a; 	
+
+   	
+aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_class_percent::updateUiclasspercent successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_class_percent::updateUiclasspercent'
+	     	,I_MODULE=>'EBGDF'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

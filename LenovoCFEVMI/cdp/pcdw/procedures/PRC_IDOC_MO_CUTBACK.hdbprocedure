@@ -1,0 +1,105 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_IDOC_MO_CUTBACK" (
+	IN PRODUCTIONORDID VARCHAR(12), 
+	IN CUTBACK_QTY DECIMAL(13,3), 
+	IN WERKS VARCHAR(40),
+	IN MO_CUTBACK_TIME TIMESTAMP
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_IDOC_MO_CUTBACK              --函数名
+*function    :               --函数功能
+*input     ：  PRODUCTIONORDID,CUTBACK_QTY,WERKS,MO_CUTBACK_TIME   --输入参数
+*output     :                --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2015/01/08                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	AS
+	v_prc_name VARCHAR(70) := 'PRC_IDOC_MO_CUTBACK';
+	gv_logic_name    NVARCHAR (40)  := 'pkg_pcdw_to_vmi';
+	v_full_name VARCHAR(100) := gv_logic_name||'.'||v_prc_name;
+	v_logidi INTEGER := 0;
+	v_flag   VARCHAR (10);
+	v_status VARCHAR(40);
+BEGIN
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||'Failure');                                                  
+		 
+         --COMMIT;       
+	END;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>'Start');
+
+v_status := null; 
+            
+BEGIN
+	DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+	BEGIN		
+		v_status := 'HOLD'; 
+	END;
+	SELECT 'x' INTO v_flag
+        FROM (SELECT AUFNR
+                 FROM ECC_MO mo
+                 WHERE (mo.AUFNR = :productionordid AND mo.werks = :werks )
+              UNION
+              SELECT mid_mo.productionordid
+                 FROM mxebgvmi.mid_mo_line mid_mo
+                 WHERE (    mid_mo.productionordid = :productionordid
+                   AND mid_mo.werks = :werks
+                 )
+              UNION   --add sz mid_mo_bom union, 为了同时支持sz&mx, by xwu 2016/1/28
+              SELECT mid_mo.productionordid
+                 FROM szebgvmi.mid_mo_line mid_mo
+                 WHERE (    mid_mo.productionordid = :productionordid
+                   AND mid_mo.werks = :werks
+                 )                 
+                 ) mo_num ;
+END; 
+
+if v_status is null
+then
+BEGIN
+	DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+	BEGIN	
+		v_status := 'SYSTEM';	 
+	END;
+	SELECT 'y'
+    INTO v_flag
+    FROM (SELECT mo.AUFNR
+          FROM ECC_MO mo
+          WHERE (mo.AUFNR = :productionordid
+                 AND mo.werks = :werks
+                 AND mo.sys_created_date < :mo_cutback_time)
+          UNION
+          SELECT bom.productionordid
+          FROM mxebgvmi.mid_mo_bom bom
+          WHERE (bom.productionordid = :productionordid
+                AND bom.werks = :werks)
+          --add sz mid_mo_bom union, 为了同时支持sz&mx, by xwu 2016/1/28
+          UNION
+          SELECT bom.productionordid
+          FROM szebgvmi.mid_mo_bom bom
+          WHERE (bom.productionordid = :productionordid
+                AND bom.werks = :werks)          
+                ) mo_num;
+END;             
+end if;  
+ 
+INSERT INTO PCDW.ECC_MO_CUTBACK(PRODUCTIONORDID,CUTBACK_QTY,WERKS,STATUS,MO_CUTBACK_TIME,SYS_CREATED_BY,SYS_CREATED_DATE)
+		VALUES(:PRODUCTIONORDID,:CUTBACK_QTY,:WERKS,:v_status,:MO_CUTBACK_TIME,SESSION_USER,CURRENT_TIMESTAMP);
+             
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>'Success');
+END;

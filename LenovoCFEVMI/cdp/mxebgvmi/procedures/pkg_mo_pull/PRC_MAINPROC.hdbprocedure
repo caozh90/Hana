@@ -1,0 +1,129 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_mo_pull::PRC_MAINPROC" (
+  IN  iv_id VARCHAR(10),
+  OUT on_exitcode INTEGER
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+    /************************************************************************
+    *name       : PRC_MAINPROC                      --函数名
+    *function   : Main Process                      --函数功能
+    *input      : iv_id : site schedule id          --输入参数
+    *output     : on_exitcode : error code          --输出参数
+    *author     : Leonard Ling                      --作者
+    *CreateDate : 20141215                          --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）    
+    *************************************************************************/
+    AS         
+     gv_logic_name    VARCHAR(40)  := 'PKG_MO_PULL';    
+     v_logic_proc_name   VARCHAR(40) := 'PRC_MAINPROC';
+     V_FUNC_FULL_NAME      VARCHAR(100) := :gv_logic_name || '.' || :v_logic_proc_name;       
+     logidi integer := 0;    
+     logidj integer := 0; 
+     logidk integer := 0;      
+     logidl integer := 0;   
+     logidm integer := 0;    
+BEGIN
+   -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN 
+    on_exitcode := ::SQL_ERROR_CODE;             
+		CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'MXEBGVMI',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+	                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+    END; 
+    
+  -- process logic  
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'MXEBGVMI');
+		
+   IF (iv_id = 'BYPASS')
+   THEN
+      on_exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'MXEBGVMI');          
+      RETURN;
+   END IF;
+
+      --  v_dept := mdm_base_funcs.get_dept (iv_id);
+      --  v_geo  := mdm_base_funcs.get_geo_id (iv_id);
+   --   mdm_base_funcs.init_log_run (gv_logic_name || ':' || iv_id);
+      on_exitcode := -1;
+   /*   mdm_base_funcs.insert_log (SYSDATE,
+                                 'benchmark',
+                                 'benchmark',
+                                 0,
+                                 0,
+                                 'I',
+                                 'benchmark',
+                                 'benchmark',
+                                 'local transfer');  */
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'INFO', I_LOGSID=>:logidj, 
+				I_EVENT_NAME=>:v_func_full_name, I_MODULE=>'MXEBGVMI',
+				I_MESSAGE=>'local transfer');                                     
+   --   localproc (iv_id);
+   CALL "cdp.mxebgvmi.procedures.pkg_mo_pull::PRC_LOCALPROC"(iv_id=>:iv_id);   
+      --mdm_base_funcs.insert_log (SYSDATE, 'benchmark', 'benchmark', 0, 0, 'I', 'benchmark', 'benchmark', 'pull generation start');
+   --   initproc (iv_id);
+   CALL "cdp.mxebgvmi.procedures.pkg_mo_pull::PRC_INITPROC"(iv_id=>:iv_id);      
+   /*   mdm_base_funcs.insert_log (SYSDATE,
+                                 'benchmark',
+                                 'benchmark',
+                                 0,
+                                 0,
+                                 'I',
+                                 'benchmark',
+                                 'benchmark',
+                                 'start priority'); */
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'INFO', I_LOGSID=>:logidk, 
+				I_EVENT_NAME=>:v_func_full_name, I_MODULE=>'MXEBGVMI',
+				I_MESSAGE=>'start priority');                                   
+    --  p_supplier_priority_calculate (iv_id);
+   CALL "cdp.mxebgvmi.procedures.pkg_mo_pull::PRC_P_SUPPLIER_PRIORITY_CALCULATE"(iv_id=>:iv_id);       
+      --added @2007-7-31
+   /*   mdm_base_funcs.insert_log (SYSDATE,
+                                 'benchmark',
+                                 'benchmark',
+                                 0,
+                                 0,
+                                 'I',
+                                 'benchmark',
+                                 'benchmark',
+                                 'end priority'); */
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'INFO', I_LOGSID=>:logidl, 
+				I_EVENT_NAME=>:v_func_full_name, I_MODULE=>'MXEBGVMI',
+				I_MESSAGE=>'end priority');                                   
+   --   p_mo_pull (iv_id);
+   CALL "cdp.mxebgvmi.procedures.pkg_mo_pull::PRC_P_MO_PULL"(iv_id=>:iv_id);  
+   /*   mdm_base_funcs.insert_log (SYSDATE,
+                                 'benchmark',
+                                 'benchmark',
+                                 0,
+                                 0,
+                                 'I',
+                                 'benchmark',
+                                 'benchmark',
+                                 'pull concluded'); */
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'INFO', I_LOGSID=>:logidm, 
+				I_EVENT_NAME=>:v_func_full_name, I_MODULE=>'MXEBGVMI',
+				I_MESSAGE=>'pull concluded');                                  
+      --localproc (iv_id);
+      --mdm_base_funcs.insert_log (SYSDATE, 'benchmark', 'benchmark', 0, 0, 'I', 'benchmark', 'benchmark', 'localproc end');
+   on_exitcode := 0;
+
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'MXEBGVMI'); 
+
+      --mdm_base_funcs.update_log_run (gv_logic_name, 0);      
+
+END;

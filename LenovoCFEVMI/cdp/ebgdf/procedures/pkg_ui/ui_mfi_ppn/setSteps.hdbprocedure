@@ -1,0 +1,31 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_mfi_ppn::setSteps" 
+( 
+	IN STEPS INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      setSteps
+*function    :      update data WORK_STEPS          
+*input       ：              STEPS
+*output      :                
+*author      :      leon Bian
+*CreateDate  :      2015.8.17
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	
+	n int;
+	
+BEGIN
+
+	SELECT COUNT(STEP) into n FROM "EBGDF"."WORK_STEPS";
+	
+	IF n > 0  then
+		UPDATE "EBGDF"."WORK_STEPS" SET STEP = :STEPS;
+	ELSE
+		INSERT INTO "EBGDF"."WORK_STEPS" values( :STEPS );
+	END IF ;
+END;

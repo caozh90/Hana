@@ -1,0 +1,48 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_mo_pull::PRC_P_DATA_BACKUP" (
+  IN  i_sysdate timestamp 
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+    /************************************************************************
+    *name       : PRC_P_DATA_BACKUP                      --函数名
+    *function   : Back up            --函数功能
+    *input      : i_sysdate           --输入参数
+    *output     : -                                 --输出参数
+    *author     : Eric Zhou                      --作者
+    *CreateDate : 20150413                        --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）    
+    *************************************************************************/
+    AS         
+     gv_logic_name    VARCHAR(40)  := 'PKG_MO_PULL';    
+     v_logic_proc_name   VARCHAR(40) := 'PRC_P_DATA_BACKUP';
+     V_FUNC_FULL_NAME      VARCHAR(100) := :gv_logic_name || '.' || :v_logic_proc_name;       
+     logidi integer := 0;    
+     
+BEGIN
+    
+  -- process logic  
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'MXEBGVMI');
+		
+	delete from bak_pcdw_ds_mo where ARCHIVED_DATE < add_days(current_date,-30);
+	delete from bak_pcdw_mo where ARCHIVED_DATE < add_days(current_date,-30);
+	delete from bak_pcdw_mo_bom where ARCHIVED_DATE < add_days(current_date,-30);
+	delete from bak_pcdw_inventory where ARCHIVED_DATE < add_days(current_date,-30);
+	
+    insert into bak_pcdw_ds_mo select *,:i_sysdate as ARCHIVED_DATE from z_pcdw_ds_mo where status='IN_PROCESS';
+
+    insert into bak_pcdw_mo select *,:i_sysdate as ARCHIVED_DATE from z_pcdw_mo where (productionordid,werks) in(select work_ord_num,werks from z_pcdw_ds_mo where status='IN_PROCESS');
+
+    insert into bak_pcdw_mo_bom select *,:i_sysdate as ARCHIVED_DATE from z_pcdw_mo_bom where (productionordid,werks) in(select work_ord_num,werks from z_pcdw_ds_mo where status='IN_PROCESS');
+
+    insert into bak_pcdw_inventory select *,:i_sysdate AS ARCHIVED_DATE from z_pcdw_inventory where (matnr,werks) in(select matnr,werks from z_pcdw_mo_bom where (productionordid,werks) in(select work_ord_num,werks from z_pcdw_ds_mo where status='IN_PROCESS'));
+
+    
+      --COMMIT;     --commented by Leonard
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'MXEBGVMI'); 
+END;

@@ -1,0 +1,152 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.base_funcs::updateEolStatus" 
+(
+	IN  key        VARCHAR(20),
+	IN  value      VARCHAR(100),
+	IN  event_name VARCHAR(200),
+	OUT exitcode   DECIMAL
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER   
+	DEFAULT SCHEMA EBGCFE
+AS
+    v_event_name VARCHAR(200) := 'cdp.ebgcfe.procedures.pkg_ui.base_funcs:updateEolStatus';
+    v_detail     VARCHAR(300);
+    v_logid      INTEGER :=0;
+BEGIN
+/***************************** 
+*	Write your procedure logic 
+*   Zhoubinbin 20161127
+ *****************************/
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	v_detail := ::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	exitcode := ::SQL_ERROR_CODE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE       => 'PROC_ERROR'	
+	     	,I_LOGSID     => :v_logid
+	     	,I_EVENT_NAME => :v_event_name
+	     	,I_MODULE     => 'EBGCFE'
+	     	,I_MESSAGE    => 'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL     => :v_detail
+     	);	
+        
+        RESIGNAL;
+    END;  
+    
+    exitcode := -1;
+  
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE       => 'PROC_START'
+       ,I_LOGSID     => :v_logid
+       ,I_EVENT_NAME => :v_event_name
+       ,I_MODULE     => 'EBGCFE'
+   	);
+   	
+   	IF :key = 'ITEM' 
+   	THEN
+        UPDATE ui_item t1
+           SET t1.family_eol = t2.eol_status
+          FROM ui_prodfamily t2
+         WHERE t1.brand          = t2.brand
+           AND t1.asp_prd_family = t2.prod_family
+           AND t1.item           = :value;
+           
+        UPDATE ui_item t1
+           SET t1.family_eol = NULL
+         WHERE t1.item = :value
+           AND NOT EXISTS(SELECT 1 FROM ui_prodfamily t2
+                           WHERE t2.brand       = t1.brand
+                             AND t2.prod_family = t1.asp_prd_family); 
+    ELSEIF :key = 'MT'
+    THEN 
+        UPDATE ui_item t1
+           SET t1.mt_eol = t2.eol_status
+          FROM ui_mt_eol t2
+         WHERE t1.machine_type = t2.mt
+           AND t1.machine_type = :value;
+           
+        UPDATE ui_item t1
+           SET t1.mt_eol = NULL
+         WHERE t1.machine_type = :value
+           AND NOT EXISTS(SELECT 1 FROM ui_mt_eol t2
+                           WHERE t2.mt = t1.machine_type);
+                           
+        UPDATE ui_item t1
+           SET t1.family_eol = t2.eol_status
+          FROM ui_prodfamily t2
+         WHERE t1.brand          = t2.brand
+           AND t1.asp_prd_family = t2.prod_family
+           AND t1.machine_type = :value;
+           
+        UPDATE ui_item t1
+           SET t1.family_eol = NULL
+         WHERE t1.machine_type = :value
+           AND NOT EXISTS(SELECT 1 FROM ui_prodfamily t2
+                           WHERE t2.brand       = t1.brand
+                             AND t2.prod_family = t1.asp_prd_family); 
+                           
+    ELSEIF :key = 'FAMILY'
+    THEN
+        UPDATE ui_item t1
+           SET t1.family_eol = t2.eol_status
+          FROM ui_prodfamily t2
+         WHERE t1.brand          = t2.brand
+           AND t1.asp_prd_family = t2.prod_family
+           AND t1.asp_prd_family = :value;
+           
+        UPDATE ui_item t1
+           SET t1.family_eol = NULL
+         WHERE t1.asp_prd_family = :value
+           AND NOT EXISTS(SELECT 1 FROM ui_prodfamily t2
+                           WHERE t2.brand       = t1.brand
+                             AND t2.prod_family = t1.asp_prd_family); 
+    END IF;
+    
+   	UPDATE ui_item
+   	   SET eol_status = 
+           IFNULL(MAP(user_eol_status, '', NULL, user_eol_status), 
+           IFNULL(MAP(mmr_eol, '', NULL, mmr_eol), 
+           IFNULL(MAP(mt_eol, '', NULL, mt_eol), 
+           IFNULL(MAP(family_eol, '', NULL, family_eol),
+           IFNULL(MAP(sys_eol, '', NULL, sys_eol), eol_status)))))
+     WHERE map(:key, 'ITEM', item, 'MT', machine_type, 'FAMILY', asp_prd_family) = :value;
+    
+    INSERT INTO ui_item_log
+        (cycle, geo, subgeo, country, commodity_code, hy_family, group_text,
+         brand_text, series, subseries, bismt, product_group, brand,
+         ecc_prod_family, asp_prd_family, machine_type, trmodel, item,
+         item_desc, prod_h, item_type, item_source, eol_status, eol_startdate,
+         eol_enddate, action, status, brgew, gewei, custommodelflag,
+         basewarranty, ZLCOD, ZUCOD, zeinr, x_entity_type, x_cofcat,
+         x_specmoddesg, x_ww_annc_date, x_ww_withdraw_date, x_cofsubcat,
+         user_item_type, user_eol_status, user_item_desc, user_commodity_code,
+         user_asp_prd_family, mmr_eol, mt_eol, family_eol, sys_eol,
+         sys_created_date, sys_created_by, sys_last_modified_date, 
+         sys_last_modified_by, at_modified_by, at_action, at_modified_on,
+         at_millis)
+    SELECT cycle, geo, subgeo, country, commodity_code, hy_family, group_text,
+           brand_text, series, subseries, bismt, product_group, brand,
+           ecc_prod_family, asp_prd_family, machine_type, trmodel, item,
+           item_desc, prod_h, item_type, item_source, eol_status, eol_startdate,
+           eol_enddate, action, status, brgew, gewei, custommodelflag,
+           basewarranty, ZLCOD, ZUCOD, zeinr, x_entity_type, x_cofcat,
+           x_specmoddesg, x_ww_annc_date, x_ww_withdraw_date, x_cofsubcat,
+           user_item_type, user_eol_status, user_item_desc, user_commodity_code,
+           user_asp_prd_family, mmr_eol, mt_eol, family_eol, sys_eol,
+           sys_created_date, sys_created_by, sys_last_modified_date, 
+           sys_last_modified_by, SESSION_USER, :event_name, CURRENT_TIMESTAMP,
+ 		   TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+      FROM ui_item
+     WHERE map(:key, 'ITEM', item, 'MT', machine_type, 'FAMILY', asp_prd_family) = :value;
+              
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		 I_TYPE       => 'PROC_END'	
+	     	,I_LOGSID     => :v_logid
+	     	,I_EVENT_NAME => :v_event_name
+	     	,I_MODULE     => 'EBGCFE'
+	     	,I_DETAIL     => 'SUCCESS'
+     	);	
+     	
+    exitcode := 0;
+END;

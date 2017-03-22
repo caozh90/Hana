@@ -1,0 +1,130 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_SELLABLE_COUNTRY_INIT" ( 
+ IN  P_PRODUCT_GROUP   VARCHAR(20),
+  OUT P_EXIT_CODE       INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE 
+	--READS SQL DATA 
+	AS
+/************************************************************************
+*name       : PRC_PCDW_CTOFC_FLAG_INIT       
+*function   : Load SELLABLE_COUNTRY data from PCDW
+*input      ： p_product_group : product group
+*output     : p_exit_code : error code  
+*author     : ZHANGXJ
+*CreateDate :  2016-02-26
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+BEGIN
+  -- variable
+  DECLARE v_g_pkg_name        VARCHAR(30) := 'PKG_PCDW_TO_CFE';
+  DECLARE v_prc_name          VARCHAR(60) := 'PRC_PCDW_SELLABLE_COUNTRY_INIT';
+  DECLARE v_full_name         VARCHAR(100) := :v_g_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  DECLARE v_exitcode          INTEGER;
+  DECLARE v_exit_message      VARCHAR(500);
+  DECLARE v_cur_cycle         VARCHAR(100)  := 'CURRENT';
+  DECLARE v_init_date         TIMESTAMP;    
+  DECLARE v_lastrun_date      TIMESTAMP;
+  DECLARE v_found             INTEGER;
+  
+  
+  -- exception
+  DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;   
+  DECLARE EXIT HANDLER FOR exp_procedure   
+  BEGIN
+      P_EXIT_CODE := ::SQL_ERROR_CODE;
+      
+      UPDATE conf_sync_lastrun 
+  	     SET enddate = CURRENT_TIMESTAMP, returncode = -1
+       WHERE pkgname = :v_g_pkg_name AND progname = :v_prc_name; 
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR', 
+                                                  I_LOGSID     => :logidi,
+		                                          I_EVENT_NAME => :v_full_name,
+		                                          I_MODULE     => 'EBGCFE',
+		                                          I_MESSAGE    => 'ERROR', 
+		                                          I_DETAIL     => :v_exit_message); 			           
+  END;
+      
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+  BEGIN     
+      P_EXIT_CODE := ::SQL_ERROR_CODE;
+      
+      UPDATE conf_sync_lastrun 
+  	     SET enddate = CURRENT_TIMESTAMP, returncode = -1
+       WHERE pkgname = :v_g_pkg_name AND progname = :v_prc_name; 
+           
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+  END;   
+    
+  -- process logic
+  P_EXIT_CODE := -1;
+  V_EXIT_MESSAGE := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                              I_LOGSID     => :logidi,
+		                                      I_EVENT_NAME => :v_full_name,
+		                                      I_MODULE     => 'EBGCFE');  
+		                                      
+  -- update run time info
+	SELECT count(*) INTO v_found FROM conf_sync_lastrun WHERE pkgname = :v_g_pkg_name AND progname = :v_prc_name; 
+	IF :v_found = 0 THEN 
+    	SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_init_date INTO v_init_date FROM DUMMY;
+    	
+    	INSERT INTO conf_sync_lastrun (pkgname, progname, lastrundate, startdate, returncode) 
+         VALUES (:v_g_pkg_name, :v_prc_name, :v_init_date, CURRENT_TIMESTAMP, -1); 
+	ELSE 
+  		UPDATE conf_sync_lastrun 
+  	       SET startdate = CURRENT_TIMESTAMP, returncode = -1
+         WHERE pkgname = :v_g_pkg_name AND progname = :v_prc_name; 
+    END IF;  
+
+    SELECT  lastrundate INTO v_lastrun_date FROM conf_sync_lastrun
+     WHERE pkgname = v_g_pkg_name AND progname =  v_prc_name;
+     
+   
+	DELETE FROM ui_sellable_country a
+          WHERE sys_last_modified_by='PKG_PCDW_TO_CFE.PRC_PCDW_SELLABLE_COUNTRY_INIT'
+            AND EXISTS (SELECT * FROM pcdw.pcdw_sellable_country b 
+                       WHERE a.item          = b.item
+                         --AND a.country       = b.country  modify by cuixh4 20161223 
+                         --Modified by Zhoubinbin 20170216, prodclas and cofcat condition cause duplicate data
+                         /*AND a.prodclass     = b.prodclass
+                         AND a.cofcat        = b.cofcat*/
+                         AND (b.sys_created_date          > v_lastrun_date 
+                              OR b.sys_last_modified_date > v_lastrun_date));
+                              
+  --item,country,prodclass,announce_date,withdraw_date,option,cofcat,deletion_flag
+  --20161130 LIUXT: add 2050-01-01 condition
+  	INSERT INTO ui_sellable_country
+  		(cycle,product_group,item,country,prodclass,announce_date,withdraw_date,option,cofcat,action,status,
+  	 	change_id,change_action,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by,iad,eow)
+  	SELECT v_cur_cycle,p_product_group,item,country,prodclass,
+  	       IFNULL(MAP(eow, TO_DATE('2050-01-01', 'yyyy-mm-dd'), NULL, eow), IFNULL(MAP(iad, TO_DATE('2050-01-01', 'yyyy-mm-dd'), NULL, iad), announce_date)),
+  	       withdraw_date,option,cofcat,NULL,NULL,NULL,NULL,CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_full_name,iad,eow
+     FROM
+      --20161229 liuxt add (eow,iad,ANNOUNCE_DATE,WITHDRAW_DATE)='' condition  
+      (SELECT ITEM,COUNTRY,PRODCLASS,MAP(ANNOUNCE_DATE,'',NULL,ANNOUNCE_DATE) ANNOUNCE_DATE,MAP(WITHDRAW_DATE,'',NULL,WITHDRAW_DATE) WITHDRAW_DATE,
+              OPTION,COFCAT,DELETION_FLAG,STATUS,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY,
+              MAP(iad,'',NULL,iad) IAD,MAP(eow,'',NULL,eow) EOW 
+        FROM pcdw.pcdw_sellable_country ) a
+    WHERE NOT EXISTS(SELECT 1 FROM ui_sellable_country b 
+                             WHERE a.item=b.item AND a.country=b.country 
+                               AND b.sys_last_modified_by<>'PKG_PCDW_TO_CFE.PRC_PCDW_SELLABLE_COUNTRY_INIT')
+      AND IFNULL(deletion_flag,'') <> 'X'
+      AND (sys_created_date          > v_lastrun_date 
+           OR sys_last_modified_date > v_lastrun_date);
+   
+
+    UPDATE   conf_sync_lastrun c1
+       SET   lastrundate = startdate, enddate = CURRENT_TIMESTAMP, returncode = 0
+     WHERE   pkgname = :v_g_pkg_name AND progname = :v_prc_name;
+    
+    p_exit_code := 0;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE     => 'PROC_END',
+                                              I_LOGSID     => :logidi,
+	                                          I_EVENT_NAME => :v_full_name,
+	                                          I_MODULE     => 'EBGCFE');       
+END;

@@ -1,0 +1,291 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_partial_cal"
+(
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PARTIAL_CAL_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+/************************************************************************
+*name        :      ui_partial_cal
+*function    :      upload data ui_partial_cal          
+*input       ：              business_name etc
+*output      :                
+*author      :      leon Bian
+*CreateDate  :      2016.5.13
+*UpdateDate  :        
+*************************************************************************/ 
+
+	AS
+	path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_partial_cal';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	error_num int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'UI_ONDEMAND_CAL_LIST';
+	validate int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	select '1' from dummy;
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	select '1' from dummy;
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+    END; 
+       
+	--procedure begin
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	ITEM_ERROR = 
+	SELECT ITEM,
+ 		'"ITEM"::'||ITEM||' Item not exists./Invalid item_type./EOL item' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE NOT EXISTS ( select 1 
+						from ebgcfe.ui_item 
+						where item_type in ('MTM','BUNDLE','OPTION','SERVICE','CTO') 
+						and eol_status = 'OL'
+						and ITEM = a.ITEM );
+				
+	ERROR_INFOR = 
+	SELECT ITEM,
+ 		STRING_AGG(ERROR_MESSAGE,',') "ERROR_MESSAGE",
+ 		business_name,
+ 		SEQ,
+ 		POSITION
+	FROM
+	(SELECT * 
+		FROM :ITEM_ERROR
+	 )
+	GROUP BY ITEM,
+	 		business_name,
+	 		SEQ,
+	 		POSITION;
+
+	SELECT count(1) into error_num FROM :ERROR_INFOR;
+	
+	--remove error records
+	if error_num >0 then 
+	TMP_TABLE = SELECT a.ITEM,
+			    b.PRODUCT_GROUP,
+				b.CYCLE,
+				b.BRAND,
+				b.ASP_PRD_FAMILY "FAMILY",
+				b.ITEM_DESC,
+				b.ITEM_TYPE,
+				b.ACTION,
+				b.STATUS,
+			   :currentUser "SYS_CREATED_BY",
+			   :create_time "SYS_CREATED_DATE",
+			   :currentUser "SYS_LAST_MODIFIED_BY",
+			   :create_time "SYS_LAST_MODIFIED_DATE"
+		FROM :newInfo as a join UI_ITEM as b
+						on (a.ITEM = b.ITEM)
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM :ERROR_INFOR
+			WHERE ITEM = a.ITEM
+		);
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_partial_cal_err"(:ERROR_INFOR);
+	else
+		TMP_TABLE = SELECT a.ITEM,
+				b.PRODUCT_GROUP,
+				b.CYCLE,
+				b.BRAND,
+				b.ASP_PRD_FAMILY "FAMILY",
+				b.ITEM_DESC,
+				b.ITEM_TYPE,
+				b.ACTION,
+				b.STATUS,
+			   :currentUser "SYS_CREATED_BY",
+			   :create_time "SYS_CREATED_DATE",
+			   :currentUser "SYS_LAST_MODIFIED_BY",
+			   :create_time "SYS_LAST_MODIFIED_DATE"
+		FROM :newInfo a join UI_ITEM as b
+						on (a.ITEM = b.ITEM);
+	END IF;
+	
+	update_info = SELECT *
+				 	FROM :TMP_TABLE as a
+				 	WHERE EXISTS ( select 1 from "EBGCFE"."UI_ONDEMAND_CAL_LIST" 
+									where ITEM = a.ITEM);
+											
+	--validate key
+	SELECT count(1) into n
+	 	FROM :update_info;
+	
+	if n > 0 then
+		UPDATE "EBGCFE"."UI_ONDEMAND_CAL_LIST" a SET(
+			PRODUCT_GROUP,
+			CYCLE,
+			BRAND,
+			FAMILY,
+			ITEM_DESC,
+			ITEM_TYPE,
+			ACTION,
+			STATUS,
+			SYS_CREATED_DATE,
+			SYS_CREATED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			SYS_LAST_MODIFIED_BY
+			) = 
+			(
+			b.PRODUCT_GROUP,
+			b.CYCLE,
+			b.BRAND,
+			b.FAMILY,
+			b.ITEM_DESC,
+			b.ITEM_TYPE,
+			b.ACTION,
+			b.STATUS,
+			:create_time,
+			:currentUser,
+		    :create_time,
+			:currentUser
+			)
+		FROM "EBGCFE"."UI_ONDEMAND_CAL_LIST" a,:update_info b
+		WHERE a.ITEM = b.ITEM;
+	
+		 	
+		 	--insert操作需要写入日志
+	 	insert into "EBGCFE"."UI_ONDEMAND_CAL_LIST_LOG"(
+			PRODUCT_GROUP,
+			CYCLE,
+			BRAND,
+			FAMILY,
+			ITEM,
+			ITEM_DESC,
+			ITEM_TYPE,
+			ACTION,
+			STATUS,
+			SYS_CREATED_DATE,
+			SYS_CREATED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			SYS_LAST_MODIFIED_BY,
+			AT_MODIFIED_BY,
+			AT_ACTION,
+			AT_MODIFIED_ON,
+			AT_MILLIS
+		 )SELECT 
+			    a.PRODUCT_GROUP,
+			    a.CYCLE,
+			    a.BRAND,
+			    a.FAMILY,
+			    a.ITEM,
+			    a.ITEM_DESC,
+			    a.ITEM_TYPE,
+			    a.ACTION,
+			    a.STATUS,
+			    :create_time,
+				:currentUser,
+			    :create_time,
+				:currentUser,
+		 		SESSION_USER,
+		 		'update',
+		 		CURRENT_TIMESTAMP,
+		 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) 
+		 		FROM :update_info as a;
+		end if;
+	
+	insert_info = SELECT *
+				 	FROM :TMP_TABLE as a
+				 	WHERE NOT EXISTS ( select 1 from "EBGCFE"."UI_ONDEMAND_CAL_LIST" 
+									where ITEM = a.ITEM);
+											
+	SELECT count(1) into n
+	 	FROM :insert_info;	 
+	if n > 0 then
+		INSERT INTO "EBGCFE"."UI_ONDEMAND_CAL_LIST"(
+			PRODUCT_GROUP,
+			CYCLE,
+			BRAND,
+			FAMILY,
+			ITEM,
+			ITEM_DESC,
+			ITEM_TYPE,
+			ACTION,
+			STATUS,
+			SYS_CREATED_DATE,
+			SYS_CREATED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			SYS_LAST_MODIFIED_BY
+			)
+			SELECT a.PRODUCT_GROUP,
+				   a.CYCLE,
+				   a.BRAND,
+				   a.FAMILY,
+				   a.ITEM,
+				   a.ITEM_DESC,
+				   a.ITEM_TYPE,
+				   a.ACTION,
+				   a.STATUS,
+				   :create_time,
+					:currentUser,
+				    :create_time,
+					:currentUser
+			FROM :insert_info as a ;
+	
+		 	
+		 	--insert操作需要写入日志
+	 	insert into "EBGCFE"."UI_ONDEMAND_CAL_LIST_LOG"(
+			PRODUCT_GROUP,
+			CYCLE,
+			BRAND,
+			FAMILY,
+			ITEM,
+			ITEM_DESC,
+			ITEM_TYPE,
+			ACTION,
+			STATUS,
+			SYS_CREATED_DATE,
+			SYS_CREATED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			SYS_LAST_MODIFIED_BY,
+			AT_MODIFIED_BY,
+			AT_ACTION,
+			AT_MODIFIED_ON,
+			AT_MILLIS
+		 )SELECT 
+			    a.PRODUCT_GROUP,
+			    a.CYCLE,
+			    a.BRAND,
+			    a.FAMILY,
+			    a.ITEM,
+			    a.ITEM_DESC,
+			    a.ITEM_TYPE,
+			    a.ACTION,
+			    a.STATUS,
+			    :create_time,
+				:currentUser,
+			    :create_time,
+				:currentUser,
+		 		SESSION_USER,
+		 		'update',
+		 		CURRENT_TIMESTAMP,
+		 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) 
+		 		FROM :insert_info as a ;
+		end if;
+			
+
+		-- passing successful total numbers
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:n,0,:table_name);
+
+END;

@@ -1,0 +1,40 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info" (
+IN code varchar(200),
+IN business_name varchar(200),
+IN success int,
+IN error int, 
+IN table_name varchar(200)
+
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      : business_info              --函数名
+*function  : 保存upload业务的操作信息，成功个数，错误个数              --函数功能
+*input     ：    code, business_name, success, error, table_name    --输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014/12/10                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		n	int:=0;
+	 
+BEGIN
+		SELECT count(1) into n from "EBGCFE"."UPLOAD_BUSINESS_INFO" where code = :code;
+		
+		if n>0 then
+			update "EBGCFE"."UPLOAD_BUSINESS_INFO" set 
+				ERROR = ERROR+ :error,
+				SUCCESS = SUCCESS + :success,
+				BUSINESS_TIME = CURRENT_TIMESTAMP
+			where code = :code;
+		elseif n =0 then
+		
+		
+			insert into "EBGCFE"."UPLOAD_BUSINESS_INFO"(CODE,BUSINESS_NAME,SUCCESS,ERROR,TABLE_NAME,BUSINESS_TIME,SYS_OPERATED_BY)
+			VALUES (:code,:business_name,:success,:error,:table_name,CURRENT_TIMESTAMP,SESSION_USER);
+		end if;
+	
+END;

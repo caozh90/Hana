@@ -1,0 +1,185 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_lead_time" 
+(
+	IN newInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_LEAD_TIME_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/***************************** 
+*name        :    ui_lead_time
+*function    :               
+*input       :    
+*output      :              
+*author      :    bianzh1
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2015.08.20
+ *****************************/
+	AS
+	path varchar(100):='cdp.egbdf.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_lead_time';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	ns int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'RPT_LEADTIME';
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	--(call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_lead_time_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			--:CYCLE_ID,:MFI_FFI_FC_IND,:MFI_FFI_FC,:PPN,:ABCD_T,:ABCD,:LEADTIME);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_lead_time_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			--:CYCLE_ID,:MFI_FFI_FC_IND,:MFI_FFI_FC,:PPN,:ABCD_T,:ABCD,:LEADTIME);
+    END; 
+       
+	--procedure begin
+
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_UTCTIMESTAMP INTO create_time FROM DUMMY;
+	
+	update_info = SELECT *
+				 	FROM :newInfo as a
+				 	WHERE EXISTS ( SELECT 1 
+				 						FROM "EBGDF"."RPT_LEADTIME" 
+				 							WHERE MFI_FFI_FC_IND = a.MFI_FFI_FC_IND
+											AND MFI_FFI_FC = a.MFI_FFI_FC
+											AND PPN = a.PPN);
+		
+	--validate key
+	SELECT count(1) into n
+	 	FROM :update_info;
+	if n>0 then
+		update "EBGDF"."RPT_LEADTIME" a
+		set	(ABCD,LEADTIME,LAST_UPDATE_TS,LAST_UPDATE_USERID)=
+			(b.ABCD,
+			(SELECT LEADTIME FROM "EBGDF"."UI_LTVALUE" WHERE ABCD = b.ABCD) ,
+			:create_time,:currentUser)
+	    FROM "EBGDF"."RPT_LEADTIME" a,:update_info b
+		where a.MFI_FFI_FC_IND = b.MFI_FFI_FC_IND
+		and a.MFI_FFI_FC = b.MFI_FFI_FC
+		and a.PPN = b.PPN;
+	
+		--update操作需要写入日志
+		insert into "EBGDF"."RPT_LEADTIME_LOG"(
+											CYCLE_ID,
+											MFI_FFI_FC_IND,
+											MFI_FFI_FC,
+											PPN,
+											ABCD_T,
+											ABCD,
+											LEADTIME,
+											CREATE_TS,
+											CREATE_USERID,
+											LAST_UPDATE_TS,
+											LAST_UPDATE_USERID,
+											AT_MODIFIED_BY,
+											AT_ACTION,
+											AT_MODIFIED_ON,
+											AT_MILLIS
+	 ) 
+	 	select CYCLE_ID,
+			MFI_FFI_FC_IND,
+			MFI_FFI_FC,
+			PPN,
+			ABCD_T,
+			ABCD,
+			LEADTIME,
+		    :create_time,
+		    :currentUser,
+		    :create_time,
+		    :currentUser,
+	 		:create_time,
+	 		'update',
+	 		:create_time,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3'))
+		from :update_info;
+	END IF; 	
+	
+	INSERT_INFO = SELECT *
+				 	FROM :newInfo as a
+				 	WHERE NOT EXISTS ( SELECT 1 
+				 						FROM "EBGDF"."RPT_LEADTIME" 
+				 							WHERE MFI_FFI_FC_IND = a.MFI_FFI_FC_IND
+											AND MFI_FFI_FC = a.MFI_FFI_FC
+											AND PPN = a.PPN);
+	SELECT count(1) into ns
+	 	FROM :INSERT_INFO;
+	if ns>0 then
+		INSERT INTO "EBGDF"."RPT_LEADTIME"( CYCLE_ID,
+											MFI_FFI_FC_IND,
+											MFI_FFI_FC,
+											PPN,
+											ABCD_T,
+											ABCD,
+											LEADTIME,
+											CREATE_TS,
+											CREATE_USERID,
+											LAST_UPDATE_TS,
+											LAST_UPDATE_USERID )
+		select  a.CYCLE_ID,
+				a.MFI_FFI_FC_IND,
+				a.MFI_FFI_FC,
+				a.PPN,
+				a.ABCD_T,
+				a.ABCD,
+				(SELECT LEADTIME FROM "EBGDF"."UI_LTVALUE" WHERE ABCD = a.ABCD),
+			    :create_time,
+			    :currentUser,
+			    :create_time,
+			    :currentUser
+		from :INSERT_INFO a;
+	 	
+	 	--insert操作需要写入日志
+		insert into "EBGDF"."RPT_LEADTIME_LOG"(
+											CYCLE_ID,
+											MFI_FFI_FC_IND,
+											MFI_FFI_FC,
+											PPN,
+											ABCD_T,
+											ABCD,
+											LEADTIME,
+											CREATE_TS,
+											CREATE_USERID,
+											LAST_UPDATE_TS,
+											LAST_UPDATE_USERID,
+											AT_MODIFIED_BY,
+											AT_ACTION,
+											AT_MODIFIED_ON,
+											AT_MILLIS
+	 ) 
+	 select CYCLE_ID,
+			MFI_FFI_FC_IND,
+			MFI_FFI_FC,
+			PPN,
+			ABCD_T,
+			ABCD,
+			LEADTIME,
+		    :create_time,
+		    :currentUser,
+		    :create_time,
+		    :currentUser,
+	 		:create_time,
+	 		'create',
+	 		:create_time,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3'))
+	 FROM :INSERT_INFO;	
+	 	 	
+	END IF;
+		
+		call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:ns,0,:table_name);
+END;

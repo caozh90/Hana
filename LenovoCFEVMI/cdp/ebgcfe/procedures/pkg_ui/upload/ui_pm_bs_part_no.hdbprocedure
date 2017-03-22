@@ -1,0 +1,198 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bs_part_no"
+(
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_PM_BS_PART_NO_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+/************************************************************************
+*name        :      UI_PM_BS_PART_NO_S
+*function    :      upload data UI_PM_BS_PART_NO_S         
+*input       ：              business_name etc
+*output      :                
+*author      :      zhao dan
+*CreateDate  :      2016.8.24
+*UpdateDate  :        
+*************************************************************************/ 
+
+	AS
+	path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_pm_bs_part_no';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	error_num int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'PM_UI_BS_PART';
+	validate int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	select '1' from dummy;
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	select '1' from dummy;
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+    END; 
+       
+	--procedure begin
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	ITEM_ERROR = 
+	SELECT A.PART_NO,
+	       '' PART_DESC,
+ 		'"PART_NO"::'||PART_NO||' Part NO. not exists.' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE NOT EXISTS ( select 1 
+						from ebgcfe.ui_item 
+						where
+						 ITEM = a.PART_NO );
+				
+	ERROR_INFOR = 
+	SELECT  PART_NO,
+		    PART_DESC,
+	 		STRING_AGG(ERROR_MESSAGE,',') "ERROR_MESSAGE",
+	 		business_name,
+	 		SEQ,
+	 		POSITION
+	FROM
+	(SELECT * 
+		FROM :ITEM_ERROR
+	 )
+	GROUP BY PART_NO,PART_DESC,
+	 		business_name,
+	 		SEQ,
+	 		POSITION;
+
+	SELECT count(1) into error_num FROM :ERROR_INFOR;
+	
+	TMP_TABLE = SELECT a.PART_NO,
+	                   b.ITEM_DESC PART_DESC
+				FROM :newInfo as a 
+				 join UI_ITEM as b
+				   on (a.PART_NO = b.ITEM)
+				WHERE NOT EXISTS (
+						SELECT 1
+						FROM :ERROR_INFOR
+						WHERE PART_NO = a.PART_NO
+					);
+	
+	--remove error records
+	if error_num >0 then 	
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_pm_bs_part_no_err"(:ERROR_INFOR);
+
+	END IF;
+	
+	/*update_info = SELECT *
+				 	FROM :TMP_TABLE as a
+				 	WHERE EXISTS ( select 1 from "EBGCFE"."PM_UI_BS_PART" 
+									where PART_NO = a.PART_NO);
+											
+	--validate key
+	SELECT count(1) into n
+	 	FROM :update_info;
+	
+	if n > 0 then
+		UPDATE "EBGCFE"."PM_UI_BS_PART" a SET(
+			PART_NO,
+			PART_DESC,			
+			CREATED_BY,
+			CREATION_DATE
+			) = 
+			(
+			b.PART_NO,
+			b.PART_DESC,
+			:currentUser,
+			:create_time
+			)
+		FROM "EBGCFE"."PM_UI_BS_PART" a,:update_info b
+		WHERE a.PART_NO = b.PART_NO;
+	
+		 	
+		 	--insert操作需要写入日志
+	 	insert into "EBGCFE"."PM_UI_BS_PART_LOG"(
+			PART_NO,
+			PART_DESC,
+			CREATED_BY,
+			CREATION_DATE,
+			AT_MODIFIED_BY,
+			AT_ACTION,
+			AT_MODIFIED_ON,
+			AT_MILLIS
+		 )SELECT 
+			    a.PART_NO,
+			    a.PART_DESC,
+			    :currentUser,
+			    :create_time,
+			    :currentUser,
+			    'update',    
+		 		CURRENT_TIMESTAMP,
+		 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) 
+		 		FROM :update_info as a;
+		end if;
+	*/
+	insert_info = SELECT *
+				 	FROM :TMP_TABLE as a
+				 	WHERE NOT EXISTS ( select 1 from "EBGCFE"."PM_UI_BS_PART" 
+									where PART_NO = a.PART_NO);
+											
+	SELECT count(1) into n
+	 	FROM :insert_info;	 
+	if n > 0 then
+		INSERT INTO "EBGCFE"."PM_UI_BS_PART"(
+				PART_NO,
+				PART_DESC,			
+				CREATED_BY,
+				CREATION_DATE
+			)
+			SELECT PART_NO,
+			       PART_DESC,
+			       :currentUser,
+				   :create_time
+			FROM :insert_info as a ;
+	
+		 	
+		 	--insert操作需要写入日志
+	 	insert into "EBGCFE"."PM_UI_BS_PART_LOG"(
+			PART_NO,
+			PART_DESC,
+			CREATED_BY,
+			CREATION_DATE,
+			AT_MODIFIED_BY,
+			AT_ACTION,
+			AT_MODIFIED_ON,
+			AT_MILLIS
+		 )SELECT 
+			    a.PART_NO,
+			    a.PART_DESC,
+			    :currentUser,
+			    :create_time,
+			    :currentUser,
+			    'create',    
+		 		CURRENT_TIMESTAMP,
+		 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) 
+		 		FROM :insert_info as a;
+		end if;
+			
+
+		-- passing successful total numbers
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:n,0,:table_name);
+
+END;

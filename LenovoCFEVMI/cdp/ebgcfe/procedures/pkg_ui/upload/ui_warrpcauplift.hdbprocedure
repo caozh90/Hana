@@ -1,0 +1,187 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_warrpcauplift" (
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int	,
+	
+	IN PRODUCT_GROUP NVARCHAR(10),
+	IN RATIO_CODE NVARCHAR(100),
+	IN SUBGEO NVARCHAR(20),
+	IN COUNTRY NVARCHAR(20),
+	IN TBA_TYPE NVARCHAR(40),
+	IN BASE_WARR DECIMAL(15,4),
+	IN PCA DECIMAL(15,4),
+	IN UPLIFT DECIMAL(15,4)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      : ui_warr_pca_uplift              --函数名
+*function  : upload数据至表ui_warr_pca_uplift并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Justin               --作者
+*CreateDate    : 2015-08-10       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_warrpcauplift';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_WARR_PCA_UPLIFT';
+		validate int;
+		PRODUCT_GROUP NVARCHAR(10) :='EBG';
+		V_COUNTRY NVARCHAR(20) := 'ALL';
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_warrpcauplift_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:BASE_WARR,:PCA,:UPLIFT);
+     END;     
+     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_warrpcauplift_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:BASE_WARR,:PCA,:UPLIFT);
+    END; 
+    --exception 
+        
+
+
+	--procedure begin
+
+	business_code := :SEQ;
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	
+	--validate RATIO_CODE
+	select  count(1) into validate from UI_RATIO_CODE where RATIO_CODE =:RATIO_CODE;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_warrpcauplift_err"
+			('"RATIO_CODE"::'||:RATIO_CODE||' is illegal',:business_name,:SEQ,:position,
+			 :PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:BASE_WARR,:PCA,:UPLIFT);
+	RETURN;
+	END IF ;
+	
+	--validate SUBGEO
+	select  count(1) into validate from "EBGCFE".UI_REGION a  where exists(select 1 from ebgcfe.UI_RATIO_CODE b where b.ratio_code=:RATIO_CODE and b.geo=a.geo)  AND a.SUBGEO =:SUBGEO;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_warrpcauplift_err"
+			('"SUBGEO"::'||:SUBGEO||' is illegal',:business_name,:SEQ,:position,
+			 :PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:BASE_WARR,:PCA,:UPLIFT);
+	RETURN;
+	END IF ;
+	
+	--validate COUNTRY
+	IF  :COUNTRY !='' AND :COUNTRY IS NOT NULL AND :COUNTRY != 'ALL'
+		THEN V_COUNTRY := upper(:COUNTRY);
+		select  count(1) into validate from UI_REGION where  upper(COUNTRY) = upper(:COUNTRY) and SUBGEO= :SUBGEO;
+		IF validate = 0  then
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_warrpcauplift_err"
+				('"COUNTRY"::'||:COUNTRY||' is illegal',:business_name,:SEQ,:position,
+				 :PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:BASE_WARR,:PCA,:UPLIFT);
+		RETURN;
+		END IF;
+	END IF;
+	
+	
+	--validate TBA_TYPE
+	select  count(1) into validate from CONF_PARAMETERS where  PDOMAIN='UI_WARR_PCA_UPLIFT' AND PNAME='TBA_TYPE' AND PVALUE =:TBA_TYPE;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_warrpcauplift_err"
+			('"TBA_TYPE"::'||:TBA_TYPE||' is illegal',:business_name,:SEQ,:position,
+			 :PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:BASE_WARR,:PCA,:UPLIFT);
+	RETURN;
+	END IF ;
+	
+
+	
+	--validate Unique key
+		select count(1) into validate from "EBGCFE"."UI_WARR_PCA_UPLIFT" 
+		where PRODUCT_GROUP = :PRODUCT_GROUP AND RATIO_CODE = :RATIO_CODE AND
+		SUBGEO = :SUBGEO AND COUNTRY = V_COUNTRY AND TBA_TYPE = :TBA_TYPE;
+		
+		if validate>0 then
+			update "EBGCFE"."UI_WARR_PCA_UPLIFT" set
+		    	
+		    	BASE_WARR = :BASE_WARR,
+		    	PCA = :PCA,
+		    	UPLIFT = :UPLIFT,
+		    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+		    	SYS_LAST_MODIFIED_BY = session_user,
+		    	ACTION = 'update'
+		    where
+		    	RATIO_CODE = :RATIO_CODE
+		    	AND SUBGEO = :SUBGEO 
+		    	AND COUNTRY = V_COUNTRY 
+		    	AND TBA_TYPE = :TBA_TYPE; 
+		
+			--update操作需要写入日志
+			insert into "EBGCFE"."UI_WARR_PCA_UPLIFT_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				PRODUCT_GROUP,RATIO_CODE,SUBGEO,COUNTRY,TBA_TYPE,BASE_WARR,PCA,UPLIFT,
+		 	SYS_LAST_MODIFIED_BY,
+		 	SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+				(:currentUser,
+				'update',
+				:create_time,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,V_COUNTRY,:TBA_TYPE,:BASE_WARR,PCA,:UPLIFT,
+				:currentUser,
+				:create_time);
+			
+		ELSEIF validate=0 THEN
+			--INSERT INTO UI_WARR_PCA_UPLIFT  
+			  insert into "EBGCFE"."UI_WARR_PCA_UPLIFT"
+			            (CYCLE,PRODUCT_GROUP,RATIO_CODE,SUBGEO,COUNTRY,TBA_TYPE,BASE_WARR,PCA,UPLIFT,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,ACTION)  
+			  	values ('CURRENT','EBG',:RATIO_CODE,:SUBGEO,V_COUNTRY,:TBA_TYPE,:BASE_WARR,:PCA,:UPLIFT,CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER,'insert');
+	        
+			--insert into log     
+			INSERT into  "EBGCFE"."UI_WARR_PCA_UPLIFT_LOG"
+				(
+				"PRODUCT_GROUP",
+				"RATIO_CODE",
+				"SUBGEO",
+				"COUNTRY",
+				"TBA_TYPE",
+				"BASE_WARR",
+				"PCA",
+				"UPLIFT",	
+				SYS_LAST_MODIFIED_DATE,
+			    AT_ACTION,
+			    SYS_LAST_MODIFIED_BY,
+			    AT_MODIFIED_ON,
+			    AT_MILLIS    	
+				)
+				
+			 VALUES(	
+				'EBG',
+				:RATIO_CODE,
+				:SUBGEO,
+				V_COUNTRY,
+				:TBA_TYPE,
+				:BASE_WARR,
+				:PCA,
+				:UPLIFT,
+				:create_time,
+			    'insert',
+			    session_user,
+			    CURRENT_TIMESTAMP,
+			    TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));
+		END IF;
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+	
+	
+END;

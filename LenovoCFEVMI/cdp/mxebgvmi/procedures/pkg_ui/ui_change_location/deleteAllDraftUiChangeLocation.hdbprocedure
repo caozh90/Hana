@@ -1,0 +1,24 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_change_location::deleteAllDraftUiChangeLocation" (
+in STATUS NVARCHAR(40),
+OUT  error_message nvarchar(4096)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+  	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+ 	BEGIN
+    	error_message := ::SQL_ERROR_MESSAGE;
+ 	END ;
+ 	
+ 	delete from 
+ 	"MXEBGVMI"."UI_CHANGE_SL"
+ 	where STATUS = :STATUS;
+ 	
+ 	error_message := 'Data delete successfully';
+END;

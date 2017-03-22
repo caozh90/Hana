@@ -1,0 +1,77 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_create_data_sw::PRC_GET_REGION" (OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_GET_REGION        
+*function   : Prepare REGION Data for SW
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2015-08-04
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_lastrun_time timestamp;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION  
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_REGION', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_REGION', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1;
+
+    DELETE FROM pcdw_region_sw;
+
+    INSERT INTO pcdw_region_sw (geo_id,
+                                geo_desc,
+                                super_geo_id,
+                                super_geo_desc,
+                                geo_summary,
+                                supergeo_summary,
+                                geo_attribute_1,
+                                geo_attribute_2,
+                                geo_attribute_3,
+                                geo_attribute_4,
+                                geo_attribute_5,
+                                sys_created_date,
+                                sys_created_by,
+                                sys_last_modified_date,
+                                sys_last_modified_by)
+       SELECT DISTINCT geo_id,
+              geo_desc,
+              super_geo_id,
+              super_geo_desc,
+              geo_summary,
+              supergeo_summary,
+              geo_attribute_1,
+              geo_attribute_2,
+              geo_attribute_3,
+              geo_attribute_4,
+              geo_attribute_5,
+              CURRENT_TIMESTAMP,
+              'pkg_create_data_sw.PRC_GET_REGION',
+              CURRENT_TIMESTAMP,
+              'pkg_create_data_sw.PRC_GET_REGION'
+         FROM apo_ztdp_sw_geo;
+             
+   PO_RETURNCODE := 0;
+   -- log process end
+    INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_REGION', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';       
+END;

@@ -1,0 +1,407 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xoutfr_weight"
+(
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_WEIGHT_TABLE_T"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+/************************************************************************
+*name        :      ui_xoutfr_weight
+*function    :      upload data ui_xoutfr_weight        
+*input       ：              business_name etc
+*output      :                
+*author      :      Chris Gao
+*CreateDate  :      2016.5.20
+*UpdateDate  :        
+*************************************************************************/ 
+
+	AS
+	path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_xoutfr_weight';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	insert_n int;
+	update_n int;
+	error_num int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'UI_XOUTFR_WEIGHT';
+	validate int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+    END; 
+       
+	--procedure begin
+	
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	-- PROCESS BATCH UPLOAD WITH DUPLICATE DATA
+	DUPLICATE_ERROR = 
+	SELECT a.CYCLE,
+	a.PRODUCT_GROUP,
+		a.BRAND,
+		a.FAMILY,
+		a.MT,
+		a.ITEM,
+		a.WEIGHT,
+ 		'"Key Duplicate" is illegal' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo as a,
+	(
+		select * from
+		(
+			select 
+			"CYCLE",
+			"PRODUCT_GROUP",
+			"BRAND",
+			"FAMILY",
+			"MT",
+			"ITEM",
+			count(1) "TOTAL_COUNT"
+			from :newInfo
+			group by "CYCLE",
+			"PRODUCT_GROUP",
+			"BRAND",
+			"FAMILY",
+			"MT",
+			"ITEM"
+		)
+		where
+		TOTAL_COUNT > 1
+	) as b
+	where
+	a.CYCLE = b."CYCLE" and
+	a.PRODUCT_GROUP = b.PRODUCT_GROUP
+	and 
+	a.BRAND = b.BRAND
+	and
+	a.FAMILY = b.FAMILY
+	and
+	a.MT = b.MT
+	and
+	a.ITEM = b.ITEM
+	;
+	
+	
+	BRAND_ERROR = 
+	SELECT CYCLE,
+		PRODUCT_GROUP,
+		BRAND,
+		FAMILY,
+		MT,
+		ITEM,
+		WEIGHT,
+ 		'"BRAND"::'||BRAND||' is illegal' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE BRAND NOT IN (select distinct BRAND from ebgcfe.ui_prodfamily union select 'N/A' "BRAND" from dummy);
+	
+	FAMILY_ERROR = 
+	SELECT CYCLE,
+		PRODUCT_GROUP,
+		BRAND,
+		FAMILY,
+		MT,
+		ITEM,
+		WEIGHT,
+ 		'"FAMILY"::'||FAMILY||' is illegal' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE a.family not in (select distinct prod_family from ebgcfe.ui_prodfamily where brand = a.brand union select 'N/A' "prod_family" from dummy);
+	
+	MT_ERROR = 
+	SELECT CYCLE,
+		PRODUCT_GROUP,
+		BRAND,
+		FAMILY,
+		MT,
+		ITEM,
+		WEIGHT,
+ 		'"MT"::'||MT||' is illegal' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE a.MT not in (select distinct machinetype from ebgcfe.ui_machinetype union select 'N/A' "MACHINETYPE" from dummy);
+	
+	ITEM_ERROR = 
+	SELECT CYCLE,
+		PRODUCT_GROUP,
+		BRAND,
+		FAMILY,
+		MT,
+		ITEM,
+		WEIGHT,
+ 		'"ITEM"::'||ITEM||' is illegal' "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM :newInfo a
+	WHERE a.ITEM not in (select distinct item from ebgcfe.ui_item where item_type in ('MTM','OPTION','BUNDLE','SBB') union select 'N/A' "item" from dummy);
+							
+	ERROR_INFOR = 
+	SELECT CYCLE,
+		PRODUCT_GROUP,
+		BRAND,
+		FAMILY,
+		MT,
+		ITEM,
+		WEIGHT,
+ 		STRING_AGG(ERROR_MESSAGE,',') "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+	FROM
+	(SELECT * 
+		FROM :BRAND_ERROR
+	 UNION
+	 SELECT * 
+		FROM :FAMILY_ERROR
+	 UNION
+	 SELECT * 
+		FROM :MT_ERROR
+	 UNION
+	 SELECT * 
+		FROM :ITEM_ERROR
+	 UNION
+	 SELECT *
+	    FROM :DUPLICATE_ERROR)
+	GROUP BY CYCLE,
+			PRODUCT_GROUP,
+			BRAND,
+			FAMILY,
+			MT,
+			ITEM,
+			WEIGHT,
+	 		BUSINESS_NAME,
+	 		SEQ,
+	 		POSITION;
+
+	SELECT count(1) into error_num FROM :ERROR_INFOR;
+	
+	--remove error records
+	if error_num >0 then 
+	RIGHT_TABLE = SELECT 
+				CYCLE,
+				PRODUCT_GROUP,
+				BRAND,
+				FAMILY,
+				MT,
+				ITEM,
+				WEIGHT,
+			   :currentUser "SYS_CREATED_BY",
+			   :create_time "SYS_CREATED_DATE",
+			   :currentUser "SYS_LAST_MODIFIED_BY",
+			   :create_time "SYS_LAST_MODIFIED_DATE"
+		FROM :newInfo as a
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM :ERROR_INFOR
+			WHERE CYCLE = a.CYCLE
+			and PRODUCT_GROUP = a.PRODUCT_GROUP
+			and BRAND = a.BRAND
+			and FAMILY = a.FAMILY
+			and MT = a.MT
+			and ITEM = a.ITEM
+			and WEIGHT = a.WEIGHT
+		);
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xoutfr_weight_err"(:ERROR_INFOR);
+	else
+		RIGHT_TABLE = SELECT 
+				CYCLE,
+				PRODUCT_GROUP,
+				BRAND,
+				FAMILY,
+				MT,
+				ITEM,
+				WEIGHT,
+			   :currentUser "SYS_CREATED_BY",
+			   :create_time "SYS_CREATED_DATE",
+			   :currentUser "SYS_LAST_MODIFIED_BY",
+			   :create_time "SYS_LAST_MODIFIED_DATE"
+		FROM :newInfo;
+	END IF;
+	
+	-- insert
+	INSERT_TABLE = select * from :RIGHT_TABLE as a where not exists (
+			SELECT 1
+			FROM EBGCFE.UI_XOUTFR_WEIGHT
+			WHERE CYCLE = a.CYCLE
+			and PRODUCT_GROUP = a.PRODUCT_GROUP
+			and BRAND = a.BRAND
+			and FAMILY = a.FAMILY
+			and MT = a.MT
+			and ITEM = a.ITEM
+		);
+	
+	-- update
+	UPDATE_TABLE = select * from :RIGHT_TABLE as a where exists (
+			SELECT 1
+			FROM EBGCFE.UI_XOUTFR_WEIGHT
+			WHERE CYCLE = a.CYCLE
+			and PRODUCT_GROUP = a.PRODUCT_GROUP
+			and BRAND = a.BRAND
+			and FAMILY = a.FAMILY
+			and MT = a.MT
+			and ITEM = a.ITEM
+		);
+	
+	SELECT count(1) into n
+	 	FROM :RIGHT_TABLE;	 
+	SELECT count(1) into insert_n
+	 	FROM :INSERT_TABLE;	 
+	SELECT count(1) into update_n
+	 	FROM :UPDATE_TABLE;	 
+	 	
+	if insert_n > 0 then
+		INSERT INTO "EBGCFE"."UI_XOUTFR_WEIGHT"(
+			CYCLE,
+			PRODUCT_GROUP,
+			BRAND,
+			FAMILY,
+			MT,
+			ITEM,
+			WEIGHT,
+			ACTION,
+			SYS_CREATED_BY,
+			SYS_CREATED_DATE,
+			SYS_LAST_MODIFIED_BY,
+			SYS_LAST_MODIFIED_DATE
+			)
+			SELECT a.CYCLE,
+				   a.PRODUCT_GROUP,
+				   a.BRAND,
+				   a.FAMILY,
+				   a.MT,
+				   a.ITEM,
+				   a.WEIGHT,
+				   'insert',
+				   a.SYS_CREATED_BY,
+			       a.SYS_CREATED_DATE,
+				   a.SYS_LAST_MODIFIED_BY,
+				   a.SYS_LAST_MODIFIED_DATE
+			FROM :INSERT_TABLE as a;
+	
+		 	
+		 --insert操作需要写入日志
+	 	INSERT into  "EBGCFE"."UI_XOUTFR_WEIGHT_LOG"
+			("CYCLE",
+			"PRODUCT_GROUP",
+			"BRAND",
+			"FAMILY",
+			"MT",
+			"ITEM",
+			"WEIGHT",
+			"SYS_CREATED_DATE",
+			"SYS_CREATED_BY",
+			"SYS_LAST_MODIFIED_DATE",
+			"SYS_LAST_MODIFIED_BY",
+			"AT_MODIFIED_BY",
+			"AT_ACTION",
+			"AT_MODIFIED_ON",
+			"AT_MILLIS"
+			)
+		SELECT
+			'CURRENT',
+			'EBG',
+			a.BRAND,
+			a.FAMILY,
+			a.MT,
+			a.ITEM,
+			a.WEIGHT,
+			:create_time,
+			:currentUser,
+			:create_time,
+			:currentUser,
+			:currentUser,
+			'insert',
+			:create_time,
+			TO_DECIMAL(TO_VARCHAR(:create_time,'HH24MISSFF3'))
+		from :INSERT_TABLE as a;
+	end if;
+	
+	if update_n > 0 then
+		UPDATE "EBGCFE"."UI_XOUTFR_WEIGHT" as b SET(
+			b.WEIGHT,
+			b.ACTION,
+			b.SYS_LAST_MODIFIED_BY,
+			b.SYS_LAST_MODIFIED_DATE
+			) = 
+			(
+			 a.WEIGHT,
+		     'update',
+		     a.SYS_LAST_MODIFIED_BY,
+		     a.SYS_LAST_MODIFIED_DATE
+		      )
+			FROM :UPDATE_TABLE as a, "EBGCFE"."UI_XOUTFR_WEIGHT" as b
+			WHERE b.CYCLE=a.CYCLE AND b.PRODUCT_GROUP=a.PRODUCT_GROUP and  b.BRAND = a.BRAND and b.FAMILY = a.FAMILY and b.MT = a.MT and b.ITEM = a.ITEM;
+	
+		 	
+		 --insert操作需要写入日志
+	 	INSERT into  "EBGCFE"."UI_XOUTFR_WEIGHT_LOG"
+			("CYCLE",
+			"PRODUCT_GROUP",
+			"BRAND",
+			"FAMILY",
+			"MT",
+			"ITEM",
+			"WEIGHT",
+			"SYS_CREATED_DATE",
+			"SYS_CREATED_BY",
+			"SYS_LAST_MODIFIED_DATE",
+			"SYS_LAST_MODIFIED_BY",
+			"AT_MODIFIED_BY",
+			"AT_ACTION",
+			"AT_MODIFIED_ON",
+			"AT_MILLIS"
+			)
+		SELECT
+			'CURRENT',
+			'EBG',
+			a.BRAND,
+			a.FAMILY,
+			a.MT,
+			a.ITEM,
+			a.WEIGHT,
+			:create_time,
+			:currentUser,
+			:create_time,
+			:currentUser,
+			:currentUser,
+			'update',
+			:create_time,
+			TO_DECIMAL(TO_VARCHAR(:create_time,'HH24MISSFF3'))
+		from :UPDATE_TABLE as a;
+	end if;
+			
+
+		-- passing successful total numbers
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:n,0,:table_name);
+
+END;

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Cube:cube xmlns:Cube="http://www.sap.com/ndb/BiModelCube.ecore" schemaVersion="1.5" id="AN_UI_ITEMS" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled">
+  <descriptions defaultDescription="AN_UI_ITEMS"/>
+  <localVariables/>
+  <privateMeasureGroup id="MeasureGroup">
+    <attributes>
+      <attribute id="BRAND" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="BRAND"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ITEM" columnName="BRAND"/>
+      </attribute>
+      <attribute id="MACHINE_TYPE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MACHINE_TYPE"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ITEM" columnName="MACHINE_TYPE"/>
+      </attribute>
+      <attribute id="ITEM" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ITEM" columnName="ITEM"/>
+      </attribute>
+      <attribute id="PROD_H" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PROD_H"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ITEM" columnName="PROD_H"/>
+      </attribute>
+      <attribute id="ITEM_TYPE" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_TYPE"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ITEM" columnName="ITEM_TYPE"/>
+      </attribute>
+      <attribute id="EOL_STATUS" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EOL_STATUS"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ITEM" columnName="EOL_STATUS"/>
+      </attribute>
+      <attribute id="ASP_PRD_FAMILY" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ASP_PRD_FAMILY"/>
+        <keyMapping schemaName="EBGCFE" columnObjectName="UI_ITEM" columnName="ASP_PRD_FAMILY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="C_DUMMY" hidden="false" order="8" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="C_DUMMY"/>
+        <keyCalculation datatype="VARCHAR" length="2">
+          <formula>0</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies>
+        <tableProxy centralTable="true">
+          <table schemaName="EBGCFE" columnObjectName="UI_ITEM"/>
+        </tableProxy>
+      </tableProxies>
+      <joins/>
+      <layout>
+        <shapes>
+          <shape modelObjectName="UI_ITEM" modelObjectNameSpace="EBGCFE" modelObjectType="catalog">
+            <upperLeftCorner x="70" y="30"/>
+          </shape>
+        </shapes>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="SYS_LAST_MODIFIED_DATE" order="7" aggregationType="count" measureType="simple">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <measureMapping schemaName="EBGCFE" columnObjectName="UI_ITEM" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <sharedDimensions/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="MEASURE_GROUP" modelObjectType="repository">
+          <upperLeftCorner x="300" y="200"/>
+        </shape>
+        <shape modelObjectName="LogicalView" modelObjectNameSpace="MeasureGroup" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateMeasureGroup>
+</Cube:cube>

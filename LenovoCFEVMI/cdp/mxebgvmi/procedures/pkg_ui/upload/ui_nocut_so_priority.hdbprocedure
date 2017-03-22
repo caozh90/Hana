@@ -1,0 +1,145 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_nocut_so_priority" (
+IN   LOGICAL_PLANT NVARCHAR(40),
+IN   DELIVERY_PRIORITY int,
+IN	 	business_name nvarchar(200),
+IN		seq	 nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+/************************************************************************
+*name      : ui_nocut_so_priority              --函数名
+*function  : upload数据至表ui_nocut_so_priority并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-29       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.mxebgvmi.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_nocut_so_priority';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_NOCUT_SO_PRIORITY';
+		validate1 int;
+		validate2 int;
+		validate3 int;
+		validate4 int;
+		validate5 int;
+		privilegeExists  NVARCHAR(30);
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_nocut_so_priority_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:LOGICAL_PLANT,:DELIVERY_PRIORITY,:seq,:position);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_nocut_so_priority_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:LOGICAL_PLANT,:DELIVERY_PRIORITY,:seq,:position);
+    END; 
+    --exception 
+	
+	--procedure begin
+	
+	--verify privilege
+	    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+	    'nocutsopriority::uploadable',:privilegeExists);
+	    IF  :privilegeExists != 'OK' THEN
+	    	errorInfo = select 400 as http_status_code, 
+	     		'SQL ERROR CODE : 0' error_message, 
+	     		:privilegeExists detail from dummy;
+	    	RETURN ;
+	    END IF;
+	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'MXEBGVMI',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     	
+	--设置businesscode:: table_name+business_code	
+	business_code := :seq;
+
+	--验证主键，避免冲突
+	select count(1) into n from "MXEBGVMI"."UI_NOCUT_SO_PRIORITY" 
+	where LOGICAL_PLANT = :LOGICAL_PLANT and DELIVERY_PRIORITY = :DELIVERY_PRIORITY;
+
+	--验证LOGICAL_PLANT
+	SELECT COUNT(1) into validate1 FROM "MXEBGVMI"."CONF_SITEMASTER"
+	WHERE SITEID= :LOGICAL_PLANT;
+	
+	validate2 := 1;
+	if(:DELIVERY_PRIORITY <0) then
+		validate2 := 0;
+	end if;
+	
+	if(validate1 >0 and validate2>0 and n<=0) then
+		INSERT INTO "MXEBGVMI"."UI_NOCUT_SO_PRIORITY"(
+				LOGICAL_PLANT,DELIVERY_PRIORITY,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		 	)
+	 	VALUES(
+			 	 :LOGICAL_PLANT,:DELIVERY_PRIORITY,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+		--insert操作需要写入日志
+		insert into "MXEBGVMI"."UI_NOCUT_SO_PRIORITY_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				LOGICAL_PLANT,DELIVERY_PRIORITY,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+		VALUES
+			 	(:currentUser,
+			 	'create',
+			 	:create_time,
+				:LOGICAL_PLANT,:DELIVERY_PRIORITY,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);	 			 	
+		
+		call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+		
+	ELSEIF n > 0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_nocut_so_priority_err"('Duplicated primary key.',:business_name,
+			 	 :LOGICAL_PLANT,:DELIVERY_PRIORITY,
+				:seq,:position);
+		    --error log
+ 		 	RETURN;
+		
+	ELSEIF validate1<=0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_nocut_so_priority_err"('"LOGICAL_PLANT"::'||:LOGICAL_PLANT||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:DELIVERY_PRIORITY,
+				:seq,:position);
+			--error log
+ 		 	RETURN;
+				
+	ELSEIF validate2<=0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_nocut_so_priority_err"('"DELIVERY_PRIORITY"::'||:DELIVERY_PRIORITY||' should be positive',:business_name,
+			 	 :LOGICAL_PLANT,:DELIVERY_PRIORITY,
+				:seq,:position);
+			--error log
+ 		 	RETURN;
+	END IF;
+	
+END;

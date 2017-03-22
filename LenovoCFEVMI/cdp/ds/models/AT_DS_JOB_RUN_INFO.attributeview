@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_DS_JOB_RUN_INFO" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_DS_JOB_RUN_INFO"/>
+  <attributes>
+    <attribute id="SEQUENCEID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="能唯一标示某次运行的ID （来自HANA端）"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="SEQUENCEID"/>
+    </attribute>
+    <attribute id="USERNAME" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="运行作业的用户名 （来自HANA端）"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="USERNAME"/>
+    </attribute>
+    <attribute id="STEPID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="当前运行步骤的描述"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="STEPID"/>
+    </attribute>
+    <attribute id="SUBSTEP_INFO" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="当前运行步骤的描述"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="SUBSTEP_INFO"/>
+    </attribute>
+    <attribute id="JOBSTATUS" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="当前作业的状态（RUNNING, ERROR, FINISHED)"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="JOBSTATUS"/>
+    </attribute>
+    <attribute id="JOBRUNID" key="true" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="Data Services 唯一标示一个Job运行的ID"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="JOBRUNID"/>
+    </attribute>
+    <attribute id="REPONAME" key="true" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="运行JOB的资料库"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="REPONAME"/>
+    </attribute>
+    <attribute id="JOBNAME" order="8" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="Data Services 作业名"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="JOBNAME"/>
+    </attribute>
+    <attribute id="PROCESSNAME" order="9" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="流程名"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="PROCESSNAME"/>
+    </attribute>
+    <attribute id="LOADINGMODE" order="10" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="增量装载或者初始化装载"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="LOADINGMODE"/>
+    </attribute>
+    <attribute id="DSSERVER" order="11" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="运行作业的Data Services 服务器名 "/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="DSSERVER"/>
+    </attribute>
+    <attribute id="BUSINESSMODULE" order="12" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="业务模块"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="BUSINESSMODULE"/>
+    </attribute>
+    <attribute id="TARGET" order="13" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="目标Schema"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="TARGET"/>
+    </attribute>
+    <attribute id="STARTTIME_RAW" order="14" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="作业启动时间"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="STARTTIME"/>
+    </attribute>
+    <attribute id="ENDTIME_RAW" order="15" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="作业结束时间"/>
+      <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="ENDTIME"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes>
+    <calculatedAttribute id="STARTTIME" hidden="false" order="16" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="STARTTIME"/>
+      <keyCalculation datatype="VARCHAR" length="50">
+        <formula>string(date(&quot;STARTTIME_RAW&quot;))</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="ENDTIME" hidden="false" order="17" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ENDTIME"/>
+      <keyCalculation datatype="VARCHAR" length="50">
+        <formula>string(date(&quot;ENDTIME_RAW&quot;))</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+  </calculatedAttributes>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO"/>
+      </tableProxy>
+    </tableProxies>
+    <joins/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="DS_JOB_RUN_INFO" modelObjectNameSpace="DS_INFO" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

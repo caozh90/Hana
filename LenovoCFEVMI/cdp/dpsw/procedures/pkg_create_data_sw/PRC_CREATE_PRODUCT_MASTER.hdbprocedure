@@ -1,0 +1,833 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_create_data_sw::PRC_CREATE_PRODUCT_MASTER" (OUT PO_RETURNCODE INTEGER)
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS  
+/************************************************************************
+*name       : PRC_CREATE_PRODUCT_MASTER        
+*function   : Prepare Product Master Data for SW
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2015-07-15
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_lastrun_time timestamp;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1;
+
+  --获取上次同步时间 
+  /*
+   SELECT MAX(eventtime)
+     INTO v_lastrun_time
+     FROM pcdw_proc_log
+    WHERE eventname = 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER' AND subevent = 'SUCCESS' and eventdescr='END';
+
+   v_lastrun_time :=ifnull(v_lastrun_time,TO_DATE ('1970/01/01 00:00:00', 'YYYY/MM/DD HH24:MI:SS') );
+*/
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', TO_CHAR (v_lastrun_time, 'YYYY/MM/DD HH24:MI:SS'), NULL, '', '', '', '', 'step 0');
+   EXEC 'COMMIT';
+   
+  --Step1:获取全量数据
+  DELETE FROM Z_MID_PCDW_PRODUCT_MASTER_STEP1;
+ 
+  INSERT INTO Z_MID_PCDW_PRODUCT_MASTER_STEP1
+    (planning_item_id,siteid, planning_item_desc, machine_type_id, machine_type_desc,
+     family_id, family_desc, brand_id,brand_desc, product_type_id, product_type_desc,Product_Type_2,
+     introduction_date, technology,discontinued_date, series, subseries,prodh,bom_type,variant_planning_material,mtart)
+    SELECT t1.item AS planning_item_id,
+           t1.siteid,
+           ifnull(maktx, ifnull(maktx_ch, t1.item)) AS planning_item_desc,
+           --For LFO/SBB/OPT/TMF/No Prdha,Use Dummy Logic
+           --For Others,Use Phc'S Level5(12-15)
+           CASE
+             WHEN itemclass = 'SBB'                                                                         --SBB
+               OR mtart ='ZITR'                                                                             --OPT
+               OR (MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') ) --TMF
+               OR length(MAX(t1.prodh)OVER(PARTITION BY t1.item)) < 12                                      --No prodh
+             THEN 'DUMMY-' || t1.item
+             ELSE substring(MAX(t1.prodh)OVER(PARTITION BY t1.item), 12, 4)
+           END machine_type_id,
+           CASE
+             WHEN itemclass = 'SBB'                                                                         --SBB
+               OR mtart ='ZITR'                                                                             --OPT
+               OR (MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') ) --TMF
+               OR length(MAX(t1.prodh)OVER(PARTITION BY t1.item)) < 12                                      --No prodh
+             THEN 'DUMMY-' || t1.item
+             ELSE substring(MAX(t1.prodh)OVER(PARTITION BY t1.item), 12, 4)
+           END machine_type_desc,
+           --For TMF product type and product type 2 is CTO,Use zTMF-Planning Item ID
+           --For product type SBB or OPT populate with zzSBB-planning item or zzOPT-planning item
+           --For product type 2 is LFO then use Family_ID from planning material
+           --If blank then use Dummy Default logic
+           CASE
+             WHEN mtart IN ('ZREV', 'ZXMT') AND MAX(t1.x_unit_class)OVER(PARTITION BY t1.item) = '3' THEN 'zTMF-'  || t1.item
+             WHEN mtart = 'ZITR'                           THEN 'zzOPT-' || t1.item
+             WHEN itemclass = 'SBB'                        THEN 'zzSBB-' || t1.item
+             ELSE ifnull(extwg, 'DUMMY-' || t1.item)
+           END AS family_id,
+           CASE
+             WHEN mtart IN ('ZREV', 'ZXMT') AND MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' THEN 'zTMF-'  || t1.item
+             WHEN mtart = 'ZITR'                           THEN 'zzOPT-' || t1.item
+             WHEN itemclass = 'SBB'                        THEN 'zzSBB-' || t1.item
+             ELSE ifnull(extwg, 'DUMMY-' || t1.item)
+           END AS family_desc,
+            --Brand_id:
+            --X - Machines For Product Type Sys
+            --X - Configured Options For Product Type Tmf
+            --X - Options For Product Type Opt
+            --X - Sbb For Product Type Sbb
+           CASE
+             WHEN MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'X-Configured Options'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'X-Options'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'X-Machines'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'X-Machines'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'X-SBB'
+            END brand_id, 
+           CASE
+             WHEN MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'X-Configured Options'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'X-Options'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'X-Machines'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'X-Machines'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'X-SBB'
+            END brand_desc,     
+           --product_type_id:         
+           CASE
+             WHEN MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'TMF'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'OPT'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'SYS'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'SYS'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'SBB'
+            END product_type_id,             
+           CASE
+             WHEN MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'TMF'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'OPT'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'SYS'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'SYS'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'SBB'
+            END product_type_desc,  
+           --product_type_2:          
+           CASE
+             --WHEN t1.x_unit_class = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'TMF'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'OPT'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'LFO'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'CTO'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'SBB'
+            END product_type_2,
+           x_ww_annc_date AS introduction_date,
+           MAP(substring(t1.zeinr, 1, 2), 'L1', substring(t1.zeinr, 4), t1.zeinr) AS technology,
+           x_ww_withdraw_date AS discontinued_date,
+           CASE
+            WHEN length(MAX(t1.prodh)OVER(PARTITION BY t1.item)) < 1 THEN 'DUMMY-' || t1.item
+             ELSE substring(MAX(t1.prodh)OVER(PARTITION BY t1.item), 1, 7)
+           END series,
+           CASE
+             WHEN length(MAX(t1.prodh)OVER(PARTITION BY t1.item)) < 1 THEN 'DUMMY-' || t1.item
+             ELSE substring(MAX(t1.prodh)OVER(PARTITION BY t1.item), 1, 7)
+           END subseries,
+           MAX(t1.prodh)OVER(PARTITION BY t1.item) as prodh,
+           MAP(MAX(t1.x_unit_class)OVER(PARTITION BY t1.item), '1', 'SIU-CPU', '2' , 'SIU non CPU', '3','non SIU-CPU') AS bom_type,
+           MAP(t1.mtart, 'ZREV',IFNULL( MAX(t1.prgrp)OVER(PARTITION BY t1.item),MAX(t1.BASE_MOD)OVER(PARTITION BY t1.item))) AS variant_planning_material,
+           t1.mtart
+      FROM pcdw_itemsitemaster t1,
+           (SELECT DISTINCT item
+              FROM pcdw_itemsitemaster i1, conf_parameters_sw i2
+             WHERE i1.siteid = i2.name1
+               AND i2.domain = 'PLANT_FILTER'
+              -- AND i1.sys_last_modified_date >= v_lastrun_time 
+               ) t2,
+           (SELECT name1
+              FROM conf_parameters_sw
+             WHERE domain = 'PLANT_FILTER') t3
+     WHERE t1.item = t2.item
+       AND t1.siteid = t3.name1
+       AND t1.itemclass IN ('MTM', 'CTO', 'OPT', 'SBB')
+       AND t1.mtart <> 'ZXSW' --去掉software成品 
+       AND t1.zucod LIKE 'H%'
+       --AND (t1.zucod LIKE 'H%' or t1.prodh like '7%' or t1.prodh like '5EPG%') --add by liuyg5 judgment is X86 matertial
+       AND IFNULL(MAP(substring(t1.zeinr, 1, 2), 'L1', substring(t1.zeinr, 4), t1.zeinr),'NULL') NOT IN
+           (SELECT name1 FROM conf_parameters_sw WHERE domain = 'SBB_FILTER')
+       AND  ifnull(T1.lvorm,'null')<>'X';
+              
+  --获取Planning Material
+  INSERT INTO Z_MID_PCDW_PRODUCT_MASTER_STEP1
+    (planning_item_id,siteid, planning_item_desc, machine_type_id, machine_type_desc,
+     family_id, family_desc, brand_id,brand_desc, product_type_id, product_type_desc,Product_Type_2,
+     introduction_date, technology,discontinued_date, series, subseries,prodh,bom_type,variant_planning_material,mtart)
+    SELECT t1.item AS planning_item_id,
+           t1.siteid,
+           ifnull(maktx, ifnull(maktx_ch, t1.item)) AS planning_item_desc,
+           --For LFO/SBB/OPT/TMF/No Prdha,Use Dummy Logic
+           --For Others,Use Phc'S Level5(12-15)
+           CASE
+             WHEN itemclass = 'SBB'                                                                         --SBB
+               OR mtart ='ZITR'                                                                             --OPT
+               OR (MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') ) --TMF
+               OR length(MAX(t1.prodh)OVER(PARTITION BY t1.item)) < 12                                      --No prodh
+             THEN 'DUMMY-' || t1.item
+             ELSE substring(MAX(t1.prodh)OVER(PARTITION BY t1.item), 12, 4)
+           END machine_type_id,
+           CASE
+             WHEN itemclass = 'SBB'                                                                         --SBB
+               OR mtart ='ZITR'                                                                             --OPT
+               OR (MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') ) --TMF
+               OR length(MAX(t1.prodh)OVER(PARTITION BY t1.item)) < 12                                      --No prodh
+             THEN 'DUMMY-' || t1.item
+             ELSE substring(MAX(t1.prodh)OVER(PARTITION BY t1.item), 12, 4)
+           END machine_type_desc,
+           --For TMF product type and product type 2 is CTO,Use zTMF-Planning Item ID
+           --For product type SBB or OPT populate with zzSBB-planning item or zzOPT-planning item
+           --For product type 2 is LFO then use Family_ID from planning material
+           --If blank then use Dummy Default logic
+           CASE
+             WHEN mtart IN ('ZREV', 'ZXMT') AND MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' THEN 'zTMF-'  || t1.item
+             WHEN mtart = 'ZITR'                           THEN 'zzOPT-' || t1.item
+             WHEN itemclass = 'SBB'                        THEN 'zzSBB-' || t1.item
+             ELSE ifnull(extwg, 'DUMMY-' || t1.item)
+           END AS family_id,
+           CASE
+             WHEN mtart IN ('ZREV', 'ZXMT') AND MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' THEN 'zTMF-'  || t1.item
+             WHEN mtart = 'ZITR'                           THEN 'zzOPT-' || t1.item
+             WHEN itemclass = 'SBB'                        THEN 'zzSBB-' || t1.item
+             ELSE ifnull(extwg, 'DUMMY-' || t1.item)
+           END AS family_desc,
+            --Brand_id:
+            --X - Machines For Product Type Sys
+            --X - Configured Options For Product Type Tmf
+            --X - Options For Product Type Opt
+            --X - Sbb For Product Type Sbb
+           CASE
+             WHEN MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'X-Configured Options'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'X-Options'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'X-Machines'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'X-Machines'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'X-SBB'
+            END brand_id, 
+           CASE
+             WHEN MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'X-Configured Options'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'X-Options'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'X-Machines'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'X-Machines'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'X-SBB'
+            END brand_desc,     
+           --product_type_id:         
+           CASE
+             WHEN MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'TMF'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'OPT'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'SYS'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'SYS'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'SBB'
+            END product_type_id,             
+           CASE
+             WHEN MAX(t1.x_unit_class)OVER(PARTITION BY t1.item)  = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'TMF'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'OPT'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'SYS'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'SYS'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'SBB'
+            END product_type_desc,  
+           --product_type_2:          
+           CASE
+             --WHEN t1.x_unit_class = '3' AND t1.mtart IN ('ZREV', 'ZXMT') THEN 'TMF'
+             WHEN t1.mtart = 'ZITR'                                      THEN 'OPT'
+             WHEN t1.mtart = 'ZREV'                                      THEN 'LFO'
+             WHEN t1.mtart = 'ZXMT'                                      THEN 'CTO'
+             WHEN t1.itemclass = 'SBB'                                   THEN 'SBB'
+            END product_type_2,
+           x_ww_annc_date AS introduction_date,
+           MAP(substring(t1.zeinr, 1, 2), 'L1', substring(t1.zeinr, 4), t1.zeinr) AS technology,
+           x_ww_withdraw_date AS discontinued_date,
+           CASE
+             WHEN length(MAX(t1.prodh)OVER(PARTITION BY t1.item)) < 1 THEN 'DUMMY-' || t1.item
+             ELSE substring(MAX(t1.prodh)OVER(PARTITION BY t1.item), 1, 7)
+           END series,
+           CASE
+             WHEN length(MAX(t1.prodh)OVER(PARTITION BY t1.item)) < 1 THEN 'DUMMY-' || t1.item
+             ELSE substring(MAX(t1.prodh)OVER(PARTITION BY t1.item), 1, 11)
+           END subseries,
+           MAX(t1.prodh)OVER(PARTITION BY t1.item) as prodh,
+           MAP(MAX(t1.x_unit_class)OVER(PARTITION BY t1.item), '1', 'SIU-CPU', '2' , 'SIU non CPU', '3','non SIU-CPU') AS bom_type,
+           NULL as VARIANT_PLANNING_MATERIAL,
+           t1.MTART
+        FROM pcdw_itemsitemaster t1
+       WHERE EXISTS (SELECT 1
+                FROM z_mid_pcdw_product_master_step1 t2
+               WHERE t1.item = t2.variant_planning_material
+                     AND t1.siteid = t2.siteid
+                     AND t2.variant_planning_material IS NOT NULL)
+            AND NOT EXISTS (SELECT 1
+                   FROM z_mid_pcdw_product_master_step1 t2
+                  WHERE t1.item = t2.planning_item_id
+                     AND t1.siteid = t2.siteid
+                     AND t2.variant_planning_material IS NOT NULL)
+              AND t1.zucod like 'H%' 
+              --AND (t1.zucod LIKE 'H%' or t1.prodh like '7%' or t1.prodh like '5EPG%') --add by liuyg5 judgment is X86 matertial
+              AND t1.itemclass in ('MTM','CTO','OPT','SBB') 
+              AND t1.mtart <> 'ZXSW' --去掉software成品 
+              AND IFNULL(MAP(substring(t1.zeinr, 1, 2), 'L1', substring(t1.zeinr, 4), t1.zeinr),'NULL') NOT IN
+                  (SELECT name1 FROM conf_parameters_sw WHERE domain = 'SBB_FILTER')
+              AND  ifnull(T1.lvorm,'null')<>'X'    ;
+                                   
+  INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', NULL, '', '', '', '', 'step 1');  
+  exec 'COMMIT';  
+  
+--1-Product Type2=CTO and Product type=SYS; Map MT for planning item  to ZZMACHINE_TYPE then pull ZFAMILY value
+    UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET family_id=t2.zzfamily,
+         family_DESC=t2.zzfamily,
+         family_map_sop_name = t2.zzfamily,
+         family_map_machine_type = t2.zzmachine_type,
+         family_map_mktg_category = t2.zzmktg_category,
+         family_map_form_factor = t2.ZZTECH_CATEGORY,
+         family_map_project_name = t2.zzplatform,
+         form_factor = t2.zztech_category,
+         space_id = t2.zztype, space_desc = t2.zztype 
+     FROM ecc_zmmt_family_map t2
+   WHERE t1.machine_type_id = t2.zzmachine_type
+       and t1.product_type_2='CTO' AND T1.product_type_id='SYS';
+   
+     UPDATE z_mid_pcdw_product_master_step1
+       SET space_id = 'DUMMY-' || planning_item_id,
+           space_desc = 'DUMMY-' || planning_item_id
+     WHERE space_id IS NOT NULL AND product_type_id IN ('SBB','OPT');
+     
+    UPDATE z_mid_pcdw_product_master_step1
+       SET space_id = ifnull(space_id, 'DUMMY-' || planning_item_id),
+           space_desc = ifnull(space_id, 'DUMMY-' || planning_item_id)
+     WHERE space_id IS NULL
+           OR space_desc IS NULL
+           OR length(space_id) = 0
+           OR length(space_desc) = 0;
+           
+ --LFO’s should follow the same family as their Variant Planning Material
+    UPDATE z_mid_pcdw_product_master_step1 t1
+     SET t1.machine_type_id   = t2.machine_type_id ,
+         t1.machine_type_desc = t2.machine_type_desc,
+         t1.family_id   = t2.family_id ,
+         t1.family_desc = t2.family_desc,
+         t1.space_id = t2.space_id,
+         t1.space_desc = t2.space_desc, 
+         t1.brand_id = t2.brand_id,
+         t1.brand_desc = t2.brand_desc,
+         t1.product_type_id = t2.product_type_id,
+         t1.product_type_desc = t2.product_type_desc
+     FROM z_mid_pcdw_product_master_step1 t2
+   WHERE t1.variant_planning_material = t2.planning_item_id
+     AND t1.siteid = t2.siteid
+     AND t1.product_type_2 = 'LFO'
+     AND t1.variant_planning_material IS NOT NULL;
+     
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', NULL, '', '', '', '', 'step 1.1'); 
+   exec 'COMMIT';           
+ 
+  --Step2:获取ph code
+  DELETE FROM pcdw_prodh_sw;
+
+  INSERT INTO pcdw_prodh_sw
+    (mandt, spras, prodh, vtext, stufe)
+    SELECT mandt, spras, prodh, vtext, stufe
+      FROM (SELECT mandt, spras, prodh, vtext, stufe,
+                    row_number() over(PARTITION BY prodh ORDER BY MAP(spras, 'E', 1, '1', 2, 'L', 3, 'S', 4)) row_num
+               FROM (SELECT c.mandt, c.spras, TRIM(c.prodh) AS prodh, c.vtext,
+                             d.stufe
+                        FROM ecc_t179t_n c, ecc_t179_n d
+                       WHERE c.prodh = d.prodh))
+     WHERE row_num = 1;
+  
+ INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', NULL, '', '', '', '', 'step 2'); 
+ exec 'COMMIT';       
+ 
+   --Step3:更新相关字段
+   --series
+  UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET series = t2.vtext 
+     FROM pcdw_prodh_sw t2
+   WHERE t1.series = t2.prodh;
+   --subseries
+  UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET subseries = t2.vtext 
+     FROM  pcdw_prodh_sw t2
+   WHERE t1.subseries = t2.prodh;
+  --machine_type_id
+  UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET machine_type_id = t2.vtext 
+     FROM pcdw_prodh_sw t2
+   WHERE t1.machine_type_id = t2.prodh;
+  --machine_type_desc
+  UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET machine_type_desc = t2.vtext 
+     FROM pcdw_prodh_sw t2
+   WHERE t1.machine_type_desc = t2.prodh;
+  --family_id
+  UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET family_id = t2.vtext 
+     FROM pcdw_prodh_sw t2
+   WHERE t1.family_id = t2.prodh;
+  --family_desc
+  UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET family_desc = t2.vtext 
+     FROM pcdw_prodh_sw t2
+   WHERE t1.family_desc = t2.prodh;
+  --brand_id
+  UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET brand_id = t2.vtext ,Brand_Desc = t2.vtext 
+     FROM  pcdw_prodh_sw t2
+   WHERE t1.brand_id = t2.prodh;
+   
+  UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET mtm_category_1 = t2.zzmtm_cat1, mtm_category_2 = t2.zzmtm_cat2
+     FROM ecc_zmmt_mtm_cat t2
+   WHERE t1.planning_item_id = t2.zzmtm_num;
+
+  UPDATE Z_MID_PCDW_PRODUCT_MASTER_STEP1 t1
+     SET segment_commodity_type = t2.zzplanning_area,
+         planner_code = t2.zzplng_owner, SEGMENT = t2.ZZTGT_SEGMENT,
+         subsegment = t2.ZZSUBSEG, tgt_business = t2.zztgt_business,
+         tgt_segment = t2.zztgt_segment, tgt_sub_segment = t2.zztgt_sub_seg 
+     FROM ecc_zmmt_ssb_cat t2
+   WHERE t1.planning_item_id = t2.zzsbb_num;
+        
+ INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', NULL, '', '', '', '', 'step 3');     
+ exec 'COMMIT';  
+
+ --Step4:去重
+  --把TAB替换成空格
+ DELETE FROM z_mid_pcdw_product_master_step2;
+ 
+ INSERT INTO z_mid_pcdw_product_master_step2
+  (planning_item_id, planning_item_desc, machine_type_id, machine_type_desc,
+   family_id, family_desc, brand_id, brand_desc, product_type_id,
+   product_type_desc, product_type_2, introduction_date, technology,discontinued_date,
+   series, subseries, mtm_category_1, mtm_category_2, segment_commodity_type,
+   planner_code, SEGMENT, subsegment, tgt_business, tgt_segment,
+   tgt_sub_segment, family_map_sop_name, family_map_machine_type,
+   family_map_mktg_category, family_map_project_name, form_factor,
+   family_map_form_factor, space_id, space_desc,variant_planning_material,bom_type)
+  SELECT planning_item_id, 
+         MAX(replace(planning_item_desc,'	',' ')) AS planning_item_desc,
+         MAX(replace(machine_type_id,'	',' ')) AS machine_type_id,
+         MAX(replace(machine_type_desc,'	',' ')) AS machine_type_desc,
+         MAX(replace(family_id,'	',' ')) AS family_id, 
+         MAX(replace(family_desc,'	',' ')) AS family_desc,
+         MAX(brand_id) AS brand_id, 
+         MAX(brand_desc) AS brand_desc,
+         MAX(product_type_id) AS product_type_id,
+         MAX(product_type_desc) AS product_type_desc,
+         MAX(product_type_2) AS product_type_2,
+         MAX(introduction_date) AS introduction_date,
+         MAX(technology) AS technology,
+         MAX(discontinued_date) AS discontinued_date, 
+         MAX(replace(series,'	',' ')) AS series,
+         MAX(replace(subseries,'	',' ')) AS subseries, 
+         MAX(mtm_category_1) AS mtm_category_1,
+         MAX(mtm_category_2) AS mtm_category_2,
+         MAX(segment_commodity_type) AS segment_commodity_type,
+         MAX(planner_code) AS planner_code, 
+         MAX(SEGMENT) AS SEGMENT,
+         MAX(subsegment) AS subsegment, 
+         MAX(tgt_business) AS tgt_business,
+         MAX(tgt_segment) AS tgt_segment,
+         MAX(tgt_sub_segment) AS tgt_sub_segment,
+         MAX(family_map_sop_name) AS family_map_sop_name,
+         MAX(family_map_machine_type) AS family_map_machine_type,
+         MAX(family_map_mktg_category) AS family_map_mktg_category,
+         MAX(family_map_project_name) AS family_map_project_name,
+         MAX(form_factor) AS form_factor,
+         MAX(family_map_form_factor) AS family_map_form_factor,
+         MAX(space_id) AS space_id, 
+         MAX(space_desc) AS space_desc,
+         MAX(variant_planning_material) AS variant_planning_material,
+         MAX(bom_type) AS bom_type
+    FROM Z_MID_PCDW_PRODUCT_MASTER_STEP1
+   GROUP BY planning_item_id;
+   
+  INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER','SUCCESS', NULL, '', '', '', '', 'step 4');  
+  exec 'COMMIT';  
+ --Step5:插入到目标表
+  /* UPDATE pcdw_product_master_all_sw t1
+     SET planning_item_desc = t2.planning_item_desc,
+         machine_type_id = t2.machine_type_id,
+         machine_type_desc = t2.machine_type_desc, family_id = t2.family_id,
+         family_desc = t2.family_desc, brand_id = t2.brand_id,brand_desc = t2.brand_desc,
+         product_type_id = t2.product_type_id,
+         product_type_desc = t2.product_type_desc,
+         product_type_2 = t2.product_type_2,
+         introduction_date = t2.introduction_date,
+         technology=t2.technology,
+         discontinued_date = t2.discontinued_date, series = t2.series,
+         subseries = t2.subseries, mtm_category_1 = t2.mtm_category_1,
+         mtm_category_2 = t2.mtm_category_2,
+         segment_commodity_type = t2.segment_commodity_type,
+         planner_code = t2.planner_code, SEGMENT = t2.segment,
+         subsegment = t2.subsegment, tgt_business = t2.tgt_business,
+         tgt_segment = t2.tgt_segment, tgt_sub_segment = t2.tgt_sub_segment,
+         family_map_sop_name = t2.family_map_sop_name,
+         family_map_machine_type = t2.family_map_machine_type,
+         family_map_mktg_category = t2.family_map_mktg_category,
+         family_map_project_name = t2.family_map_project_name,
+         form_factor = t2.form_factor,
+         family_map_form_factor = t2.family_map_form_factor,
+         space_id = t2.space_id, space_desc = t2.space_desc ,
+         variant_planning_material=t2.variant_planning_material,
+         bom_type=t2.bom_type,
+         SYS_LAST_MODIFIED_DATE=CURRENT_TIMESTAMP, 
+		 SYS_LAST_MODIFIED_BY='pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER'
+         FROM z_mid_pcdw_product_master_step2 t2
+   WHERE t1.planning_item_id = t2.planning_item_id;*/
+   
+  INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', NULL, '', '', '', '', 'step 5.1');  
+  exec 'COMMIT';  
+   DELETE FROM pcdw_product_master_all_sw;
+  INSERT INTO pcdw_product_master_all_sw (planning_item_id,
+                                    planning_item_desc,
+                                    machine_type_id,
+                                    machine_type_desc,
+                                    family_id,
+                                    family_desc,
+                                    brand_id,
+                                    brand_desc,
+                                    product_type_id,
+                                    product_type_desc,
+                                    product_type_2,
+                                    PRODUCT_ATTRIBUTE_1,
+                                    technology,
+                                    PRODUCT_ATTRIBUTE_2,
+                                    series,
+                                    subseries,
+                                    mtm_category_1,
+                                    mtm_category_2,
+                                    segment_commodity_type,
+                                    planner_code,
+                                    SEGMENT,
+                                    subsegment,
+                                    tgt_business,
+                                    tgt_segment,
+                                    tgt_sub_segment,
+                                    family_map_sop_name,
+                                    family_map_machine_type,
+                                    family_map_mktg_category,
+                                    family_map_project_name,
+                                    form_factor,
+                                    family_map_form_factor,
+                                    space_id,
+                                    space_desc,
+                                    variant_planning_material,
+                                    bom_type,
+                                    SYS_CREATED_DATE,
+							        SYS_CREATED_BY, 
+							        SYS_LAST_MODIFIED_DATE, 
+							        SYS_LAST_MODIFIED_BY)
+     SELECT planning_item_id,
+            planning_item_desc,
+            machine_type_id,
+            machine_type_desc,
+            family_id,
+            family_desc,
+            brand_id,
+            brand_desc,
+            product_type_id,
+            product_type_desc,
+            product_type_2,
+            introduction_date as PRODUCT_ATTRIBUTE_1,
+            technology,
+            discontinued_date as PRODUCT_ATTRIBUTE_2,
+            series,
+            subseries,
+            mtm_category_1,
+            mtm_category_2,
+            segment_commodity_type,
+            CASE WHEN UPPER(product_type_id) = 'OPT' AND (planner_code IS NULL OR planner_code = '') THEN 'Not In Core List'
+                 WHEN UPPER(product_type_id) = 'SBB' AND (planner_code IS NULL OR planner_code = '') THEN 'Not In MFI Core list'
+                 WHEN UPPER(product_type_id) = 'TMF' AND (planner_code IS NULL OR planner_code = '') THEN 'Not In Core List'
+                 ELSE planner_code 
+             END AS planner_code,
+            SEGMENT,
+            subsegment,
+            tgt_business,
+            tgt_segment,
+            tgt_sub_segment,
+            family_map_sop_name,
+            family_map_machine_type,
+            family_map_mktg_category,
+            family_map_project_name,
+            form_factor,
+            family_map_form_factor,
+            space_id,
+            space_desc,
+            variant_planning_material,
+            bom_type,
+            CURRENT_TIMESTAMP,
+			--SESSION_USER, 
+			'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER',
+			CURRENT_TIMESTAMP, 
+            'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER'  
+       FROM z_mid_pcdw_product_master_step2 t1;
+   /*   WHERE NOT EXISTS
+               (SELECT 1
+                  FROM pcdw_product_master_all_sw t2
+                 WHERE t1.planning_item_id = t2.planning_item_id);*/
+
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', NULL, '', '', '', '', 'step 5.2'); 
+   exec 'COMMIT';  
+                   
+   --mtm filter               
+   DELETE FROM z_mid_pcdw_product_master_step2 t1
+        WHERE t1.product_type_2 = 'LFO'
+          AND NOT EXISTS (SELECT 1
+                           FROM ecc_zmmt_x86mtm t2
+                          WHERE t1.planning_item_id = t2.matnr);
+                          
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', NULL, '', '', '', '', 'step 5.3'); 
+   exec 'COMMIT';  
+                               
+ /* UPDATE pcdw_product_master_sw t1
+     SET planning_item_desc = t2.planning_item_desc,
+         machine_type_id = t2.machine_type_id,
+         machine_type_desc = t2.machine_type_desc, family_id = t2.family_id,
+         family_desc = t2.family_desc, brand_id = t2.brand_id,brand_desc = t2.brand_desc,
+         product_type_id = t2.product_type_id,
+         product_type_desc = t2.product_type_desc,
+         product_type_2 = t2.product_type_2,
+         introduction_date = t2.introduction_date,
+         technology=t2.technology,
+         discontinued_date = t2.discontinued_date, series = t2.series,
+         subseries = t2.subseries, mtm_category_1 = t2.mtm_category_1,
+         mtm_category_2 = t2.mtm_category_2,
+         segment_commodity_type = t2.segment_commodity_type,
+         planner_code = t2.planner_code, SEGMENT = t2.segment,
+         subsegment = t2.subsegment, tgt_business = t2.tgt_business,
+         tgt_segment = t2.tgt_segment, tgt_sub_segment = t2.tgt_sub_segment,
+         family_map_sop_name = t2.family_map_sop_name,
+         family_map_machine_type = t2.family_map_machine_type,
+         family_map_mktg_category = t2.family_map_mktg_category,
+         family_map_project_name = t2.family_map_project_name,
+         form_factor = t2.form_factor,
+         family_map_form_factor = t2.family_map_form_factor,
+         space_id = t2.space_id, space_desc = t2.space_desc ,
+         variant_planning_material=t2.variant_planning_material,
+         bom_type=t2.bom_type,
+         SYS_LAST_MODIFIED_DATE=CURRENT_TIMESTAMP, 
+		 SYS_LAST_MODIFIED_BY='pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER'
+         FROM z_mid_pcdw_product_master_step2 t2
+   WHERE t1.planning_item_id = t2.planning_item_id;*/
+   
+  INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', NULL, '', '', '', '', 'step 5.4');  
+  exec 'COMMIT';  
+  DELETE FROM pcdw_product_master_sw;
+  INSERT INTO pcdw_product_master_sw (planning_item_id,
+                                    planning_item_desc,
+                                    machine_type_id,
+                                    machine_type_desc,
+                                    family_id,
+                                    family_desc,
+                                    brand_id,
+                                    brand_desc,
+                                    product_type_id,
+                                    product_type_desc,
+                                    product_type_2,
+                                    PRODUCT_ATTRIBUTE_1,
+                                    technology,
+                                    PRODUCT_ATTRIBUTE_2,
+                                    series,
+                                    subseries,
+                                    mtm_category_1,
+                                    mtm_category_2,
+                                    segment_commodity_type,
+                                    planner_code,
+                                    SEGMENT,
+                                    subsegment,
+                                    tgt_business,
+                                    tgt_segment,
+                                    tgt_sub_segment,
+                                    family_map_sop_name,
+                                    family_map_machine_type,
+                                    family_map_mktg_category,
+                                    family_map_project_name,
+                                    form_factor,
+                                    family_map_form_factor,
+                                    space_id,
+                                    space_desc,
+                                    variant_planning_material,
+                                    bom_type,
+                                    SYS_CREATED_DATE,
+							        SYS_CREATED_BY, 
+							        SYS_LAST_MODIFIED_DATE, 
+							        SYS_LAST_MODIFIED_BY)
+     SELECT planning_item_id,
+            planning_item_desc,
+            machine_type_id,
+            machine_type_desc,
+            family_id,
+            family_desc,
+            brand_id,
+            brand_desc,
+            product_type_id,
+            product_type_desc,
+            product_type_2,
+            introduction_date as PRODUCT_ATTRIBUTE_1,
+            technology,
+            discontinued_date as PRODUCT_ATTRIBUTE_2,
+            series,
+            subseries,
+            mtm_category_1,
+            mtm_category_2,
+            segment_commodity_type,
+            CASE WHEN UPPER(product_type_id) = 'OPT' AND (planner_code IS NULL OR planner_code = '') THEN 'Not In Core List'
+                 WHEN UPPER(product_type_id) = 'SBB' AND (planner_code IS NULL OR planner_code = '') THEN 'Not In MFI Core list'
+                 WHEN UPPER(product_type_id) = 'TMF' AND (planner_code IS NULL OR planner_code = '') THEN 'Not In Core List'
+                 ELSE planner_code 
+             END AS planner_code,
+            SEGMENT,
+            subsegment,
+            tgt_business,
+            tgt_segment,
+            tgt_sub_segment,
+            family_map_sop_name,
+            family_map_machine_type,
+            family_map_mktg_category,
+            family_map_project_name,
+            form_factor,
+            family_map_form_factor,
+            space_id,
+            space_desc,
+            variant_planning_material,
+            bom_type,
+            CURRENT_TIMESTAMP,
+			--SESSION_USER, 
+			'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER',
+			CURRENT_TIMESTAMP, 
+            'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER'  
+       FROM z_mid_pcdw_product_master_step2 t1;
+    /*  WHERE NOT EXISTS
+               (SELECT 1
+                  FROM pcdw_product_master_sw t2
+                 WHERE t1.planning_item_id = t2.planning_item_id);
+
+   --mtm filter               
+   DELETE FROM pcdw_product_master_sw t1
+        WHERE t1.product_type_2 = 'LFO'
+          AND NOT EXISTS (SELECT 1
+                           FROM ecc_zmmt_x86mtm t2
+                          WHERE t1.planning_item_id = t2.matnr);*/
+                          
+    --如果item对应的CYCLE_ID都为空,则ABCD不赋值 
+	--fetching ABCD value from the leadtime table user finally upload.     
+     DELETE FROM PCDW.APO_ZTATP_LT;
+    INSERT INTO PCDW.APO_ZTATP_LT
+    (
+    	 SELECT SOS,
+    	 		GEO,
+    	 		MACTY,
+    	 		SBB_ID,
+    	 		MTM,
+    	 		CASE WHEN UPPER(LEAD_TIME) = 'D' THEN 30
+    	 		     ELSE LEAD_TIME
+    	 		     END AS LEAD_TIME
+    	   FROM PCDW.VT_ZTATP_LT
+    	  WHERE TYPE = 6 OR TYPE = 8 
+    ); 
+    
+    UPDATE pcdw_product_master_all_sw T1
+       SET ABCD = T2.ABCD 
+      FROM  
+         (
+		  SELECT SOS,
+         		 GEO,
+         		 MACTY,
+         		 SBB_ID,
+         		 MTM,
+         		 CASE WHEN LEAD_TIME <= 7 THEN  'A'
+         		      WHEN LEAD_TIME > 7 AND LEAD_TIME <= 12 THEN 'B'
+         		      WHEN LEAD_TIME >12 AND LEAD_TIME <= 25 THEN 'C'
+         		 	  ELSE 'D'
+         		 	  END AS ABCD,
+         		 ROW_NUMBER() OVER(PARTITION BY MTM ORDER BY SOS) ID
+            FROM PCDW.APO_ZTATP_LT
+           WHERE MTM <> ''
+           UNION
+          SELECT SOS,
+         		 GEO,
+         		 MACTY,
+         		 SBB_ID,
+         		 MTM,
+         		 CASE WHEN LEAD_TIME <= 7 THEN  'A'
+         		      WHEN LEAD_TIME > 7 AND LEAD_TIME <= 12 THEN 'B'
+         		      WHEN LEAD_TIME >12 AND LEAD_TIME <= 25 THEN 'C'
+         		 	  ELSE 'D'
+         		 	  END AS ABCD,
+         		 ROW_NUMBER() OVER(PARTITION BY SBB_ID ORDER BY SOS) ID
+            FROM PCDW.APO_ZTATP_LT
+           WHERE SBB_ID <> ''                     
+         ) T2
+     WHERE (T1.PLANNING_ITEM_ID = T2.MTM OR T1.PLANNING_ITEM_ID = T2.SBB_ID) AND ID=1;
+   
+    UPDATE pcdw_product_master_all_sw 
+       SET ABCD = 'N/A'
+     WHERE ABCD IS NULL OR ABCD = '';
+
+    UPDATE pcdw_product_master_sw T1
+       SET ABCD=T2.ABCD 
+      FROM  
+         (
+		  SELECT SOS,
+         		 GEO,
+         		 MACTY,
+         		 SBB_ID,
+         		 MTM,
+         		 CASE WHEN LEAD_TIME <= 7 THEN  'A'
+         		      WHEN LEAD_TIME > 7 AND LEAD_TIME <= 12 THEN 'B'
+         		      WHEN LEAD_TIME >12 AND LEAD_TIME <= 25 THEN 'C'
+         		 	  ELSE 'D'
+         		 	  END AS ABCD,
+         		 ROW_NUMBER() OVER(PARTITION BY MTM ORDER BY SOS) ID
+            FROM PCDW.APO_ZTATP_LT
+           WHERE MTM <> ''
+           UNION
+          SELECT SOS,
+         		 GEO,
+         		 MACTY,
+         		 SBB_ID,
+         		 MTM,
+         		 CASE WHEN LEAD_TIME <= 7 THEN  'A'
+         		      WHEN LEAD_TIME > 7 AND LEAD_TIME <= 12 THEN 'B'
+         		      WHEN LEAD_TIME >12 AND LEAD_TIME <= 25 THEN 'C'
+         		 	  ELSE 'D'
+         		 	  END AS ABCD,
+         		 ROW_NUMBER() OVER(PARTITION BY SBB_ID ORDER BY SOS) ID
+            FROM PCDW.APO_ZTATP_LT
+           WHERE SBB_ID <> ''     
+         ) T2
+     WHERE (T1.PLANNING_ITEM_ID = T2.MTM OR T1.PLANNING_ITEM_ID = T2.SBB_ID) AND ID=1;
+
+    UPDATE pcdw_product_master_sw 
+       SET ABCD = 'N/A'
+     WHERE ABCD IS NULL OR ABCD = ''; 
+                                
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', NULL, '', '', '', '', 'step 5.5'); 
+    exec 'COMMIT';  
+    
+   PO_RETURNCODE := 0;
+   -- log process end
+    INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_PRODUCT_MASTER', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';    
+END;
+

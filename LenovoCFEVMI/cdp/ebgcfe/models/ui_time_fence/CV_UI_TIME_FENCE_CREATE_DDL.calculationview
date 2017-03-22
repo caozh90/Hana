@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_TIME_FENCE_CREATE_DDL" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_UI_TIEM_FENCE_CREATE_DDL"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="PNAME" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="PVALUE" length="600"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = SELECT PNAME,PVALUE
+ 	 FROM( 
+ 	 	 SELECT PVALUE,'PROFIT_CENTER'AS PNAME 
+ 	 	 	FROM EBGCFE.CONF_PARAMETERS
+ 				WHERE PDOMAIN = 'PRICE_MASK'
+				AND PNAME='PROFIT_CENTER'
+		  UNION
+		  SELECT PVALUE,'OEM_NAME'AS PNAME 
+		  	FROM EBGCFE.CONF_PARAMETERS
+ 				WHERE PDOMAIN = 'PRICE_MASK'
+				AND PNAME='OEM_NAME'
+		  UNION
+		  SELECT PVALUE,'FUNCTION_TYPE'AS PNAME
+		  	 FROM EBGCFE.CONF_PARAMETERS
+		 		WHERE PDOMAIN = 'PRICE_MASK'
+				AND PNAME='FUNCTION_TYPE'
+		  UNION
+		  SELECT PVALUE,'TIME_FENCE_TYPE'AS PNAME 
+		  	FROM EBGCFE.CONF_PARAMETERS
+ 				WHERE PDOMAIN = 'PRICE_MASK'
+				AND PNAME='TIME_FENCE_TYPE'
+				)
+				ORDER BY PNAME;
+ 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="PNAME" order="1">
+        <descriptions defaultDescription="PNAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="PNAME"/>
+      </attribute>
+      <attribute id="PVALUE" order="2">
+        <descriptions defaultDescription="PVALUE"/>
+        <keyMapping columnObjectName="Script_View" columnName="PVALUE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

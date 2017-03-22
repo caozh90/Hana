@@ -1,0 +1,212 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_FCSBBMAP_INIT" ( 
+  IN  P_PRODUCT_GROUP VARCHAR(20),
+  OUT P_EXIT_CODE       INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_PCDW_FCSBBMAP_INIT       
+*function   : Load FCSBBMAP data from PCDW
+*input      ：p_product_group : product group
+*output     : p_exit_code : error code  
+*author     : Leonard Ling
+*CreateDate : 2015-01-16
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+  -- data
+  DECLARE v_g_pkg_name        VARCHAR(30) := 'PKG_PCDW_TO_CFE';
+  DECLARE v_prc_name          VARCHAR(30) := 'PRC_PCDW_FCSBBMAP_INIT';
+  DECLARE v_full_name         VARCHAR(60) := :v_g_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  DECLARE v_init_date         TIMESTAMP;  
+  DECLARE n                   INTEGER;
+  DECLARE v_exitcode          INTEGER;
+  DECLARE v_exitmess          VARCHAR(100);
+  DECLARE v_subprc_name       VARCHAR(70); 
+  DECLARE v_exit_message      VARCHAR(500);
+  
+  -- exception
+  DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;   
+  DECLARE EXIT HANDLER FOR exp_procedure   
+    BEGIN
+      P_EXIT_CODE := ::SQL_ERROR_CODE;
+      
+      UPDATE CONF_SYNC_LASTRUN
+              SET ENDDATE = CURRENT_TIMESTAMP, RETURNCODE = -1
+            WHERE PKGNAME  = :V_G_PKG_NAME  AND PROGNAME = :V_PRC_NAME;    
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>:v_exit_message); 			           
+    END;    
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN     
+      P_EXIT_CODE := ::SQL_ERROR_CODE;
+      
+      UPDATE CONF_SYNC_LASTRUN
+              SET ENDDATE = CURRENT_TIMESTAMP, RETURNCODE = -1
+            WHERE PKGNAME  = :V_G_PKG_NAME  AND PROGNAME = :V_PRC_NAME;               
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+  -- process logic
+  P_EXIT_CODE := -1;
+  V_EXIT_MESSAGE := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');  
+  -- update runtime info		                                      
+  UPDATE conf_sync_lastrun a SET a.startdate = CURRENT_TIMESTAMP, a.enddate = NULL, a.returncode = NULL
+   WHERE a.pkgname = :v_g_pkg_name AND a.progname = :v_prc_name;   
+  SELECT COUNT(1) INTO n FROM conf_sync_lastrun a
+   WHERE a.pkgname = :v_g_pkg_name AND a.progname = :v_prc_name;
+  IF :n<1 THEN SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_init_date INTO v_init_date FROM DUMMY;
+   	INSERT INTO CONF_SYNC_LASTRUN(pkgname, progname, lastrundate, startdate) 
+	       VALUES (:v_g_pkg_name, :v_prc_name, :v_init_date, CURRENT_TIMESTAMP); 
+  END IF;   
+   
+
+   DELETE FROM biz_fcsbbmap;	
+	
+   INSERT INTO biz_fcsbbmap 
+        (MATNR,ATNAM,ATWRT,IDNRK,QUANTITY,VARCOND,ACTION,STATUS,SYS_CREATED_DATE,
+         SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,OD_FLAG,SOURCE,
+         PRODUCT_GROUP,CYCLE,FC,MT_FC,CHAR_DESC)
+   SELECT CASE WHEN LENGTH(T1.MATNR) = 18 THEN RIGHT(T1.MATNR, 10) ELSE T1.MATNR END AS MATNR,
+          T1.ATNAM,T1.ATWRT,
+          CASE WHEN LENGTH(T1.IDNRK) = 18 THEN RIGHT(T1.IDNRK, 10) ELSE T1.IDNRK END AS IDNRK,
+          T1.QUANTITY,T1.VKOND,'INSERT','ACTIVE', T1.ECC_LAST_MODIFIED_DATE, 
+          T1.ECC_LAST_MODIFIED_BY, CURRENT_TIMESTAMP, :v_full_name,
+          T1.OD_FLAG,'ECC.ZMMT_XSBB_CV_VK',:p_product_group, 'CURRENT', 
+          --CASE WHEN LOCATE(substr_after(T1.atnam,'_'),'_')=0 
+          --         THEN substr_after(T1.atnam,'_')
+          --     ELSE substr_before(substr_after(T1.atnam,'_'),'_') END,
+          substr_after(T1.atnam,'_') AS fc,
+          T2.machine_type||'_'||CASE WHEN LOCATE(substr_after(T1.atnam,'_'),'_')=0 
+                                         THEN substr_after(T1.atnam,'_')
+                                     ELSE substr_before(substr_after(T1.atnam,'_'),'_') END,
+         T1.CHAR_DESC
+    FROM PCDW.PCDW_FCSBBMAP T1, UI_ITEM T2
+   WHERE (od_flag IS NULL or length(od_flag) = 0 )
+     AND (CASE WHEN LENGTH(T1.MATNR) = 18 THEN RIGHT(T1.MATNR, 10) ELSE T1.MATNR END)  = T2.ITEM
+     AND T1.STATUS = 'ACTIVE';
+   
+   --Set idnrk to fc when idnrk is null
+   UPDATE BIZ_FCSBBMAP
+      SET IDNRK = FC
+          --IDNRK = CASE WHEN LOCATE(FC, '_') > 0 THEN FC ELSE FC||'_'||MATNR END,
+          --FC    = CASE WHEN LOCATE(FC, '_') > 0 THEN FC ELSE FC||'_'||MATNR END
+    WHERE IFNULL(IDNRK, '') = '';
+    
+  --Set quantity to 1
+  UPDATE BIZ_FCSBBMAP
+     SET QUANTITY = 1;
+  
+  INSERT INTO UI_ITEM
+      (CYCLE, PRODUCT_GROUP, ITEM, BRAND, ASP_PRD_FAMILY, ITEM_DESC, 
+       ITEM_TYPE, EOL_STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, 
+       SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY)
+  SELECT DISTINCT
+         'CURRENT' AS CYCLE, P_PRODUCT_GROUP, FC AS ITEM, 'FEATURECODE' AS BRAND,
+         'FEATURECODE' AS ASP_PRD_FAMILY, CHAR_DESC AS ITEM_DESC,
+         'SBB' AS ITEM_TYPE, 'OL' AS EOL_STATUS, CURRENT_TIMESTAMP, V_FULL_NAME, 
+         CURRENT_TIMESTAMP, V_FULL_NAME
+    FROM BIZ_FCSBBMAP T1
+   WHERE IFNULL(T1.FC, '') <> ''
+     AND NOT EXISTS(SELECT 1 FROM UI_ITEM T2
+                     WHERE T2.PRODUCT_GROUP = P_PRODUCT_GROUP
+                       AND T2.ITEM          = T1.FC);
+  --added by zhangxj 2016-03-10 start                   
+  INSERT INTO UI_ITEM
+      (CYCLE, PRODUCT_GROUP, ITEM, BRAND, ASP_PRD_FAMILY, ITEM_DESC, 
+       ITEM_TYPE, EOL_STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, 
+       SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY)
+  SELECT CYCLE,PRODUCT_GROUP,ITEM,BRAND,ASP_PRD_FAMILY,ITEM_DESC,
+         'SBB' AS ITEM_TYPE, 'OL' AS EOL_STATUS, CURRENT_TIMESTAMP, V_FULL_NAME, 
+         CURRENT_TIMESTAMP, V_FULL_NAME
+    FROM ( SELECT DISTINCT 'CURRENT' AS CYCLE, P_PRODUCT_GROUP AS PRODUCT_GROUP, IDNRK AS ITEM, 
+                  'BUILDING BLOCK' AS BRAND,'BUILDING BLOCK' AS ASP_PRD_FAMILY, CHAR_DESC AS ITEM_DESC,
+                  MAX(CHAR_DESC) OVER(PARTITION BY IDNRK) AS MAX_DESC
+             FROM BIZ_FCSBBMAP T1
+            WHERE IFNULL(T1.IDNRK, '') <> ''
+             AND NOT EXISTS(SELECT 1 FROM UI_ITEM T2
+                             WHERE T2.PRODUCT_GROUP = P_PRODUCT_GROUP
+                              AND T2.ITEM          = T1.IDNRK))
+    WHERE ITEM_DESC=MAX_DESC;
+    --added by zhangxj 2016-03-10 end                   
+    DELETE FROM UI_SBBCATEGORY A 
+     WHERE (A.BBID, CHARACTER_V) NOT IN(SELECT IDNRK, ATNAM FROM BIZ_FCSBBMAP);
+    
+    TAB_SBBCATEGORY =
+    SELECT DISTINCT 
+           PRODUCT_GROUP, ITEM AS BBID,ATNAM AS CHARACTER_V,ITEM_DESC AS SBB_DESC,
+            CASE WHEN ZEINR='BASE' THEN 'BASE' ELSE 'NON-BASE' END COST_CATEGORY,
+            'CURRENT' CYCLE, ASP_FAMILY
+      FROM (SELECT A.PRODUCT_GROUP, A.ITEM, B.ATNAM, A.ITEM_DESC,
+                   CASE WHEN LOCATE(SUBSTR_AFTER(A.ZEINR,' '),' ') = 0 
+                            THEN SUBSTR_AFTER(A.ZEINR,' ')
+                        ELSE SUBSTR_BEFORE(SUBSTR_AFTER(A.ZEINR,' '),' ') 
+                    END ZEINR, ZEINR AS ASP_FAMILY
+               FROM UI_ITEM A,BIZ_FCSBBMAP B
+              WHERE A.ITEM = B.IDNRK 
+                AND A.ITEM_TYPE='SBB');
+
+  INSERT INTO UI_SBBCATEGORY
+    ("PRODUCT_GROUP",
+    "BBID",
+    "CHARACTER_V",
+    "ASP_FAMILY",
+    "SBB_DESC",
+    "COST_CATEGORY",
+    CYCLE,
+    "SYS_CREATED_DATE",
+    "SYS_CREATED_BY",
+    "SYS_LAST_MODIFIED_DATE",
+    "SYS_LAST_MODIFIED_BY")
+    SELECT "PRODUCT_GROUP",
+    "BBID",
+    "CHARACTER_V",
+    "ASP_FAMILY",
+    "SBB_DESC",
+    "COST_CATEGORY",
+    CYCLE,
+    CURRENT_TIMESTAMP,
+    :v_full_name,
+    CURRENT_TIMESTAMP,     
+    :v_full_name
+    FROM :TAB_SBBCATEGORY AS A   --modify by xwu 2016/1/11
+    WHERE NOT EXISTS(SELECT 'x' FROM UI_SBBCATEGORY AS B
+                                     WHERE A.PRODUCT_GROUP = B.PRODUCT_GROUP 
+                                           AND A.BBID = B.BBID
+                                           AND A.CHARACTER_V = B.CHARACTER_V);
+/*
+    WHERE (PRODUCT_GROUP, BBID, CHARACTER_V) NOT IN
+          (SELECT PRODUCT_GROUP, BBID, CHARACTER_V FROM UI_SBBCATEGORY);
+*/
+
+    UPDATE UI_SBBCATEGORY U
+       SET (U.ASP_FAMILY, U.COST_CATEGORY, U.SYS_CREATED_DATE,
+            U.SYS_CREATED_BY, U.SYS_LAST_MODIFIED_DATE, U.SYS_LAST_MODIFIED_BY)
+            =
+           (T.ASP_FAMILY, 
+            MAP(U.SYS_LAST_MODIFIED_BY, :v_full_name, T.COST_CATEGORY, U.COST_CATEGORY),
+            CURRENT_TIMESTAMP, :v_full_name, CURRENT_TIMESTAMP, :v_full_name)
+      FROM :TAB_SBBCATEGORY T
+     WHERE U.PRODUCT_GROUP  = T.PRODUCT_GROUP 
+       AND U.BBID           = T.BBID 
+       AND U.CHARACTER_V    = T.CHARACTER_V
+       AND U.COST_CATEGORY != T.COST_CATEGORY;
+
+  p_exit_code := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+	                                          I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE'); 
+  UPDATE CONF_SYNC_LASTRUN C1
+     SET LASTRUNDATE = STARTDATE, RETURNCODE = 0, ENDDATE = CURRENT_TIMESTAMP
+   WHERE PKGNAME = V_G_PKG_NAME
+     AND PROGNAME = V_PRC_NAME;
+  --COMMIT;     	                                      
+END;

@@ -1,0 +1,13 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::getResourceUserByPLANT" (
+	out resourceValue "SECURITY"."cdp.security.data::userManagement.ResourceValueT" ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	READS SQL DATA AS   
+BEGIN
+     
+ 	--module = SELECT SESSION_CONTEXT('MODULE_ID') "MODULE_ID" FROM DUMMY;
+ 	resourceValue = SELECT  "VALUE" FROM "_SYS_BIC"."cdp.security.models/CV_GETMAPRESOURCE_USER"
+ 	where "RESOURCE_TYPE" = 'PLANT';
+ 	
+END;

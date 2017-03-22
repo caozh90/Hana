@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Privilege:analyticPrivilege xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Privilege="http://www.sap.com/ndb/BiModelPrivilege.ecore" schemaVersion="1.1" id="AP_UI_COST_TAPE_ORI">
+  <descriptions defaultDescription="AP_UI_COST_TAPE_ORI"/>
+  <securedModels allInformationModels="false">
+    <modelUri>/cdp.ebgcfe.models.ui_cost_tape_ori/analyticviews/AN_UI_COST_TAPE_ORI</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_cost_tape_ori/calculationviews/CV_CTO_LIST_CUR</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_cost_tape_ori/calculationviews/CV_CTO_LIST_HIS</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_cost_tape_ori/calculationviews/CV_UI_COST_TAPE_ORI_ACTIVATE</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_cost_tape_ori/calculationviews/CV_UI_COST_TAPE_ORI_DROPDOWNLIST</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_cost_tape_ori/calculationviews/CV_UI_COST_TAPE_ORI_PARTNUMBER</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_cost_tape_ori/calculationviews/CV_UI_COST_TAPE_ORI</modelUri>
+  </securedModels>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="MFG_PLANT">
+      <procedureFilter operator="IN" procedureName="&quot;SECURITY&quot;.cdp.security.procedures::getResourceUserByPLANT"/>
+    </filter>
+    <attributeName>MFG_PLANT</attributeName>
+    <originInformationModelUri>/cdp.ebgcfe.models.ui_cost_tape_ori/calculationviews/CV_UI_COST_TAPE_ORI</originInformationModelUri>
+  </restriction>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="COMMODITY">
+      <procedureFilter operator="IN" procedureName="&quot;SECURITY&quot;.cdp.security.procedures::getResourceUserByCOMMODITY"/>
+    </filter>
+    <attributeName>COMMODITY</attributeName>
+    <originInformationModelUri>/cdp.ebgcfe.models.ui_cost_tape_ori/calculationviews/CV_UI_COST_TAPE_ORI</originInformationModelUri>
+  </restriction>
+</Privilege:analyticPrivilege>

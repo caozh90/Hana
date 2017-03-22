@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_CONF_WAHREHOUSE_INFO_PARA" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_CONF_WAHREHOUSE_INFO"/>
+  <localVariables>
+    <variable id="P_WHERE" parameter="true">
+      <descriptions defaultDescription="P_WHERE"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="" length="1000" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="CONF_WAHREHOUSE_INFO" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="MXEBGVMI" columnObjectName="CONF_WAHREHOUSE_INFO"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="STORAGE_LOCATION"/>
+        <viewAttribute id="STORAGE_TYPE"/>
+        <viewAttribute id="STORAGE_BIN"/>
+        <viewAttribute id="LOGIC_PLANT"/>
+        <viewAttribute id="IS_SOURCE"/>
+        <viewAttribute id="IS_DEST"/>
+        <viewAttribute id="TYPE"/>
+        <viewAttribute id="TPL_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CONF_WAHREHOUSE_INFO">
+        <mapping xsi:type="Calculation:AttributeMapping" target="STORAGE_LOCATION" source="STORAGE_LOCATION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STORAGE_TYPE" source="STORAGE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STORAGE_BIN" source="STORAGE_BIN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOGIC_PLANT" source="WERKS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="IS_SOURCE" source="IS_SOURCE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="IS_DEST" source="IS_DEST"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TYPE" source="TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TPL_ID" source="OWNER"/>
+      </input>
+      <filter>$$P_WHERE$$</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="STORAGE_LOCATION" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STORAGE_LOCATION"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="STORAGE_LOCATION"/>
+      </attribute>
+      <attribute id="STORAGE_TYPE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STORAGE_TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="STORAGE_BIN" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STORAGE_BIN"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="STORAGE_BIN"/>
+      </attribute>
+      <attribute id="LOGIC_PLANT" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOGIC_PLANT"/>
+      </attribute>
+      <attribute id="IS_SOURCE" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="IS_SOURCE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="IS_SOURCE"/>
+      </attribute>
+      <attribute id="IS_DEST" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="IS_DEST"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="IS_DEST"/>
+      </attribute>
+      <attribute id="TYPE" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TYPE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="TYPE"/>
+      </attribute>
+      <attribute id="TPL_ID" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="OWNER"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="TPL_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="240"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,35 @@
+namespace cdp.common.data;
+
+@Schema: 'SECURITY'
+context installation {
+
+
+    type IDKey : String(10) ;
+    type SQLString : String(5000);
+    type CommentString :String(256);
+    type SignString :String(256);
+    type BooleanString :String(10); //--OK,FALSE
+    
+    
+//1 .http error
+type HttpError {
+        HTTP_STATUS_CODE: Integer;
+        ERROR_MESSAGE: String(100);
+        DETAIL: String(100);
+    };
+
+//1.
+
+ @Catalog.tableType : #COLUMN
+
+    Entity COMMAND_SQL {
+        KEY ID: IDSystemKey;
+        COMMAND_SQL :SQLString; //执行的sql 语句。
+        SQL_TYPE　:　SignString ; //模块ＩＤ　或者　ｓｙｓｔｅｍ　．如果属于系统，则全都总是执行。
+        SQL_STATUS: BooleanString;//OK ,FAILED 
+        RUN_TIME:UTCTimestamp;       
+  		COMMENT: CommentString;  		
+    };
+
+  
+};

@@ -1,0 +1,116 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cryad_ph::deleteUiCryadPh"
+( 
+	IN   oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CRYAD_PH_T"
+	,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiCryadPh
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo            
+*author      :      zhaodan1
+*CreateDate  :      2017.2.6
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(500) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	
+	v_PH           NVARCHAR(20);
+    v_ITEM         NVARCHAR(40);
+    v_PLANT	      NVARCHAR(20);
+    v_COUNTRY      NVARCHAR(20);
+    v_TBA_TYPE     NVARCHAR(20);	
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_cryad_ph::deleteUiCryadPh error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cryad_ph::deleteUiCryadPh'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_cryad_ph::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cryad_ph::deleteUiCryadPh'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+   	SELECT PH, ITEM , PLANT, UPPER(COUNTRY), TBA_TYPE
+ 		INTO v_PH, v_ITEM , v_PLANT, v_COUNTRY, v_TBA_TYPE
+ 		FROM :oldInfo;
+ 
+-- delete record from table	  	
+delete from "EBGCFE"."UI_CRYAD_PH" 
+ WHERE CYCLE = 'CURRENT' AND PRODUCT_GROUP = 'EBG' AND
+ 		      PH = :v_PH AND ITEM = :v_ITEM AND 
+ 		      PLANT = :v_PLANT AND COUNTRY = :v_COUNTRY AND TBA_TYPE = :v_TBA_TYPE;
+	
+--insert log table
+insert into "EBGCFE"."UI_CRYAD_PH_LOG"(
+				CYCLE,PRODUCT_GROUP,
+				PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+				M1,M2,M3,M4,M5,
+				M6,M7,M8,M9,M10,
+				M11,M12,M13,M14,M15,
+				M16,M17,M18,
+				SYS_CREATED_BY,
+				SYS_CREATED_DATE,
+				AT_MODIFIED_BY,
+				AT_ACTION,
+				AT_MODIFIED_ON,
+				AT_MILLIS
+		 )SELECT 
+			    CYCLE,PRODUCT_GROUP,
+				PH,ITEM,PLANT,COUNTRY,TBA_TYPE,
+				M1,M2,M3,M4,M5,
+				M6,M7,M8,M9,M10,
+				M11,M12,M13,M14,M15,
+				M16,M17,M18,
+			    SESSION_USER,
+			    CURRENT_TIMESTAMP,
+			    SESSION_USER,
+			    'delete',    
+		 		CURRENT_TIMESTAMP,
+		 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) 
+		 		FROM :oldInfo as a;
+	   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_cryad_ph::deleteUiCryadPh successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_cryad_ph::deleteUiCryadPh'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);  
+END;

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_C_FAMILY" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="false">
+  <descriptions defaultDescription="CV_UI_FAMILY"/>
+  <defaultSchema schemaName="EBGCFE"/>
+  <localVariables>
+    <variable id="INPUT_BRAND" parameter="true">
+      <descriptions defaultDescription="INPUT_BRAND"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="''" length="40" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="FAMILY" length="40"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#INPUT_BRAND</localVariable>
+      <definition>  /*****************************  
+*author     :    Justin
+*DeleteDate :                  
+*UpdateDate :    
+*CreateDate :    2015.08.06
+ *****************************/
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = select distinct PROD_FAMILY &quot;FAMILY&quot; from UI_MACHINETYPE where BRAND = :INPUT_BRAND;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="FAMILY" order="1">
+        <descriptions defaultDescription="FAMILY"/>
+        <keyMapping columnObjectName="Script_View" columnName="FAMILY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

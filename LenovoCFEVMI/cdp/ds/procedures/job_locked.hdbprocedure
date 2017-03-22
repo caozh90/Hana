@@ -1,0 +1,42 @@
+PROCEDURE "DS_INFO"."cdp.ds.procedures::job_locked" (
+IN PROCESS_NAME NVARCHAR(200),
+OUT LOCKED INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA DS_INFO
+	AS
+/************************************************************************
+*name      : job_locked              --函数名
+*function  : 在VMI的页面调用DS时，检查该process对应的job是否locked              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-03-06       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		JOB_NAME nvarchar(200);
+		n int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+    BEGIN      
+      	select 'NO data found!' error_message from dummy;
+    END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	select 'Error happened!' error_message from dummy;
+    END; 
+    --exception 
+    
+    LOCKED := 0;
+	
+	SELECT JOB_NAME INTO JOB_NAME FROM HANA_DS_JOB_INFO WHERE PROCESS_NAME = :PROCESS_NAME;
+	--DS_JOB_RUN_INFO中存在这个任务，并且状态是'ERROR'
+	select count(1) into n from DS_JOB_RUN_INFO where JOBNAME = :JOB_NAME AND JOBSTATUS = 'ERROR';
+	IF n>0 THEN
+		LOCKED := 1;
+	END IF;
+
+END;

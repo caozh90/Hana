@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Privilege:analyticPrivilege xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Privilege="http://www.sap.com/ndb/BiModelPrivilege.ecore" schemaVersion="1.1" id="AP_UI_MANUAL_BOM">
+  <descriptions defaultDescription="AP_UI_MANUAL_BOM"/>
+  <securedModels allInformationModels="false">
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_MANUAL_BOM_SEARCH_CHILDREN</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_CREATE_DDL</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_SEARCH_CHILDREN</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_SEARCH_DDL</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_SEARCH_FATHER</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_SEARCH_PLANT</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_CREATE_CHILDREN</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_CREATE_FATHER</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_SEARCH_PLANT_CH</modelUri>
+    <modelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_SEARCH_PLANT_FA</modelUri>
+  </securedModels>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="PLANT">
+      <procedureFilter operator="IN" procedureName="cdp.security.procedures::getResourceUserByPLANT"/>
+    </filter>
+    <attributeName>PLANT</attributeName>
+    <originInformationModelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM</originInformationModelUri>
+  </restriction>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="ITEM_TYPE">
+      <valueFilter xsi:type="AccessControl:SingleValueFilter" operator="NL" including="false" value=""/>
+    </filter>
+    <attributeName>ITEM_TYPE</attributeName>
+    <originInformationModelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_SEARCH_DDL</originInformationModelUri>
+  </restriction>
+  <restriction logicalOperator="AND">
+    <filter xsi:type="Privilege:AttributeFilter" attributeName="ITEM">
+      <valueFilter xsi:type="AccessControl:SingleValueFilter" operator="NL" including="false" value=""/>
+    </filter>
+    <attributeName>ITEM</attributeName>
+    <originInformationModelUri>/cdp.ebgcfe.models.ui_manual_bom/calculationviews/CV_UI_MANUAL_BOM_CREATE_FATHER</originInformationModelUri>
+  </restriction>
+</Privilege:analyticPrivilege>

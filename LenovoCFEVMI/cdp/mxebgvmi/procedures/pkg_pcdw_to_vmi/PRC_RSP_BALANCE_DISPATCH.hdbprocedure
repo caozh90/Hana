@@ -1,0 +1,65 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_pcdw_to_vmi::PRC_RSP_BALANCE_DISPATCH" ( 
+IN p_wfname VARCHAR(20), OUT p_out_exitcode NUMBER
+ ) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    AS
+    /************************************************************************
+    *name      : PRC_RSP_BALANCE_DISPATCH              --函数名
+    *function  :               --函数功能
+    *input     ：  p_wfname  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141222                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+      v_logic_proc_name   VARCHAR2 (40)          := 'PRC_RSP_SPECIAL_DISPATCH';
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_PCDW_TO_VMI';    
+      logidi integer:=0;    
+        
+BEGIN
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         
+          p_out_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>p_wfname||':Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+                       
+    END;
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>p_wfname||'Start!'); 
+
+   DELETE FROM Z_PCDW_RSP_BALANCE_DISPATCH;
+   
+   INSERT INTO Z_PCDW_RSP_BALANCE_DISPATCH
+   SELECT
+	"PULL_HEADER_ID",
+	"PULL_LINE_ID",
+	"STATUS",
+	"REASON_CODE",
+	"PULL_TYPE",
+	"ECC_STEP",
+	"TR_NUMBER",
+	"TR_ITEM_NUMBER",
+	"MATERIAL_DOCUMENT_YEAR",
+	"MATERIAL_DOCUMENT",
+	"SYS_CREATED_BY",
+	"SYS_CREATED_DATE" FROM "PCDW"."RSP_BALANCE_DISPATCH"
+    WHERE wfname=p_wfname;
+    
+    delete from PCDW.RSP_BALANCE_DISPATCH 
+    where status='SUCCESS' and sys_created_date<ADD_DAYS ( CURRENT_TIMESTAMP, -65) and wfname=:p_wfname;
+    
+     p_out_exitcode := 0;
+
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>p_wfname||'Success!');
+END;

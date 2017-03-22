@@ -1,0 +1,162 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_elem::updateUiCostElem" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_ELEM_T"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_ELEM_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aElement_name NVARCHAR(40);
+		aElement_type NVARCHAR(40);
+		--aNegative_flag NVARCHAR(1);
+		aTote NVARCHAR(1);
+		aTotl NVARCHAR(1);
+		aAsp_prod_family NVARCHAR(40); 
+		--aStatus NVARCHAR(20); 
+				
+		resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui::updateUiCostElem error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiCostElem'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_cost_elem::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiCostElem'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+ select 
+    ELEMENT_TYPE,
+    --NEGATIVE_FLAG,
+    TOTE,
+    TOTL,
+    ASP_PROD_FAMILY
+    --STATUS
+  into 
+	aElement_type,
+	--aNegative_flag,
+	aTote,
+	aTotl,
+	aAsp_prod_family
+	--aStatus
+  from :newInfo;
+ 
+ 
+ select
+    ELEMENT_NAME
+  into  	
+ 	aElement_name
+  from :oldInfo;
+  
+  	SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_COST_ELEM" A    
+     WHERE A.ELEMENT_TYPE = :aElement_type 
+          --AND A.NEGATIVE_FLAG = :aNegative_flag
+          AND A.TOTE = :aTote
+          AND A.TOTL = :aTotl
+          AND A.ASP_PROD_FAMILY = :aAsp_prod_family
+          --AND A.STATUS = :aStatus
+          AND A.ELEMENT_NAME = :aElement_name;
+   
+    if  :resourceExists > 0 
+    then
+	     /*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;*/
+	    return;--SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before';
+    end if;
+     
+    update "EBGCFE"."UI_COST_ELEM" set
+    	ELEMENT_TYPE = :aElement_type,
+    	--NEGATIVE_FLAG = :aNegative_flag,
+    	TOTE = :aTote,
+    	TOTL = :aTotl,
+    	ASP_PROD_FAMILY = :aAsp_prod_family,
+    	--STATUS = :aStatus,
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = SESSION_USER
+    where
+    	ELEMENT_NAME = :aElement_name; 
+
+/*put operation to log table*/
+insert into "EBGCFE"."UI_COST_ELEM_LOG"
+    (
+        CYCLE,
+    	ELEMENT_NAME,
+	    ELEMENT_TYPE,
+	    DESC,
+	    --NEGATIVE_FLAG,
+	    TOTE,
+	    TOTL,
+	    ASP_PROD_FAMILY,
+	    --STATUS,    	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	CHANGE_ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	--SYS_BAK_DATE,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    select
+        'CURRENT',
+    	A.ELEMENT_NAME,
+	    A.ELEMENT_TYPE,
+	    A.DESC,
+	    --A.NEGATIVE_FLAG,
+	    A.TOTE,
+	    A.TOTL,
+	    A.ASP_PROD_FAMILY,
+	    --A.STATUS,    	
+    	current_date,    	
+    	'delete',
+    	SESSION_USER,
+    	--current_date,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+    from "EBGCFE"."UI_COST_ELEM" A where A.ELEMENT_NAME = :aElement_name;      	
+        	    	
+/*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui::updateUiCostElem ('||:aElement_name||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiCostElem'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

@@ -1,0 +1,127 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_option_dest_mapping" (
+IN  LOGICAL_PLANT NVARCHAR(40),
+IN   WAREHOUSE_OWNER NVARCHAR(40),
+IN   SOURCE_LOCATION NVARCHAR(40), 
+IN   SOURCE_TYPE NVARCHAR(40),
+IN   SOURCE_BIN NVARCHAR(40),
+IN   DESTINATION_LOCATION NVARCHAR(40),
+IN   DESTINATION_TYPE NVARCHAR(40),
+IN   DESTINATION_BIN NVARCHAR(40),
+IN	 	business_name nvarchar(200),
+IN		seq	 nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+/************************************************************************
+*name      : ui_option_dest_mapping              --函数名
+*function  : upload数据至表ui_option_dest_mapping并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-26       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_option_dest_mapping';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		SOURCE NVARCHAR(25):='UI';
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_OPTION_DEST_MAPPING';
+		validate1 int;
+		validate2 int;
+		validate3 int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_option_dest_mapping_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:LOGICAL_PLANT,:WAREHOUSE_OWNER,:SOURCE_LOCATION,:SOURCE_TYPE,:SOURCE_BIN,:DESTINATION_LOCATION,:DESTINATION_TYPE,:DESTINATION_BIN,:seq,:position);
+     	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_option_dest_mapping_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:LOGICAL_PLANT,:WAREHOUSE_OWNER,:SOURCE_LOCATION,:SOURCE_TYPE,:SOURCE_BIN,:DESTINATION_LOCATION,:DESTINATION_TYPE,:DESTINATION_BIN,:seq,:position);
+     	CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logid0,
+            I_EVENT_NAME=>:path||'::'||:proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);
+    END; 
+    --exception 
+	
+	--procedure begin
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     	
+	--设置businesscode:: table_name+business_code	
+	business_code := :seq;
+	
+	--验证主键,存在则冲突
+	select count(1) into n FROM UI_OPTION_DEST_MAPPING WHERE SOURCE_LOCATION= :SOURCE_LOCATION 
+		AND SOURCE_TYPE=:SOURCE_TYPE AND LOGICAL_PLANT= :LOGICAL_PLANT AND SOURCE_BIN= :SOURCE_BIN 
+			AND DESTINATION_LOCATION= :DESTINATION_LOCATION;  
+	
+	--LOGICAL_PLANT，验证在表SITEMASTER中存在
+	select count(1) into validate1 from "SZEBGVMI"."CONF_SITEMASTER" where SITEID = :LOGICAL_PLANT ;
+
+	if(validate1 >0 and n<= 0) then
+		INSERT INTO "SZEBGVMI"."UI_OPTION_DEST_MAPPING"(
+				LOGICAL_PLANT,WAREHOUSE_OWNER,SOURCE_LOCATION,SOURCE_TYPE,SOURCE_BIN,DESTINATION_LOCATION,DESTINATION_TYPE,DESTINATION_BIN,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		 	)
+		VALUES(
+			 	 :LOGICAL_PLANT,:WAREHOUSE_OWNER,:SOURCE_LOCATION,:SOURCE_TYPE,:SOURCE_BIN,:DESTINATION_LOCATION,:DESTINATION_TYPE,:DESTINATION_BIN,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+		 --insert操作需要写入日志
+		insert into "SZEBGVMI"."UI_OPTION_DEST_MAPPING_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				LOGICAL_PLANT,WAREHOUSE_OWNER,SOURCE_LOCATION,SOURCE_TYPE,SOURCE_BIN,DESTINATION_LOCATION,DESTINATION_TYPE,DESTINATION_BIN,
+				SYS_CREATED_BY,
+		 		SYS_CREATION_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+		VALUES
+			 	(:currentUser,
+			 	'create',
+			 	:create_time,
+				:LOGICAL_PLANT,:WAREHOUSE_OWNER,:SOURCE_LOCATION,:SOURCE_TYPE,:SOURCE_BIN,:DESTINATION_LOCATION,:DESTINATION_TYPE,:DESTINATION_BIN,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);	 			 	
+		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+	ELSEIF validate1<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_option_dest_mapping_err"('"LOGICAL_PLANT"::'||:LOGICAL_PLANT||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:WAREHOUSE_OWNER,:SOURCE_LOCATION,:SOURCE_TYPE,:SOURCE_BIN,:DESTINATION_LOCATION,:DESTINATION_TYPE,:DESTINATION_BIN,
+				:seq,:position);
+			--error log
+ 		 	RETURN;	
+	ELSEIF n>0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_option_dest_mapping_err"('Duplicated primary key',:business_name,
+			 	 :LOGICAL_PLANT,:WAREHOUSE_OWNER,:SOURCE_LOCATION,:SOURCE_TYPE,:SOURCE_BIN,:DESTINATION_LOCATION,:DESTINATION_TYPE,:DESTINATION_BIN,
+				:seq,:position);
+			--error log
+ 		 	RETURN;
+	END IF;
+END;

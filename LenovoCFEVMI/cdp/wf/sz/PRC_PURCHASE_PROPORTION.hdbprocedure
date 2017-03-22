@@ -1,0 +1,21 @@
+PROCEDURE "SZEBGVMI"."cdp.wf.sz::PRC_PURCHASE_PROPORTION" (	
+	IN p_wfname VARCHAR(20), OUT p_out_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA 
+	AS
+/************************************************************************
+*name      : PRC_SA              --函数名
+*function    :               --函数功能
+*input     ：  p_wfname              --输入参数
+*output     : p_out_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2015/03/09                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+************************************************************************/
+
+BEGIN
+	call "cdp.szebgvmi.procedures.pkg_pcdw_to_vmi::PRC_PURCHASE_PROPORTION"(:p_wfname,p_out_exitcode);       
+END;

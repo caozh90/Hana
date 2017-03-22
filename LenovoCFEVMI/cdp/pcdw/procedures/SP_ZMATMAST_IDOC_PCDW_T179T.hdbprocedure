@@ -1,0 +1,141 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::SP_ZMATMAST_IDOC_PCDW_T179T" ( 
+IN PI_SPRAS                VARCHAR(100),
+IN PI_PRODH                VARCHAR(100),
+IN PI_STUFE                DECIMAL,
+IN PI_VTEXT                VARCHAR(100),
+IN PI_FLAG                 VARCHAR(100),
+IN PI_IDOCNUM              DECIMAL,
+IN PI_IDOCTIME             VARCHAR(100),
+IN PI_SYS_CREATED_BY       VARCHAR(100),
+IN PI_SYS_LAST_MODIFIED_BY VARCHAR(100)
+ )  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	AS
+  /***********************************************************************/
+  /* PROCEDURE          ?SP_ZMATMAST_IDOC_PCDW_T179T
+  /* DESCRIPTION        ?INSERT IDOC DATA TO ECC_T179T TABLE
+  /* PARAMETERS         ?PI_MATNR, PI_MAKTX, PI_MAKTX_CH
+  /* SOURCE             ?IDOC
+  /* TARGET TABLE       ?ECC_T179T
+  /* VERSION            ?V1.0
+  /***********************************************************************/
+
+  V_IDOCTIME TIMESTAMP;
+  vMsg	 	 VARCHAR(1024);
+  vCode	     int;
+  n	 	 	 INT;
+BEGIN
+	-- exception
+    --定义异常
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+	  vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+        VALUES   (CURRENT_TIMESTAMP,
+                  'SP_ZMATMAST_IDOC_PCDW_T179T',
+                  'ERROR',
+                  :vCode,
+                  :vMsg,
+                  '',
+                  '',
+                  '',
+                  'END');
+    	--exec 'commit';   --2017.02.08 PI issue by baying deleted  
+    	
+    	INSERT INTO Ecc_T179t_Err
+	      (spras,
+	       prodh,
+	       stufe,
+	       vtext,
+	       flag,
+	       idocnum,
+	       idoctime,
+	       sys_created_date,
+	       sys_created_by,
+	       z_errmsg)
+	    VALUES
+	      (:PI_SPRAS,
+	       :PI_PRODH,
+	       :PI_STUFE,
+	       :PI_VTEXT,
+	       :PI_FLAG,
+	       :PI_IDOCNUM,
+	       :PI_IDOCTIME,
+	       CURRENT_TIMESTAMP,
+	       :PI_SYS_CREATED_BY,
+	       :vMsg);
+	  
+	    --EXEC 'COMMIT';   --2017.02.08 PI issue by baying deleted  
+    END;
+	-- exception
+	V_IDOCTIME := TO_TIMESTAMP(PI_IDOCTIME);
+
+  	IF :PI_PRODH IS NOT NULL THEN
+  	
+	  	SELECT COUNT(1) INTO n FROM ecc_T179t 
+		WHERE spras = :PI_SPRAS
+		       AND prodh = :PI_PRODH
+		       AND (idoctime < :V_IDOCTIME OR
+		           (idoctime = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR
+		           idoctime IS NULL);  	
+	  	IF n>0 THEN
+		    UPDATE ecc_T179t
+		       SET stufe                  = :PI_STUFE,
+		           vtext                  = :PI_VTEXT,
+		           flag                   = :PI_FLAG,
+		           idocnum                = :PI_IDOCNUM,
+		           idoctime               = :V_IDOCTIME,
+		           sys_last_modified_date = CURRENT_TIMESTAMP,
+		           sys_last_modified_by   = :PI_SYS_LAST_MODIFIED_BY
+		     WHERE spras = :PI_SPRAS
+		       AND prodh = :PI_PRODH
+		       AND (idoctime < :V_IDOCTIME OR
+		           (idoctime = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR
+		           idoctime IS NULL);
+	 	--exec 'commit';   --2017.02.08 PI issue by baying deleted  
+
+		ELSEIF n=0 THEN
+		 	SELECT COUNT(1) INTO n FROM ecc_T179t 
+			WHERE spras = :PI_SPRAS
+			       AND prodh = :PI_PRODH;
+			if n=0 then
+				INSERT INTO ecc_t179t
+		        (spras,
+		         prodh,
+		         stufe,
+		         vtext,
+		         flag,
+		         idocnum,
+		         idoctime,
+		         sys_created_date,
+		         sys_created_by)
+		      VALUES
+		        (:PI_SPRAS,
+		         :PI_PRODH,
+		         :PI_STUFE,
+		         :PI_VTEXT,
+		         :PI_FLAG,
+		         :PI_IDOCNUM,
+		         :V_IDOCTIME,
+		         CURRENT_TIMESTAMP,
+		         :PI_SYS_CREATED_BY);
+			end if;
+  
+    		--EXEC 'COMMIT';  --2017.02.08 PI issue by baying deleted  
+    	END IF;
+	END IF ;
+
+END;

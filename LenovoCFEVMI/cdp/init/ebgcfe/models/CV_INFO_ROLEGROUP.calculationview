@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_INFO_ROLEGROUP" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_INFO_ROLES"/>
+  <localVariables/>
+  <variableMappings/>
+  <informationModelLayout relativeWidthScenario="27"/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLEGROUP_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="REAL_ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="COMMENT" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="IS_SYSROLEGROUP" length="5"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script 1000000106************/ 
+
+ BEGIN 
+  /* view name
+--0.1 managementCenter
+--0.2 costBake
+--0.3 newCycle
+--0.4 forecastcostpublish
+
+--1.1 itemMaster
+--1.2 productFamily
+--1.3 sbbCategory
+--1.4 manualBom
+--1.5 mtProdFamily
+--1.7 forceItemType
+--1.8 dummyPart
+--1.8 CTO-FC EOL
+--1.9 Machine type EOL control
+
+--2.1 costModelList
+--2.2 plantMaintenance
+--2.3 sourceOfSupply
+--2.4 formula
+--2.5 fcsbbMapping
+--2.6 region
+--2.7 exchangeRate
+--2.8 countrySalesorgMapping
+
+
+--3.1 costElem
+--3.2 compCostUpload
+--3.3 compCostTape
+--3.4 groupCost
+--3.5 realDummyMapping
+--3.6 Cost Tape - CTO-CV VK Cost
+
+--4.1 xmva
+--4.2 xifrt
+--4.3 xoutfr
+--4.4 wwvar
+--4.5 xatt
+--4.6 xattc
+--4.7 adderConfiguration
+--4.8 flexibleAdder
+
+--5.1 seoCostBom
+--5.2 ctoCostBom
+--5.2.X86 SBB Cost BOM
+
+--6.1 whereUseReport
+--6.2 outlookReport
+--6.3 missingTotalReport
+--6.4 materialMarginReport
+--6.5 ctcReport
+--6.6 assemblyCostTypeComparisonReport
+--6.1.X86 Where Used
+--6.13.X86 Cost Flag Report
+--6.3.X86 Daily Stdcost Report 
+--6.4.X86 Monthly Stdcost Report 
+--8.2.X86 Daily Stdcost Publish 
+--6.2.X86 Newly Parts Reports
+--8.3.X86 Monthly Stdcost Publish
+--6.12.CTC New Material Reports
+--9.1 X86 Time Fence
+--9.2 B/S Part List
+--9.3 PM BOM
+--10.1 Service Cost
+--9.8 B/S Part No
+*/
+ 
+ 	 var_out = 
+ SELECT  'Other Roles' as ROLEGROUP_NAME,'' AS REAL_ROLE_NAME ,'Other Roles in EBGCFE' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'User Managerment' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000001' AS REAL_ROLE_NAME ,'User Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'LOG' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000002' AS REAL_ROLE_NAME ,'Log Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+UNION SELECT  'DS Workflow Configuration' as ROLEGROUP_NAME,'DS Workflow Configuration' AS REAL_ROLE_NAME ,'DS Workflow Configuration' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'DS Job Configuration' as ROLEGROUP_NAME,'DS Job Configuration' AS REAL_ROLE_NAME ,'DS Job Configuration' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'DS Job Monitor&amp;Resubmission' as ROLEGROUP_NAME,'DS Job Monitor&amp;Resubmission' AS REAL_ROLE_NAME ,'DS Job Monitor&amp;Resubmission' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+--0.1 managementCenter
+--0.2 costBake
+--0.3 newCycle
+UNION SELECT  'ui_management_center' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000042' AS REAL_ROLE_NAME ,'ui_management_center Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_cost_bake' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000043' AS REAL_ROLE_NAME ,'ui_cost_bake Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_cycle' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000044' AS REAL_ROLE_NAME ,'ui_cycle Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+--1.1 itemMaster
+--1.2 productFamily
+--1.3 sbbCategory
+--1.4 manualBom
+--1.5 mtProdFamily
+--1.7 forceItemType
+--1.8 dummyPart
+--1.8 CTO-FC EOL
+--1.9 Machine type EOL control
+
+UNION SELECT  'ui_item' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000045' AS REAL_ROLE_NAME ,'ui_item Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_prodfamily' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000046' AS REAL_ROLE_NAME ,'ui_prodfamily Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_sbbcategory' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000047' AS REAL_ROLE_NAME ,'ui_sbbcategory Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_manual_bom' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000048' AS REAL_ROLE_NAME ,'ui_manual_bom Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_machine_type' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000049' AS REAL_ROLE_NAME ,'ui_machine_type Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_force_item_type' as ROLEGROUP_NAME,'cdp.ebgcfe.roles.ui_force_item_type' AS REAL_ROLE_NAME ,'ui_force_item_type Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_dummy_part' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000050' AS REAL_ROLE_NAME ,'ui_dummy_part Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_ctofc_flag' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000089' AS REAL_ROLE_NAME ,'ui_ctofc_flag Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_mt_eol' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000090' AS REAL_ROLE_NAME ,'ui_mt_eol Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+--2.1 costModelList
+--2.2 plantMaintenance
+--2.3 sourceOfSupply
+--2.4 formula
+--2.5 fcsbbMapping
+--2.6 region
+--2.7 exchangeRate
+--2.8 countrySalesorgMapping
+UNION SELECT  'biz_cost_model_list' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000051' AS REAL_ROLE_NAME ,'biz_cost_model_list Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_plant' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000052' AS REAL_ROLE_NAME ,'ui_plant Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_sos' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000053' AS REAL_ROLE_NAME ,'ui_sos Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_cost_calcu_formu' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000054' AS REAL_ROLE_NAME ,'ui_cost_calcu_formu Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'biz_fcsbbmap' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000055' AS REAL_ROLE_NAME ,'biz_fcsbbmap Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_region' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000056' AS REAL_ROLE_NAME ,'ui_region Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_exchange_rate' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000057' AS REAL_ROLE_NAME ,'ui_exchange_rate Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_country_salesorg_mapping' as ROLEGROUP_NAME,'cdp.security.cdr.ui_country_salesorg_mapping' AS REAL_ROLE_NAME ,'ui_country_salesorg_mapping Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+--3.1 costElem
+--3.2 compCostUpload
+--3.3 compCostTape
+--3.4 groupCost
+--3.5 realDummyMapping
+--3.6 Cost Tape - CTO-CV VK Cost
+UNION SELECT  'ui_cost_elem' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000058' AS REAL_ROLE_NAME ,'ui_cost_elem Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_cost_tape_ori' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000059' AS REAL_ROLE_NAME ,'ui_cost_tape_ori Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_cost_tape' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000060' AS REAL_ROLE_NAME ,'ui_cost_tape Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_group_cost' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000061' AS REAL_ROLE_NAME ,'ui_group_cost Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_real_dummy_mapping' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000072' AS REAL_ROLE_NAME ,'ui_real_dummy_mapping Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_cto_cv_vk_cost' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000081' AS REAL_ROLE_NAME ,'ui_cto_cv_vk_cost Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+--4.1 xmva
+--4.2 xifrt
+--4.3 xoutfr
+--4.4 wwvar
+--4.5 xatt
+--4.6 xattc
+--4.7 adderConfiguration
+--4.8 flexibleAdder
+--4.9 costFlag
+UNION SELECT  'ui_xmva' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000062' AS REAL_ROLE_NAME ,'ui_xmva Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_xifrt' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000063' AS REAL_ROLE_NAME ,'ui_xifrt Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_xoutfr' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000064' AS REAL_ROLE_NAME ,'ui_xoutfr Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_wwvar' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000065' AS REAL_ROLE_NAME ,'ui_wwvar Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_xatt' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000066' AS REAL_ROLE_NAME ,'ui_xatt Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_xattc' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000067' AS REAL_ROLE_NAME ,'ui_xattc Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_adder_conf' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000068' AS REAL_ROLE_NAME ,'ui_adder_conf Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_flexible_adder' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000069' AS REAL_ROLE_NAME ,'ui_flexible_adder Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Modify by Justin 20150805 start***************
+UNION SELECT  'ui_cost_flag' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000073' AS REAL_ROLE_NAME ,'ui_cost_flag Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Modify by Justin 20150805 end***************
+
+
+--5.1 seoCostBom
+--5.2 ctoCostBom
+--5.2.X86 SBB Cost BOM
+UNION SELECT  'ui_seocostbom' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000070' AS REAL_ROLE_NAME ,'ui_seocostbom Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_ctocostbom' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000071' AS REAL_ROLE_NAME ,'ui_ctocostbom Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'ui_sbbcostbom' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000077' AS REAL_ROLE_NAME ,'ui_sbbcostbom Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+
+--6.1 whereUseReport
+--6.2 outlookReport
+--6.3 missingTotalReport
+--6.4 materialMarginReport
+--6.5 ctcReport
+--6.6 assemblyCostTypeComparisonReport
+--6.1.X86 Where Used
+--6.12.CTC New Material Reports
+--6.13.X86 Cost Flag Report
+--6.3.X86 Daily Stdcost Report 
+--6.4.X86 Monthly Stdcost Report 
+--6.2.X86 Newly Parts Reports
+UNION SELECT  'rpt_where_used' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::rpt_where_used' AS REAL_ROLE_NAME ,'rpt_where_used Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'rpt_outlook' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::rpt_outlook' AS REAL_ROLE_NAME ,'rpt_outlook Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'rpt_bom_missing_total' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::rpt_bom_missing_total' AS REAL_ROLE_NAME ,'rpt_bom_missing_total Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'rpt_material_margin' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::rpt_material_margin' AS REAL_ROLE_NAME ,'rpt_material_margin Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'rpt_ctc' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::rpt_ctc' AS REAL_ROLE_NAME ,'rpt_ctc Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'rpt_cost_type_comparison' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::rpt_cost_type_comparison' AS REAL_ROLE_NAME ,'rpt_cost_type_comparison Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'rpt_cost_flag' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::rpt_cost_flag' AS REAL_ROLE_NAME ,'rpt_cost_flag Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'rpt_ctc_new_material' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::rpt_ctc_new_material' AS REAL_ROLE_NAME ,'rpt_ctc_new_material Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT  'rpt_key_sbb_error' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::rpt_key_sbb_error' AS REAL_ROLE_NAME ,'rpt_key_sbb_error Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Justin 20150824 start***************
+--6.3.X86 Daily Stdcost Report 
+UNION SELECT  'rpt_stdcost_daily' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000079' AS REAL_ROLE_NAME ,'rpt_stdcost_daily Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Justin 20150824 end***************
+
+--*******************Add by Leon 20150828 start***************
+--6.4.X86 Monthly Stdcost Report 
+UNION SELECT  'rpt_stdcost_monthly' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000080' AS REAL_ROLE_NAME ,'rpt_stdcost_monthly Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Leon 20150828 end***************
+
+--*******************Add by Justin 20150828 start***************
+--6.2.X86 Newly Parts Reports
+UNION SELECT  'rpt_newly_parts' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000081' AS REAL_ROLE_NAME ,'rpt_newly_parts Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Justin 20150828 end***************
+
+
+
+--*******************Modify by Justin 20150807 start***************
+--7.1 ratioCode
+UNION SELECT  'ui_ratio_code' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000074' AS REAL_ROLE_NAME ,'ui_ratio_flag Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Modify by Justin 20150807 end***************
+---7.3 additional cost ADDED BY CHENWH3 20150810 START
+UNION SELECT 'ui_additional_cost' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000075' AS REAL_ROLE_NAME ,'ui_additional_cost Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--ADDED BY CHENWH3 20150810 END
+
+--*******************Add by Justin 20150811 start***************
+--7.1 baseWarrPcaUplift
+UNION SELECT  'ui_warr_pca_uplift' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000076' AS REAL_ROLE_NAME ,'ui_warr_pca_uplift Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Justin 20150811 end***************
+
+--*******************Add by Justin 20150818 start***************
+--8.2.X86 Daily Stdcost Publish 
+UNION SELECT  'ui_stdcost_daily' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000078' AS REAL_ROLE_NAME ,'ui_stdcost_daily Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Justin 20150818 end*****************
+
+
+--*******************Add by Justin 20150901 start***************
+--8.3.X86 Monthly Stdcost Publish 
+UNION SELECT  'ui_stdcost_monthly' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000084' AS REAL_ROLE_NAME ,'ui_stdcost_monthly Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Justin 20150901 end*****************
+
+
+--*******************Add by Fanfangxing 20150901 start***************
+--8.1.X86 CFE&amp;ECC Plant Mapping 
+UNION SELECT  'ui_cfe_ecc_plantmapping' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000083' AS REAL_ROLE_NAME ,'ui_cfe_ecc_plantmapping Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Fanfangxing 20150901 end***************
+
+
+--0.4 Forecast_Cost_Publish
+UNION SELECT  'ui_Forecast_Cost_Publish' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000082' AS REAL_ROLE_NAME ,'ui_Forecast_Cost_Publish' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY  --ADDED BY CHENWH3 20150901
+
+--*******************Add by Justin 20151010 start***************
+--9.2 B/S Part List
+UNION SELECT  'ui_pm_bs_part' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000086' AS REAL_ROLE_NAME ,'ui_pm_bs_part Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Justin 20151010 end*****************
+
+--*******************Add by bianzh1 20151012 start***************
+--9.3 PM BOM
+UNION SELECT  'ui_pm_bom' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000087' AS REAL_ROLE_NAME ,'ui_pm_bom Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by bianzh1 20151012 end*****************
+
+--10.1 Service Cost
+UNION SELECT  'ui_service_cost' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000085' AS REAL_ROLE_NAME ,'ui_service_cost Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+
+--6.14 Sales Office
+UNION SELECT  'rpt_sales_office' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000088' AS REAL_ROLE_NAME ,'rpt_sales_office Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--9.1 X86 Time Fence add by chenwh3 20160307 start
+UNION SELECT 'ui_time_fence' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000091' AS REAL_ROLE_NAME ,'ui_time_fence Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--9.1 X86 Time Fence add by chenwh3 20160307 end
+--9.2 X86 Sales Report add by bianzh1 20160307 start
+UNION SELECT 'ui_pm_sales_report' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000092' AS REAL_ROLE_NAME ,'ui_pm_sales_report Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--9.2 X86 Sales Report add by bianzh1 20160307 end
+--9.3 X86 MTM GR zhaodan1 20160309
+UNION SELECT 'ui_pm_gr_mtm' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000093' AS REAL_ROLE_NAME ,'ui_pm_gr_mtmt Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+UNION SELECT 'ui_pm_inventory_report' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000094' AS REAL_ROLE_NAME ,'ui_inventory_report Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--9.6 X86 price Consumption Report Design add by zhengyq7 20160322 start
+UNION SELECT 'ui_pm_consumption_report' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000091' AS REAL_ROLE_NAME ,'ui_pm_consumption_report Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--9.6 X86 price Consumption Report Design add by zhengyq7 20160322 end
+--9.5 Forecast PM Report
+UNION SELECT 'ui_pm_forecast' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000095' AS REAL_ROLE_NAME ,'ui_pm_forecast Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--- 4.9 XOUTFR Weight
+UNION SELECT 'ui_xoutfr_weight' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000097' AS REAL_ROLE_NAME ,'ui_xoutfr_weight Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--- 4.10 XOUTFR Rate
+UNION SELECT 'ui_xoutfr_rate' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000096' AS REAL_ROLE_NAME ,'ui_xoutfr_rate Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--- 2.10 Sellable Country
+UNION SELECT 'ui_sellable_country' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000098' AS REAL_ROLE_NAME ,'ui_sellable_country Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--- 6.5 Partial CAL UI 
+UNION SELECT 'ui_partial_cal' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000099' AS REAL_ROLE_NAME ,'ui_partial_cal Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--- 6.15 MTM Reports
+UNION SELECT 'rpt_mtm' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000100' AS REAL_ROLE_NAME ,'rpt_mtm Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--- 7.4 Country Duty this required from AP Project by zhaodan1 16/10/27
+--UNION SELECT 'ui_country_duty' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000101' AS REAL_ROLE_NAME ,'ui_country_duty Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--- 11.1 CTO-FC Adder
+UNION SELECT 'ui_ctofc_adder' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000102' AS REAL_ROLE_NAME ,'ui_ctofc_adder Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by zhangzj6 20160722 start***************
+--11.2 Volume Report 
+UNION SELECT  'rpt_volume_report' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000103' AS REAL_ROLE_NAME ,'rpt_volume_report Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by Leon 20160722 end***************
+--*******************Add by zhaodan1 20160825 start***************
+--9.8 B/S Part No 
+UNION SELECT  'ui_pm_bs_part_no' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000104' AS REAL_ROLE_NAME ,'ui_pm_bs_part_no Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by zhaodan1 20160825 end***************
+--*******************Add by zhaodan1 20170206 start for la cr***************
+--7.4 Cryad PH 
+UNION SELECT  'ui_cryad_ph' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000105' AS REAL_ROLE_NAME ,'ui_cryad_ph Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by zhaodan1 20170206 end***************
+--7.5 Frt PH 
+UNION SELECT  'ui_frt_ph' as ROLEGROUP_NAME,'cdp.security.cdr.rolegroup::1000000106' AS REAL_ROLE_NAME ,'ui_frt_ph Managerment' AS COMMENT ,'TRUE' AS IS_SYSROLEGROUP FROM DUMMY
+--*******************Add by bianzh1 20170208 end***************
+;
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="ROLEGROUP_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLEGROUP_NAME"/>
+      </attribute>
+      <attribute id="REAL_ROLE_NAME" order="2">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="REAL_ROLE_NAME"/>
+      </attribute>
+      <attribute id="COMMENT" order="3">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="COMMENT"/>
+      </attribute>
+      <attribute id="IS_SYSROLEGROUP" order="4">
+        <descriptions defaultDescription="IS_SYS_ROLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="IS_SYSROLEGROUP"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

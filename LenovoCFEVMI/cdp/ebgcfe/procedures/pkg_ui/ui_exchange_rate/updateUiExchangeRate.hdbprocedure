@@ -1,0 +1,382 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_exchange_rate::updateUiExchangeRate" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_EXCHANGE_RATE_T"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_EXCHANGE_RATE_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+)  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS 
+		aCurrency_name NVARCHAR(20);
+		aProduct_group NVARCHAR(10);
+		--aCountry NVARCHAR(20); 
+		aInputRate NVARCHAR(10); 
+		aM1  DECIMAL(15,4);
+        aM2  DECIMAL(15,4);
+        aM3  DECIMAL(15,4);
+        aM4  DECIMAL(15,4);
+        aM5  DECIMAL(15,4);
+        aM6  DECIMAL(15,4);
+        aM7  DECIMAL(15,4);
+        aM8  DECIMAL(15,4);
+        aM9  DECIMAL(15,4);
+        aM10  DECIMAL(15,4);
+        aM11  DECIMAL(15,4);
+        aM12  DECIMAL(15,4);
+        aM13  DECIMAL(15,4);
+        aM14  DECIMAL(15,4);
+        aM15  DECIMAL(15,4);
+        aM16  DECIMAL(15,4);
+        aM17  DECIMAL(15,4);
+        aM18  DECIMAL(15,4);
+           
+        resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;  
+BEGIN	
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui::updateUiExchangeRate error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiExchangeRate'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_exchange_rate::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiExchangeRate'
+       ,I_MODULE=>'EBGCFE'
+   	);  
+   	
+ select
+ 	INPUT_RATE,
+    OUTPUT_M1,
+    OUTPUT_M2,
+    OUTPUT_M3,
+    OUTPUT_M4,
+    OUTPUT_M5,
+    OUTPUT_M6,
+    OUTPUT_M7,
+    OUTPUT_M8, 
+    OUTPUT_M9,
+    OUTPUT_M10,
+    OUTPUT_M11,
+    OUTPUT_M12,
+    OUTPUT_M13,
+    OUTPUT_M14, 
+    OUTPUT_M15,
+    OUTPUT_M16,
+    OUTPUT_M17,
+    OUTPUT_M18      
+  into
+  	aInputRate,  	
+	aM1,
+    aM2,
+    aM3,
+    aM4,
+    aM5,
+    aM6,
+    aM7,
+    aM8, 
+    aM9,
+    aM10,
+    aM11,
+    aM12,
+    aM13,
+    aM14, 
+    aM15,
+    aM16,
+    aM17,
+    aM18	
+  from :newInfo;
+  
+  
+  if :aM1 = 0 then
+	    errorInfo = select 400 as http_status_code, 
+              'M1 should not be 0!' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+  
+   if :aM2 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M2 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+   
+   if :aM3 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M3 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+  
+   if :aM4 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M4 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+   
+   if :aM5 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M5 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+  
+   if :aM6 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M6 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+   
+   if :aM7 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M7 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+  
+   if :aM8 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M8 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+   
+   if :aM9 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M9 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+  
+   if :aM10 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M10 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+   
+   if :aM11 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M11 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+  
+   if :aM12 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M12 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+   
+   if :aM13 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M13 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+  
+   if :aM14 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M14 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+   
+   if :aM15 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M15 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+  
+   if :aM16 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M16 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+   
+   if :aM17 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M17 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+  
+   if :aM18 = 0 then
+	    errorInfo = select 400 as http_status_code, 'M18 should not be 0!' error_message, privilegeExists detail from dummy;
+       RETURN ;
+   end if;
+ 
+ if(:aInputRate = 'toUS')
+ then
+ 	aM1 := 1 / :aM1;
+ 	aM2 := 1 / :aM2;
+ 	aM3 := 1 / :aM3;
+ 	aM4 := 1 / :aM4;
+ 	aM5 := 1 / :aM5;
+ 	aM6 := 1 / :aM6;
+ 	aM7 := 1 / :aM7;
+ 	aM8 := 1 / :aM8;
+ 	aM9 := 1 / :aM9;
+ 	aM10 := 1 / :aM10;
+ 	aM11 := 1 / :aM11;
+ 	aM12 := 1 / :aM12;
+ 	aM13 := 1 / :aM13;
+ 	aM14 := 1 / :aM14;
+ 	aM15 := 1 / :aM15;
+ 	aM16 := 1 / :aM16;
+ 	aM17 := 1 / :aM17;
+ 	aM18 := 1 / :aM18;
+ end if;
+
+ 
+ select
+ 
+    CURRENCY_NAME,
+    --COUNTRY,
+    PRODUCT_GROUP
+  into  	
+ 	aCurrency_name,
+ 	--aCountry,
+ 	aProduct_group
+  from :oldInfo;
+
+  
+  	SELECT top 1 count(1) into resourceExists FROM "EBGCFE"."UI_EXCHANGE_RATE" A    
+     WHERE A.CURRENCY_NAME = :aCurrency_name 
+     	 -- AND A.COUNTRY = :aCountry         
+          AND A.M1 = :aM1
+          AND A.M2 = :aM2 
+          AND A.M3 = :aM3
+          AND A.M4 = :aM4
+          AND A.M5 = :aM5
+          AND A.M6 = :aM6 
+          AND A.M7 = :aM7
+          AND A.M8 = :aM8 
+          AND A.M9 = :aM9
+          AND A.M10 = :aM10 
+          AND A.M11 = :aM11
+          AND A.M12 = :aM12
+          AND A.M13 = :aM13
+          AND A.M14 = :aM14 
+          AND A.M15 = :aM15
+          AND A.M16 = :aM16 
+          AND A.M17 = :aM17
+          AND A.M18 = :aM18
+          AND PRODUCT_GROUP = :aProduct_group;
+   
+    if  :resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record is same as before' error_message, 
+	     		'the record is same as before' DETAIL from dummy;
+	     		
+	     	return;*/
+	    return;--SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before'; 
+    end if;
+
+/*put operation to log table*/
+    insert into  "EBGCFE"."UI_EXCHANGE_RATE_LOG"
+    (
+    	CYCLE,
+        PRODUCT_GROUP,
+    	CURRENCY_NAME,
+    	--COUNTRY,
+    	"M1",
+		"M2",
+		"M3",
+		"M4",
+		"M5",
+		"M6",
+		"M7",
+		"M8",
+		"M9",
+		"M10",
+		"M11",
+		"M12",
+		"M13",
+		"M14",
+		"M15",
+		"M16",
+		"M17",
+		"M18",  	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	AT_ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS    	
+    )
+    select 
+    	'CURRENT',
+    	:aProduct_group,
+    	:aCurrency_name,
+    	--:aCountry,
+    	"M1",
+		"M2",
+		"M3",
+		"M4",
+		"M5",
+		"M6",
+		"M7",
+		"M8",
+		"M9",
+		"M10",
+		"M11",
+		"M12",
+		"M13",
+		"M14",
+		"M15",
+		"M16",
+		"M17",
+		"M18", 	
+    	current_date,    	
+    	'update',
+    	SESSION_USER,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))		
+	from "EBGCFE"."UI_EXCHANGE_RATE"
+	where CURRENCY_NAME = :aCurrency_name
+	  and PRODUCT_GROUP = :aProduct_group
+	 -- and COUNTRY = :aCountry;  	
+	 ;
+               
+    update "EBGCFE"."UI_EXCHANGE_RATE"  set
+    	M1 = :aM1,
+    	M2 = :aM2,
+    	M3 = :aM3,
+    	M4 = :aM4,
+    	M5 = :aM5,
+    	M6 = :aM6,
+    	M7 = :aM7,
+    	M8 = :aM8,
+    	M9 = :aM9,
+    	M10 = :aM10,
+    	M11 = :aM11,
+    	M12 = :aM12,
+    	M13 = :aM13,
+    	M14 = :aM14,
+    	M15 = :aM15,
+    	M16 = :aM16,
+    	M17 = :aM17,
+    	M18 = :aM18,
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = session_user,
+    	ACTION = 'update'
+    where
+    	CURRENCY_NAME = :aCurrency_name
+    	and PRODUCT_GROUP = :aProduct_group
+    	--and COUNTRY = :aCountry;
+    	;
+       	    	
+/*END*/
+ 	    aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui::updateUiExchangeRate ('||:aCurrency_name||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui::updateUiExchangeRate'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

@@ -1,0 +1,222 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteMapAll" (
+		--IN	aModule_ID  BIGINT
+    	--,
+    	IN	aUSER_ID BIGINT
+    	,IN	aUSERGROUP_ID BIGINT
+    	,IN	aROLEGROUP_ID BIGINT	--//rolegroup id	
+    	,IN	aROLE_ID BIGINT  	--//role id    
+		,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	AS
+	
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';    
+    
+    aMODULE_ID	NVARCHAR(10);	
+    aMODULE_NAME NVARCHAR(200);   
+    
+    aREVOKE_FROM_NAME NVARCHAR(256) :='';
+    aREVOKE_TO_NAME NVARCHAR(256) :='';
+    
+    aGROUP_NAME NVARCHAR(256);
+    aREAL_NAME NVARCHAR(256) ARRAY;
+    aTEMP_NAME NVARCHAR(256);
+    VINDEX	INTEGER;
+    privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+ DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到aROLE_ID ,则返回，同时告知不存在这个权限明细
+			aI_DETAIL :='cdp.security.procedures::deleteMapAll can not find the ROLE : '||:aRole_ID ||' in this group : '||:aROLEGROUP_ID||'.';
+    CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapAll"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);  
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::deleteMapAll error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapAll"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);   	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityRoleAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+  	    	
+--SELECT "MODULE_NAME" INTO aMODULE_NAME FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE"
+ -- WHERE "MODULE_ID" = :aModule_ID;
+  
+      IF aUserGroup_ID=0 THEN 
+  --确定用户ＩＤ　是否存在
+  --id 不存在则返回。
+  --存在 则 开始计算
+  --如果 rolegroup = 0 则，判断role 是否存在，并且不在已经拥有的权限当中，则
+	  SELECT "USER_NAME" INTO aREVOKE_TO_NAME
+	  FROM "SECURITY"."cdp.security.data::userManagement.INFO_USER"
+	  WHERE "USER_ID" = :aUSER_ID;
+	  
+  ELSE
+	  SELECT "REAL_ROLE_NAME","GROUP_NAME" INTO aREVOKE_TO_NAME ,aGROUP_NAME
+	  FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP"
+	  WHERE "GROUP_ID" = :aUserGroup_ID 
+	  AND "MODULE_ID" = :aMODULE_ID;
+	  
+	  IF	aGROUP_NAME = 'Public Group' then
+	  
+	  aI_DETAIL := 'cdp.security.procedures::createMapAll can not map the GROUP_NAME : Public Group .';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+     	I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createMapAll"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000027'
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : W000000027' error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+	  	return ;
+	  end if;
+	  
+  END IF;
+  
+    
+  IF aROLEGROUP_ID=0 THEN 
+  --确定用户ＩＤ　是否存在
+  --id 不存在则返回。
+  --存在 则 开始计算
+  --如果 rolegroup = 0 则，判断role 是否存在，并且不在已经拥有的权限当中，则
+  
+  	if :aROLE_ID != 0 then
+	  SELECT "ROLE_NAME" INTO aREVOKE_FROM_NAME
+	  FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLES"
+	  WHERE "ROLE_ID" = :aROLE_ID
+	  --group by "ROLE_NAME"
+	  AND "MODULE_ID" = :aMODULE_ID	  ;
+	 else
+	  aREVOKE_FROM_NAME := '0';
+	 end if;
+  ELSE
+  
+	  SELECT "REAL_ROLE_NAME" INTO aREVOKE_FROM_NAME
+	  FROM "SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP"
+	  WHERE "ROLEGROUP_ID" = :aROLEGROUP_ID
+	  AND "MODULE_ID" = :aMODULE_ID
+	  ;
+	  
+  END IF;
+  
+  
+ IF aUserGroup_ID=0 THEN 
+ 
+ if	aREVOKE_FROM_NAME = '0' then
+ --单独用户，删除 other role
+ --
+ BEGIN
+ V_TSTTAB =   
+    SELECT B."ROLE_NAME"  AS "REAL_NAME"  
+    FROM "SECURITY"."cdp.security.data::userManagement.MAP_ALL"  A
+    ,"SECURITY"."cdp.security.data::userManagement.INFO_ROLES"  B
+    WHERE A."MODULE_ID" = :aMODULE_ID AND A."USER_ID" = :aUSER_ID
+    AND A."ROLE_ID" = B."ROLE_ID"
+    AND A."ROLEGROUP_ID" = 0    
+    GROUP BY B."ROLE_NAME";
+ 
+ aREAL_NAME := ARRAY_AGG(:V_TSTTAB.REAL_NAME);
+    
+
+     FOR VINDEX IN 1 .. CARDINALITY(:aREAL_NAME) DO 
+ aTEMP_NAME := :aREAL_NAME[:VINDEX];
+ --**## CALL _SYS_REPO.REVOKE_ACTIVATED_ROLE(:aTEMP_NAME,:aREVOKE_TO_NAME);
+ 
+ END FOR;
+ 
+ 
+ 
+ END ;
+ 
+ else
+--**##   CALL _SYS_REPO.REVOKE_ACTIVATED_ROLE(:aREVOKE_FROM_NAME,:aREVOKE_TO_NAME);
+  end if;
+  
+  
+  else
+  -- usergroup
+  
+  begin
+ 
+ SELECT "REAL_ROLE_NAME" INTO aREVOKE_TO_NAME
+	  FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP"
+	  WHERE "GROUP_ID" = :aUserGroup_ID
+	  AND "MODULE_ID" = :aMODULE_ID
+	  ;
+--**## 	  CALL _SYS_REPO.REVOKE_ACTIVATED_ROLE(:aREVOKE_FROM_NAME,:aREVOKE_TO_NAME);
+  /*
+  CALL "SECURITY"."cdp.security.procedures::resetInfoGroup" (
+	:aUserGroup_ID 
+	,:aREVOKE_FROM_NAME
+   -- in aMODULE_NAME NVARCHAR(200)
+		,errorInfo             ); 
+
+    */
+    
+    
+             
+  end ;
+  end if;
+  --BEGIN AUTONOMOUS TRANSACTION
+  delete from "SECURITY"."cdp.security.data::userManagement.MAP_ALL"
+	  	where MODULE_ID = :aModule_ID 
+	  	and   GROUP_ID = :aUSERGROUP_ID
+	  	and   (USER_ID = :aUSER_ID )
+	  	and   ROLEGROUP_ID = :aROLEGROUP_ID
+	  	and   (ROLE_ID = :aROLE_ID )
+	  	;
+  --COMMIT;
+  --END ;
+  aI_DETAIL := 'cdp.security.procedures::deleteMapAll ('||:aROLE_ID||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapAll"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000021'
+     	,I_DETAIL=>:aI_DETAIL);	  
+END;

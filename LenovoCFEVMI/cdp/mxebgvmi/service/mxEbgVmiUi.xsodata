@@ -1,0 +1,456 @@
+service
+{     
+
+	/*Control\Mapping
+	view name
+	1.controlcycle					controlCycle					Control Cycle
+	2.destinationmapping			destinationMapping				Destination Mapping
+	3.optiondestinationmapping		optionDestinationMapping		Option Destination
+	4.vmipurchaseproportion			vmiPurchaseProportion			VMI Purchase Proportion
+	5.sourcingpriority				sourcingPriority				Sourcing Priority
+	6.urgentmomaintaince			urgentMOMaintaince				Urgent MO Maintaince
+	7.nocutsopriority				nocutSoPriority					Nocut SO Priority
+	8.fullBoxSize					fullboxsize						Full Box Size
+	9.mobomlocation					mobomLocation                   Mobom Location
+	*/
+
+/*
+		1.controlcycle					controlCycle					Control Cycle      
+      UI_CONTROL_CYCLE for UI (control cycle)*/
+      "cdp.mxebgvmi.models::AT_UI_CONTROL_CYCLE" as "UI_CONTROL_CYCLE"
+            key ("ITEM","LOGICAL_PLANT","PHYSICAL_PLANT")
+            create using "cdp.mxebgvmi.procedures.pkg_ui.ui_control_cycle::createUiCycleControl"
+            	events (before "cdp.mxebgvmi.procedures.pkg_ui.ui_control_cycle::beforeCreateUiCycleControl")
+            update using "cdp.mxebgvmi.procedures.pkg_ui.ui_control_cycle::updateUiCycleControl"
+            	events (before "cdp.mxebgvmi.procedures.pkg_ui.ui_control_cycle::beforeUpdateUiCycleControl")
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.ui_control_cycle::deleteUiCycleControl"; 
+            
+		/*
+      2.destinationmapping			destinationMapping				Destination Mapping
+      UI_LINE_FLOOR_MAPPING for UI (destination mapping)*/
+      "cdp.mxebgvmi.models::AT_UI_LINE_FLOOR_MAPPING" as "UI_LINE_FLOOR_MAPPING"
+            key ("DS_LINE","PHYSICAL_PLANT")
+            create using "cdp.mxebgvmi.procedures.pkg_ui.ui_dest_mapping::createUiLineFloorMapping"
+            	events (before "cdp.mxebgvmi.procedures.pkg_ui.ui_dest_mapping::beforeCreateUiLineFloorMapping")
+            update using "cdp.mxebgvmi.procedures.pkg_ui.ui_dest_mapping::updateUiLineFloorMapping"
+           	 	events (before "cdp.mxebgvmi.procedures.pkg_ui.ui_dest_mapping::beforeUpdateUiLineFloorMapping")
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.ui_dest_mapping::deleteUiLineFloorMapping";
+       
+       /*3.optiondestinationmapping		optionDestinationMapping		Option Destination
+      UI_OPTION_DEST_MAPPING for UI (Option Destination Mapping)   Eric Modified*/
+      "cdp.mxebgvmi.models::AT_OPTION_DEST_MAPPING" as "UI_OPTION_DEST_MAPPING"
+          key("LOGICAL_PLANT","SOURCE_LOCATION","SOURCE_TYPE","SOURCE_BIN","DESTINATION_LOCATION")
+      	  create using "cdp.mxebgvmi.service.invoke:uiOptionDestMapping.xsjslib::insert" 
+	      update using "cdp.mxebgvmi.service.invoke:uiOptionDestMapping.xsjslib::update" 
+	   	  delete using "cdp.mxebgvmi.service.invoke:uiOptionDestMapping.xsjslib::remove";
+	   
+	   /*4.vmipurchaseproportion			vmiPurchaseProportion			VMI Purchase Proportion
+      for UI (VMI purchase proportion)    Eric Modified*/
+      "cdp.mxebgvmi.models::AT_PURCHASE_PROPORTION" as "UI_PURCHASE_PROP_VMI"
+      	   key("ITEM","VENDORID","LOGICAL_PLANT","START_DATE")
+      	   create forbidden
+           update forbidden
+	   	   delete using "cdp.mxebgvmi.service.invoke:uiPurchaseProportion.xsjslib::remove";	  
+	  
+	  /*
+      Control Mapping
+      5.sourcingpriority				sourcingPriority				Sourcing Priority
+      UI Sourcing Priority           Eric Modified*/
+      "cdp.mxebgvmi.models::AT_SOURCE_PRIORITY" as "UI_SOURCING_PRIORITY"
+      	   key("LOGICAL_PLANT","MO_TYPE","WAREHOUSE_NUMBER","STORAGE_LOCATION","STORAGE_TYPE")
+      	   create using "cdp.mxebgvmi.service.invoke:uiSourcePriority.xsjslib::insert" 
+	   		  //events (before "cdp.mxebgvmi.service.invoke:uiSourcePriority.xsjslib::validationBefore")
+	       update using "cdp.mxebgvmi.service.invoke:uiSourcePriority.xsjslib::update" 
+	   		  //events (before "cdp.mxebgvmi.service.invoke:uiSourcePriority.xsjslib::validationBefore")
+	   	   delete using "cdp.mxebgvmi.service.invoke:uiSourcePriority.xsjslib::remove";
+      
+      /*
+      Control Mapping
+      6.urgentmomaintaince			urgentMOMaintaince				Urgent MO Maintaince
+      UI (Urgent MO Maintaince)      Eric Modified*/    
+      "cdp.mxebgvmi.models::AT_URGENT_MO_MAINTENCE" as "UI_URGENT_MO_PULL"
+      //"MXEBGVMI"."UI_URGENT_MO_PULL" as "UI_URGENT_MO_PULL"
+      	  key("MO_ID")
+	      create using "cdp.mxebgvmi.service.invoke:uiUrgentMoMaintence.xsjslib::insert" 
+	   		  //events (before "cdp.mxebgvmi.service.invoke:uiUrgentMoMaintence.xsjslib::validationBefore")
+	      update using "cdp.mxebgvmi.service.invoke:uiUrgentMoMaintence.xsjslib::update" 
+	   		  //events (before "cdp.mxebgvmi.service.invoke:uiUrgentMoMaintence.xsjslib::validationBefore")
+	   	  delete using "cdp.mxebgvmi.service.invoke:uiUrgentMoMaintence.xsjslib::remove";
+	      
+      /*UI (Dispatches)*/
+      "cdp.mxebgvmi.models::CV_DISPATCH" as "UI_DISPATCH"
+      keys generate local "ROW_ID";
+      
+      /*
+      7.nocutsopriority				nocutSoPriority					Nocut SO Priority
+      UI (nocut so priority)                  Eric Modified*/
+      //"MXEBGVMI"."UI_NOCUT_SO_PRIORITY" as "UI_NOCUT_SO_PRIORITY";
+      "cdp.mxebgvmi.models::AT_UI_NOCUT_SO_PRIORITY" as "UI_NOCUT_SO_PRIORITY"
+        key("LOGICAL_PLANT","DELIVERY_PRIORITY")
+      	create using "cdp.mxebgvmi.service.invoke:uiNocutSoPriority.xsjslib::insert"
+      	delete using "cdp.mxebgvmi.service.invoke:uiNocutSoPriority.xsjslib::remove"
+      	update forbidden;
+	   	       
+      /*
+      8.fullBoxSize					fullboxsize						Full Box Size
+      UI_ITEM_FULL_BOX for UI (full box size)*/
+      "cdp.mxebgvmi.models::AT_UI_ITEM_FULL_BOX" as "UI_ITEM_FULL_BOX"
+            key ("VENDORID","ITEM")
+            create using "cdp.mxebgvmi.procedures.pkg_ui.ui_full_box_size::createUiItemFullBox"
+            update using "cdp.mxebgvmi.procedures.pkg_ui.ui_full_box_size::updateUiItemFullBox"
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.ui_full_box_size::deleteUiItemFullBox"; 
+      /*
+      9.mobomlocation					mobomLocation                   Mobom Location
+        */
+        "cdp.mxebgvmi.models.mobomLocation::AT_MOBOM_LOCATION" as "UI_MOBOM_LOCATION"
+        	key("ITEM","LOGICAL_PLANT") 
+        	create using "cdp.mxebgvmi.procedures.pkg_ui.mobom_location::createMobomLocation"
+        	update using "cdp.mxebgvmi.procedures.pkg_ui.mobom_location::updateMobomLocation"
+        	delete using "cdp.mxebgvmi.procedures.pkg_ui.mobom_location::deleteMobomLocation";
+        "cdp.mxebgvmi.models.mobomLocation::CV_ITEM" as "MOBOM_ITEM"
+     	 	keys generate local "ROW_ID"
+     	 	create forbidden
+     	 	update forbidden
+     	 	delete forbidden
+     	 	;
+        "cdp.mxebgvmi.models.mobomLocation::CV_STORAGE_LOCATION" as "MOBOM_LOCATION"
+     	 	keys generate local "ROW_ID"
+     	 	create forbidden
+     	 	update forbidden
+     	 	delete forbidden;	 
+	/************************
+	END 
+	Control\Mapping
+	*********************/
+	      
+	      /**************
+	      ARCH_SEARCH
+			view name --- ROLE NAME --- COMMENTS
+			1. archivedPullSignals                  archivedpullsignals        'Archived Pull Signals '
+			2. archivedPullLines                    archivedpulllines                 'Archived Pull Lines '
+			3. archivedDispatches                   archiveddispatches                'Archived Dispatches '
+			4. archivedReceipts                     archivedreceipts                  'Archived Receipts '
+	      ***************/
+	   /*UI for (Archived Dispatch)*/
+      "cdp.mxebgvmi.models::CV_DISPATCH_ARCHIVED" as "UI_DISPATCH_ARCHIVED"
+      keys generate local "ROW_ID";
+      
+      /*UI for (Archived Pull Line&Pull Signals)*/
+      "cdp.mxebgvmi.models::CV_PULL_LINE_ARCHIVED" as "UI_PULL_ARCHIVED"
+      keys generate local "ROW_ID";
+      
+      /*UI for (Archived Receipts)*/
+      "cdp.mxebgvmi.models::CV_GR_ARCHIVED" as "UI_GR_ARCHIVED"
+      keys generate local "ROW_ID";
+      
+    /************************
+	END 
+	 ARCH_SEARCH
+	*********************/      
+	 
+	 /*Monitor\Search
+		view name
+		1.   receipts          reciepts             'Reciepts'
+		2.   pullSignals       pullsignals          'Pull Signals'
+		3.   pullLines         pulllines            'Pull Lines'
+		4.   dispatches        dispatches           'Dispatches'
+		5.   events            events               'Events'
+		6.   sa                sa                   'SA'
+		**********************/
+		
+		/*PULL_LINE FOR UI(Pull Signals)*/      
+      "cdp.mxebgvmi.models::CV_PULL_LINE" as "UI_PULL_LINE"
+      keys generate local "ROW_ID";
+      
+	      /*Sa for UI (SA)*/ 
+      "cdp.mxebgvmi.models::CV_SA" as "UI_SA" key ("SA_NUMBER","SA_LINE_ID");
+      
+      "cdp.mxebgvmi.models::CV_GR" as "UI_GR" key ("TPL_RECEIPT_LINE_ID","TPL_RECEIPT_ID","TPL_ID");
+      
+      /*Events for UI(Events)*/
+      //"cdp.mxebgvmi.models::CV_DISPATCH_DELAY" as "UI_EVENTS"
+      //keys generate local "ROW_ID";
+      
+       "cdp.mxebgvmi.models::CV_EVENTS" as "UI_EVENTS"
+      keys generate local "ROW_ID"
+      ;//aggregates always;
+          
+      /*      
+		Excute\ create pull
+		view name
+		1. manualPull						manualpull					'Manual Pull'
+		2. manualPackaging					manualpackaging				'Manual Packaging'
+		3. pullFromSupplier					pullfromsupplier			'Pull From Supplier'
+		*/
+      /*UI_MANUAL_PULL for UI (Manual pull)*/
+      //"MXEBGVMI"."UI_MANUAL_PULL" as "UI_MANUAL_PULL";
+      
+      "cdp.mxebgvmi.models::AT_MANUAL_PULL" as "UI_MANUAL_PULL"
+            key ("PULL_HEADER_ID","PULL_LINE_ID")           
+            create forbidden
+            update forbidden        
+        	delete using "cdp.mxebgvmi.procedures.pkg_ui.ui_manual_pull::deleteUiManualPull"
+    ;   
+      
+       
+      
+      /*******************
+      *********Excute\Manage
+        1. balanceFailedDispatches
+        2. confirmBalanceDispatches
+        3. confirmDispatches
+        4. confirmLinetoExcessDispatches
+        5. createCycleTime
+        6. failedDispatches
+        7. failedPullConfirmationResubmission
+        8. failedPullResubmission
+        9. linetoExcessFailedDispatches
+        10. loiFailedGR
+        11. soiFailedGR   
+      
+      ************begin********/
+    
+    //1 balanceFailedDispatches
+    
+    //
+    "cdp.mxebgvmi.models::AT_BALANCE_DISPATCH" as "BALANCE_DISPATCH"
+            key ("PULL_LINE_ID","PULL_HEADER_ID")           
+            create forbidden
+            update forbidden
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.balance_dispatch::deleteBalanceDispatch"
+    ;
+    //2.confirmBalanceDispatches
+    "cdp.mxebgvmi.models::CV_CONFIRM_BALANCE_DISPATCHES" as "CONFIRM_BALANCE_DISPATCH"
+            //key ("PULL_HEADER_ID")    
+            //key ("PULL_HEADER_ID")  
+            key ("PULL_HEADER_ID","DEST_STORAGE_TYPE","DEST_STORAGE_LOC","DEST_STORAGE_BIN","WERKS","TPL_ID")      
+            create forbidden
+            update forbidden
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.confirm_balance_dispatch::deleteConfirmBalanceDispatch"
+    ;
+    //3.confirmDispatches
+    "cdp.mxebgvmi.models::CV_DISPATCH_LIST" as "CONFIRM_DISPATCHES"
+            //key ("PULL_HEADER_ID")  
+            key ("PULL_HEADER_ID","DEST_STORAGE_TYPE","DEST_STORAGE_LOC","DEST_STORAGE_BIN","WERKS"
+                   ,"TPL_ID")                
+            create forbidden
+            update forbidden
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.confirm_dispatches::deleteConfirmDispatches"
+    ;
+    
+     //4.confirmLinetoExcessDispatches
+    
+    "cdp.mxebgvmi.models::CV_CONFIRM_LINE_TO_EXCESS_DISPATCHES" as "CONFIRM_LINE_TO_EXCESS_DISPATCHES"
+            //key ("PULL_HEADER_ID")  
+            key ("PULL_HEADER_ID","DEST_STORAGE_TYPE","DEST_STORAGE_LOC","DEST_STORAGE_BIN","WERKS")         
+            create forbidden
+            update forbidden
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.confirm_line_to_excess_dispatches::deleteSpecialDispatch"
+    ;  
+    
+    //5. createCycleTime
+    "cdp.mxebgvmi.models::AT_UI_CREATE_CYCLETIME" as "UI_CREATE_CYCLETIME"
+            key ("TPL_ID","PULL_TYPE" ,"EVENT_TYPE")            
+          create using "cdp.mxebgvmi.service.invoke:uiCreateCycleTime.xsjslib::insert" 
+              //events (before "cdp.mxebgvmi.service.invoke:uiCreateCycleTime.xsjslib::validationBefore")
+          update using "cdp.mxebgvmi.service.invoke:uiCreateCycleTime.xsjslib::update" 
+              //events (before "cdp.mxebgvmi.service.invoke:uiCreateCycleTime.xsjslib::validationBefore")
+          delete using "cdp.mxebgvmi.service.invoke:uiCreateCycleTime.xsjslib::remove";
+ 
+    
+    //6.failedDispatches
+    
+    "cdp.mxebgvmi.models.FailedDispatches::CV_DISPATCH_LIST" as "FAILED_DISPATCHES"
+            key ("PULL_LINE_ID","PULL_HEADER_ID")           
+            create forbidden
+            update using "cdp.mxebgvmi.procedures.pkg_ui.failed_dispatches::updateFailedDispatches"
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.failed_dispatches::deleteFailedDispatches"
+    ;
+    "cdp.mxebgvmi.models.FailedDispatches::CV_SA" as "FAILED_DISPATCHES_SA"
+  		keys generate local "IDX"
+           parameters via  entity "IN_SA"               
+            create forbidden 
+            update forbidden
+            delete forbidden
+        
+    ;
+    "cdp.mxebgvmi.models.FailedDispatches::CV_SUPITEM" as "FAILED_DISPATCHES_SUPITEM"
+           keys generate local "PKID"    
+      	    parameters via  entity "IN_SUPITEM"                 
+            create forbidden
+            update forbidden
+            delete forbidden
+    ;
+  
+    // 7. failedPullConfirmationResubmission
+    "cdp.mxebgvmi.models::AT_CLEAR_DIFF" as "CLEAR_DIFF"
+            key ("WERKS","PULL_LINE_ID","PULL_HEADER_ID")               
+            create forbidden
+            update forbidden
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.clear_diff::deleteClearDiff"
+    ;
+ 
+ //8.failedPullResubmission
+    "cdp.mxebgvmi.models::CV_FAILED_PULL_RESUBMISSION" as "FAILED_PULL_RESUBMISSION"
+            key ("PULL_LINE_ID","PULL_HEADER_ID")           
+            create forbidden
+            update forbidden
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.failed_pull_resubmission::deleteFailedPullResubmission"
+    ;     
+    
+    //9. linetoExcessFailedDispatches
+    "cdp.mxebgvmi.models::AT_LINE_TO_EXCESS_FAILED_DISPATCHES" as "LINE_TO_EXCESS_FAILED_DISPATCHES"
+            key ("PULL_LINE_ID","PULL_HEADER_ID")           
+            create forbidden
+            update forbidden
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.line_to_excess_failed_dispatch::deleteSpecialDispatch"
+    ;  
+    //10. loiFailedGR           
+    "cdp.mxebgvmi.models::AT_LOI_GR" as "LOI_GR"
+            key ("TPL_RECEIPT_LINE_ID","TPL_RECEIPT_ID" ,"TPL_ID")          
+            create forbidden
+            update using "cdp.mxebgvmi.procedures.pkg_ui.ui_loifailedgr::updateUILOIFailedGR"
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.ui_loifailedgr::deleteUILOIFailedGR"
+    ;
+    //11. soiFailedGR   
+    "cdp.mxebgvmi.models::AT_SOI_GR" as "SOI_GR"
+            key ("TPL_RECEIPT_LINE_ID","TPL_RECEIPT_ID" ,"TPL_ID")          
+            create forbidden
+            update using "cdp.mxebgvmi.procedures.pkg_ui.ui_soifailedgr::updateUISOIFailedGR"
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.ui_soifailedgr::deleteUISOIFailedGR"
+    ;
+    
+    //change location UI model added by caozh4 20160905
+   "cdp.mxebgvmi.models::AT_UI_CHANGE_SL" as "UI_CHANGE_SL"
+            key ("MATNR","MO_NUM","STORAGE_LOC")           
+            create forbidden
+            update forbidden
+            delete using "cdp.mxebgvmi.procedures.pkg_ui.ui_change_location::deleteUiChangeLocation"
+    ;
+     /*********End**********
+      *********Excute\Manage
+        1. balanceFailedDispatches
+        2. confirmBalanceDispatches
+        3. confirmDispatches
+        4. confirmLinetoExcessDispatches
+        5. createCycleTime
+        6. failedDispatches
+        7. failedPullConfirmationResubmission
+        8. failedPullResubmission
+        9. linetoExcessFailedDispatches
+        10. loiFailedGR
+        11. soiFailedGR   
+      
+      ********************/
+    
+    //common search panel&create panel
+    //--3PL ID: PTYPE = PTYPE='TPL_ID'
+    //--INVENTORY  TYPE  WHERE PTYPE='INVENTORY_TYPE'
+    //--event type PTYPE='EVENT_TYPE'
+    "cdp.mxebgvmi.models.common::CV_CONF_PARAMETER" as "CONF_PARAMETER"
+            key ("PVALUE" ) 
+            parameters via key and entity "InputParams"     
+            create forbidden
+            update forbidden
+            delete forbidden
+    ;
+     
+     
+    //PULL Type
+    "cdp.mxebgvmi.models.common::CV_CONF_MATERIAL_MAP" as "CONF_MATERIAL_MAP"
+            key ("PULL_TYPE")           
+            create forbidden
+            update forbidden
+            delete forbidden
+    ;
+    
+    //Logical Plant 
+    
+    "cdp.mxebgvmi.models.common::AN_CONF_SITEMASTER" as "CONF_SITEMASTER"
+            keys generate local "PKID"
+            aggregates always         
+           // create forbidden
+           // update forbidden
+           // delete forbidden
+    ;
+    //distinct
+    "cdp.mxebgvmi.models.common::CV_CONF_SITEMASTER" as "CONF_SITEMASTER2"
+            keys generate local "PKID"
+      
+           // create forbidden
+           // update forbidden
+           // delete forbidden
+    ;
+    //Part Number
+    "cdp.mxebgvmi.models.common::CV_ITEMSITEMASTER" as "ITEMSITEMASTER001"
+            key ("ITEM","ITEMDESC")            
+            create forbidden
+            update forbidden
+            delete forbidden
+    ;
+    // MO added by caozh4 20160905
+    "cdp.mxebgvmi.models.common::CV_PCDW_MO" as "MXEBGVMI_MO_BOM"
+            key ("PRODUCTIONORDID")            
+            create forbidden
+            update forbidden
+            delete forbidden
+    ;
+    
+    //Vendor
+    "cdp.mxebgvmi.models.common::CV_SUPITEM" as "SUPITEM"
+            key ("SUPPLIERID","SUPPLIERDESC")           
+            create forbidden
+            update forbidden
+            delete forbidden
+    ;
+    
+    //  Destinaton Type 
+    "cdp.mxebgvmi.models.common::CV_CONF_WAHREHOUSE_INFO" as "CONF_WAHREHOUSE_INFO"
+            keys generate local "PKID" 
+            create forbidden
+            update forbidden
+            delete forbidden
+    ;
+    
+    //  Destinaton Type  WITH PARAMETER
+    "cdp.mxebgvmi.models.common::CV_CONF_WAHREHOUSE_INFO_PARA" as "CONF_WAHREHOUSE_INFO_PARA"
+            keys generate local "PKID" 
+            parameters via entity "INPUT_CONF_WAHREHOUSE_INFO"
+            create forbidden
+            update forbidden
+            delete forbidden
+    ;
+    
+
+    
+    //Product Line
+    "cdp.mxebgvmi.models.common::CV_UI_LINE_FLOOR_MAPPING" as "UI_LINE_FLOOR_MAPPING_DS_LINE"
+            keys generate local "PKID" 
+            create forbidden
+            update forbidden
+            delete forbidden
+    ; 
+    
+    //add part validation
+    "cdp.mxebgvmi.models.common::CV_ITEMSITEMASTER_VALIDATION" as "VALIDATION"
+            keys generate local "PKID" 
+            parameters via entity "INPUT_VALIDATION"
+            create forbidden
+            update forbidden
+            delete forbidden
+    ;       
+ 
+ 	/*UI controlcycle for storage location*/
+      "cdp.mxebgvmi.models.common::AN_CONF_WAHREHOUSE_INFO" as "UI_WAHREHOUSE"
+      keys generate local "ROW_ID"
+      aggregates always;
+            
+      /*UI for src storage location*/
+      "cdp.mxebgvmi.models.common::CV_WAHREHOUSE_SRC" as "CV_WAHREHOUSE_SRC"
+      keys generate local "ROW_ID";
+      
+      /*UI for DEST storage location*/
+      "cdp.mxebgvmi.models.common::CV_WAHREHOUSE_DEST" as "CV_WAHREHOUSE_DEST"
+      keys generate local "ROW_ID";
+	                           
+}

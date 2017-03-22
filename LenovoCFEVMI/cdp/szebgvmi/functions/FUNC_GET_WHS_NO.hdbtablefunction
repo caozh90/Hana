@@ -1,0 +1,35 @@
+FUNCTION "SZEBGVMI"."cdp.szebgvmi.functions::FUNC_GET_WHS_NO" (loc VARCHAR) 
+    RETURNS table(result VARCHAR(12))
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY INVOKER 
+    /************************************************************************
+    *name      : FUNC_GET_WHS_NO              --函数名
+    *function  :               --函数功能
+    *input     ：  loc  --输入参数
+    *output     :result --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141204                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/      
+       
+AS
+   whs_no   NVARCHAR(12);
+
+BEGIN
+   BEGIN
+     DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --No data found 
+     BEGIN
+            whs_no := NULL;
+     END;   
+   
+      SELECT DISTINCT whs_no
+                 INTO whs_no
+                 FROM "SZEBGVMI"."CONF_WAHREHOUSE_INFO"
+                WHERE storage_location = :loc;
+
+   END;
+
+   return select :whs_no as result from dummy;
+   
+END;

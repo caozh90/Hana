@@ -1,0 +1,114 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::getPrivilege" (
+   out result "SECURITY"."cdp.security.data::userManagement.privilegeT"  ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER  
+DEFAULT SCHEMA "SECURITY"
+	READS SQL DATA AS
+BEGIN
+/***************************** 
+	Write your function logic
+ *****************************/
+ result = 
+ 
+ SELECT DISTINCT D."DISPLAY_ROLE_NAME" AS CDP_PRIVILEGE_NAME
+ FROM 
+ "SECURITY"."cdp.security.data::userManagement.INFO_USER" A
+ ,  "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" B
+,  "SECURITY"."cdp.security.data::userManagement.MAP_ALL" C
+, "SECURITY"."cdp.security.data::userManagement.INFO_ROLES" D
+--,"SECURITY"."cdp.security.data::userManagement.DATA_SESSION_CONTEXT" E
+ WHERE A."USER_ID" = B."USER_ID"
+ AND A."USER_NAME" = SESSION_USER
+ AND B."USER_ID" = C."USER_ID"
+ AND B."MODULE_ID" = C."MODULE_ID"
+ AND C."ROLE_ID" = D."ROLE_ID"
+ AND C."ROLEGROUP_ID" =0
+ --AND E."SESSION_TYPE" = 'MODULE_ID'
+ --AND E."USER_ID" = A."USER_ID"
+ UNION 
+ SELECT DISTINCT D1."DISPLAY_ROLE_NAME" AS CDP_PRIVILEGE_NAME
+ FROM 
+ "SECURITY"."cdp.security.data::userManagement.INFO_USER" A1
+ ,  "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" B1
+,  "SECURITY"."cdp.security.data::userManagement.MAP_ALL" C1
+, "SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" F1
+, "SECURITY"."cdp.security.data::userManagement.INFO_ROLES" D1
+--,"SECURITY"."cdp.security.data::userManagement.DATA_SESSION_CONTEXT" E1
+ WHERE A1."USER_ID" = B1."USER_ID"
+ AND A1."USER_NAME" = SESSION_USER
+ AND B1."USER_ID" = C1."USER_ID"
+ AND B1."MODULE_ID" = C1."MODULE_ID"
+ AND C1."ROLE_ID" = 0
+ AND C1."ROLEGROUP_ID" = F1."ROLEGROUP_ID"
+ AND C1."MODULE_ID" = F1."MODULE_ID"
+ AND F1."ROLE_ID" = D1."ROLE_ID"
+ AND F1."MODULE_ID" = D1."MODULE_ID" 
+-- AND E1."SESSION_TYPE" = 'MODULE_ID'
+-- AND E1."USER_ID" = A1."USER_ID"
+ 
+  UNION 
+ SELECT DISTINCT D2."DISPLAY_ROLE_NAME" AS CDP_PRIVILEGE_NAME
+  FROM 
+ "SECURITY"."cdp.security.data::userManagement.INFO_USER" A2
+  ,"SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" B2
+ ,"SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER" H2
+
+ ,"SECURITY"."cdp.security.data::userManagement.MAP_ALL" C2
+  ,"SECURITY"."cdp.security.data::userManagement.INFO_ROLES" D2
+ --,"SECURITY"."cdp.security.data::userManagement.DATA_SESSION_CONTEXT" E2
+ WHERE A2."USER_ID" = B2."USER_ID"
+ AND A2."USER_NAME" = SESSION_USER
+ AND B2."USER_ID" = H2."USER_ID"
+ AND B2."MODULE_ID" = H2."MODULE_ID"
+ AND H2."GROUP_ID" = C2."GROUP_ID"
+ AND H2."MODULE_ID" = C2."MODULE_ID" 
+ AND C2."ROLEGROUP_ID" = 0 
+ AND C2."ROLE_ID" = D2."ROLE_ID"
+ AND C2."MODULE_ID" = D2."MODULE_ID" 
+--AND E2."SESSION_TYPE" = 'MODULE_ID'
+-- AND E2."USER_ID" = A2."USER_ID"
+ 
+ UNION 
+ SELECT DISTINCT D2."DISPLAY_ROLE_NAME" AS CDP_PRIVILEGE_NAME
+  FROM 
+ "SECURITY"."cdp.security.data::userManagement.INFO_USER" A2
+  ,"SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" B2
+ ,"SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER" H2
+
+ ,"SECURITY"."cdp.security.data::userManagement.MAP_ALL" C2
+ ,"SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" F2
+ ,"SECURITY"."cdp.security.data::userManagement.INFO_ROLES" D2
+ --,"SECURITY"."cdp.security.data::userManagement.DATA_SESSION_CONTEXT" E2
+ WHERE A2."USER_ID" = B2."USER_ID"
+ AND A2."USER_NAME" = SESSION_USER
+ AND B2."USER_ID" = H2."USER_ID"
+ AND B2."MODULE_ID" = H2."MODULE_ID"
+ AND H2."GROUP_ID" = C2."GROUP_ID"
+ AND H2."MODULE_ID" = C2."MODULE_ID"
+ AND C2."ROLE_ID" = 0
+ AND C2."ROLEGROUP_ID" = F2."ROLEGROUP_ID"
+ AND C2."MODULE_ID" = F2."MODULE_ID"
+ AND F2."ROLE_ID" = D2."ROLE_ID"
+ AND F2."MODULE_ID" = D2."MODULE_ID" 
+--AND E2."SESSION_TYPE" = 'MODULE_ID'
+-- AND E2."USER_ID" = A2."USER_ID"
+ 
+ --为了解决并发调用的时候Plan Cache的问题（AGS - Fan Season给的AGS的回复，加了下面这一行）
+ WITH HINT (IGNORE_PLAN_CACHE)             
+ ;
+
+ /*
+ 
+ SELECT DISTINCT A."DISPLAY_ROLE_NAME" AS CDP_PRIVILEGE_NAME
+ FROM "_SYS_BIC"."cdp.security.models/CV_GETMAPALL_USERROLE" A
+ ,"SECURITY"."cdp.security.data::userManagement.INFO_USER" B
+ ,"SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" C
+ WHERE A."USER_ID" = B."USER_ID"
+ AND B."USER_NAME" = SESSION_USER
+ AND B."USER_ID" = C."USER_ID"
+ AND A."MODULE_ID" = C."MODULE_ID"
+ ;
+ 
+*/
+  
+ 
+END;

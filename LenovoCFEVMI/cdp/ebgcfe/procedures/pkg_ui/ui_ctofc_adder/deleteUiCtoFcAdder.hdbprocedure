@@ -1,0 +1,120 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::deleteUiCtoFcAdder"
+( 
+	IN   oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTOFC_ADDER_T"
+	,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiCtoFcAdder
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo            
+*author      :      zhaodan1
+*CreateDate  :      2016.6.3
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(500) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	v_CTO             NVARCHAR(18);
+    v_FC	         NVARCHAR(40);
+    v_PLANT              NVARCHAR(40);
+    v_SUBGEO            NVARCHAR(40);
+    v_ADDER_NAME			 NVARCHAR(200);
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::deleteUiCtoFcAdder error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::deleteUiCtoFcAdder'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_ctofc_adder::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::deleteUiCtoFcAdder'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+   	
+							 
+   	SELECT CTO,       FC,       PLANT,    SUBGEO,
+		   ADDER_NAME
+ 	  INTO V_CTO,       V_FC,   V_PLANT,    V_SUBGEO,
+           V_ADDER_NAME
+ 	  FROM :oldinfo;
+ 
+-- delete record from table	  	
+DELETE FROM "EBGCFE"."UI_CTOFC_ADDER" 
+      WHERE CYCLE = 'CURRENT' AND
+            PRODUCT_GROUP = 'EBG' AND
+            CTO = :V_CTO AND
+	        FC = :V_FC AND
+	        PLANT = :V_PLANT AND
+	        SUBGEO = :V_SUBGEO AND
+	        ADDER_NAME = :V_ADDER_NAME;   
+	
+--insert log table
+		INSERT INTO "EBGCFE"."UI_CTOFC_ADDER_LOG"(
+		                     CYCLE,  PRODUCT_GROUP,
+			                 CTO,       FC,	       PLANT,    SUBGEO,
+							 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+							 M1 ,M2 ,M3 ,M4 ,
+							 M5 ,M6 ,M7 ,M8 ,
+							 M9 ,M10,M11,M12,
+							 M13,M14,M15,M16,
+							 M17,M18,		                    
+							SYS_CREATED_DATE,							SYS_CREATED_BY,							
+							SYS_LAST_MODIFIED_DATE,							SYS_LAST_MODIFIED_BY,
+							AT_ACTION,	AT_MILLIS)
+		SELECT  'CURRENT',  'EBG',
+                 CTO,       FC,	       PLANT,    SUBGEO,
+				 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+				 M1 ,M2 ,M3 ,M4 ,
+				 M5 ,M6 ,M7 ,M8 ,
+				 M9 ,M10,M11,M12,
+				 M13,M14,M15,M16,
+				 M17,M18,
+		        CURRENT_TIMESTAMP,SESSION_USER,
+		        CURRENT_TIMESTAMP,SESSION_USER,
+		        'delete',  TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+	 	FROM :oldinfo 	;
+	   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::deleteUiCtoFcAdder successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::deleteUiCtoFcAdder'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);  
+END;

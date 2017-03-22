@@ -1,0 +1,141 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_urgent_mo_pull" (
+IN   LOGICAL_PLANT NVARCHAR(40),
+IN   MO_ID NVARCHAR(40),
+IN   STATUS NVARCHAR(40),
+IN   DS_LINE NVARCHAR(200),
+IN   BOM_NAME NVARCHAR(40),
+IN   QUANTITY INTEGER,
+IN   START_TIME NVARCHAR(200),
+IN   END_TIME NVARCHAR(200),
+IN   PLANNED_START_TIME NVARCHAR(200),
+IN   PLANNED_END_TIME NVARCHAR(200),
+IN   SYS_SOURCE NVARCHAR(25),
+IN	 	business_name varchar(200),
+IN		seq	 nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	AS
+/************************************************************************
+*name      : ui_urgent_mo_pull              --函数名
+*function  : upload数据至表ui_urgent_mo_pull并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-15       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.mxebgvmi.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_urgent_mo_pull';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		validate1 int;
+		validate2 int;
+		validate3 int;
+		validate4 int;
+		validate5 int;
+		table_name nvarchar(20):='UI_URGENT_MO_PULL';
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_urgent_mo_pull_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:LOGICAL_PLANT,:MO_ID,:STATUS,:DS_LINE,:BOM_NAME,:QUANTITY,:START_TIME,:END_TIME,:PLANNED_START_TIME,:PLANNED_END_TIME,:SYS_SOURCE,:seq,:position);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_urgent_mo_pull_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:LOGICAL_PLANT,:MO_ID,:STATUS,:DS_LINE,:BOM_NAME,:QUANTITY,:START_TIME,:END_TIME,:PLANNED_START_TIME,:PLANNED_END_TIME,:SYS_SOURCE,:seq,:position);
+    END; 
+    --exception 
+	
+	--procedure begin
+	
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+    
+     	
+	--设置businesscode:: table_name+business_code	
+	business_code := :seq;
+	
+	SELECT count(1) into validate1 FROM "MXEBGVMI"."CONF_PARAMETER" WHERE PTYPE='UI_MO_STATUS_TYPE' AND Pvalue = :STATUS;--验证status合法性
+	
+	SELECT COUNT(1) into validate2 FROM "MXEBGVMI"."UI_LINE_FLOOR_MAPPING" WHERE DS_LINE=:DS_LINE; --验证DS_LINE合法性
+	
+	SELECT COUNT(1) into validate3 FROM "MXEBGVMI"."CONF_SITEMASTER" WHERE PHYSICALPLANT=(SELECT top 1 PHYSICAL_PLANT FROM "MXEBGVMI"."UI_LINE_FLOOR_MAPPING" WHERE DS_LINE=:DS_LINE); 
+	
+	select count(1) into n from "MXEBGVMI"."UI_URGENT_MO_PULL" where MO_ID = :MO_ID ;
+	
+	IF validate1<=0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_urgent_mo_pull_err"('"STATUS"::'||:STATUS||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:MO_ID,:STATUS,:DS_LINE,:BOM_NAME,:QUANTITY,:START_TIME,:END_TIME,:PLANNED_START_TIME,:PLANNED_END_TIME,:SYS_SOURCE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;	
+	ELSEIF validate2<=0 or validate3<=0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_urgent_mo_pull_err"('"DS_LINE"::'||:DS_LINE||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:MO_ID,:STATUS,:DS_LINE,:BOM_NAME,:QUANTITY,:START_TIME,:END_TIME,:PLANNED_START_TIME,:PLANNED_END_TIME,:SYS_SOURCE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;
+	ELSEIF n>0 then
+	 		call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_urgent_mo_pull_err"('Duplicate primary key',:business_name,
+			 	 :LOGICAL_PLANT,:MO_ID,:STATUS,:DS_LINE,:BOM_NAME,:QUANTITY,:START_TIME,:END_TIME,:PLANNED_START_TIME,:PLANNED_END_TIME,:SYS_SOURCE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;	
+ 	ELSEIF :QUANTITY<0 then
+			call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_urgent_mo_pull_err"('"Quantity" should be positive',:business_name,
+			 	 :LOGICAL_PLANT,:MO_ID,:STATUS,:DS_LINE,:BOM_NAME,:QUANTITY,:START_TIME,:END_TIME,:PLANNED_START_TIME,:PLANNED_END_TIME,:SYS_SOURCE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;
+	END IF;
+		
+	--插入数据	
+	INSERT INTO "MXEBGVMI"."UI_URGENT_MO_PULL"(
+				LOGICAL_PLANT,MO_ID,STATUS,DS_LINE,BOM_NAME,QUANTITY,START_TIME,END_TIME,PLANNED_START_TIME,PLANNED_END_TIME,SYS_SOURCE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		 	)
+	VALUES(
+	:LOGICAL_PLANT,:MO_ID,:STATUS,:DS_LINE,:BOM_NAME,:QUANTITY,:START_TIME,:END_TIME,:PLANNED_START_TIME,:PLANNED_END_TIME,:SYS_SOURCE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+	--insert操作需要写入日志
+	insert into "MXEBGVMI"."UI_URGENT_MO_PULL_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				LOGICAL_PLANT,
+				MO_ID,STATUS,DS_LINE,BOM_NAME,QUANTITY,START_TIME,END_TIME,PLANNED_START_TIME,PLANNED_END_TIME,SYS_SOURCE,
+				SYS_CREATED_BY,
+		 		SYS_CREATION_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+	VALUES
+	(:currentUser,
+	'create',
+	:create_time,
+	:LOGICAL_PLANT,
+	:MO_ID,:STATUS,:DS_LINE,:BOM_NAME,:QUANTITY,:START_TIME,:END_TIME,:PLANNED_START_TIME,:PLANNED_END_TIME,:SYS_SOURCE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);	 			 	
+
+	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+END;

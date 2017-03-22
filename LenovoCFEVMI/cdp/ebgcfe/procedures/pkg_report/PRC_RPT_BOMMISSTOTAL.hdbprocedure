@@ -1,0 +1,591 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_BOMMISSTOTAL" 
+(
+    IN  P_CHANGE_ID       VARCHAR(100),
+    IN  P_PRODUCT_GROUP   VARCHAR(20),
+    IN  P_USER_ID         VARCHAR(64),
+    OUT P_OUT_EXITCODE    DECIMAL,
+    OUT P_OUT_EXITMESS    VARCHAR(500)
+  
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    --READS SQL DATA 
+    AS
+    /************************************************************************
+    *name       : PRC_RPT_BOMMISSTOTAL       
+    *function   : 
+    *input      ：v_cycle : cycle 
+    *output     : p_out_exitcode : error code 
+    *author     : FangYuan
+    *CreateDate : 2015-02-06
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    *************************************************************************/
+     V_PKG_NAME        VARCHAR(30)  := 'PKG_REPORT';
+    V_PRC_NAME        VARCHAR(50)  := 'PRC_RPT_BOMMISSTOTAL';
+    V_FULL_NAME       VARCHAR(100) := :v_pkg_name || '.' || :v_prc_name;  
+    LOGIDI            INTEGER      := 0;
+    
+    V_DEFAULT_COST    NUMBER;
+    V_RUNLVL          VARCHAR(20);
+BEGIN
+    -- exception
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+        P_OUT_EXITCODE :=::SQL_ERROR_CODE;    
+                
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :LOGIDI,
+                                                    I_EVENT_NAME => :V_FULL_NAME, 
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR', 
+                                                    I_DETAIL     => TO_CHAR(::SQL_ERROR_CODE) || ':' || 
+                                                                    SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+
+    P_OUT_EXITCODE := -1;
+    P_OUT_EXITMESS := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :LOGIDI,
+                                                I_EVENT_NAME => :V_FULL_NAME,
+                                                I_MODULE     => 'EBGCFE'); 
+    
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().DEFAULT_COST 
+      INTO V_DEFAULT_COST
+      FROM DUMMY;   
+      
+    SELECT RUN_LEVEL INTO V_RUNLVL
+      FROM BIZ_TOPLAYER_CH
+     WHERE CHANGE_ID = :P_CHANGE_ID  
+    LIMIT 1;  
+    
+    IF V_RUNLVL = 'FULL'
+    THEN
+        DELETE FROM RPT_BOMMISSINGTOTAL T1
+        WHERE T1.PRODUCT_GROUP = :P_PRODUCT_GROUP;
+    ELSE
+        DELETE FROM RPT_BOMMISSINGTOTAL T1
+        WHERE T1.PRODUCT_GROUP = :P_PRODUCT_GROUP
+          AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T2
+                      WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                        AND T2.ITEM          = T1.MODEL
+                        AND T2.CHANGE_ID     = :P_CHANGE_ID);
+    END IF;
+    
+    --Report component's cost missing when MTM-COMPONENT
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT DISTINCT
+           'CURRENT', T1.PRODUCT_GROUP, T1.ITEM, T1.PLANT, T1.BRAND, 
+           T1.ASP_PRD_FAMILY, 'N/A' AS SBB, T2.CHILDREN AS COMPONENT, 
+           'N/A' AS SUBGEO, 'N/A' AS COUNTRY, 'COST MISSING' AS MISSING_REASON, 
+           NULL, V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP
+      FROM (SELECT DISTINCT PRODUCT_GROUP, ITEM, PLANT, BRAND, ASP_PRD_FAMILY
+              FROM BIZ_TOPLAYER_CH
+             WHERE CHANGE_ID     = :P_CHANGE_ID
+               AND PRODUCT_GROUP = :P_PRODUCT_GROUP) T1,
+           BIZ_CBOM_MTMSBB T2
+     WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+       AND T1.ITEM          = T2.MODEL
+       AND T1.PLANT         = T2.PLANT
+       AND T2.ITEM_TYPE_C  <> 'SBB'
+       AND IFNULL(TO_CHAR(T2.M1), 'NULL') = IFNULL(TO_CHAR(V_DEFAULT_COST), 'NULL');   
+    
+    --Report component's cost missing when MTM-SBB-COMPONENT   
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT DISTINCT
+           'CURRENT', T1.PRODUCT_GROUP, T1.ITEM, T1.PLANT, T1.BRAND, 
+           T1.ASP_PRD_FAMILY, T3.MODEL AS SBB, T3.CHILDREN AS COMPONENT, 
+           'N/A' AS SUBGEO, 'N/A' AS COUNTRY, 'COST MISSING' AS MISSING_REASON, 
+           NULL, V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP
+      FROM (SELECT DISTINCT PRODUCT_GROUP, ITEM, PLANT, BRAND, ASP_PRD_FAMILY
+              FROM BIZ_TOPLAYER_CH
+             WHERE CHANGE_ID     = :P_CHANGE_ID
+               AND PRODUCT_GROUP = :P_PRODUCT_GROUP) T1, 
+           BIZ_CBOM_MTMSBB T2, BIZ_CBOM_SBB T3
+     WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+       AND T1.ITEM          = T2.MODEL
+       AND T1.PLANT         = T2.PLANT
+       AND T2.PRODUCT_GROUP = T3.PRODUCT_GROUP
+       AND T2.PLANT         = T3.PLANT
+       AND T2.CHILDREN      = T3.MODEL
+       AND T2.ITEM_TYPE_C   = 'SBB'
+       AND IFNULL(TO_CHAR(T3.M1), 'NULL') = IFNULL(TO_CHAR(:V_DEFAULT_COST), 'NULL');   
+       
+    --Software missing FG-IP
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT 'CURRENT', PRODUCT_GROUP, MODEL, PLANT, BRAND, 
+           ASP_PRD_FAMILY, 'N/A' AS SBB, CHILDREN, SUBGEO, COUNTRY,  
+           'COST MISSING' AS MISSING_REASON, NULL, V_FULL_NAME, 
+           CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP
+      FROM BIZ_CBOM_SWRCOST T1
+     WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+       AND BOM_LVL       = 'MTM'
+       AND ITEM_TYPE_C   = 'SWR'
+       AND IFNULL(TO_CHAR(M1), 'NULL') = IFNULL(TO_CHAR(:V_DEFAULT_COST), 'NULL')
+       AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T2
+                   WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                     AND T2.ITEM          = T1.MODEL
+                     AND T2.PLANT         = T1.PLANT
+                     AND T2.SUBGEO        = T1.SUBGEO
+                     AND T2.COUNTRY       = T1.COUNTRY
+                     AND T2.CHANGE_ID     = :P_CHANGE_ID
+                     AND T2.PRODUCT_GROUP = :P_PRODUCT_GROUP);  
+       
+    --Software missing FG-IP
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT 'CURRENT', T1.PRODUCT_GROUP, T1.MODEL, T1.PLANT, T1.BRAND, 
+           T1.ASP_PRD_FAMILY, T1.CHILDREN AS SBB, T2.CHILDREN, T1.SUBGEO, 
+           T1.COUNTRY,  'COST MISSING' AS MISSING_REASON, NULL, V_FULL_NAME, 
+           CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP
+      FROM BIZ_CBOM_SWRCOST T1, BIZ_CBOM_SWRCOST T2
+     WHERE T1.PRODUCT_GROUP = :P_PRODUCT_GROUP
+       AND T1.CHILDREN      = T2.MODEL
+       AND T1.PLANT         = T2.PLANT
+       AND T1.SUBGEO        = T2.SUBGEO
+       AND T1.COUNTRY       = T2.COUNTRY
+       AND T1.BOM_LVL       = 'MTM'
+       AND T2.BOM_LVL       = 'SBB'
+       AND IFNULL(TO_CHAR(T2.M1), 'NULL') = IFNULL(TO_CHAR(:V_DEFAULT_COST), 'NULL')
+       AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T3
+                   WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                     AND T3.ITEM          = T1.MODEL
+                     AND T3.PLANT         = T1.PLANT
+                     AND T3.SUBGEO        = T1.SUBGEO
+                     AND T3.COUNTRY       = T1.COUNTRY
+                     AND T3.CHANGE_ID     = :P_CHANGE_ID
+                     AND T3.PRODUCT_GROUP = :P_PRODUCT_GROUP);      
+       
+    --Report component's cost missing when CTO-SBB-COMPONENT   
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT DISTINCT
+           'CURRENT', T1.PRODUCT_GROUP, T1.ITEM, T1.PLANT, T1.BRAND, 
+           T1.ASP_PRD_FAMILY, T3.MODEL AS SBB, T3.CHILDREN AS COMPONENT, 
+           'N/A' AS SUBGEO, 'N/A' AS COUNTRY, 'COST MISSING' AS MISSING_REASON, 
+           NULL, V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP
+      FROM (SELECT DISTINCT PRODUCT_GROUP, ITEM, PLANT, BRAND, ASP_PRD_FAMILY
+              FROM BIZ_TOPLAYER_CH
+             WHERE CHANGE_ID     = :P_CHANGE_ID
+               AND PRODUCT_GROUP = :P_PRODUCT_GROUP) T1, 
+           BIZ_CBOM_CTOSBB T2, BIZ_CBOM_SBB T3
+     WHERE T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+       AND T1.ITEM          = T2.MODEL
+       AND T1.PLANT         = T2.PLANT
+       AND T2.PRODUCT_GROUP = T3.PRODUCT_GROUP
+       AND T2.PLANT         = T3.PLANT
+       AND T2.CHILDREN      = T3.MODEL
+       AND T2.ITEM_TYPE_C   = 'SBB'
+       AND IFNULL(TO_CHAR(T3.M1), 'NULL') = IFNULL(TO_CHAR(:V_DEFAULT_COST), 'NULL');
+
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE, COMP_DESC)
+    SELECT 'CURRENT', T1.PRODUCT_GROUP, T1.MODEL, T1.PLANT, T1.BRAND,
+           T1.PRODFAMILY, T1.CATEGORY AS SBB, T1.COST_NAME AS COMPONENT,
+           T1.SUBGEO, T1.COUNTRY, 'MISSING ADDER', NULL, V_FULL_NAME, 
+           CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP, T1.COST_NAME
+      FROM MID_UI_COST_CALCU_FORMU T1
+     WHERE T1.PRODUCT_GROUP = :P_PRODUCT_GROUP
+       AND T1.COST_NAME  NOT IN('XSWR$')
+       AND NOT EXISTS(SELECT 1 FROM MID_ADDER2 T2
+                       WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                         AND T2.MODEL         = T1.MODEL
+                         AND T2.COST_NAME     = T1.COST_NAME
+                         AND T2.PLANT         = T1.PLANT
+                         AND T2.SUBGEO        = T1.SUBGEO
+                         AND T2.COUNTRY       = T1.COUNTRY
+                         AND T2.CATEGORY      = T1.CATEGORY)
+       AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T3
+                   WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                     AND T3.ITEM          = T1.MODEL
+                     AND T3.CHANGE_ID     = :P_CHANGE_ID);
+    
+    
+    IF V_RUNLVL = 'FULL'
+    THEN                     
+	    --OL Item not existing in cost_model_list
+	    INSERT INTO RPT_BOMMISSINGTOTAL
+	        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+	         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+	         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+	         SYS_LAST_MODIFIED_DATE)
+	    SELECT 'CURRENT', T1.PRODUCT_GROUP, T1.ITEM, 'N/A', T1.BRAND,
+	           T1.ASP_PRD_FAMILY, 'N/A', 'N/A', 'N/A', 'N/A',
+	           'OL Item not existing in cost_model_list' AS MISSING_REASON,
+	           NULL, V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME, 
+	           CURRENT_TIMESTAMP
+	      FROM UI_ITEM T1
+	     WHERE T1.PRODUCT_GROUP = :P_PRODUCT_GROUP
+	       AND T1.EOL_STATUS    = 'OL'
+	       AND EXISTS(SELECT 1 FROM CONF_PARAMETERS T2
+	                   WHERE T2.PVALUE = T1.ITEM_TYPE
+	                     AND T2.PDOMAIN = 'MISSING_TOT_ERROR'
+	                     AND T2.PNAME   = 'OLITEM_NOT_IN_MODELLIST_TYPE')
+	       AND NOT EXISTS(SELECT 1 FROM BIZ_COST_MODEL_LIST T3
+	                       WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+	                         AND T3.ITEM          = T1.ITEM);
+    END IF;
+                         
+    --FG do not exists BOM
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT DISTINCT
+           'CURRENT', T1.PRODUCT_GROUP, T1.ITEM, T1.PLANT, T1.BRAND,
+           T1.ASP_PRD_FAMILY, 'N/A', 'N/A', 'N/A', 'N/A',
+           'NOT EXISTS BOM' AS MISSING_REASON,
+           NULL, V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM BIZ_COST_MODEL_LIST T1
+     WHERE T1.PRODUCT_GROUP = :P_PRODUCT_GROUP
+       AND T1.EOL_STATUS    = 'OL'
+       AND EXISTS(SELECT 1 FROM CONF_PARAMETERS T2
+                   WHERE T2.PVALUE  = T1.ITEM_TYPE
+                     AND T2.PDOMAIN = 'MISSING_TOT_ERROR'
+                     AND T2.PNAME   = 'BOM_NOT_EXIST_TYPE')
+      AND NOT EXISTS(SELECT 1 FROM BIZ_CBOM_MTMSBB T3
+                      WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                        AND T3.MODEL         = T1.ITEM
+                        AND T3.PLANT         = T1.PLANT)
+      AND NOT EXISTS(SELECT 1 FROM BIZ_CBOM_SWRCOST T4
+                      WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                        AND T4.MODEL         = T1.ITEM
+                        AND T4.PLANT         = T1.PLANT)
+      AND NOT EXISTS(SELECT 1 FROM BIZ_CBOM_CTOSBB T5
+                      WHERE T5.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                        AND T5.MODEL         = T1.ITEM
+                        AND T5.PLANT         = T1.PLANT)
+      AND NOT EXISTS(SELECT 1 FROM RPT_BOMMISSINGTOTAL T6
+                      WHERE T6.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                        AND T6.MODEL         = T1.ITEM
+                        AND T6.PLANT         = T1.PLANT
+                        AND T6.MISSING_REASON  = 'NOT EXISTS BOM');
+    
+    --SBB LESS THAN 5                   
+    TAB_SBBCOUNTER = SELECT PRODUCT_GROUP, MODEL, BRAND, FAMILY, PLANT, COUNT(0) AS SBB_NUMBER
+                       FROM (
+                         SELECT PRODUCT_GROUP, MODEL, CHILDREN, BRAND, ASP_PRD_FAMILY AS FAMILY, 
+                                PLANT, ITEM_TYPE_M
+                           FROM BIZ_CBOM_MTMSBB
+                          WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+                            AND ITEM_TYPE_C   = 'SBB'
+                         UNION
+                         SELECT PRODUCT_GROUP, MODEL, CHILDREN, BRAND, ASP_PRD_FAMILY AS FAMILY, 
+                                PLANT, ITEM_TYPE_M
+                           FROM BIZ_CBOM_SWRCOST
+                          WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+                            AND ITEM_TYPE_C   = 'SBB') T1
+                      WHERE EXISTS(SELECT 1 FROM CONF_PARAMETERS T2
+                                    WHERE T2.PVALUE  = T1.ITEM_TYPE_M
+                                      AND T2.PDOMAIN = 'MISSING_TOT_ERROR'
+                                      AND T2.PNAME   = 'SBB_LESS_THAN_5_TYPE')
+                        AND NOT EXISTS(SELECT 1 FROM CONF_PARAMETERS T3
+                                        WHERE T3.BRAND   = T1.BRAND
+                                          AND T3.PVALUE  = MAP(T3.PVALUE, 'ALL', T3.PVALUE, T1.FAMILY)
+                                          AND T3.PDOMAIN = 'MISSING_TOT_ERROR'
+                                          AND T3.PNAME   = 'SBB_LESS_THAN_5_EXCLUDE_FAMILY')
+                        AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T4
+                                    WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                      AND T4.ITEM          = T1.MODEL
+                                      AND T4.PLANT         = T1.PLANT
+                                      AND T4.CHANGE_ID     = :P_CHANGE_ID)
+                     GROUP BY PRODUCT_GROUP, MODEL, BRAND, FAMILY, PLANT
+                     HAVING COUNT(0) < 5;
+                     
+    --SBB LESS THAN 5                  
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT 'CURRENT', PRODUCT_GROUP, MODEL, PLANT, BRAND,
+           FAMILY, 'N/A', 'N/A', 'N/A', 'N/A',
+           'number of sbbs of the mtm is less than 5' AS MISSING_REASON,
+           NULL, V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME, 
+           CURRENT_TIMESTAMP
+      FROM :TAB_SBBCOUNTER;    
+    
+    --SBB with negative economic cost  
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT CYCLE, PRODUCT_GROUP, MODEL, PLANT, MODEL_BRAND, 
+           MODEL_FAMILY, FATHER AS SBB, COST_NAME AS COMPONENT,
+           SUBGEO, COUNTRY, 'SBB with negative economic cost',
+           NULL, V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME,
+           CURRENT_TIMESTAMP
+      FROM BIZ_COSTADDER_CTO T1
+     WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+       AND CHILDREN      = 'LEVEL4_ALL_COST'
+       AND (M1 < 0 OR M2 < 0 OR M3 < 0 OR M4 < 0 OR 
+            M5 < 0 OR M6 < 0 OR M7 < 0 OR M8 < 0 OR 
+            M9 < 0 OR M10 < 0 OR M11 < 0 OR M12 < 0 OR
+            M13 < 0 OR M14 < 0 OR M15 < 0 OR M16 < 0 OR
+            M17 < 0 OR M18 < 0)
+       AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T2
+                   WHERE T2.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                     AND T2.ITEM          = T1.MODEL
+                     AND T2.PLANT         = T1.PLANT
+                     AND T2.SUBGEO        = T1.SUBGEO
+                     AND T2.COUNTRY       = T1.COUNTRY
+                     AND T2.CHANGE_ID     = :P_CHANGE_ID);
+    
+    --Missing group cost for non-cto
+    TAB_GROUP_MTM = SELECT * FROM (
+                       SELECT CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, ASP_PRD_FAMILY AS FAMILY,
+                              ITEM_TYPE_M
+                         FROM BIZ_CBOM_MTMSBB
+                        WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+                       UNION
+                       SELECT CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, ASP_PRD_FAMILY AS FAMILY, 
+                              ITEM_TYPE_M
+                         FROM BIZ_CBOM_SWRCOST
+                        WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+                          AND BOM_LVL       = 'MTM'
+                          AND ITEM_TYPE_M  <> 'CTO') T1
+                    WHERE EXISTS(SELECT 1 FROM CONF_PARAMETERS T2
+                                  WHERE T2.PVALUE  = T1.ITEM_TYPE_M
+                                    AND T2.PDOMAIN = 'MISSING_TOT_ERROR'
+                                    AND T2.PNAME   = 'MISS_GROUP_COST_TYPE')
+                      AND NOT EXISTS(SELECT 1 FROM CONF_PARAMETERS T3
+                                      WHERE T3.BRAND   = T1.BRAND
+                                        AND T3.PVALUE  = MAP(T3.PVALUE, 'ALL', T3.PVALUE, T1.FAMILY)
+                                        AND T3.PDOMAIN = 'MISSING_TOT_ERROR'
+                                        AND T3.PNAME   = 'MISS_GROUP_COST_EXCLUDE_FAMILY')
+                      AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T4
+                                  WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                    AND T4.ITEM          = T1.MODEL
+                                    AND T4.PLANT         = T1.PLANT
+                                    AND T4.CHANGE_ID     = :P_CHANGE_ID);       
+                                       
+    --Missing group cost for non-cto                                  
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT T1.CYCLE, T1.PRODUCT_GROUP, T1.MODEL, T1.PLANT, T1.BRAND, 
+           T1.FAMILY, 'N/A', T2.PVALUE AS COMPONENT,
+           'N/A', 'N/A', 'Missing group cost', NULL, 
+           V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME,
+           CURRENT_TIMESTAMP
+      FROM :TAB_GROUP_MTM       T1, 
+           (SELECT PVALUE FROM CONF_PARAMETERS
+             WHERE PDOMAIN = 'UI_GROUP_COST'
+               AND PNAME   = 'TYPE'
+               AND PTYPE   = 'Y') T2
+     WHERE NOT EXISTS(SELECT 1 FROM BIZ_COSTADDER_MTM T3
+                       WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                         AND T3.MODEL         = T1.MODEL
+                         AND T3.PLANT         = T1.PLANT
+                         AND T3.CHILDREN      = T2.PVALUE);
+    
+    --Missing group cost for cto 
+    TAB_GROUP_CTO = SELECT * FROM (
+                       SELECT CYCLE, PRODUCT_GROUP, MODEL, CHILDREN AS SBB, PLANT, BRAND, 
+                              ASP_PRD_FAMILY AS FAMILY, ITEM_TYPE_M
+                         FROM BIZ_CBOM_CTOSBB
+                        WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+                          AND IS_BASESBB    = 1
+                       UNION
+                       SELECT CYCLE, PRODUCT_GROUP, MODEL, CHILDREN AS SBB, PLANT, BRAND, 
+                              ASP_PRD_FAMILY AS FAMILY, ITEM_TYPE_M
+                         FROM BIZ_CBOM_SWRCOST
+                        WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+                          AND ITEM_TYPE_M   = 'CTO'
+                          AND IS_BASESBB    = 1
+                         ) T1
+                    WHERE EXISTS(SELECT 1 FROM CONF_PARAMETERS T2
+                                  WHERE T2.PVALUE  = T1.ITEM_TYPE_M
+                                    AND T2.PDOMAIN = 'MISSING_TOT_ERROR'
+                                    AND T2.PNAME   = 'MISS_GROUP_COST_TYPE')
+                      AND NOT EXISTS(SELECT 1 FROM CONF_PARAMETERS T3
+                                      WHERE T3.BRAND   = T1.BRAND
+                                        AND T3.PVALUE  = MAP(T3.PVALUE, 'ALL', T3.PVALUE, T1.FAMILY)
+                                        AND T3.PDOMAIN = 'MISSING_TOT_ERROR'
+                                        AND T3.PNAME   = 'MISS_GROUP_COST_EXCLUDE_FAMILY')
+                      AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T4
+                                  WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                    AND T4.ITEM          = T1.MODEL
+                                    AND T4.PLANT         = T1.PLANT
+                                    AND T4.CHANGE_ID     = :P_CHANGE_ID);        
+                                                
+    --Missing group cost for cto
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT T1.CYCLE, T1.PRODUCT_GROUP, T1.MODEL, T1.PLANT, T1.BRAND, 
+           T1.FAMILY, T1.SBB, T2.PVALUE AS COMPONENT,
+           'N/A', 'N/A', 'Missing group cost', NULL, 
+           V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME,
+           CURRENT_TIMESTAMP
+      FROM :TAB_GROUP_CTO       T1, 
+           (SELECT PVALUE FROM CONF_PARAMETERS
+             WHERE PDOMAIN = 'UI_GROUP_COST'
+               AND PNAME   = 'TYPE'
+               AND PTYPE   = 'Y') T2
+     WHERE NOT EXISTS(SELECT 1 FROM BIZ_COSTADDER_CTO T3
+                       WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                         AND T3.MODEL         = T1.MODEL
+                         AND T3.PLANT         = T1.PLANT
+                         AND T3.FATHER        = T1.SBB
+                         AND T3.CHILDREN      = T2.PVALUE); 
+                         
+	TEMP_TABLE1 = SELECT * FROM (
+	                  SELECT PRODUCT_GROUP, MODEL, BRAND, ASP_PRD_FAMILY AS FAMILY, PLANT,
+	                         ITEM_TYPE_M
+	                    FROM BIZ_CBOM_MTMSBB
+	                   WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+	                  UNION
+	                  SELECT PRODUCT_GROUP, MODEL, BRAND, ASP_PRD_FAMILY AS FAMILY, PLANT,
+	                         ITEM_TYPE_M
+	                    FROM BIZ_CBOM_SWRCOST
+	                   WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+	                     AND BOM_LVL       = 'MTM') T1
+	               WHERE EXISTS(SELECT 1 FROM CONF_PARAMETERS T2
+	                             WHERE T2.PVALUE  = T1.ITEM_TYPE_M
+	                               AND T2.PDOMAIN = 'MISSING_TOT_ERROR'
+	                               AND T2.PNAME   = 'MISSING_L1BB_TYPE')
+	                 AND NOT EXISTS(SELECT 1 FROM CONF_PARAMETERS T3
+	                                 WHERE T3.BRAND   = T1.BRAND
+	                                   AND T3.PVALUE  = MAP(T3.PVALUE, 'ALL', T3.PVALUE, T1.FAMILY)
+	                                   AND T3.PDOMAIN = 'MISSING_TOT_ERROR'
+	                                   AND T3.PNAME   = 'MISSING_L1BB_EXCLUDE_FAMILY')
+                      AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T4
+                                  WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                    AND T4.ITEM          = T1.MODEL
+                                    AND T4.PLANT         = T1.PLANT
+                                    AND T4.CHANGE_ID     = :P_CHANGE_ID);
+	                  
+	TEMP_TABLE2  = SELECT * FROM ( 
+	                  SELECT PRODUCT_GROUP, MODEL, BRAND, ASP_PRD_FAMILY AS FAMILY, PLANT,
+	                         LEFT(ITEM_DESC, LOCATE(ITEM_DESC, ' ', 1, 2)-1) AS BASIC_NAME,
+	                         ITEM_TYPE_M
+	                    FROM BIZ_CBOM_MTMSBB
+	                   WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+	                  UNION
+	                  SELECT PRODUCT_GROUP, MODEL, BRAND, ASP_PRD_FAMILY AS FAMILY, PLANT,
+	                         LEFT(ITEM_DESC, LOCATE(ITEM_DESC, ' ', 1, 2)-1) AS BASIC_NAME,
+	                         ITEM_TYPE_M
+	                    FROM BIZ_CBOM_SWRCOST
+	                   WHERE PRODUCT_GROUP = :P_PRODUCT_GROUP
+	                     AND BOM_LVL       = 'MTM') T1
+	               WHERE EXISTS(SELECT 1 FROM CONF_PARAMETERS T2
+	                             WHERE T2.PVALUE  = T1.ITEM_TYPE_M
+	                               AND T2.PDOMAIN = 'MISSING_TOT_ERROR'
+	                               AND T2.PNAME   = 'MISSING_L1BB_TYPE')
+	                 AND NOT EXISTS(SELECT 1 FROM CONF_PARAMETERS T3
+	                                 WHERE T3.BRAND   = T1.BRAND
+	                                   AND T3.PVALUE  = MAP(T3.PVALUE, 'ALL', T3.PVALUE, T1.FAMILY)
+	                                   AND T3.PDOMAIN = 'MISSING_TOT_ERROR'
+	                                   AND T3.PNAME   = 'MISSING_L1BB_EXCLUDE_FAMILY')
+                      AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T4
+                                  WHERE T4.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                                    AND T4.ITEM          = T1.MODEL
+                                    AND T4.PLANT         = T1.PLANT
+                                    AND T4.CHANGE_ID     = :P_CHANGE_ID);
+	                                   
+    --Missing L1 SBB
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE)
+    SELECT 'CURRENT', T1.PRODUCT_GROUP, T1.MODEL, T1.PLANT, T1.BRAND, 
+           T1.FAMILY, 'N/A', T2.PVALUE AS COMPONENT, 'N/A', 'N/A', 
+           'Missing L1 BB', NULL, V_FULL_NAME, CURRENT_TIMESTAMP, 
+           V_FULL_NAME, CURRENT_TIMESTAMP
+      FROM :TEMP_TABLE1 T1,
+           (SELECT PVALUE FROM CONF_PARAMETERS
+             WHERE PDOMAIN = 'MISSING_TOT_ERROR'
+               AND PNAME   = 'MISSING_L1BB_BASICNAME') T2
+     WHERE NOT EXISTS(SELECT 1 FROM :TEMP_TABLE2 T3
+                       WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                         AND T3.MODEL         = T1.MODEL
+                         AND T3.PLANT         = T1.PLANT
+                         AND LOCATE(T2.PVALUE, T3.BASIC_NAME) > 0);    
+                         
+    --Added by Zhoubinbin 20161117, Add Nagetive cost report type
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE, COMP_DESC)
+    SELECT 'CURRENT', T1.PRODUCT_GROUP, T1.MODEL, T1.PLANT, T1.MODEL_BRAND,
+           T1.MODEL_FAMILY, 'N/A' AS SBB, T1.COST_NAME AS COMPONENT,
+           T1.SUBGEO, T1.COUNTRY, T2.PTYPE AS MISSING_REASON, NULL, :V_FULL_NAME, 
+           CURRENT_TIMESTAMP, :V_FULL_NAME, CURRENT_TIMESTAMP, T1.COST_NAME
+      FROM BIZ_COSTADDER_MTM T1, CONF_PARAMETERS T2
+     WHERE T1.M1        < 0
+       AND T1.COST_NAME = T2.PVALUE
+       AND T2.PDOMAIN   = 'MISSING_TOTAL'
+       AND T2.PNAME     = 'NEGATIVE_CHECK'
+       AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T3
+                   WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                     AND T3.ITEM          = T1.MODEL
+                     AND T3.PLANT         = T1.PLANT
+                     AND T3.COUNTRY       = T1.COUNTRY
+                     AND T3.CHANGE_ID     = :P_CHANGE_ID);
+                     
+    INSERT INTO RPT_BOMMISSINGTOTAL
+        (CYCLE, PRODUCT_GROUP, MODEL, PLANT, BRAND, FAMILY, SBB, 
+         COMPONENT, SUBGEO, COUNTRY, MISSING_REASON, STATUS, 
+         SYS_CREATED_BY, SYS_CREATED_DATE, SYS_LAST_MODIFIED_BY, 
+         SYS_LAST_MODIFIED_DATE, COMP_DESC)
+    SELECT 'CURRENT', T1.PRODUCT_GROUP, T1.MODEL, T1.PLANT, T1.MODEL_BRAND,
+           T1.MODEL_FAMILY, T1.FATHER AS SBB, T1.COST_NAME AS COMPONENT,
+           T1.SUBGEO, T1.COUNTRY, T2.PTYPE AS MISSING_REASON, NULL, :V_FULL_NAME, 
+           CURRENT_TIMESTAMP, :V_FULL_NAME, CURRENT_TIMESTAMP, T1.COST_NAME
+      FROM BIZ_COSTADDER_CTO T1, CONF_PARAMETERS T2
+     WHERE T1.M1        < 0
+       AND T1.COST_NAME = T2.PVALUE
+       AND T2.PDOMAIN   = 'MISSING_TOTAL'
+       AND T2.PNAME     = 'NEGATIVE_CHECK'
+       AND EXISTS(SELECT 1 FROM BIZ_TOPLAYER_CH T3
+                   WHERE T3.PRODUCT_GROUP = T1.PRODUCT_GROUP
+                     AND T3.ITEM          = T1.MODEL
+                     AND T3.PLANT         = T1.PLANT
+                     AND T3.COUNTRY       = T1.COUNTRY
+                     AND T3.CHANGE_ID     = :P_CHANGE_ID);
+   
+    UPDATE RPT_BOMMISSINGTOTAL T1
+       SET T1.COMP_DESC = T2.ITEM_DESC
+      FROM UI_ITEM T2
+     WHERE T1.PRODUCT_GROUP = :P_PRODUCT_GROUP
+       AND T1.PRODUCT_GROUP = T2.PRODUCT_GROUP
+       AND T1.COMPONENT     = T2.ITEM;
+                                              
+    P_OUT_EXITCODE := 0;
+    P_OUT_EXITMESS := 'SUCCESS';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+                                                I_EVENT_NAME => :v_full_name,
+                                                I_MODULE     => 'EBGCFE');                                          
+END;

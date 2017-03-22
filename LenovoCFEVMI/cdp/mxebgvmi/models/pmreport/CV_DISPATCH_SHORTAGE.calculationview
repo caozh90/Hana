@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_DISPATCH_SHORTAGE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_DISPATCH_SHORTAGE"/>
+  <defaultSchema schemaName="MXEBGVMI"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="DATE" id="DELIVERY_DATE" length="10" scale="3"/>
+        <viewAttribute datatype="VARCHAR" id="MO_ID" length="12"/>
+        <viewAttribute datatype="VARCHAR" id="WERKS" length="4"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCTION_LINE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="PART_NO" length="18"/>
+        <viewAttribute datatype="VARCHAR" id="PULL_HEADER_ID" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="PULL_LINE_ID" length="14"/>
+        <viewAttribute datatype="VARCHAR" id="SHORT_DATE" length="5000"/>
+        <viewAttribute datatype="VARCHAR" id="SHORT_TIME" length="5000"/>
+        <viewAttribute datatype="DECIMAL" id="QTY_TO_PRD_LINE" length="18" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="DISPATCH_QTY" length="18" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="TOTAL_PULLED_QTY" length="18" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="DIFFERENCE_QTY" length="18" scale="3"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ --aDispatchShortageWindow char(10);
+ BEGIN 
+--	aDispatchShortageWindow := TO_CHAR(ADD_DAYS(CURRENT_DATE,-30) ,'YYYY-MM-DD');
+ 	 var_out = SELECT
+			 TO_DATE(TO_CHAR(C.DELIVERY_DATE,'yyyy-MM-dd')) AS DELIVERY_DATE,
+			 B.PRODUCTIONORDID AS MO_ID,
+			 A.WERKS,
+			 C.PRODUCTION_LINE,
+			 C.MATNR AS PART_NO,
+			 A.PULL_HEADER_ID,
+			 A.PULL_LINE_ID,
+			 TO_CHAR(A.SYS_TIMESTAMP,'YYYY/MM/DD') AS SHORT_DATE,
+			 TO_CHAR(A.SYS_TIMESTAMP,'HH24:MI:SS') AS SHORT_TIME,
+			 (SUM(A.LINE_QTY)) AS QTY_TO_PRD_LINE,
+			 (SUM(A.DISPATCH_QTY)) AS DISPATCH_QTY,
+			 (SUM(C.FULL_BOX_QTY)) AS TOTAL_PULLED_QTY,
+			 (SUM(A.DIFFERENCE_QTY)) AS DIFFERENCE_QTY
+		FROM &quot;MXEBGVMI&quot;.DISPATCH_LIST A 
+		LEFT OUTER JOIN &quot;MXEBGVMI&quot;.MID_MO_LINE B 
+		ON A.PULL_LINE_ID = B.PULL_LINE_ID,
+			 &quot;MXEBGVMI&quot;.PULL_LINE C 
+		WHERE (C.PULL_LINE_ID = A.PULL_LINE_ID) 
+		--AND TO_CHAR(C.DELIVERY_DATE,	 'yyyy-MM-dd') > :aDispatchShortageWindow 
+		GROUP BY TO_DATE(TO_CHAR(C.DELIVERY_DATE,'yyyy-MM-dd')),
+			 B.PRODUCTIONORDID,
+			 A.WERKS,
+			 C.PRODUCTION_LINE,
+			 C.MATNR,
+			 A.PULL_HEADER_ID,
+			 A.PULL_LINE_ID,
+			 TO_CHAR(A.SYS_TIMESTAMP,	'YYYY/MM/DD'),
+			 TO_CHAR(A.SYS_TIMESTAMP,	'HH24:MI:SS')
+		HAVING (SUM(A.DIFFERENCE_QTY)) > 0 
+		ORDER BY 1,2,3,4,5,6,7,8,9 ;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="DELIVERY_DATE" hidden="false" order="1">
+        <keyMapping columnObjectName="Script_View" columnName="DELIVERY_DATE"/>
+      </attribute>
+      <attribute id="MO_ID" hidden="false" order="2">
+        <keyMapping columnObjectName="Script_View" columnName="MO_ID"/>
+      </attribute>
+      <attribute id="WERKS" hidden="false" order="3">
+        <keyMapping columnObjectName="Script_View" columnName="WERKS"/>
+      </attribute>
+      <attribute id="PRODUCTION_LINE" hidden="false" order="4">
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTION_LINE"/>
+      </attribute>
+      <attribute id="PART_NO" hidden="false" order="5">
+        <keyMapping columnObjectName="Script_View" columnName="PART_NO"/>
+      </attribute>
+      <attribute id="PULL_HEADER_ID" hidden="false" order="6">
+        <keyMapping columnObjectName="Script_View" columnName="PULL_HEADER_ID"/>
+      </attribute>
+      <attribute id="PULL_LINE_ID" hidden="false" order="7">
+        <keyMapping columnObjectName="Script_View" columnName="PULL_LINE_ID"/>
+      </attribute>
+      <attribute id="SHORT_DATE" hidden="false" order="8">
+        <keyMapping columnObjectName="Script_View" columnName="SHORT_DATE"/>
+      </attribute>
+      <attribute id="SHORT_TIME" hidden="false" order="9">
+        <keyMapping columnObjectName="Script_View" columnName="SHORT_TIME"/>
+      </attribute>
+      <attribute id="QTY_TO_PRD_LINE" hidden="false" order="10">
+        <keyMapping columnObjectName="Script_View" columnName="QTY_TO_PRD_LINE"/>
+      </attribute>
+      <attribute id="DISPATCH_QTY" hidden="false" order="11">
+        <keyMapping columnObjectName="Script_View" columnName="DISPATCH_QTY"/>
+      </attribute>
+      <attribute id="TOTAL_PULLED_QTY" hidden="false" order="12">
+        <keyMapping columnObjectName="Script_View" columnName="TOTAL_PULLED_QTY"/>
+      </attribute>
+      <attribute id="DIFFERENCE_QTY" hidden="false" order="13">
+        <keyMapping columnObjectName="Script_View" columnName="DIFFERENCE_QTY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,11 @@
+PROCEDURE "SZEBGVMI"."cdp.wf.sz::PRC_RSP_SPECIAL_DISPATCH" ( 
+IN p_wfname VARCHAR(20), OUT p_out_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+BEGIN
+	CALL "cdp.szebgvmi.procedures.pkg_pcdw_to_vmi::PRC_RSP_SPECIAL_DISPATCH"(:p_wfname,p_out_exitcode);
+END;

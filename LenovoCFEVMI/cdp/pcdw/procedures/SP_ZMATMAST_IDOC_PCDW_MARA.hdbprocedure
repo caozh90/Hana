@@ -1,0 +1,339 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::SP_ZMATMAST_IDOC_PCDW_MARA" (
+IN	PI_MATNR VARCHAR(100),
+IN	PI_ERSDA  VARCHAR(100),
+IN	PI_MTART  VARCHAR(100),
+IN	PI_MATKL  VARCHAR(100),
+IN  PI_LVORM VARCHAR(100),
+IN  PI_BISMT VARCHAR(100),
+IN  PI_EAN11 VARCHAR(100),
+IN  PI_NUMTP VARCHAR(100),
+IN	PI_EXTWG VARCHAR(100),
+IN	PI_ZMTM  VARCHAR(100),
+IN	PI_RAUBE VARCHAR(100),
+IN	PI_NORMT VARCHAR(100),
+IN	PI_BRGEW DECIMAL,
+IN	PI_NTGEW DECIMAL,
+IN	PI_GEWEI VARCHAR(100), 
+IN  PI_MEINS VARCHAR(100),
+IN	PI_ZPRFA VARCHAR(100),
+IN	PI_ZUCOD VARCHAR(100),
+IN	PI_MFRPN VARCHAR(100),
+                                                       ---END BY LICH 20120625
+IN	PI_ZEINR VARCHAR(100),   --ADD BY MAJINGA 2012-5-4
+                                                       --ADD BY LICH 20121126
+IN	PI_MTBEZ VARCHAR(100),
+IN  PI_MSTAE VARCHAR(100),
+IN	PI_BLATT VARCHAR(100),
+IN	PI_ZLCOD VARCHAR(100),
+                                                       ---END BY LICH 20121126
+                                                       ---add by lich 20140508 for MBG project
+IN	PI_ZEIAR VARCHAR(100),
+                                                       ---end by lich 20140508
+IN  PI_FLAG VARCHAR(100),
+IN  PI_IDOCNUM VARCHAR(100),
+IN	PI_IDOCTIME VARCHAR(100),
+IN	PI_SYS_CREATED_BY VARCHAR(100),
+IN	PI_SYS_LAST_MODIFIED_BY VARCHAR(100)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	AS
+	  /***********************************************************************/
+  /* PROCEDURE          ?SP_ZMATMAST_IDOC_PCDW_MARA
+  /* DESCRIPTION        ?INSERT IDOC DATA TO ECC_MARA TABLE
+  /* PARAMETERS         ?PI_MATNR, PI_ERSDA, PI_MTART, PI_MATKL
+  /* SOURCE             ?IDOC
+  /* TARGET TABLE       ?ECC_MARA
+  /* CRATE DATE         ?2010-6-28
+  /* LAST MODIFIED DATE ?2014-05-08
+
+  /***********************************************************************/
+
+  V_IDOCTIME TIMESTAMP;
+  vMsg	 	 VARCHAR(1024);
+  vCode	     int;
+  n	 	 	 INT;
+BEGIN
+	-- exception
+    --定义异常
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+	  vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+        VALUES   (CURRENT_TIMESTAMP,
+                  'SP_ZMATMAST_IDOC_PCDW_MARA',
+                  'ERROR',
+                  :vCode,
+                  :vMsg,
+                  '',
+                  '',
+                  '',
+                  'END');
+        --exec 'commit';    --2017.02.08 PI issue by baying deleted  
+    	
+    	INSERT INTO Ecc_Mara_Err
+		      (matnr,
+		       ersda,
+		       mtart,
+		       matkl,
+		       lvorm,
+		       bismt,
+		       ean11,
+		       numtp,
+		       extwg,
+		       zmtm,
+		       raube,
+		       normt,
+		       brgew,
+		       ntgew,
+		       gewei,
+		       --   promflg,
+		       meins,
+		       zprfa,
+		       --em_country,
+		       --em_geo,
+		       --em_subgeo,
+		       --dummyfg,
+		       --em_prdfamily,
+		       zeinr,          --ADD BY MAJINGA 2012-5-4
+		       flag,
+		       idocnum,
+		       idoctime,
+		       --ccprodh,
+		       --ADD BY LICH 20120625
+		       ZUCOD,
+		       MFRPN,
+		       --END BY LICH 20120625
+		       --ADD BY LICH 20121127
+		       MTBEZ,
+		       MSTAE,
+		       BLATT,
+		       ZLCOD,
+		       --END BY LICH 20121127
+		       --add by lich 20140508
+		       ZEIAR,
+		       --end by lich 20140508
+		       sys_created_date,
+		       sys_created_by,
+		       z_errmsg)
+		    VALUES
+		      (:PI_MATNR,
+		       :PI_ERSDA,
+		       :PI_MTART,
+		       :PI_MATKL,
+		       :PI_LVORM,
+		       :PI_BISMT,
+		       :PI_EAN11,
+		       :PI_NUMTP,
+		       :PI_EXTWG,
+		       :PI_ZMTM,
+		       :PI_RAUBE,
+		       :PI_NORMT,
+		       :PI_BRGEW,
+		       :PI_NTGEW,
+		       :PI_GEWEI,
+		       --   PI_PROMFLG,
+		       :PI_MEINS,
+		       :PI_ZPRFA,
+		       --PI_EM_COUNTRY,
+		       --PI_EM_GEO,
+		       --PI_EM_SUBGEO,
+		       --PI_DUMMYFG,
+		       --PI_EM_PRDFAMILY,
+		       :PI_ZEINR,         --ADD BY MAJINGA 2012-5-4
+		       :PI_FLAG,
+		       :PI_IDOCNUM,
+		       :PI_IDOCTIME,
+		       --PI_CCPRODH,
+		       --ADD BY LICH 20120625
+		       :PI_ZUCOD,
+		       :PI_MFRPN,
+		       --END BY LICH 20120625
+		       --ADD BY LICH 20121127
+		       :PI_MTBEZ,
+		       :PI_MSTAE,
+		       SUBSTR(:PI_BLATT,1,20),  --Add by qinying 2014/02/11
+		       :PI_ZLCOD,
+		       --END BY LICH 20121127
+		       --add by lich 20140508
+		       :PI_ZEIAR,
+		       --end by lich 20140508
+		       CURRENT_TIMESTAMP,
+		       :PI_SYS_CREATED_BY,
+		       :vMsg);
+		       --exec 'commit';   --2017.02.08 PI issue by baying deleted  
+    
+    END;
+	-- exception
+	V_IDOCTIME := TO_TIMESTAMP(PI_IDOCTIME);
+
+  	IF :PI_MATNR IS NOT NULL THEN
+	
+    select count(1) into n from ecc_mara where matnr = :PI_MATNR
+       AND (idoctime < :V_IDOCTIME OR
+           (idoctime = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR
+           idoctime IS NULL);
+    if n>0 then 
+       UPDATE ecc_mara
+       SET ersda = TO_TIMESTAMP(:PI_ERSDA),
+           mtart = :PI_MTART,
+           matkl = :PI_MATKL,
+           lvorm = :PI_LVORM,
+           bismt = :PI_BISMT,
+           ean11 = :PI_EAN11,
+           numtp = :PI_NUMTP,
+           extwg = :PI_EXTWG,
+           ZMTM  = :PI_ZMTM,
+           raube = :PI_RAUBE,
+           normt = :PI_NORMT,
+           brgew = :PI_BRGEW,
+           ntgew = :PI_NTGEW,
+           gewei = :PI_GEWEI,
+           meins = :PI_MEINS,
+           zprfa = :PI_ZPRFA,
+           ZEINR = :PI_ZEINR,        
+           flag  = :PI_FLAG,
+           idocnum = :PI_IDOCNUM,
+           idoctime = :V_IDOCTIME,
+           ZUCOD   = :PI_ZUCOD,
+           MFRPN   = :PI_MFRPN,
+           MTBEZ   = :PI_MTBEZ,
+           MSTAE   = :PI_MSTAE,
+           BLATT   =  :PI_BLATT,  --modified by SAP Gavin
+           ZLCOD   = :PI_ZLCOD,
+           ZEIAR   = :PI_ZEIAR,
+           sys_last_modified_by = :PI_SYS_LAST_MODIFIED_BY,
+           sys_last_modified_date = CURRENT_TIMESTAMP
+    	 WHERE matnr = :PI_MATNR
+     	  AND (idoctime < :V_IDOCTIME OR
+           (idoctime = :V_IDOCTIME AND IDOCNUM < :PI_IDOCNUM) OR
+           idoctime IS NULL);
+      	--exec 'commit';   --2017.02.08 PI issue by baying deleted  
+      
+    elseif (n=0) then
+        select count(1) into n from ecc_mara where matnr = :PI_MATNR;
+        if n=0 then
+            INSERT INTO ecc_mara
+	        (matnr,
+	         ersda,
+	         mtart,
+	         matkl,
+	         lvorm,
+	         bismt,
+	         ean11,
+	         numtp,
+	         extwg,
+	         zmtm,
+	         raube,
+	         normt,
+	         brgew,
+	         ntgew,
+	         gewei,
+	         --   promflg,
+	         meins,
+	         zprfa,
+	         --em_country,
+	         --em_geo,
+	         --em_subgeo,
+	         --dummyfg,
+	         --em_prdfamily,
+	         ZEINR,          --ADD BY MAJINGA 2012-5-4
+	         flag,
+	         idocnum,
+	         idoctime,
+	         --ccprodh,
+	         --ADD BY LICH 20120625
+	         ZUCOD,
+	         MFRPN,
+	         --END BY LICH 20120625
+	         --ADD BY LICH 20121126
+	         MTBEZ,
+	         MSTAE,
+	         BLATT,
+	         ZLCOD,
+	         --END BY LICH 20121126
+	         --add by lich 20140508
+	         ZEIAR,
+	         --end by lich 20140508
+	         sys_created_date,
+	         sys_created_by)
+	      VALUES
+	        (:PI_MATNR,
+	         TO_TIMESTAMP(:PI_ERSDA),
+	         :PI_MTART,
+	         :PI_MATKL,
+	         :PI_LVORM,
+	         :PI_BISMT,
+	         :PI_EAN11,
+	         :PI_NUMTP,
+	         :PI_EXTWG,
+	         :PI_ZMTM,
+	         :PI_RAUBE,
+	         :PI_NORMT,
+	         :PI_BRGEW,
+	         :PI_NTGEW,
+	         :PI_GEWEI,
+	         :PI_MEINS,
+	         :PI_ZPRFA,
+	         :PI_ZEINR,          --ADD BY MAJINGA 2012-5-4
+	         :PI_FLAG,
+	         :PI_IDOCNUM,
+	         :V_IDOCTIME,
+	         :PI_ZUCOD,
+	         :PI_MFRPN,
+	         :PI_MTBEZ,
+	         :PI_MSTAE,
+	         :PI_BLATT,  --moidfied by SAP Gavin
+	         :PI_ZLCOD,
+	         :PI_ZEIAR,
+	         --end by lich 20140508
+	         CURRENT_TIMESTAMP,
+	         :PI_SYS_CREATED_BY);
+        end if;
+
+ 
+   	 	--EXEC 'COMMIT';   --2017.02.08 PI issue by baying deleted  
+    END IF ;
+    
+     -- Load into Revenue Part Dimension.
+     IF PI_MTART= 'ZKMA' OR PI_MTART= 'ZBRV' THEN
+	     select count(1) into n from z_dim_revenue a ,(SELECT pi_matnr AS item FROM DUMMY) b
+	      	where a.item = b.item;
+	      	
+	     if n =0 then
+	   	  	insert into z_dim_revenue
+	   	  	select  pi_matnr AS item FROM DUMMY;
+	   	  	--exec 'commit';   --2017.02.08 PI issue by baying deleted  
+	     END IF;
+     	 --exec 'commit';   --2017.02.08 PI issue by baying deleted  
+     END IF;
+     
+      
+   /* IF PI_MTART= 'ZKMA' OR PI_MTART= 'ZBRV' THEN
+         MERGE INTO z_dim_revenue a
+              USING (SELECT pi_matnr AS item FROM DUAL) b
+                 ON (a.item = b.item)
+         WHEN NOT MATCHED
+         THEN
+            INSERT     (item)
+                VALUES (b.item);
+
+         COMMIT;
+    END IF;	*/	
+
+  END IF;
+
+
+END;

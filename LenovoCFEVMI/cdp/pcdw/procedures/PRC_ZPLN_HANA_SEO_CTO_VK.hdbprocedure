@@ -1,0 +1,86 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_ZPLN_HANA_SEO_CTO_VK" (
+    OUT P_OUT_EXITCODE INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	--READS SQL DATA 
+	AS
+/***************************** 
+-- author:      zhangxj
+-- create date: 2016-01-28
+-- description: seo_cto_vk_mapping data into pcdw  
+-- modify [1]:  
+ *****************************/
+     
+     vmsg                 VARCHAR(1024);
+     vcode                INTEGER;
+     v_prc_name           VARCHAR(30)       := 'PRC_ZPLN_HANA_SEO_CTO_VK';   
+     v_logidi             INTEGER           := 0;
+     
+BEGIN
+
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+   P_OUT_EXITCODE := ::SQL_ERROR_CODE;
+   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE		=>'PROC_ERROR',
+										       I_LOGSID		=>:V_LOGIDI,
+									    	   I_EVENT_NAME =>:V_PRC_NAME,
+											   I_MODULE		=>'PCDW',
+											   I_MESSAGE	=>'ERROR',
+											   I_DETAIL		=>TO_CHAR(::SQL_ERROR_CODE) || ':' ||SUBSTR(::SQL_ERROR_MESSAGE, 1, 512));                                                  
+  
+   vmsg :=   SUBSTR(::SQL_ERROR_MESSAGE, 1, 500);
+   vcode := ::SQL_ERROR_CODE;
+   
+   insert into pcdw_proc_log (eventtime,eventname,subevent,msgcode,eventmsg,eventtype,datasource,datadest,eventdescr)
+   values (current_timestamp,:v_prc_name,'others error',:vcode,:vmsg,'','','','end');  
+   
+  END;
+
+  CALL "EX_LOG"."cdp.log.procedures::logProc"( I_TYPE		=>'PROC_START',
+  											   I_LOGSID	  	=>:V_LOGIDI,
+											   I_EVENT_NAME =>:V_PRC_NAME,
+											   I_MODULE		=>'PCDW',
+										       I_DETAIL		=>:V_PRC_NAME||':'||'START');
+			    
+      
+  --run log
+  INSERT INTO pcdw_proc_log (eventtime,eventname,subevent,msgcode,eventmsg,eventtype,datasource,datadest,eventdescr)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,null,null,null,null,'ECC_SEO_CTO_VK_MAPPING','PCDW_SEO_CTO_VK_MAPPING',null); 
+  
+  
+  --start
+  DELETE FROM bak_ecc_seo_cto_vk_mapping 
+  WHERE days_between(sys_last_modified_date,CURRENT_TIMESTAMP)>7;
+  --back up
+  INSERT INTO bak_ecc_seo_cto_vk_mapping
+  			(matnr,stdpd,atnam,atwrt,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by) 
+  SELECT matnr,stdpd,atnam,atwrt,sys_created_date,sys_created_by,CURRENT_TIMESTAMP,v_prc_name 
+    FROM ecc_seo_cto_vk_mapping;
+  
+  --into pcdw, last version data will be trundated by data services job
+  DELETE FROM pcdw_seo_cto_vk_mapping a
+   WHERE EXISTS (SELECT * FROM ecc_seo_cto_vk_mapping b
+                  WHERE a.matnr = b.matnr
+                    AND a.stdpd = b.stdpd);
+  INSERT INTO pcdw_seo_cto_vk_mapping
+  	     (matnr,stdpd,atnam,atwrt,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by) 
+  SELECT matnr,stdpd,atnam,atwrt,sys_created_date,sys_created_by,CURRENT_TIMESTAMP,v_prc_name 
+    FROM (SELECT matnr,stdpd,atnam,atwrt,sys_created_date,sys_created_by,
+                    ROW_NUMBER()  OVER (PARTITION BY  matnr,stdpd,atnam ORDER BY atwrt DESC ) AS rn
+               FROM ecc_seo_cto_vk_mapping)
+      WHERE rn=1;
+  
+  --end
+  INSERT INTO pcdw_proc_log (eventtime,eventname,subevent,msgcode,eventmsg,eventtype,datasource,datadest,eventdescr)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,'SUCCESS',:vcode,:vmsg,'','','','end');     
+   
+  P_OUT_EXITCODE := 0; 
+  CALL "EX_LOG"."cdp.log.procedures::logProc" (I_TYPE       =>'PROC_END',
+  											   I_LOGSID     =>:V_LOGIDI,
+			 								   I_EVENT_NAME =>:V_PRC_NAME,
+			 								   I_MODULE     =>'PCDW',
+											   I_DETAIL     =>:V_PRC_NAME||':'||'SUCCESS');
+END;
+ 

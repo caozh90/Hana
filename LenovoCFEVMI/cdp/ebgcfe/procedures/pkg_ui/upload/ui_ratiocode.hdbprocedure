@@ -1,0 +1,211 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratiocode" (
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int	,
+	
+	IN CYCLE NVARCHAR(40),
+	IN PRODUCT_GROUP NVARCHAR(10),
+	IN BRAND NVARCHAR(40),
+	IN FAMILY NVARCHAR(40),
+	IN GEO NVARCHAR(40),
+	IN MACHINETYPE NVARCHAR(40),
+	IN ITEM NVARCHAR(40),
+	IN RATIO_CODE NVARCHAR(40)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS
+/************************************************************************
+*name      : ui_ratiocode              --函数名
+*function  : upload数据至表ui_ratiocode并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Justin               --作者
+*CreateDate    : 2015-08-06       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_ratiocode';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		--logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		table_name varchar(1000) := 'UI_RATIO_CODE';
+		validate int;
+		PRODUCT_GROUP NVARCHAR(10) :='EBG';
+		V_ITEM  NVARCHAR(20) :='ALL';
+		v_BRAND NVARCHAR(20) :='N/A';
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratiocode_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:GEO,:MACHINETYPE,:ITEM,:RATIO_CODE);
+     END;     
+     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratiocode_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:GEO,:MACHINETYPE,:ITEM,:RATIO_CODE);
+    END; 
+    --exception 
+        
+
+
+	--procedure begin
+
+	business_code := :SEQ;
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+
+	--validate CYCLE
+	/*
+	IF :CYCLE <> 'CURRENT' THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratiocode_err"
+			('CYCLE MUST BE "CURRENT"',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:MACHINETYPE,:ITEM,:RATIO_CODE);
+			 	 --ERR_LOG
+	RETURN;
+	END IF ;
+	*/
+	--CYCLE := 'CURRENT';
+	
+	
+	
+	--validate BRAND
+	/*
+	select  count(1) into validate from UI_MACHINETYPE where BRAND =:BRAND;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratiocode_err"
+			('"BRAND"::'||:BRAND||' is illegal',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:BRAND,:FAMILY,:MACHINETYPE,:ITEM,:RATIO_CODE);
+	RETURN;
+	END IF ;
+	*/
+	
+	
+	--validate FAMILY
+	IF FAMILY <> 'N/A' THEN
+		select  count(1) into validate from UI_PRODFAMILY where PROD_FAMILY =:FAMILY;
+		IF validate = 0  then
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratiocode_err"
+				('"FAMILY"::'||:FAMILY||' is illegal',:business_name,:SEQ,:position,
+				 	 :CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:GEO,:MACHINETYPE,:ITEM,:RATIO_CODE);
+		RETURN;
+		END IF ;
+	END IF ;
+	
+	v_BRAND := 'N/A';
+	IF FAMILY <> 'N/A' AND MACHINETYPE = 'N/A' AND ITEM = 'ALL'
+	THEN
+		select ( select  TOP 1 BRAND  from "EBGCFE".UI_PRODFAMILY where PROD_FAMILY= :FAMILY ) INTO v_BRAND from DUMMY;
+	END IF;
+	
+	--validate MACHINETYPE
+	IF MACHINETYPE <> 'N/A' THEN
+		select  count(1) into validate from UI_MACHINETYPE where MACHINETYPE =:MACHINETYPE;
+		IF validate = 0  then
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratiocode_err"
+				('"MACHINETYPE"::'||:MACHINETYPE||' is illegal',:business_name,:SEQ,:position,
+				 	 :CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:GEO,:MACHINETYPE,:ITEM,:RATIO_CODE);
+		RETURN;
+		END IF ;
+	END IF ;
+	
+	--validate ITEM
+	IF  :ITEM !='' AND :ITEM IS NOT NULL AND :ITEM != 'ALL'
+		THEN V_ITEM := :ITEM;
+		select  count(1) into validate from UI_ITEM where UPPER(ITEM) = UPPER(:ITEM)  and ITEM_TYPE IN ('CTO','MTM','OPTION','BUNDLE');
+		IF validate = 0  then
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratiocode_err"
+				('"ITEM"::'||:ITEM||' is illegal',:business_name,:SEQ,:position,
+				 	 :CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:GEO,:MACHINETYPE,:ITEM,:RATIO_CODE);
+		RETURN;
+		END IF ;
+	END IF;
+	
+	
+	
+	--validate GEO
+	select  count(1) into validate from UI_REGION where GEO =:GEO;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratiocode_err"
+			('"GEO"::'||:GEO||' is illegal',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:GEO,:MACHINETYPE,:ITEM,:RATIO_CODE);
+	RETURN;
+	END IF ;
+	
+	
+	--validate key
+		select count(1) into n from "EBGCFE"."UI_RATIO_CODE" 
+		where CYCLE = :CYCLE AND PRODUCT_GROUP = :PRODUCT_GROUP AND
+		BRAND = :v_BRAND AND FAMILY = :FAMILY AND GEO = :GEO AND MACHINETYPE = :MACHINETYPE AND ITEM = V_ITEM;
+		
+		if n>0 then
+			update "EBGCFE"."UI_RATIO_CODE" 
+			set	RATIO_CODE = UPPER(:RATIO_CODE),
+				SYS_LAST_MODIFIED_BY = :currentUser,
+				SYS_LAST_MODIFIED_DATE =:create_time,
+				ACTION = 'update'
+			where CYCLE = :CYCLE AND PRODUCT_GROUP = :PRODUCT_GROUP AND
+		BRAND = :v_BRAND AND FAMILY = :FAMILY AND GEO = :GEO AND MACHINETYPE = :MACHINETYPE AND ITEM = V_ITEM;
+		
+			--update操作需要写入日志
+			insert into "EBGCFE"."UI_RATIO_CODE_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				CYCLE,PRODUCT_GROUP,BRAND,FAMILY,GEO,MACHINETYPE,ITEM,RATIO_CODE,
+		 	SYS_LAST_MODIFIED_BY,
+		 	SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+				(:currentUser,
+				'update',
+				:create_time,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:GEO,:MACHINETYPE,V_ITEM,UPPER(:RATIO_CODE),
+				:currentUser,
+				:create_time);
+			
+		ELSEIF n=0 THEN
+			INSERT INTO "EBGCFE"."UI_RATIO_CODE"(
+			 CYCLE,PRODUCT_GROUP,BRAND,FAMILY,GEO,MACHINETYPE,ITEM,RATIO_CODE,SYS_CREATED_BY,SYS_CREATED_DATE,SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE,ACTION)
+				
+		 	VALUES(
+			 	 :CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:GEO,:MACHINETYPE,V_ITEM,UPPER(:RATIO_CODE),
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time,'insert');
+		 	
+		 	--insert操作需要写入日志
+			insert into "EBGCFE"."UI_RATIO_CODE_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				CYCLE,PRODUCT_GROUP,BRAND,FAMILY,GEO,MACHINETYPE,ITEM,RATIO_CODE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+			 	(:currentUser,
+			 	'insert',
+			 	:create_time,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:CYCLE,:PRODUCT_GROUP,:v_BRAND,:FAMILY,:GEO,:MACHINETYPE,V_ITEM,UPPER(:RATIO_CODE),
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);	 			 	
+		END IF;
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+	
+	
+END;

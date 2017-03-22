@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_RPT_WHERE_USED2" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="false">
+  <descriptions defaultDescription="Report: Part Where-Used"/>
+  <defaultSchema schemaName="EBGCFE"/>
+  <localVariables>
+    <variable id="IN_CYCLE" parameter="true">
+      <descriptions defaultDescription="Cycle"/>
+      <variableProperties datatype="VARCHAR" length="40" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="IN_PARTNUMBER" parameter="true">
+      <descriptions defaultDescription="PARTNUMBER_PARTNUMBER"/>
+      <variableProperties datatype="VARCHAR" length="5000" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <informationModelLayout relativeWidthScenario="27"/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="PRODUCT_GROUP" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="CYCLE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="MODEL" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="FATHER" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="PART_NUMBER" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="PLANT" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="BRAND" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="PROD_FAMILY" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="TOP_LEVEL" length="120"/>
+        <viewAttribute datatype="VARCHAR" id="TOP_LEVEL_TYPE" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="DESCRIPTION" length="200"/>
+        <viewAttribute datatype="TIMESTAMP" id="SYS_CREATED_DATE"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_CREATED_BY" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_BY" length="100"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#IN_CYCLE</localVariable>
+      <localVariable>#IN_PARTNUMBER</localVariable>
+      <definition> 
+
+ /************************************************************************
+*name       : CV_RPT_WHERE_USED2        
+*function   : Build Where Used Table
+*input      ：in_cycle : cycle / in_partnumber : partnumber
+*author     : li shunshun
+*CreateDate : 2015-08-04
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+ BEGIN 
+   
+  declare v_CYCLE          VARCHAR(40);
+  declare v_PartNumber     VARCHAR(10000);
+  
+  declare v_user_id        VARCHAR(64)   := SESSION_USER;  --user_profile.ID%TYPE;
+  declare v_product_group  VARCHAR(20)   := 'EBG';  --RPT_WHERE_USED.product_group%TYPE;
+  declare v_tmp_pra        varchar(5000);
+  declare v_tmp_pra_value  varchar(5000);
+  declare v_arr_column varchar(15) array;
+  DECLARE v_index          integer 		 :=1;
+  
+  --/*
+  v_cycle := in_cycle;
+  v_PartNumber := in_PartNumber;
+  --*/
+  
+  /* test
+  v_cycle := 'CURRENT';
+  v_partNumber := '0025210891,0073044749';
+  */
+
+  v_tmp_pra := V_PartNumber;
+  
+  while LOCATE(:v_tmp_pra,',') != 0
+  do 
+    v_tmp_pra_value := SUBSTR_BEFORE(:v_tmp_pra,',');
+    v_tmp_pra := SUBSTR_AFTER(:v_tmp_pra,',');
+  	v_arr_column[v_index] := v_tmp_pra_value;
+  	v_index := :v_index + 1;
+  end while;
+  if LOCATE(:v_tmp_pra,',') = 0 and LENGTH(:v_tmp_pra) != 0
+  then
+    v_arr_column[v_index] := v_tmp_pra;
+  end if;
+  
+  t_item = UNNEST(:v_arr_column) as (&quot;ITEM&quot;);
+  
+  IF :V_CYCLE = 'CURRENT' THEN
+     ---PART IN MTM
+     out_tab1 = SELECT DISTINCT b.product_group,
+                'CURRENT' as cycle,
+                b.model,
+                b.children as father,
+                s.children as part_number,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' ') as prod_family,
+                b.father as top_level,
+                b.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM biz_cbom_mtmsbb b, biz_cbom_sbb s
+          WHERE s.children in (select a.item  from :t_item a )
+            AND s.product_group = b.product_group
+            AND s.model = b.children
+            AND s.plant = b.plant
+            and b.product_group=:v_product_group
+            and s.product_group=:v_product_group;
+     ---SBB IN MTM       
+     out_tab2 = SELECT DISTINCT b.product_group,
+                'CURRENT' as cycle,
+                b.model,
+                b.father,
+                b.children as part_number,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' ') as prod_family,
+                b.father as top_level,
+                b.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM  biz_cbom_mtmsbb b
+          WHERE b.children in (select s.item  from :t_item s )            
+            and b.product_group=:v_product_group;
+     var_out = CE_UNION_ALL(:out_tab1, :out_tab2);       
+     ---PART IN CTO
+     out_tab3 = SELECT DISTINCT b.product_group,
+                'CURRENT' as cycle,
+                b.model,
+                b.children as father,
+                s.children as part_number,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' ') as prod_family,
+                b.father as top_level,
+                b.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM biz_cbom_ctosbb b, biz_cbom_sbb s
+          WHERE s.children in (select a.item from :t_item a )
+            AND s.product_group = b.product_group
+            AND s.model = b.children
+            AND s.plant = b.plant
+            and b.product_group=:v_product_group
+            and s.product_group=:v_product_group;
+	var_out = CE_UNION_ALL(:var_out, :out_tab3);  
+    ---SBB IN CTO
+    out_tab4 = SELECT DISTINCT b.product_group,
+                'CURRENT' as cycle,
+                B.model,
+                b.father,
+                b.children as part_number,
+                b.plant,
+                B.brand,
+                IFNULL(b.asp_prd_family,' ') as prod_family,
+                b.father as top_level,
+                b.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM biz_cbom_ctosbb b
+          WHERE b.children in (select s.item from :t_item s )           
+            and b.product_group=:v_product_group;
+     var_out = CE_UNION_ALL(:var_out, :out_tab4);       
+     ---PART IN SBB
+     out_tab5 = SELECT DISTINCT b.product_group,
+                'CURRENT' as cycle,
+                b.model,
+                b.father,
+                b.children as part_number,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,'SBB') as prod_family,
+                b.father as top_level,
+                b.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM biz_cbom_sbb b
+          WHERE b.children in (select s.item  from :t_item s )
+          and b.product_group=:v_product_group;
+     var_out = CE_UNION_ALL(:var_out, :out_tab5);      
+     
+   ELSE  -- for history data
+	 ---PART IN MTM HIS
+	 out_tab1 = SELECT DISTINCT b.product_group,
+                b.cycle,
+                b.model,
+                b.father,
+                b.children as part_number,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' ') as prod_family,
+                b.father as top_level,
+                B.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM BIZ_CBOM_MTMSBB_HIS b
+          WHERE b.children  in (select s.item from :t_item s )         
+            AND b.cycle_productgroup=:V_CYCLE||:v_product_group;
+	 ---SBB IN MTM HIS
+     out_tab2 = SELECT DISTINCT b.product_group,
+                b.cycle,
+                b.model,
+                b.children as father,
+                s.children as part_number,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' ') as prod_family,
+                b.father as top_level,
+                b.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM biz_cbom_mtmsbb_his b, biz_cbom_sbb_his s
+          WHERE s.children  in (select a.item  from :t_item a )
+            --AND s.product_group = b.product_group
+            AND s.model = b.children
+            AND s.plant = b.plant
+            AND b.cycle_productgroup=:V_CYCLE||:v_product_group
+            AND s.cycle_productgroup=:V_CYCLE||:v_product_group;
+     var_out = CE_UNION_ALL(:out_tab1, :out_tab2);    
+     --Part IN CTO HIS
+     out_tab3 = SELECT DISTINCT b.product_group,
+                b.cycle,
+                b.model,
+                b.children as father,
+                s.children as part_number,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,' ') as prod_family,
+                b.father as top_level,
+                b.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM biz_cbom_ctosbb_his b, biz_cbom_sbb_his s
+          WHERE s.children in (select a.item  from :t_item a )
+            --AND s.product_group = b.product_group
+            AND s.model = b.children
+            AND s.plant = b.plant
+            AND b.cycle_productgroup=:V_CYCLE||:v_product_group
+            AND s.cycle_productgroup=:V_CYCLE||:v_product_group;
+     var_out = CE_UNION_ALL(:var_out, :out_tab3);      
+     --SBB IN CTO HIS  
+     out_tab4 = SELECT DISTINCT b.product_group,
+                b.cycle,
+                B.model,
+                b.father,
+                b.children as part_number,
+                b.plant,
+                B.brand,
+                IFNULL(b.asp_prd_family,' ') as prod_family,
+                b.father as top_level,
+                b.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM BIZ_CBOM_CTOSBB_HIS b
+          WHERE b.children in (select s.item  from :t_item s )  
+            AND b.cycle_productgroup=:V_CYCLE||:v_product_group;
+     var_out = CE_UNION_ALL(:var_out, :out_tab4); 
+     --PART IN SBB HIS
+	 out_tab5 = SELECT DISTINCT b.product_group,
+                b.cycle,
+                b.model,
+                b.father,
+                b.children  as part_number,
+                b.plant,
+                b.brand,
+                IFNULL(b.asp_prd_family,'SBB') as prod_family,
+                b.father as top_level,
+                b.item_type_m as top_level_type,
+                b.item_desc as description,
+                to_seconddate(CURRENT_TIMESTAMP) as sys_created_date,
+                :v_user_id as sys_created_by,
+                to_varchar(to_seconddate(CURRENT_TIMESTAMP)) as sys_last_modified_date,
+                :v_user_id as sys_last_modified_by
+          FROM BIZ_CBOM_SBB_HIS b
+          WHERE b.children in (select s.item  from :t_item s )
+          and b.product_group=:v_product_group;
+     var_out = CE_UNION_ALL(:var_out, :out_tab5); 	      
+   END IF;
+
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="PRODUCT_GROUP" order="1">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="CYCLE" order="2">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="MODEL" hidden="true" order="3">
+        <descriptions defaultDescription="MODEL"/>
+        <keyMapping columnObjectName="Script_View" columnName="MODEL"/>
+      </attribute>
+      <attribute id="FATHER" hidden="true" order="4">
+        <descriptions defaultDescription="FATHER"/>
+        <keyMapping columnObjectName="Script_View" columnName="FATHER"/>
+      </attribute>
+      <attribute id="PART_NUMBER" order="5">
+        <descriptions defaultDescription="PART_NUMBER"/>
+        <keyMapping columnObjectName="Script_View" columnName="PART_NUMBER"/>
+      </attribute>
+      <attribute id="PLANT" hidden="true" order="6">
+        <descriptions defaultDescription="PLANT"/>
+        <keyMapping columnObjectName="Script_View" columnName="PLANT"/>
+      </attribute>
+      <attribute id="BRAND" order="7">
+        <descriptions defaultDescription="BRAND"/>
+        <keyMapping columnObjectName="Script_View" columnName="BRAND"/>
+      </attribute>
+      <attribute id="PROD_FAMILY" order="8">
+        <descriptions defaultDescription="PROD_FAMILY"/>
+        <keyMapping columnObjectName="Script_View" columnName="PROD_FAMILY"/>
+      </attribute>
+      <attribute id="TOP_LEVEL" order="9">
+        <descriptions defaultDescription="TOP_LEVEL"/>
+        <keyMapping columnObjectName="Script_View" columnName="TOP_LEVEL"/>
+      </attribute>
+      <attribute id="TOP_LEVEL_TYPE" order="10">
+        <descriptions defaultDescription="TOP_LEVEL_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="TOP_LEVEL_TYPE"/>
+      </attribute>
+      <attribute id="DESCRIPTION" order="11">
+        <descriptions defaultDescription="DESCRIPTION"/>
+        <keyMapping columnObjectName="Script_View" columnName="DESCRIPTION"/>
+      </attribute>
+      <attribute id="SYS_CREATED_DATE" hidden="true" order="12">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_CREATED_DATE"/>
+      </attribute>
+      <attribute id="SYS_CREATED_BY" hidden="true" order="13">
+        <descriptions defaultDescription="SYS_CREATED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_CREATED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE" order="14">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="15">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,128 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteMapGroupUser" ( 
+in aID NVARCHAR(10)
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+	
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';	
+	
+	aMODULE_ID NVARCHAR(10);	
+    aGROUP_ID BIGINT;	--//usergroup id	
+    aUSER_ID BIGINT;  	--//USER ID
+     
+    aPublicGROUP_ID BIGINT;
+    
+    aMODULE_NAME NVARCHAR(200);
+    aREAL_ROLE_NAME NVARCHAR(256);    
+    aUSER_NAME NVARCHAR(256);
+    privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	如果成功，则：
+	REVOKE <role name> FROM <user name>/<role name>;
+	
+	CALL "SECURITY"."cdp.security.procedures::deleteMapGroupUser" ( 
+'id'
+,?);
+	
+ *****************************/
+ 
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到aROLE_ID ,则返回，同时告知不存在这个权限明细
+			aI_DETAIL :='cdp.security.procedures::deleteMapGroupUser can not find the module : '||aMODULE_NAME ||' .';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapGroupUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::deleteMapGroupUser error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapGroupUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityUserAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+  CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+  
+  SELECT A."MODULE_ID",A."GROUP_ID",A."USER_ID" ,B."USER_NAME" ,C."REAL_ROLE_NAME"
+  INTO aMODULE_ID,aGROUP_ID ,aUSER_ID ,aUSER_NAME ,aREAL_ROLE_NAME
+   FROM "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER" A
+   ,"SECURITY"."cdp.security.data::userManagement.INFO_USER" B
+   ,"SECURITY"."cdp.security.data::userManagement.INFO_GROUP" C
+   WHERE A."ID" = :aID
+   AND A."USER_ID" = B."USER_ID"
+   AND A."GROUP_ID" = C."GROUP_ID"
+   AND A."MODULE_ID" = C."MODULE_ID"
+   AND A."MODULE_ID" = :aMODULE_ID
+   ;
+  
+--  SELECT "MODULE_NAME" INTO aMODULE_NAME FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE"
+--  WHERE "MODULE_ID" = :aMODULE_ID;
+  
+  DELETE FROM "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"
+  WHERE USER_ID = :aUSER_ID AND GROUP_ID = :aGROUP_ID AND MODULE_ID = :aMODULE_ID;
+  
+ --**##  exec 'REVOKE "'||aREAL_ROLE_NAME|| '" FROM '||aUSER_NAME;
+  
+  
+  SELECT "GROUP_ID" INTO aPublicGROUP_ID FROM 
+  "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" 
+  WHERE "MODULE_ID" = aMODULE_ID
+  and "GROUP_NAME" = 'Public Group';
+   
+    insert into "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"
+	    ("ID" ,"GROUP_ID","USER_ID" ,"MODULE_ID")
+	    values("SECURITY"."cdp.security.data::mapGroupUserSeqId".NEXTVAL
+	    	,:aPublicGROUP_ID ,:aUSER_ID,:aMODULE_ID); 
+
+
+  
+ 	--如果成功添加,则log添加成功！
+	    aI_DETAIL := 'cdp.security.procedures::deleteMapGroupUser ('||:aGROUP_ID||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteMapGroupUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000023'
+     	,I_DETAIL=>:aI_DETAIL); 	
+
+END;

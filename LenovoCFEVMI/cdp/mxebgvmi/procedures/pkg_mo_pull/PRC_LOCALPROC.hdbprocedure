@@ -1,0 +1,115 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_mo_pull::PRC_LOCALPROC" (
+  IN  iv_id VARCHAR(10)
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+    /************************************************************************
+    *name       : PRC_LOCALPROC                     --函数名
+    *function   : Local Processing                  --函数功能
+    *input      : iv_id : site schedule id          --输入参数
+    *output     : -                                 --输出参数
+    *author     : Leonard Ling                      --作者
+    *CreateDate : 20141215                          --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）    
+    *************************************************************************/
+    AS         
+     gv_logic_name    VARCHAR(40)  := 'PKG_MO_PULL';    
+     v_logic_proc_name   VARCHAR(40) := 'PRC_LOCALPROC';
+     V_FUNC_FULL_NAME      VARCHAR(100) := :gv_logic_name || '.' || :v_logic_proc_name;       
+     logidi integer := 0;    
+
+BEGIN
+   -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+		CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'MXEBGVMI',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+	                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );   
+      --COMMIT;     --commented by Leonard 
+    END; 
+    
+  -- process logic  
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'MXEBGVMI');
+		
+      /*UPDATE z_pcdw_ds_mo
+                           SET end_time = (SELECT end_time + offset_time_zone / 60 / 24
+                           FROM ud_time_zone
+                          WHERE siteid = fcility_name
+                            AND end_time IS NOT NULL
+                            AND fcility_name IN (SELECT siteid
+                                                   FROM ud_site_schedule
+                                                  WHERE ID = iv_id)),
+             start_time = (SELECT start_time + offset_time_zone / 60 / 24
+                             FROM ud_time_zone
+                            WHERE siteid = fcility_name
+                              AND start_time IS NOT NULL
+                              AND fcility_name IN (SELECT siteid
+                                                     FROM ud_site_schedule
+                                                    WHERE ID = iv_id)),
+             planned_edtm = (SELECT planned_edtm + offset_time_zone / 60 / 24
+                               FROM ud_time_zone
+                              WHERE siteid = fcility_name
+                                AND planned_edtm IS NOT NULL
+                                AND fcility_name IN (SELECT siteid
+                                                       FROM ud_site_schedule
+                                                      WHERE ID = iv_id)),
+             planned_sttm = (SELECT planned_sttm + offset_time_zone / 60 / 24
+                               FROM ud_time_zone
+                              WHERE siteid = fcility_name
+                                AND planned_sttm IS NOT NULL
+                                AND fcility_name IN (SELECT siteid
+                                                       FROM ud_site_schedule
+                                                      WHERE ID = iv_id))
+       WHERE status = 'IN_PROCESS'
+         AND NVL (urgency_flag, '2') <> '1';*/
+      UPDATE   mid_mo_line mid
+         SET   delivery_date =
+                  --(SELECT   delivery_date + offset_time_zone / 60 / 24
+                  (SELECT   add_days(delivery_date, offset_time_zone / 60 / 24)
+                     FROM   conf_time_zone  --ud_time_zone
+                    WHERE       siteid = werks
+                            AND delivery_date IS NOT NULL
+                            AND werks IN (SELECT   siteid
+                                            FROM   conf_site_schedule  --ud_site_schedule
+                                           WHERE   ID = '1000'))
+       WHERE   EXISTS
+                  (SELECT   1
+                     FROM   z_pcdw_ds_mo upr
+                    WHERE       productionordid = work_ord_num
+                            AND werks = upr.werks
+                            --AND NVL (urgency_flag, '2') <> '1'
+                            AND IFNULL (urgency_flag, '2') <> '1'
+                            AND upr.status = 'IN_PROCESS');
+
+      UPDATE   pull_line pull
+         SET   delivery_date =
+                  --(SELECT   delivery_date + offset_time_zone / 60 / 24
+                  (SELECT   add_days(delivery_date, offset_time_zone / 60 / 24)
+                     FROM   conf_time_zone  --ud_time_zone
+                    WHERE       siteid = werks
+                            AND delivery_date IS NOT NULL
+                            AND werks IN (SELECT   siteid
+                                            FROM   conf_site_schedule  --ud_site_schedule
+                                           WHERE   ID = '1000'))
+       WHERE   EXISTS
+                  (SELECT   1
+                     FROM   z_pcdw_ds_mo upr, mid_mo_line mid
+                    WHERE       productionordid = work_ord_num
+                            AND upr.werks = mid.werks
+                            AND mid.pull_line_id = pull.pull_line_id
+                            AND mid.pull_header_id = pull.pull_line_id
+                            --AND NVL (urgency_flag, '2') <> '1'
+                            AND IFNULL (urgency_flag, '2') <> '1'
+                            AND upr.status = 'IN_PROCESS');
+
+      --COMMIT;     --commented by Leonard
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'MXEBGVMI'); 
+END;

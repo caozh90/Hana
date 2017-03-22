@@ -1,0 +1,100 @@
+PROCEDURE "PCDW"."cdp.pcdw.proc.pkg_xi_updatepara::ZPLN_HANA_BOM_NETCHANGE_END" (
+    IN iv_id  VARCHAR(12),OUT on_exitcode NUMBER ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+	DEFAULT SCHEMA PCDW
+	--READS SQL DATA 
+	AS
+   /************************************************************************
+   *name        : ZPLN_HANA_BOM_NETCHANGE_END
+   *function    : 
+   *input       : 
+   *output      : 
+   *author      : FangYuan    
+   *CreateDate  : 20150120 
+   *UpdateDate  :              
+   *************************************************************************/
+	 v_prc_name    VARCHAR2 (30) := 'ZPLN_HANA_BOM_NETCHANGE_END';
+     v_date       timestamp;
+     
+     vMsg      VARCHAR(1024);
+     vCode      int;
+BEGIN
+     DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+     BEGIN
+     
+      on_exitcode := ::SQL_ERROR_CODE;
+
+      vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+      INSERT INTO PCDW_PROC_LOG
+         (EVENTTIME,
+          EVENTNAME,
+          SUBEVENT,
+          MSGCODE,
+          EVENTMSG,
+          EVENTTYPE,
+          DATASOURCE,
+          DATADEST,
+          EVENTDESCR)
+      VALUES
+         (CURRENT_TIMESTAMP,
+          :v_prc_name,
+          'OTHERS ERROR',
+          :vCode,
+          :vMsg,
+          '',
+          '',
+          '',
+          'END');
+      --exec 'COMMIT';     
+     END;
+     
+     --START
+   INSERT INTO PCDW_PROC_LOG
+   VALUES
+      (CURRENT_TIMESTAMP,
+       :v_prc_name,
+       '',
+       NULL,
+       '',
+       '',
+       '',
+       '',
+       'START');
+   --EXEC 'COMMIT';
+   
+   
+        SELECT   MAX (wfstartdate)
+        INTO   v_date
+        FROM   pcdw_sosto_log
+       WHERE   wfid = iv_id AND programname = 'BOM';
+
+      UPDATE   pcdw_sosto_log
+         SET   wfenddate = current_timestamp, status = 'success'
+       WHERE   wfstartdate = v_date AND wfid = iv_id AND programname = 'BOM';
+
+      --COMMIT;
+      on_exitcode := 0;
+     --end
+    INSERT INTO PCDW_PROC_LOG
+      (EVENTTIME,
+       EVENTNAME,
+       SUBEVENT,
+       MSGCODE,
+       EVENTMSG,
+       EVENTTYPE,
+       DATASOURCE,
+       DATADEST,
+       EVENTDESCR)
+   VALUES
+      (CURRENT_TIMESTAMP,
+       :v_prc_name,
+       'SUCCESS',
+       :vCode,
+       :vMsg,
+       '',
+       '',
+       '',
+       'END');
+END;

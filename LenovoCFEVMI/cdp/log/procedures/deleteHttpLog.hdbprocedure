@@ -1,0 +1,60 @@
+PROCEDURE "EX_LOG"."cdp.log.procedures::deleteHttpLog" (in start_time varchar(10) default '',in end_time varchar(10) default '',
+                                                        out o_start_time varchar(10),out o_end_time varchar(10))
+	LANGUAGE SQLSCRIPT
+	--SQL SECURITY INVOKER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS	
+	v_start_time date;
+    v_end_time date;
+/************************************************************************
+*name      : deleteHttpLog              --函数名
+*function    : 根据开始时间，结束时间，删除httplog              --函数功能
+*input     ：  start_time 开始日期，格式yyyymmdd,
+			 end_time 结束日期，格式yyyymmdd,
+			  结束日期为空，则为当前日期；开始时间为空，则为结束时间前一个月
+             --输入参数
+*output     :o_start_time 实际开始日期
+			 o_end_time 实际结束日期
+			 --输出参数
+*author     : Fangyuan               --作者
+*CreateDate : 20141128                  --创建时间
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+
+*************************************************************************/
+    privilegeExists  NVARCHAR(300)  ;
+BEGIN
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'logAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    --errorInfo = select 400 as http_status_code, 
+    -- 		'SQL ERROR CODE : 0' error_message, 
+     --		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+    if length(end_time)=0 then
+        v_end_time := current_date;
+    else
+        v_end_time := to_date(:end_time,'YYYYMMDD');
+    end if;
+ 
+    if length(start_time)=0 then
+        v_start_time:=add_months(:v_end_time,-1);
+    else
+        v_start_time := to_date(:start_time,'YYYYMMDD');
+    end if;   
+    
+    --select :v_start_time,:v_end_time from dummy;
+    
+    call "EX_LOG"."cdp.log.procedures::getAuthorizedModule"(tab_module);
+
+    delete from "EX_LOG"."cdp.log.data::Logs.HTTP_LOG_FILE"  hlf
+    where to_date(access_time)<=:v_end_time and to_date(access_time)>=:v_start_time 
+    and exists(select 'x' from :tab_module m where hlf.module=m.module);
+  
+    o_start_time:=to_varchar(:v_start_time,'YYYY-MM-DD');
+    o_end_time:=to_varchar(:v_end_time,'YYYY-MM-DD');
+       
+END;

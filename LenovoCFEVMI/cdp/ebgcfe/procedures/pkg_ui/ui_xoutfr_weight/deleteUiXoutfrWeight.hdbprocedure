@@ -1,0 +1,119 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::deleteUiXoutfrWeight"
+( 
+	IN   oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_WEIGHT_T"
+	,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiXoutfrWeight
+*function    :               
+*input       ：              oldInfo
+*output      :      errorInfo            
+*author      :      chris
+*CreateDate  :      2016.5.19
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(500) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	v_BRAND           NVARCHAR(40);
+	v_FAMILY	         NVARCHAR(40);
+	v_MT              NVARCHAR(40);
+	v_ITEM             NVARCHAR(40);
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::deleteUiXoutfrWeight error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::deleteUiXoutfrWeight'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_xoutfr_weight::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::deleteUiXoutfrWeight'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+   	SELECT BRAND,FAMILY,MT,ITEM
+ 		INTO v_BRAND,v_FAMILY,v_MT,v_ITEM
+ 		FROM :oldinfo;
+ 
+-- delete record from table	  	
+delete from "EBGCFE"."UI_XOUTFR_WEIGHT" 
+  where CYCLE = 'CURRENT' and PRODUCT_GROUP = 'EBG' and BRAND = :v_BRAND and FAMILY = :v_FAMILY and MT = :v_MT and ITEM = :v_ITEM;
+	
+--insert log table
+INSERT into  "EBGCFE"."UI_XOUTFR_WEIGHT_LOG"
+	("CYCLE",
+	"PRODUCT_GROUP",
+	"BRAND",
+	"FAMILY",
+	"MT",
+	"ITEM",
+	"WEIGHT",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+	)
+SELECT
+	'CURRENT',
+	'EBG',
+	a.BRAND,
+	a.FAMILY,
+	a.MT,
+	a.ITEM,
+	a.WEIGHT,
+	CURRENT_TIMESTAMP,
+	SESSION_USER,
+	CURRENT_TIMESTAMP,
+	SESSION_USER,
+	SESSION_USER,
+	'delete',
+	CURRENT_TIMESTAMP,
+	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+from :oldInfo a;
+	   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::deleteUiXoutfrWeight successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_weight::deleteUiXoutfrWeight'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);  
+END;

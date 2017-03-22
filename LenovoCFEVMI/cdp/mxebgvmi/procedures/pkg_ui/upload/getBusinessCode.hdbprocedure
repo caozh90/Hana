@@ -1,0 +1,20 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::getBusinessCode" (
+OUT businessCode Integer
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	AS
+/************************************************************************
+*name      : getBusinessCode              --函数名
+*function  : 该存储过程统一为一次上传操作生成一个sequence值              --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Gavin               --作者
+*CreateDate  : 2014-12-26       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+BEGIN
+	
+	select "MXEBGVMI"."cdp.mxebgvmi.sequences::upload_business_id".NEXTVAL into businessCode from dummy;
+	
+END;

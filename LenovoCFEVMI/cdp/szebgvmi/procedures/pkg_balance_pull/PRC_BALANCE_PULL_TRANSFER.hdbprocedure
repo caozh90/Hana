@@ -1,0 +1,133 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_balance_pull::PRC_BALANCE_PULL_TRANSFER" (
+	iv_id VARCHAR(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_BALANCE_PULL_TRANSFER              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/03                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+************************************************************************/
+
+	AS
+	  v_logidi INTEGER := 0;	
+	  v_pkg_name          VARCHAR (40)            := 'PKG_BALANCE_PULL';
+	  v_logic_proc_name   VARCHAR (40)            := 'PRC_BALANCE_PULL_TRANSFER';
+	  v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+      v_sst               VARCHAR(18)   := ' ';
+      v_ssl               VARCHAR(18)    := ' ';
+      v_ssb               VARCHAR(18)    := ' ';
+      v_p_header          INT;
+      v_p_line            INT;
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- COMMIT;      --comment by Eric Zhou
+	END;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+      on_exitcode := -20099;
+
+      DELETE FROM PCDW.EXP_ECC_BALANCE_PULL
+            WHERE werks IN (SELECT siteid
+                              FROM conf_site_schedule
+                             WHERE ID = iv_id);
+
+      DELETE FROM Z_PCDW_RSP_BALANCE_DISPATCH;
+
+      --added @2007-11-12 by wenfei
+      UPDATE balance_dispatch
+         SET status = 'XI_IN_PROCESS'
+       WHERE status = 'CONFIRM' AND werks IN (SELECT siteid  --change by nancy wei for cse project
+                                                  FROM conf_site_schedule
+                                                 WHERE ID = iv_id);
+
+      --COMMIT;                                     --comment by Eric Zhou
+
+
+	--BACK UP                                                        
+      DELETE FROM PCDW.BAK_EXP_ECC_BALANCE_PULL  
+      WHERE DAYS_BETWEEN(SYS_TIMESTAMP,CURRENT_TIMESTAMP)>90;    
+      
+      insert into PCDW.BAK_EXP_ECC_BALANCE_PULL
+             (werks, pull_line_id, pull_header_id, src_storage_type,
+                   src_storage_loc, src_storage_bin, dest_storage_type,
+                   dest_storage_loc, dest_storage_bin, whs_no, qty, dept,
+                   matnr, status, inventory_type, delivery_date, lifnr,
+                   sa_number, sa_line_id, ecc_step, tr_number, tr_item_number,
+                   material_document_year, material_document,SYS_TIMESTAMP)
+         SELECT werks, pull_line_id, pull_header_id, src_storage_type,
+                src_storage_loc, src_storage_bin, dest_storage_type,
+                dest_storage_loc, dest_storage_bin, whs_no, qty, dept, matnr,
+                status, inventory_type, delivery_date, lifnr, sa_number,
+                sa_line_id, ecc_step, tr_number, tr_item_number,
+                material_document_year, material_document,CURRENT_TIMESTAMP
+           FROM balance_dispatch
+          WHERE status = 'XI_IN_PROCESS' AND werks IN (SELECT siteid
+                                                         FROM conf_site_schedule
+                                                        WHERE ID = iv_id);
+
+      INSERT INTO PCDW.EXP_ECC_BALANCE_PULL
+                  (werks, pull_line_id, pull_header_id, src_storage_type,
+                   src_storage_loc, src_storage_bin, dest_storage_type,
+                   dest_storage_loc, dest_storage_bin, whs_no, qty, dept,
+                   matnr, status, inventory_type, delivery_date, lifnr,
+                   sa_number, sa_line_id, ecc_step, tr_number, tr_item_number,
+                   material_document_year, material_document,SYS_TIMESTAMP)
+         SELECT werks, pull_line_id, pull_header_id, src_storage_type,
+                src_storage_loc, src_storage_bin, dest_storage_type,
+                dest_storage_loc, dest_storage_bin, whs_no, qty, dept, matnr,
+                status, inventory_type, delivery_date, lifnr, sa_number,
+                sa_line_id, ecc_step, tr_number, tr_item_number,
+                material_document_year, material_document,CURRENT_TIMESTAMP
+           FROM balance_dispatch
+          WHERE status = 'XI_IN_PROCESS' AND werks IN (SELECT siteid
+                                                         FROM conf_site_schedule
+                                                        WHERE ID = iv_id);                                     
+      IF ::ROWCOUNT >= 1
+      THEN
+         UPDATE CONF_CFG_XI_PARA xp
+            SET xp.low = 1
+          WHERE xp.progname = 'ZRFC_VMI_MEX_BALDISP_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      ELSE
+         UPDATE CONF_CFG_XI_PARA xp
+            SET xp.low = 0
+          WHERE xp.progname = 'ZRFC_VMI_MEX_BALDISP_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      END IF;
+
+      UPDATE balance_dispatch
+         SET status = 'SENT'
+       WHERE status = 'XI_IN_PROCESS' AND werks IN (SELECT siteid
+                                                      FROM conf_site_schedule
+                                                     WHERE ID = iv_id);
+
+      --COMMIT;                                     --comment by Eric Zhou
+      on_exitcode := 0;      
+             
+             
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');             
+END;

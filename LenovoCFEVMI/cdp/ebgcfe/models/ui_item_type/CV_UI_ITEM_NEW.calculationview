@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_ITEM_NEW" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_UI_ITEM_NEW"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="CYCLE" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="PRODUCT_GROUP" length="10"/>
+        <viewAttribute datatype="NVARCHAR" id="ITEM" length="40"/>
+        <viewAttribute datatype="NVARCHAR" id="USER_ITEM_TYPE" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="USER_EOL_STATUS" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="USER_ITEM_DESC" length="200"/>
+        <viewAttribute datatype="TIMESTAMP" id="SYS_LAST_MODIFIED_DATE_RAW"/>
+        <viewAttribute datatype="NVARCHAR" id="SYS_LAST_MODIFIED_BY" length="100"/>
+        <viewAttribute datatype="NVARCHAR" id="SYS_LAST_MODIFIED_DATE" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="USER_ASP_PRD_FAMILY" length="100"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = 
+ 	 
+ 	 	SELECT CYCLE,
+ 	 			PRODUCT_GROUP,
+ 	 			ITEM,
+ 	 			USER_ITEM_TYPE,
+ 	 			USER_EOL_STATUS,
+ 	 			USER_ITEM_DESC,
+ 	 			SYS_LAST_MODIFIED_DATE AS SYS_LAST_MODIFIED_DATE_RAW,
+ 	 			SYS_LAST_MODIFIED_BY,
+ 	 			TO_NVARCHAR
+ 	 			(TO_SECONDDATE(SYS_LAST_MODIFIED_DATE)) AS SYS_LAST_MODIFIED_DATE,
+ 	 			CASE WHEN USER_ASP_PRD_FAMILY is null
+ 	 			THEN ''
+ 	 			ELSE USER_ASP_PRD_FAMILY
+ 	 			END AS USER_ASP_PRD_FAMILY
+ 	 		FROM EBGCFE.UI_ITEM
+ 	 		UNION ALL
+ 	 		SELECT CYCLE,
+ 	 			PRODUCT_GROUP,
+ 	 			ITEM,
+ 	 			USER_ITEM_TYPE,
+ 	 			USER_EOL_STATUS,
+ 	 			USER_ITEM_DESC,
+ 	 			SYS_LAST_MODIFIED_DATE AS SYS_LAST_MODIFIED_DATE_RAW,
+ 	 			SYS_LAST_MODIFIED_BY,
+ 	 			TO_NVARCHAR
+ 	 			(TO_SECONDDATE(SYS_LAST_MODIFIED_DATE)) AS SYS_LAST_MODIFIED_DATE,
+ 	 			 CASE WHEN USER_ASP_PRD_FAMILY is null
+ 	 			THEN ''
+ 	 			ELSE USER_ASP_PRD_FAMILY
+ 	 			END AS USER_ASP_PRD_FAMILY
+ 	 		FROM EBGCFE.UI_ITEM_HIS;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="CYCLE" order="1">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="2">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="ITEM" order="3">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping columnObjectName="Script_View" columnName="ITEM"/>
+      </attribute>
+      <attribute id="USER_ITEM_TYPE" order="4">
+        <descriptions defaultDescription="USER_ITEM_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="USER_ITEM_TYPE"/>
+      </attribute>
+      <attribute id="USER_EOL_STATUS" order="5">
+        <descriptions defaultDescription="USER_EOL_STATUS"/>
+        <keyMapping columnObjectName="Script_View" columnName="USER_EOL_STATUS"/>
+      </attribute>
+      <attribute id="USER_ITEM_DESC" order="6">
+        <descriptions defaultDescription="USER_ITEM_DESC"/>
+        <keyMapping columnObjectName="Script_View" columnName="USER_ITEM_DESC"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE_RAW" order="7">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE_RAW"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE_RAW"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="8">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE" order="9">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="USER_ASP_PRD_FAMILY" order="10">
+        <descriptions defaultDescription="USER_ASP_PRD_FAMILY"/>
+        <keyMapping columnObjectName="Script_View" columnName="USER_ASP_PRD_FAMILY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

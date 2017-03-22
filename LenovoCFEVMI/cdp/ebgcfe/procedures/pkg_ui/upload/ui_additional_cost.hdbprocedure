@@ -1,0 +1,209 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_additional_cost" ( 
+	IN business_name varchar(200),
+	IN SEQ int,
+	IN position int	,
+	IN CYCLE NVARCHAR(40),
+	IN PRODUCT_GROUP NVARCHAR(10),
+	IN RATIO_CODE NVARCHAR(100),
+	IN SUBGEO NVARCHAR(20),
+	IN COUNTRY NVARCHAR(20),
+	IN TBA_TYPE NVARCHAR(40),
+	IN ADDITIONAL_COST DECIMAL(15,4)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      ui_additional_cost
+*function    :      upload data ui_additional_cost          
+*input       ：              error_message&business_name etc
+*output      :                
+*author      :      leon Bian
+*CreateDate  :      2015.8.10
+*UpdateDate  :        
+*************************************************************************/ 
+	AS
+	path varchar(100):='cdp.egbcfe.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_additional_cost';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	n int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	table_name varchar(1000) := 'UI_ADDITIONAL_COST';
+	validate int;
+	PRODUCT_GROUP NVARCHAR(10) :='EBG';
+	V_ADDITIONAL_COST DECIMAL(15,4);
+	V_COUNTRY NVARCHAR(20) := 'ALL';
+	
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_additional_cost_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:CYCLE,:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:ADDITIONAL_COST);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_additional_cost_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+			:CYCLE,:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:ADDITIONAL_COST);
+    END; 
+       
+	--procedure begin
+
+	business_code := :SEQ;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	--validate CYCLE
+	/*
+	IF :CYCLE <> 'CURRENT' THEN
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_additional_cost_err"
+			('CYCLE MUST BE "CURRENT"',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:ADDITIONAL_COST);
+			 	 --ERR_LOG
+	RETURN;
+	END IF ;
+	*/
+	
+	--validate RATIO_CODE
+	select  count(1) into validate from "EBGCFE".UI_RATIO_CODE where RATIO_CODE =:RATIO_CODE;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_additional_cost_err"
+			('"RATIO_CODE"::'||:RATIO_CODE||' is illegal',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:ADDITIONAL_COST);
+	RETURN;
+	END IF ;
+
+	--validate SUBGEO 
+	select  count(1) into validate from "EBGCFE".UI_REGION a  where exists(select 1 from ebgcfe.UI_RATIO_CODE b where b.ratio_code=:RATIO_CODE and b.geo=a.geo)  AND a.SUBGEO =:SUBGEO;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_additional_cost_err"
+			('"SUBGEO"::'||:SUBGEO||' is illegal',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:ADDITIONAL_COST);
+	RETURN;
+	END IF ;
+	
+	--validate TBA_TYPE
+	select  count(1) into validate FROM "EBGCFE".CONF_PARAMETERS WHERE PDOMAIN='UI_WARR_PCA_UPLIFT' AND PNAME='TBA_TYPE' AND PVALUE =:TBA_TYPE;
+	IF validate = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_additional_cost_err"
+			('"TBA_TYPE"::'||:TBA_TYPE||' is illegal',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:ADDITIONAL_COST);
+	RETURN;
+	END IF ;
+	
+	--validate COUNTRY
+	IF  :COUNTRY !='' AND :COUNTRY IS NOT NULL AND :COUNTRY != 'ALL'
+		THEN V_COUNTRY := :COUNTRY;
+		select  count(1) into validate from "EBGCFE".UI_REGION where SUBGEO =:SUBGEO and COUNTRY = :V_COUNTRY;
+		IF validate = 0  then
+			call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_additional_cost_err"
+				('"COUNTRY"::'||:COUNTRY||' is illegal',:business_name,:SEQ,:position,
+			 	 :CYCLE,:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,:COUNTRY,:TBA_TYPE,:ADDITIONAL_COST);
+		RETURN;
+		END IF;
+	END IF;
+
+	--validate key
+	select count(1) into n from "EBGCFE"."UI_ADDITIONAL_COST" 
+	where CYCLE = :CYCLE AND PRODUCT_GROUP = :PRODUCT_GROUP 
+	AND RATIO_CODE = :RATIO_CODE AND SUBGEO = :SUBGEO AND COUNTRY = V_COUNTRY AND TBA_TYPE = :TBA_TYPE;
+		
+	if n>0 then
+		update "EBGCFE"."UI_ADDITIONAL_COST" 
+		set	ADDITIONAL_COST = :ADDITIONAL_COST,
+			SYS_LAST_MODIFIED_BY = :currentUser,
+			SYS_LAST_MODIFIED_DATE =:create_time,
+			ACTION = 'update'
+		where CYCLE = :CYCLE AND PRODUCT_GROUP = :PRODUCT_GROUP
+	    AND RATIO_CODE = :RATIO_CODE AND SUBGEO = :SUBGEO 
+	    AND COUNTRY =  V_COUNTRY AND TBA_TYPE = :TBA_TYPE;
+	
+		--update操作需要写入日志
+		insert into "EBGCFE"."UI_ADDITIONAL_COST_LOG"(
+							"PRODUCT_GROUP",
+							"RATIO_CODE",
+							"SUBGEO",
+							"COUNTRY",
+							"TBA_TYPE",
+							"ADDITIONAL_COST",
+							"SYS_LAST_MODIFIED_DATE",
+							"SYS_LAST_MODIFIED_BY",
+							"AT_MODIFIED_BY",
+							"AT_ACTION",
+							"AT_MODIFIED_ON",
+							"AT_MILLIS")
+		VALUES ( 
+					        'EBG',
+					        :RATIO_CODE,
+							:SUBGEO,
+							V_COUNTRY,
+							:TBA_TYPE,
+							:ADDITIONAL_COST,
+							:create_time,
+							:currentUser,
+					 		:currentUser,
+					 		'update',
+					 		:create_time,
+					 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))); 	
+	ELSEIF n=0 THEN
+		INSERT INTO "EBGCFE"."UI_ADDITIONAL_COST"(
+		 					CYCLE,
+						    PRODUCT_GROUP,
+						    RATIO_CODE,
+						    SUBGEO,
+						    COUNTRY,
+						    TBA_TYPE,
+						    ADDITIONAL_COST,
+						    SYS_CREATED_BY,
+						    SYS_CREATED_DATE,
+						    SYS_LAST_MODIFIED_BY, 
+						    SYS_LAST_MODIFIED_DATE,
+						    ACTION)
+			
+	 	VALUES(
+		 	 :CYCLE,:PRODUCT_GROUP,:RATIO_CODE,:SUBGEO,
+		 	 V_COUNTRY,
+			 :TBA_TYPE,
+		 	 :ADDITIONAL_COST,
+			 :currentUser,:create_time,:currentUser,:create_time,'insert');
+	 	
+	 	--insert操作需要写入日志
+		insert into "EBGCFE"."UI_ADDITIONAL_COST_LOG"(
+							"PRODUCT_GROUP",
+							"RATIO_CODE",
+							"SUBGEO",
+							"COUNTRY",
+							"TBA_TYPE",
+							"ADDITIONAL_COST",
+							"SYS_LAST_MODIFIED_DATE",
+							"SYS_LAST_MODIFIED_BY",
+							"AT_MODIFIED_BY",
+							"AT_ACTION",
+							"AT_MODIFIED_ON",
+							"AT_MILLIS")
+		VALUES ( 
+					        'EBG',
+					        :RATIO_CODE,
+							:SUBGEO,
+							V_COUNTRY,
+							:TBA_TYPE,
+							:ADDITIONAL_COST,
+							:create_time,
+							:currentUser,
+					 		:currentUser,
+					 		'insert',
+					 		:create_time,
+					 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')));  			 	
+	END IF;
+		
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+END;

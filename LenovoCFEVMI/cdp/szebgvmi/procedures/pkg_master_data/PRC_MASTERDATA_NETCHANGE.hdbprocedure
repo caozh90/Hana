@@ -1,0 +1,243 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_master_data::PRC_MASTERDATA_NETCHANGE" (
+    OUT p_out_exitcode DECIMAL
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "SZEBGVMI"
+    --READS SQL DATA 
+    /************************************************************************
+    *name      : PRC_MASTERDATA_NETCHANGE              --函数名
+    *function  :                --函数功能
+    *input     ：    --输入参数
+    *output     :p_out_exitcode          --输出参数
+    *author     : FangYuan               --作者
+    *CreateDate : 20141202                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/    
+    
+    
+    AS
+    
+    gv_logic_name    VARCHAR2 (40)  := 'PKG_MASTER_DATA';     
+    V_LOGIC_PROC_NAME VARCHAR2(40) := 'PRC_MASTERDATA_NETCHANGE';
+    logidi integer:=0;
+BEGIN
+
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+      p_out_exitcode := ::SQL_ERROR_CODE;
+
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);
+      
+      --COMMIT;
+        
+    END;  
+
+    p_out_exitcode := -20099;
+ 
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+												I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+												I_DETAIL=>'Start!');
+    
+    --COMMIT;
+
+    --EXECUTE IMMEDIATE 'truncate table SUPITEM_NET';
+    delete from SUPITEM_NET;
+    
+    INSERT INTO SUPITEM_NET 
+    (ITEM,
+    SITEID,
+    SUPPLIERID,
+    SUPPLIERDESC,
+    STORCOND,
+    ITEMDESC,
+    SYS_NC_TYPE, 
+    SYS_ENT_STATE,
+    SYS_CREATED_BY, 
+    SYS_CREATED_DATE)    
+    SELECT 
+    ITEM,
+	SITEID,
+	SUPPLIERID,
+	SUPPLIERDESC,
+	STORCOND,
+	ITEMDESC,
+	'INSERT',
+	'ACTIVE',
+	:V_LOGIC_PROC_NAME,
+	CURRENT_TIMESTAMP	
+    FROM Z_PCDW_SUPITEM a
+    WHERE NOT EXISTS (SELECT 'x'
+                FROM SUPITEM  b
+               WHERE a.item = b.item
+                 AND a.siteid = b.siteid
+                 AND a.supplierid = b.supplierid);
+    --COMMIT;
+
+   
+    INSERT INTO SUPITEM_NET
+    (ITEM,
+    SITEID,
+    SUPPLIERID,
+    SUPPLIERDESC,
+    STORCOND,
+    ITEMDESC,
+    SYS_NC_TYPE, 
+    SYS_ENT_STATE,
+    SYS_CREATED_BY, 
+    SYS_CREATED_DATE)          
+    SELECT 
+    ITEM,
+    SITEID,
+    SUPPLIERID,
+    SUPPLIERDESC,
+    STORCOND,
+    ITEMDESC,
+    'UPDATE',
+    'ACTIVE',
+    :V_LOGIC_PROC_NAME,
+    CURRENT_TIMESTAMP    
+        FROM Z_PCDW_SUPITEM a
+       WHERE EXISTS
+       (SELECT 'x'
+                FROM SUPITEM b
+               WHERE a.item = b.item
+                 AND a.siteid = b.siteid
+                 AND a.supplierid = b.supplierid
+                 AND ( ifnull(a.ITEMDESC,'X')<>ifnull(b.ITEMDESC,'X')
+                       OR ifnull(a.SUPPLIERDESC,'X')<>ifnull(b.SUPPLIERDESC,'X')
+                       OR ifnull(a.STORCOND,'X')<>ifnull(b.STORCOND,'X')
+                       OR b.sys_ent_state = 'INACTIVE'));
+                     
+    --COMMIT;
+                     
+ 
+    INSERT INTO SUPITEM_NET
+    (
+    "ITEM",
+	"SITEID",
+	"SUPPLIERID",
+	"SUPPLIERDESC",
+	"STORCOND",
+	"ITEMDESC",
+	"SYS_NC_TYPE",
+	"SYS_ENT_STATE",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY")
+    SELECT
+    ITEM,
+    SITEID,
+    SUPPLIERID,
+    SUPPLIERDESC,
+    STORCOND,
+    ITEMDESC,
+    'DELETE',
+    'ACTIVE',
+    CURRENT_TIMESTAMP,    
+    :V_LOGIC_PROC_NAME,
+    SYS_LAST_MODIFIED_DATE,
+    SYS_LAST_MODIFIED_BY    
+        FROM SUPITEM a
+       WHERE NOT EXISTS (SELECT 'x'
+                FROM Z_PCDW_SUPITEM  b
+               WHERE a.item = b.item
+                 AND a.siteid = b.siteid
+                 AND a.supplierid = b.supplierid)
+         AND sys_ent_state= 'ACTIVE';
+    
+    --COMMIT;
+
+    INSERT INTO SUPITEM
+    (
+    "ITEM",
+    "SITEID",
+    "SUPPLIERID",
+    "SUPPLIERDESC",
+    "STORCOND",
+    "ITEMDESC",
+    "SYS_NC_TYPE",
+    "SYS_ENT_STATE",
+    "SYS_CREATED_DATE",
+    "SYS_CREATED_BY",
+    "SYS_LAST_MODIFIED_DATE",
+    "SYS_LAST_MODIFIED_BY")    
+    SELECT
+    ITEM,
+    SITEID,
+    SUPPLIERID,
+    SUPPLIERDESC,
+    STORCOND,
+    ITEMDESC,
+    sys_nc_type,
+    sys_ent_state,
+    CURRENT_TIMESTAMP,    
+    :V_LOGIC_PROC_NAME,
+    SYS_LAST_MODIFIED_DATE,
+    SYS_LAST_MODIFIED_BY
+    FROM SUPITEM_NET
+    WHERE sys_nc_type = 'INSERT';
+        
+    --COMMIT;
+    
+    UPDATE SUPITEM a
+    SET
+         (ITEM,
+	     SITEID,
+	     SUPPLIERID,
+	     SUPPLIERDESC,
+	     STORCOND,
+	     ITEMDESC,
+	     SYS_NC_TYPE,
+	     SYS_ENT_STATE,
+	     SYS_CREATED_BY,
+	     SYS_CREATED_DATE,
+	     SYS_LAST_MODIFIED_DATE,
+	     SYS_LAST_MODIFIED_BY)
+         =
+        (b.ITEM,
+         b.SITEID,
+         b.SUPPLIERID,
+         b.SUPPLIERDESC,
+         b.STORCOND,
+         b.ITEMDESC,
+         b.SYS_NC_TYPE,
+         b.SYS_ENT_STATE,
+         b.SYS_CREATED_BY,
+         b.SYS_CREATED_DATE,
+         CURRENT_TIMESTAMP, 
+         :v_logic_proc_name)        
+           FROM   SUPITEM_NET b
+          WHERE       a.item = b.item
+                  AND a.siteid = b.siteid
+                  AND a.supplierid = b.supplierid
+                  AND b.sys_nc_type = 'UPDATE';
+                      
+    --COMMIT;
+
+    UPDATE SUPITEM a
+       SET (sys_nc_type, sys_ent_state, sys_last_modified_by, sys_last_modified_date) = 
+       ('DELETE','INACTIVE',v_logic_proc_name,current_timestamp)
+     WHERE EXISTS (SELECT 'X'
+              FROM SUPITEM_NET b
+             WHERE a.item = b.item
+               AND a.siteid = b.siteid
+               AND a.supplierid = b.supplierid
+               AND b.sys_nc_type = 'DELETE')
+       AND sys_ent_state = 'ACTIVE';
+       
+       
+       CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>'Success!');
+       --COMMIT;
+       
+       p_out_exitcode := 0;
+                                                                                                  
+END;

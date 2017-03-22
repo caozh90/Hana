@@ -1,0 +1,12 @@
+PROCEDURE "MXEBGVMI"."cdp.wf.mx::PRC_POST_VMI_PROCESS" ( 
+  IN  iv_id VARCHAR(4), 
+  OUT on_exitcode INTEGER 
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+	AS
+BEGIN
+	CALL "cdp.mxebgvmi.procedures.pkg_mo_pull::PRC_POST_VMI_PROCESS"(:iv_id,on_exitcode);
+END;

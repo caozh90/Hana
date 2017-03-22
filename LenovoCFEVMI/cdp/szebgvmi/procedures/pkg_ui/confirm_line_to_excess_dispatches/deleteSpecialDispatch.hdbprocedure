@@ -1,0 +1,84 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.confirm_line_to_excess_dispatches::deleteSpecialDispatch" (
+	IN newInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.CONFIRM_LINE_TO_EXCESS_DISPATCHES_T",
+	OUT errorInfo "SZEBGVMI"."cdp.szebgvmi.data::SZEBGVMI_T.HttpError"
+ )  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS 
+/************************************************************************
+*name      : deleteSpecialDispatch              --函数名
+*function  : 删除表 SPECIAL_DISPATCH 中的一条数据            --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Gavin               --作者 
+*CreateDate    : 2015-07-27       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		PULL_HEADER_ID	NVARCHAR(20);
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.szebgvmi.procedures.pkg_ui.confirm_line_to_excess_dispatches::deleteSpecialDispatch error: '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.confirm_line_to_excess_dispatches::deleteSpecialDispatch'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+ -----LOGIC START-------
+
+   call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'confirmlinetoexcessdispatches::deleteable'		,privilegeExists           );
+    IF  :privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		:privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ 	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.confirm_line_to_excess_dispatches::deleteSpecialDispatch'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+  --根据PULL_HEADER_ID一个字段删除
+ select
+	 	PULL_HEADER_ID
+  into  	
+	 	PULL_HEADER_ID
+  from :newInfo; 
+  -------LOG----- 
+ insert into SPECIAL_DISPATCH_LOG
+ SELECT *,session_user,'delete',current_timestamp
+ FROM SPECIAL_DISPATCH
+ WHERE PULL_HEADER_ID = :PULL_HEADER_ID AND STATUS = 'IN_PROCESS';
+ 
+  --delete操作
+ DELETE FROM SPECIAL_DISPATCH
+ WHERE PULL_HEADER_ID = :PULL_HEADER_ID AND STATUS = 'IN_PROCESS';
+ 
+/*END*/
+ 	    aI_DETAIL := 'cdp.szebgvmi.procedures.pkg_ui.confirm_line_to_excess_dispatches::deleteSpecialDispatch() successfully executed. ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.szebgvmi.procedures.pkg_ui.confirm_line_to_excess_dispatches::deleteSpecialDispatch'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

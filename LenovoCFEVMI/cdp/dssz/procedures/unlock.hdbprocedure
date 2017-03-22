@@ -1,0 +1,32 @@
+PROCEDURE "DS_INFO_SZ"."cdp.dssz.procedures::unlock" (
+IN JOB_NAME NVARCHAR(200)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA DS_INFO_SZ
+	AS
+		n int;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+    BEGIN      
+      	select 'NO data found!' error_message from dummy;
+    END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	select 'Error happened!' error_message from dummy;
+    END; 
+    --exception 
+	
+/*	select count(1) into n from DS_JOB_RUN_INFO where JOBNAME = :JOB_NAME AND JOBSTATUS = 'ERROR';
+	IF n>0 THEN
+		update DS_JOB_RUN_INFO
+		set JOBSTATUS = 'ERROR_R'
+		where JOBNAME = :JOB_NAME AND JOBSTATUS = 'ERROR';
+	END IF;
+*/	
+	update DS_JOB_RUN_INFO
+	set JOBSTATUS = 'ERROR_R'
+	where JOBNAME = :JOB_NAME AND JOBSTATUS = 'ERROR';
+END;

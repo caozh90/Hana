@@ -1,0 +1,59 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_mail_notice::PRC_DISPATCH_DELAY_RESPONSE" (
+     IN iv_id VARCHAR(10), 
+     OUT exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_DISPATCH_DELAY_RESPONSE              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Leonard Ling              --作者
+*CreateDate    : 2014/12/05                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+	gv_logic_name       VARCHAR(40) := 'PKG_MAIL_NOTICE';	
+    v_logic_proc_name   VARCHAR(30) := 'PRC_DISPATCH_DELAY_RESPONSE';
+    --v_inv_type          VARCHAR(5);
+    --v_sa_num            VARCHAR(45);
+    --v_sa_line_id        VARCHAR(5);
+    --v_box_size          NUMBER;    
+	v_full_name         VARCHAR(100) := gv_logic_name||'.'||v_logic_proc_name;
+	v_logidi            INTEGER := 0;
+BEGIN
+  -- exception
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                 
+         --commit;   --commented by Leonard
+	END;
+
+  -- process logic
+    exitcode := -1;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+				 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+	             I_DETAIL=>iv_id||':'||'Start');
+	               
+    UPDATE   DISPATCH_DELAY a
+	   SET   STATUS = 'COMPLETED',
+	           LAST_MODIFIED_BY = :v_logic_proc_name,
+	           LAST_MODIFIED_DATE = CURRENT_TIMESTAMP  --SYSDATE
+	 WHERE   STATUS = 'IN_PROCESS';
+	
+	exitcode := 0;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');
+
+END;

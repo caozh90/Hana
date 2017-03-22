@@ -1,0 +1,242 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_create_data_sw::PRC_GET_PLN_SO_BASIC" (OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_GET_PLN_SO_BASIC        
+*function   : Prepare SO Data for SW
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2015-07-30
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_lastrun_time timestamp;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1;
+
+  --获取上次同步时间
+   SELECT MAX(eventtime)
+     INTO v_lastrun_time
+     FROM pcdw_proc_log
+    WHERE eventname = 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC' AND subevent = 'SUCCESS' and eventdescr='END';
+
+   v_lastrun_time :=ifnull(v_lastrun_time,TO_DATE ('1970/01/01 00:00:00', 'YYYY/MM/DD HH24:MI:SS') );
+
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', TO_CHAR (v_lastrun_time, 'YYYY/MM/DD HH24:MI:SS'), NULL, '', '', '', '', 'step 0');
+   EXEC 'COMMIT';
+    --1.获取变化订单
+    DELETE FROM z_mid_pcdw_so_change;
+    
+    INSERT INTO z_mid_pcdw_so_change
+      (order_id, line_item_id, planning_item_id, geo_id, rsd, order_qty, customer_name, source_id, region,
+       country, cancel_reason, status)
+      --1.1 ODM
+      SELECT t1.vbeln AS order_id, t1.posnr AS line_item_id, t1.matnr AS planning_item_id, t2.geo_id, t1.rsd,
+             t1.kwmeng AS order_qty, upper(t1.ad_name1) AS customer_name, t3.vendor AS source_id,
+             t2.region_id AS region, t2.country_name AS country, t1.l_abgru AS cancel_reason,
+             CASE
+               WHEN t1.l_abgru IS NULL OR length(t1.l_abgru) = 0 THEN
+                'ACTIVE'
+               ELSE
+                'INACTIVE'
+             END AS status 
+        FROM pcdw_so t1, apo_ztdp_sw_geo t2, conf_source_mapping_sw t3
+       WHERE t1.sys_last_modified_date >= v_lastrun_time
+             AND t1.ad_country = t2.country
+             AND t1.werks = t3.plant 
+             AND t1.vstel = t3.shipping_point
+             AND t3.isodm='Y'
+             AND EXISTS (SELECT 1
+                FROM pcdw_itemsitemaster t3
+               WHERE t1.matnr = t3.item
+                     AND t1.werks = t3.siteid
+                     AND t3.mtart IN ('ZITR', 'ZREV', 'ZXMT'))
+      UNION ALL
+      --1.2 INHOUSE
+      SELECT t1.vbeln AS order_id, t1.posnr AS line_item_id, t1.matnr AS planning_item_id, t2.geo_id, t1.rsd,
+             t1.kwmeng AS order_qty, upper(t1.ad_name1) AS customer_name, t3.vendor AS source_id,
+             t2.region_id AS region, t2.country_name AS country, t1.l_abgru AS cancel_reason,
+             CASE
+                WHEN t1.l_abgru IS NULL OR length(t1.l_abgru) = 0 THEN
+                 'ACTIVE'
+                ELSE
+                 'INACTIVE'
+              END AS status
+        FROM pcdw_so t1, apo_ztdp_sw_geo t2, conf_source_mapping_sw t3
+       WHERE t1.sys_last_modified_date >= v_lastrun_time
+             AND t1.ad_country = t2.country
+             AND t1.werks = t3.plant
+             AND t3.isodm='N'  
+             AND EXISTS (SELECT 1
+                           FROM pcdw_itemsitemaster t3
+                           WHERE t1.matnr = t3.item
+                             AND t1.werks = t3.siteid
+                             AND t3.mtart IN ('ZITR', 'ZREV', 'ZXMT'));
+                         
+   --2.更新
+    UPDATE pcdw_so_basic_all t1
+       SET planning_item_id = t2.planning_item_id, geo_id = t2.geo_id, rsd = t2.rsd, order_qty = t2.order_qty,
+           customer_name = t2.customer_name, source_id = t2.source_id, region = t2.region,
+           country = t2. country, cancel_reason = t2.cancel_reason, status = t2.status,
+           sys_last_modified_date = current_timestamp,
+           sys_last_modified_by = 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC' 
+      FROM z_mid_pcdw_so_change t2
+     WHERE t1.order_id = t2.order_id
+           AND t1.line_item_id = t2.line_item_id
+           AND t1.rsd = t2.rsd;
+
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', 'Update', NULL, '', '', '', '', 'step 1');
+   EXEC 'COMMIT';
+   --3.新增
+    INSERT INTO pcdw_so_basic_all
+      (order_id, line_item_id, planning_item_id, geo_id, rsd, order_qty,
+       customer_name, source_id, region, country, cancel_reason, status,
+       sys_created_by, sys_created_date, sys_last_modified_by,
+       sys_last_modified_date)
+      SELECT order_id, line_item_id, planning_item_id, geo_id, rsd,
+             order_qty, customer_name, source_id, region, country,
+             cancel_reason, status,
+             'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', current_timestamp,
+             'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', current_timestamp
+        FROM z_mid_pcdw_so_change t1
+       WHERE NOT EXISTS (SELECT 1
+                FROM pcdw_so_basic_all t2
+               WHERE t1.order_id = t2.order_id
+                     AND t1.line_item_id = t2.line_item_id
+                     AND t1.rsd = t2.rsd);
+
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', 'Insert', NULL, '', '', '', '', 'step 2');
+   EXEC 'COMMIT';
+   
+   DELETE FROM z_mid_pcdw_so_basic_step1;
+     
+   INSERT INTO z_mid_pcdw_so_basic_step1
+     (order_id, line_item_id, planning_item_id, geo_id, rsd, order_qty, customer_name, source_id, region,
+      country, planning_material, item_type)
+     SELECT t1.order_id, lpad(t1.line_item_id, 6, '0') asline_item_id, t1.planning_item_id, t1.geo_id,
+            (SELECT start_dt FROM conf_weekly_calendar WHERE t1.rsd BETWEEN start_dt AND end_dt) AS rsd,
+            t1.order_qty,
+            CASE
+              WHEN ascii(t1.customer_name) <> unicode(t1.customer_name) THEN
+               to_char(hash_sha256(to_binary(t1.customer_name)))
+              ELSE
+               t1.customer_name
+            END AS customer_name, t1.source_id, t1.region, t1.country,
+            t2.variant_planning_material AS planning_material,
+            MAP(t2.product_type_2, 'OPT', 'OPTION', 'LFO', 'MTM', 'CTO', 'CTO', 'SBB', 'SBB') AS item_type
+       FROM pcdw_so_basic_all t1, 
+            pcdw_product_master_all_sw t2
+      WHERE t1.planning_item_id = t2.planning_item_id
+            AND t1.status = 'ACTIVE'
+            AND t1.order_qty <>'0';--相同订单会有多条,只取非零的
+
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', 'Get Itemtype', NULL, '', '', '', '', 'step 3');
+   EXEC 'COMMIT';
+
+    DELETE FROM z_mid_pcdw_so_basic_step2;
+     
+    INSERT INTO z_mid_pcdw_so_basic_step2
+      (assembly_pk, planning_item_id, cto, mtm, geo_id, rsd, order_qty,
+       customer_name, source_id, region, country)
+    --Scenario-I - CTO -> SBB (dependant data)
+      SELECT t1.planning_item_id AS assembly_pk,
+             t2.idnrk AS planning_item_id, t1.planning_item_id AS cto,
+             NULL AS mtm, t1.geo_id, t1.rsd,
+             t1.order_qty * t2.menge AS order_qty, t1.customer_name,
+             t1.source_id, t1.region, t1.country
+        FROM z_mid_pcdw_so_basic_step1 t1, PCDW_ORDBOM_X86 t2
+       WHERE t1.order_id = t2.vbeln
+             AND t1.line_item_id = t2.posnr
+             AND t1.planning_item_id = t2.matnr
+             AND t1.item_type = 'CTO'
+             AND EXISTS 
+                    (SELECT 1 FROM PCDW_ITEMSITEMASTER T3
+                           WHERE T2.IDNRK=T3.ITEM
+                             AND T2.WERKS=T3.SITEID
+                             AND (t3.STRGR = 'ZS' or SUBSTR(t3.ZUCOD,1,4)='HCSB')
+                             AND t3.zucod LIKE 'H%')
+      UNION ALL
+      --Scenario-II - MTM -> SBB (dependant data)
+      SELECT t1.planning_item_id AS assembly_pk,
+             t2.idnrk AS planning_item_id, t1.planning_material AS cto,
+             t1.planning_item_id AS mtm, t1.geo_id, t1.rsd,
+             t1.order_qty * t2.menge AS order_qty, t1.customer_name,
+             t1.source_id, t1.region, t1.country
+        FROM z_mid_pcdw_so_basic_step1 t1, PCDW_ORDBOM_X86 t2
+       WHERE t1.order_id = t2.vbeln
+             AND t1.line_item_id = t2.posnr
+             AND t1.planning_item_id = t2.matnr
+             AND t1.item_type = 'MTM'
+             AND EXISTS 
+                    (SELECT 1 FROM PCDW_ITEMSITEMASTER T3
+                           WHERE T2.IDNRK=T3.ITEM
+                             AND T2.WERKS=T3.SITEID
+                             AND (t3.STRGR = 'ZS' or SUBSTR(t3.ZUCOD,1,4)='HCSB')
+                             AND t3.zucod LIKE 'H%')           
+      UNION ALL
+      --Scenario-III - CTO (Independent)
+      SELECT NULL AS assembly_pk, planning_item_id, planning_item_id AS cto,
+             NULL AS mtm, geo_id, rsd, order_qty, customer_name, source_id,
+             region, country
+        FROM z_mid_pcdw_so_basic_step1
+       WHERE item_type = 'CTO'
+      UNION ALL
+      --Scenario-IV - MTM (Independent)
+      SELECT NULL AS assembly_pk, planning_item_id,
+             planning_material AS cto, planning_item_id AS mtm, geo_id, rsd,
+             order_qty, customer_name, source_id, region, country
+        FROM z_mid_pcdw_so_basic_step1
+       WHERE item_type = 'MTM'
+      UNION ALL
+      --Scenario-V -Option
+      SELECT NULL AS assembly_pk, planning_item_id, NULL AS cto, NULL AS mtm,
+             geo_id, rsd, order_qty, customer_name, source_id, region,
+             country
+        FROM z_mid_pcdw_so_basic_step1
+       WHERE item_type = 'OPTION';
+
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', 'Get SBB', NULL, '', '', '', '', 'step 4');
+   EXEC 'COMMIT';
+   
+    DELETE FROM pcdw_so_basic_sw;
+    
+    INSERT INTO pcdw_so_basic_sw
+      (assembly_pk, planning_item_id, cto, mtm, geo_id, rsd, order_qty,
+       customer_name, source_id, region, country, sys_created_by,
+       sys_created_date, sys_last_modified_by, sys_last_modified_date)
+      SELECT assembly_pk, planning_item_id, cto, mtm, geo_id, rsd,
+             SUM(order_qty) AS order_qty, customer_name, source_id, region,
+             country, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC',
+             current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC',
+             current_timestamp
+        FROM z_mid_pcdw_so_basic_step2
+       GROUP BY assembly_pk, planning_item_id, cto, mtm, geo_id, rsd,
+                customer_name, source_id, region, country; 
+
+   PO_RETURNCODE := 0;
+   -- log process end
+    INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_PLN_SO_BASIC', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';       
+END;

@@ -1,0 +1,218 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_BOM_NETCHG" ( 
+  IN p_in_lastrundate TIMESTAMP,
+  OUT p_out_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_PCDW_BOM_NETCHG            
+*function   : Bill of Material Net Change
+*input      ：p_in_lastrundate : last run date
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2014-12-03
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+
+  -- data
+  DECLARE    v_g_pkg_name    VARCHAR(30) := 'PKG_PCDW_TO_CFE';    
+  DECLARE    v_prc_name      VARCHAR(30) := 'PRC_PCDW_BOM_NETCHG';
+  --    v_pspd_log type_log_proc
+  --          := type_log_proc (v_g_pkg_name || '.' || v_prc_name) ;
+  DECLARE    v_lastrundate   TIMESTAMP;
+  DECLARE    v_full_name     VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+  DECLARE    logidi          INTEGER := 0;
+        
+  -- exception 
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+      --   ROLLBACK;
+      /* --originally commented out
+         UPDATE   conf_sync_lastrun
+            SET   ENDDATE = CURRENT_TIMESTAMP, returncode = -1
+          WHERE   pkgname = :v_g_pkg_name AND progname = :v_prc_name;
+      --   COMMIT; */
+      p_out_exitcode := ::SQL_ERROR_CODE;  
+ 	  CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+				I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+	                                    substr(::SQL_ERROR_MESSAGE, 1, 500) );         
+       --  COMMIT;  
+  END;  
+  
+  -- process logic     
+      p_out_exitcode := -1;
+      --v_pspd_log.proc_start;
+	  logidi:=0;
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');       
+      --COMMIT;
+      --EXEC 'COMMIT';
+
+      v_lastrundate := :p_in_lastrundate;
+
+
+      DELETE FROM mid_eccbom_netchg; 
+
+      --execute   immediate 'TRUNCATE TABLE  z_mid_ecc_pcdw_bom';
+
+      INSERT INTO mid_eccbom_netchg (NAME,
+                                       STLNR,
+                                       WERKS,
+                                       IDNRK,
+                                       MENGE,
+                                       SANKO,
+                                       DATUV,
+                                       DATUB,
+                                       ALPGR,
+                                       ALPRF,
+                                       EWAHR,
+                                       SANKA,
+                                       CHARACTER,
+                                       VALUE,
+                                       TEXT1,
+                                       TEXT2,
+                                       SYS_CREATED_DATE,
+                                       SYS_CREATED_BY,
+                                       SYS_LAST_MODIFIED_DATE,
+                                       SYS_LAST_MODIFIED_BY,
+                                       OD,
+                                       STLST)
+         SELECT   NAME,
+                  STLNR,
+                  WERKS,
+                  IDNRK,
+                  MENGE,
+                  SANKO,
+                  DATUV,
+                  DATUB,
+                  ALPGR,
+                  ALPRF,
+                  EWAHR,
+                  SANKA,
+                  CHARACTER,
+                  VALUE,
+                  TEXT1,
+                  TEXT2,
+                  SYS_CREATED_DATE,
+                  SYS_CREATED_BY,
+                  SYS_LAST_MODIFIED_DATE,
+                  SYS_LAST_MODIFIED_BY,
+                  OD,
+                  STLST
+           FROM   "PCDW".ecc_bom
+          WHERE   (sys_created_date > :v_lastrundate
+                   OR sys_last_modified_date > :v_lastrundate)
+                  AND CURRENT_TIMESTAMP >= datuv
+                  AND CURRENT_TIMESTAMP < datub;
+
+      --COMMIT;
+      --EXEC 'COMMIT';
+      --exists  ecc_bom and z_pcdw_bom  date  delete z_pcdw_bom  date
+      DELETE FROM   z_pcdw_bom a
+            WHERE   EXISTS (SELECT   NULL
+                              FROM   mid_eccbom_netchg b
+                             WHERE   a.STLNR = b.STLNR AND a.WERKS = b.WERKS) /* and   product_group=P_IN_PRODUCT_GROUP*/
+                                                                             ;
+      --COMMIT;
+	  --EXEC 'COMMIT';
+	  
+      --ecc_bom   date  insert  into  z_pcdw_bom   name and idnrk  18bit  change 10bit
+      INSERT INTO z_pcdw_bom (name,
+                              stlnr,
+                              werks,
+                              idnrk,
+                              menge,
+                              sanko,
+                              datuv,
+                              datub,
+                              alpgr,
+                              ewahr,
+                              sanka,
+                              character,
+                              VALUE,
+                              text1,
+                              text2,
+                              ALPRF,
+                              OD,
+                              STLST,
+                              action,
+                              status,
+                              sys_created_date,
+                              sys_created_by,
+                              sys_last_modified_date,
+                              sys_last_modified_by,
+                              PRODUCT_GROUP,
+                              OEM,
+                              ITEM_TYPE_F,
+                              MTART_F,
+                              BESKZ_F)
+         SELECT   CASE
+                     WHEN LENGTH (A.name) = 18 THEN RIGHT (A.name, 10)  --SUBSTR (A.name, -10, 10)
+                     ELSE name
+                  END
+                     AS name,
+                  A.STLNR,
+                  A.WERKS,
+                  CASE
+                     WHEN LENGTH (A.IDNRK) = 18
+                     THEN
+                        RIGHT (A.IDNRK, 10)  --SUBSTR (A.IDNRK, -10, 10)
+                     ELSE
+                        IDNRK
+                  END
+                     AS IDNRK,
+                  A.MENGE,
+                  A.SANKO,
+                  A.DATUV,
+                  A.DATUB,
+                  A.ALPGR,
+                  A.ewahr,
+                  A.SANKA,
+                  A.CHARACTER,
+                  A.VALUE,
+                  A.text1,
+                  A.text2,
+                  A.ALPRF,
+                  A.OD,
+                  A.STLST,
+                  'INSERT',
+                  'ACTIVE',
+                  CURRENT_TIMESTAMP,  --SYSDATE,
+                  :v_g_pkg_name || '.' || :v_prc_name,
+                  CURRENT_TIMESTAMP,  --SYSDATE,
+                  :v_g_pkg_name || '.' || :v_prc_name,
+                  C.product_group,
+                  C.oem,
+                  b.item_type,
+                  b.mtart,
+                  b.beskz
+           FROM   mid_eccbom_netchg A,
+                  ui_item b,
+                  conf_plant_bugrp_mapping C
+          WHERE       MAP (LENGTH (A.name),
+                              --18, SUBSTR (A.name, -10, 10),
+                              18, RIGHT (A.name, 10),
+                              A.name) = b.item
+                  AND A.werks = C.plant
+                  AND C.product_group = B.PRODUCT_GROUP;
+
+      --COMMIT;
+      --EXEC 'COMMIT';
+
+      p_out_exitcode := 0;
+      --v_pspd_log.proc_end ();
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');        
+      --COMMIT;
+      --EXEC 'COMMIT';
+   /* UPDATE   conf_sync_lastrun c1
+                         SET   lastrundate = startdate, returncode = 0, ENDDATE = SYSDATE
+     WHERE   pkgname = v_g_pkg_name AND progname = v_prc_name;
+    COMMIT;*/
+END;

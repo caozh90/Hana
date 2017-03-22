@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_GETDATASESSIONCONTEXT" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_GETDATASESSIONCONTEXT"/>
+  <attributes>
+    <attribute id="ID" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT" columnName="ID"/>
+    </attribute>
+    <attribute id="XSSESSION_ID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="XSSESSION_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT" columnName="XSSESSION_ID"/>
+    </attribute>
+    <attribute id="SESSION_TYPE" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SESSION_TYPE"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT" columnName="SESSION_TYPE"/>
+    </attribute>
+    <attribute id="SESSION_VALUE" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SESSION_VALUE"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT" columnName="SESSION_VALUE"/>
+    </attribute>
+    <attribute id="USER_ID" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="USER_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT" columnName="USER_ID"/>
+    </attribute>
+    <attribute id="COMMENT" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="COMMENT"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT" columnName="COMMENT"/>
+    </attribute>
+    <attribute id="USER_NAME" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="USER_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER" columnName="USER_NAME"/>
+    </attribute>
+    <attribute id="LOGINNAME" order="8" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOGINNAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER" columnName="LOGINNAME"/>
+    </attribute>
+    <attribute id="MODULE_NAME" order="9" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MODULE_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE" columnName="MODULE_NAME"/>
+    </attribute>
+    <attribute id="MODULE_PATH" order="10" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MODULE_PATH"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE" columnName="MODULE_PATH"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes>
+    <calculatedAttribute id="CDP_PRIVILEGE_NAME" hidden="false" order="11" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CDP_PRIVILEGE_NAME"/>
+      <keyCalculation datatype="NVARCHAR" length="300">
+        <formula>'securityBase'</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+  </calculatedAttributes>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT"/>
+        <columnFilter columnName="SESSION_TYPE">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="MODULE_ID"/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER"/>
+        <leftColumns>
+          <columnName>USER_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>USER_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE"/>
+        <leftColumns>
+          <columnName>SESSION_VALUE</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MODULE_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="cdp.security.data::userManagement.DATA_SESSION_CONTEXT" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_USER" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="568" y="30"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_MODULE" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="475" y="225"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

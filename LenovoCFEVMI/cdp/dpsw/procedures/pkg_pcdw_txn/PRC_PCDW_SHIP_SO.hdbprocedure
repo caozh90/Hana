@@ -1,0 +1,84 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_pcdw_txn::PRC_PCDW_SHIP_SO" (IN PI_ID  VARCHAR(12),OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_PCDW_SHIP_SO        
+*function   : Merge data FROM ECC_* INTO PCDW_*
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2016-01-14
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_lastrun_time timestamp;
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SHIP_SO', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SHIP_SO', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1;
+   
+   -- Step 1. Merge data FROM ECC_DELIVERY INTO PCDW_DELIVERY
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SHIP_SO', 'SUCCESS', NULL, '', '', '', '', 'step 1');
+   EXEC 'COMMIT';  
+
+    UPDATE pcdw_ship_so t1
+       set shipdate = t2.shipdate, shiptime = t2.shiptime, 
+           vbtyp_n = t2.vbtyp_n,vbtyp_v = t2.vbtyp_v,
+           shipqty = t2.shipqty, erdat = t2.erdat,
+           erzet = t2.erzet, bwart = t2.bwart,
+           werks = t2.werks, lgort = t2.lgort, mjahr = t2.mjahr,
+           mblnr = t2.mblnr, zeile = t2.zeile,
+           sys_ent_state = 'ACTIVE',
+           sys_last_modified_by = 'pkg_pcdw_txn.PRC_PCDW_SHIP_SO',
+           sys_last_modified_date = current_timestamp 
+     FROM  ecc_ship_so t2
+     WHERE  t1.vbeln = t2.vbeln
+           AND t1.posnr = t2.posnr
+           AND t1.dn=t2.dn ;
+              
+    EXEC 'COMMIT'; 
+    
+    INSERT INTO pcdw_ship_so
+      (vbeln, posnr, shipdate, shiptime, vbtyp_n, vbtyp_v, shipqty, erdat, erzet,dn, bwart,
+       werks, lgort, mjahr, mblnr, zeile,sys_ent_state, sys_created_by, SYS_CREATED_DATE,
+       sys_last_modified_by, sys_last_modified_date)
+      select vbeln, posnr, shipdate, shiptime, vbtyp_n, vbtyp_v, shipqty, erdat, erzet,dn, bwart,
+       werks, lgort, mjahr, mblnr, zeile, 'ACTIVE',
+             'pkg_pcdw_txn.PRC_PCDW_SHIP_SO', current_timestamp,
+             'pkg_pcdw_txn.PRC_PCDW_SHIP_SO', current_timestamp
+        FROM ecc_ship_so t1
+       WHERE  NOT EXISTS (SELECT 1
+                              FROM pcdw_ship_so t2
+                             WHERE t1.vbeln = t2.vbeln
+                                   AND t1.posnr = t2.posnr
+                                   AND t1.dn=t2.dn);                              
+                                   
+   -- Step 2. Update the PCDW_DELIVERY deleted posnr's status
+   INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SHIP_SO', 'SUCCESS', NULL, '', '', '', '', 'step 2');
+   EXEC 'COMMIT'; 
+                                                                                
+   PO_RETURNCODE := 0;
+   -- log process end
+   INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_pcdw_txn.PRC_PCDW_SHIP_SO', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';             
+END;
+

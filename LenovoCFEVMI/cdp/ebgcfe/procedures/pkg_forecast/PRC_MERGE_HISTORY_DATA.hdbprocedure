@@ -1,0 +1,222 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_forecast::PRC_MERGE_HISTORY_DATA" ( 
+	IN p_in_product_group VARCHAR(200),
+	IN p_in_cycle_name VARCHAR(40),
+	IN p_in_categroy  VARCHAR(40),
+    OUT p_out_exitcode  INTEGER 
+
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE 
+	AS
+		v_g_pkg_name        VARCHAR(30)  := 'PKG_FORECAST'; 
+		v_prc_name          VARCHAR(30)  := 'PRC_MERGE_HISTORY_DATA';
+     	v_full_name         VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+       	logidi              INTEGER      := 0;
+		v_cycle_str         VARCHAR(20);
+		v_is_ondemand       INTEGER;
+	
+	
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	   
+ 	 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+ 	 	                                            I_LOGSID      => :logidi,
+ 	 	                                            I_EVENT_NAME  => :v_full_name,
+ 	 	                                            I_MODULE      => 'EBGCFE',
+		                                            I_MESSAGE     => 'ERROR',
+		                                            I_DETAIL      => TO_CHAR(::SQL_ERROR_CODE) || ':' ||
+                                                                     SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );                                   
+    END;
+	
+	
+    
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE'); 
+		                                        
+		                                         
+
+    SELECT TO_VARCHAR (TO_DATE (cycle_fcst_month, 'MONYYYY'), 'YYYYMM')
+      INTO v_cycle_str
+    FROM ui_cycle
+    WHERE cycle_name = p_in_cycle_name 
+      AND product_group = p_in_product_group 
+    LIMIT 1;
+
+
+    IF p_in_categroy='MTM_PRE' THEN
+    
+        SELECT COUNT(*) INTO v_is_ondemand FROM ui_ondemand_cal_list 
+	    WHERE item_type IN (SELECT pvalue FROM conf_parameters WHERE pdomain='FORECAST' and pname='ONDEMAND_MTM' );
+           
+    	IF v_is_ondemand > 0 THEN
+    	
+    	--merge sales_org data
+    	    DELETE FROM biz_mtm_salesorg_his h
+    	    WHERE h.cycle          = p_in_cycle_name 
+    	      AND h.product_group  = p_in_product_group
+    	      AND EXISTS( SELECT 1 FROM biz_mtm_salesorg_pre p
+    	  	                WHERE h.mtm_no        = p.mtm_no
+    	  	                  AND h.sales_org     = p.sales_org
+    	  	                  AND h.cost_type     = p.cost_type
+    	  	                  AND h.product_group = p.product_group);
+    	  	                      	  	  																	 
+    	ELSE
+    	
+    	    DELETE FROM biz_mtm_salesorg_his WHERE cycle = p_in_cycle_name  AND product_group = p_in_product_group;
+    	  	              
+   		END IF;
+   		
+    	INSERT INTO biz_mtm_salesorg_his
+    	SELECT mtm_no,sales_org,sales_office,cycle,v_cycle_str AS fcst_month,cost_type,currency_name,price_unit,
+		m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,product_group,CURRENT_TIMESTAMP  AS sys_created_date  
+    	FROM biz_mtm_salesorg_pre;
+    	
+		--merge sales_office data
+		IF v_is_ondemand > 0 THEN
+    	
+    	    DELETE FROM biz_mtm_salesoffice_his h
+    	    WHERE h.cycle            = p_in_cycle_name 
+    	      AND h.product_group    = p_in_product_group
+    	      AND EXISTS ( SELECT 1 FROM  biz_mtm_salesoffice_pre p
+    	                    WHERE h.mtm_no        = p.mtm_no
+    	  	                  AND h.sales_org     = p.sales_org
+    	  	                  AND h.sales_office  = p.sales_office 
+    	  	                  AND h.cost_type     = p.cost_type
+    	  	                  AND h.product_group = p.product_group);
+    	ELSE 
+    	    DELETE FROM biz_mtm_salesoffice_his  WHERE cycle = p_in_cycle_name AND product_group = p_in_product_group;
+    	END IF;
+    	
+    	INSERT INTO biz_mtm_salesoffice_his
+    	SELECT mtm_no,sales_org,sales_office,cycle,v_cycle_str AS fcst_month,cost_type,currency_name,price_unit,
+		m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,product_group,CURRENT_TIMESTAMP  AS sys_created_date  
+    	FROM biz_mtm_salesoffice_pre;
+    	
+    	
+    	--merge commissioncost data
+		IF v_is_ondemand > 0 THEN
+		
+    	    DELETE FROM biz_mtm_commissioncost_his h 
+    	    WHERE h.cycle            = p_in_cycle_name 
+    	      AND h.product_group    = p_in_product_group
+    	      AND EXISTS ( SELECT 1 FROM  biz_mtm_commissioncost_pre p
+    	                    WHERE h.mtm_no        = p.mtm_no
+    	  	                  AND h.sales_org     = p.sales_org
+    	  	                  --AND h.currency_name = p.currency_name 
+    	  	                  AND h.product_group = p.product_group);
+    	ELSE 
+    	   --Modified by Zhoubinbin 20160706, keep the history cycle data
+    	   DELETE FROM biz_mtm_commissioncost_his h WHERE cycle = :p_in_cycle_name AND product_group = :p_in_product_group;
+    	END IF;
+    	  	              
+    	INSERT INTO biz_mtm_commissioncost_his
+    	SELECT mtm_no,sales_org,cycle,v_cycle_str AS fcst_month,currency_name,price_unit,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,
+    		from_date,to_date,'INSERT' AS action, NULL AS status,CURRENT_TIMESTAMP  AS sys_created_date, v_full_name AS sys_created_by ,
+    		 NULL AS sys_last_modified_date, NULL AS sys_last_modified_by,product_group
+    	FROM biz_mtm_commissioncost_pre;
+    	
+    	EXEC 'commit';
+    END IF;
+    
+    IF p_in_categroy='CTO_PRE' THEN
+    
+        SELECT COUNT(*) INTO v_is_ondemand FROM ui_ondemand_cal_list 
+	    WHERE item_type IN (SELECT pvalue FROM conf_parameters WHERE pdomain='FORECAST' and pname='ONDEMAND_CTO' );
+    	
+    	IF v_is_ondemand > 0 THEN
+    	
+    	--merge sales_org data
+    	    DELETE FROM biz_cto_salesorg_his a
+    	    WHERE a.cycle         = p_in_cycle_name 
+    	      AND a.product_group = p_in_product_group
+    	      AND EXISTS ( SELECT 1 FROM biz_cto_salesorg_pre b
+    	  	    			WHERE   a.variant        = b.variant 
+	  	                      AND   a.sales_org      = b.sales_org 
+	                          AND   a.cost_type      = b.cost_type
+	                          AND   a.producthier_1  = b.producthier_1
+	                          AND   a.producthier_2  = b.producthier_2
+	                          AND   a.producthier_3  = b.producthier_3
+	                          AND   a.producthier_4  = b.producthier_4
+	                          AND   a.product_group  = b.product_group);
+	    ELSE 
+	        DELETE FROM biz_cto_salesorg_his WHERE cycle  = p_in_cycle_name AND product_group = p_in_product_group;
+	    END IF;
+	    
+    	INSERT INTO biz_cto_salesorg_his 
+    	SELECT variant,sales_org,sales_office,cost_type,cycle,v_cycle_str AS fcst_month,producthier_1,producthier_2,producthier_3,producthier_4,
+    		currency_name,price_unit,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,product_group,CURRENT_TIMESTAMP  AS sys_created_date  
+    	FROM biz_cto_salesorg_pre;
+    	
+		--merge sales_office data
+    	IF v_is_ondemand > 0 THEN
+    	
+    	    DELETE FROM biz_cto_salesoffice_his a
+    	    WHERE a.cycle          = p_in_cycle_name 
+    	      AND a.product_group  = p_in_product_group
+    	      AND EXISTS (SELECT 1 FROM biz_cto_salesoffice_pre b
+    	  			    	WHERE   a.variant        = b.variant 
+	                          AND   a.sales_org      = b.sales_org 
+	                          AND   a.sales_office   = b.sales_office 
+	                          AND   a.cost_type      = b.cost_type
+	                          AND   a.producthier_1  = b.producthier_1
+	                          AND   a.producthier_2  = b.producthier_2
+	                          AND   a.producthier_3  = b.producthier_3
+	                          AND   a.producthier_4  = b.producthier_4
+	                          AND   a.product_group  = b.product_group);
+	         
+
+	    ELSE 
+	        DELETE FROM biz_cto_salesoffice_his WHERE cycle = p_in_cycle_name AND product_group = p_in_product_group;  
+	    END IF;
+	                
+    	INSERT INTO biz_cto_salesoffice_his
+    	SELECT variant,sales_org,sales_office,cost_type,cycle,v_cycle_str AS fcst_month,producthier_1,producthier_2,producthier_3,producthier_4,
+    		currency_name,price_unit,m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,product_group,CURRENT_TIMESTAMP  AS sys_created_date  
+    	FROM biz_cto_salesoffice_pre;
+    	--merge commissioncost data
+    	IF v_is_ondemand > 0 THEN
+    	
+    	    DELETE FROM biz_cto_commissioncost_his a
+    	    WHERE a.cycle          = p_in_cycle_name 
+    	      AND a.product_group  = p_in_product_group
+    	      AND EXISTS (SELECT 1 FROM biz_cto_commissioncost_pre b
+    	  		    		WHERE   a.variant        = b.variant 
+	  	                      AND   a.sales_org      = b.sales_org 
+	                          AND   a.producthier_1  = b.producthier_1
+	                          AND   a.producthier_2  = b.producthier_2
+	                          AND   a.producthier_3  = b.producthier_3
+	                          AND   a.producthier_4  = b.producthier_4
+	                          AND   a.product_group  = b.product_group);
+	    ELSE 
+	       --Modified by Zhoubinbin 20160706, keep the history cycle data
+	       DELETE FROM biz_cto_commissioncost_his WHERE cycle = :p_in_cycle_name AND product_group = p_in_product_group; 
+	    END IF;
+	    
+    	INSERT INTO biz_cto_commissioncost_his
+    	SELECT variant,sales_org,producthier_1,producthier_2,producthier_3,producthier_4,cycle,currency_name,price_unit,from_date,to_date,
+    		m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,NULL AS action, NULL AS status,CURRENT_TIMESTAMP  AS sys_created_date, v_full_name AS sys_created_by ,
+    		 NULL AS sys_last_modified_date, NULL AS sys_last_modified_by,product_group,v_cycle_str AS fcst_month
+    	FROM biz_cto_commissioncost_pre;
+    	
+    	EXEC 'commit';
+    END IF;
+    	
+    	
+	
+    p_out_exitcode := 0;
+     
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  
+END;

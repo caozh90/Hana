@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_GETMAPROLEGROUP" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_GETMAPROLEGROUP "/>
+  <attributes>
+    <attribute id="ID" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" columnName="ID"/>
+    </attribute>
+    <attribute id="NAME" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ROLE_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLES" columnName="ROLE_NAME"/>
+    </attribute>
+    <attribute id="COMMENT" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="COMMENT"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLES" columnName="COMMENT"/>
+    </attribute>
+    <attribute id="MODULE_NAME" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MODULE_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE" columnName="MODULE_NAME"/>
+    </attribute>
+    <attribute id="ROLEGROUP_ID" key="true" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ROLEGROUP_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" columnName="ROLEGROUP_ID"/>
+    </attribute>
+    <attribute id="MODULE_ID" key="true" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MODULE_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" columnName="MODULE_ID"/>
+    </attribute>
+    <attribute id="ROLE_ID" key="true" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ROLE_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" columnName="ROLE_ID"/>
+    </attribute>
+    <attribute id="DISPLAY_ROLE_NAME" order="8" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLES" columnName="DISPLAY_ROLE_NAME"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes>
+    <calculatedAttribute id="CDP_PRIVILEGE_NAME" hidden="false" order="9" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CDP_PRIVILEGE_NAME"/>
+      <keyCalculation datatype="NVARCHAR" length="300">
+        <formula>'securityAccess'</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+  </calculatedAttributes>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLES"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLES"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"/>
+        <leftColumns>
+          <columnName>ROLE_ID</columnName>
+          <columnName>MODULE_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>ROLE_ID</columnName>
+          <columnName>MODULE_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"/>
+        <leftColumns>
+          <columnName>MODULE_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MODULE_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_ROLES" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_MODULE" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="486" y="30"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="274" y="217"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

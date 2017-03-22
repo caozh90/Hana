@@ -1,0 +1,159 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xatt::createUiXatt" ( 
+        IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XATT_T"
+        ,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "EBGCFE"
+    AS
+    
+       v_product_group NVARCHAR(10);
+	   v_prod_family NVARCHAR(100); 
+	   v_subgeo NVARCHAR(20);
+	   v_tba_type NVARCHAR(10);
+	   v_brand NVARCHAR(40);
+	   v_plant NVARCHAR(50);
+	   v_resourceExists BIGINT;
+    /************************************************************************
+    *name      :                     createUiXatt
+    *function    :               
+    *input     ：               
+    *output     :                
+    *author     :                     Fangyuan
+    *CreateDate    :                  2014.12.18
+    *UpdateDate  :        
+    *************************************************************************/  
+
+        aI_DETAIL NVARCHAR(300) :='';    
+        alogide INTEGER :=0;    
+         privilegeExists  NVARCHAR(300)  ;         
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+        aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xatt::createUiXatt error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+        
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+             I_TYPE=>'PROC_ERROR'   
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xatt::createUiXatt'
+            ,I_MODULE=>'EBGCFE'
+            ,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+            ,I_DETAIL=>:aI_DETAIL
+        );  
+ 
+        errorInfo = select 400 as http_status_code, 
+            'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+            aI_DETAIL detail from dummy;
+    END;  
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_xatt::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;  
+ --START
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+        I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xatt::createUiXatt'
+       ,I_MODULE=>'EBGCFE'
+    ); 
+
+select FAMILY,SUBGEO,TBA_TYPE,BRAND,PLANT into v_prod_family,v_subgeo,v_tba_type
+		,v_brand,v_plant from :newInfo;  
+		
+select count(1) into v_resourceExists from "EBGCFE"."UI_XATT" where  
+		FAMILY = :v_prod_family and SUBGEO = :v_subgeo and BRAND = :v_brand and PLANT = :v_plant and
+		TBA_TYPE = :v_tba_type;
+
+--if item exits in database
+if  :v_resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	  SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+	  
+end if;	
+
+    INSERT INTO UI_XATT
+    (
+    "CYCLE",
+    "PRODUCT_GROUP",
+    "BRAND",
+    "FAMILY",
+    "PLANT",
+    "SUBGEO",
+    "TBA_TYPE",
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M9",
+    "M10",
+    "M11",
+    "M12",
+    "M13",
+	"M14",
+	"M15",
+	"M16",
+	"M17",
+	"M18",
+    "SYS_CREATED_DATE",
+    "SYS_CREATED_BY",
+    "SYS_LAST_MODIFIED_DATE",
+    "SYS_LAST_MODIFIED_BY"
+    )
+    SELECT
+    'CURRENT',
+    'EBG',
+    "BRAND",
+    "FAMILY",
+    "PLANT",
+    "SUBGEO",
+    "TBA_TYPE",
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M9",
+    "M10",
+    "M11",
+    "M12", 
+    "M13",
+	"M14",
+	"M15",
+	"M16",
+	"M17",
+	"M18",
+    CURRENT_TIMESTAMP,
+    SESSION_USER,
+    CURRENT_TIMESTAMP,
+    SESSION_USER
+    FROM  :newInfo;  
+    
+        /*END*/
+        aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xatt::createUiXatt successfully created . ';
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+            I_TYPE=>'PROC_END'  
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xatt::createUiXatt'
+            ,I_MODULE=>'EBGCFE'
+            ,I_DETAIL=>:aI_DETAIL
+        );     
+END;

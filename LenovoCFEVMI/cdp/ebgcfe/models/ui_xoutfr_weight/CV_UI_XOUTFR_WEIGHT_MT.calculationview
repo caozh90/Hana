@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_UI_XOUTFR_WEIGHT_MT" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_UI_XOUTFR_WEIGHT"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="CYCLE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCT_GROUP" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="BRAND" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="FAMILY" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="MT" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="ITEM" length="40"/>
+        <viewAttribute datatype="DECIMAL" id="WEIGHT" length="15" scale="4"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_DATE" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_BY" length="100"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = select CYCLE,PRODUCT_GROUP,BRAND,FAMILY,MT,ITEM,WEIGHT,
+ 	  SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY 
+ 	 from 
+ 	 (
+ 	 select CYCLE,PRODUCT_GROUP,BRAND,FAMILY,MT,ITEM,WEIGHT,TO_VARCHAR(TO_DATE(SYS_LAST_MODIFIED_DATE), 'YYYY-MM-DD')  &quot;SYS_LAST_MODIFIED_DATE&quot;,SYS_LAST_MODIFIED_BY
+ 	 from &quot;EBGCFE&quot;.UI_XOUTFR_WEIGHT 
+ 	 union 
+ 	 select CYCLE,PRODUCT_GROUP,BRAND,FAMILY,MT,ITEM,WEIGHT,TO_VARCHAR(TO_DATE(SYS_LAST_MODIFIED_DATE), 'YYYY-MM-DD')  &quot;SYS_LAST_MODIFIED_DATE&quot;,SYS_LAST_MODIFIED_BY 
+ 	 from &quot;EBGCFE&quot;.UI_XOUTFR_WEIGHT_HIS
+ 	 )
+ 	 where MT != 'N/A';
+
+END /********* End Procedure ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="CYCLE" order="1">
+        <descriptions defaultDescription="CYCLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="CYCLE"/>
+      </attribute>
+      <attribute id="PRODUCT_GROUP" order="2">
+        <descriptions defaultDescription="PRODUCT_GROUP"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCT_GROUP"/>
+      </attribute>
+      <attribute id="BRAND" order="3">
+        <descriptions defaultDescription="BRAND"/>
+        <keyMapping columnObjectName="Script_View" columnName="BRAND"/>
+      </attribute>
+      <attribute id="FAMILY" order="4">
+        <descriptions defaultDescription="FAMILY"/>
+        <keyMapping columnObjectName="Script_View" columnName="FAMILY"/>
+      </attribute>
+      <attribute id="MT" order="5">
+        <descriptions defaultDescription="MT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MT"/>
+      </attribute>
+      <attribute id="ITEM" order="6">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping columnObjectName="Script_View" columnName="ITEM"/>
+      </attribute>
+      <attribute id="WEIGHT" order="7">
+        <descriptions defaultDescription="WEIGHT"/>
+        <keyMapping columnObjectName="Script_View" columnName="WEIGHT"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE" order="8">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="9">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

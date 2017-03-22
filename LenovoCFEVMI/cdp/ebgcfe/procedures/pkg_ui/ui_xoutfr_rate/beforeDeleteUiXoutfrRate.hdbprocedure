@@ -1,0 +1,33 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::beforeDeleteUiXoutfrRate" ( 
+        IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_T"
+        ,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+    AS
+	/************************************************************************
+	*name      :                     beforeCreateUiXoutfr
+	*function    :               
+	*input     ：               
+	*output     :                
+	*author     :                     Fangyuan
+	*CreateDate    :                  2015.1.23
+	*UpdateDate  :        
+	*************************************************************************/  
+
+       v_FREIGHT_TYPE NVARCHAR(10);
+
+      
+      validate1 INTEGER;    
+BEGIN
+select FREIGHT_TYPE
+         into v_FREIGHT_TYPE from :newInfo; 
+        
+	if v_FREIGHT_TYPE = 'GEO_MIX' then
+        errorinfo = select 400 as http_status_code, 
+            'not need select GEO_MIX' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+END;

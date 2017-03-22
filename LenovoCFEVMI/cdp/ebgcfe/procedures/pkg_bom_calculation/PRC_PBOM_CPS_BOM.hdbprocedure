@@ -1,0 +1,158 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_bom_calculation::PRC_PBOM_CPS_BOM" ( 
+	 IN p_product_group VARCHAR(20),
+     OUT p_out_exitcode  NUMBER
+)  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_PBOM_CPS_BOM              
+*function   : Product BOM - CPS BOM
+*input      ：p_product_group : product group
+*output     : p_out_exitcode : error code 
+*author     : Eric Zhou
+*CreateDate : 2014-11-12
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+	    v_product_group     VARCHAR2(20)  := :p_product_group;
+        v_prc_name          VARCHAR2(30)  := 'PRC_PBOM_CPS_BOM';
+        v_g_pkg_name        VARCHAR2(30)  := 'PKG_BOM_CALCULATION';        
+        v_full_name         VARCHAR2(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+
+		v_debug  	        VARCHAR(20);
+		v_count             INTEGER;
+		v_init_date         TIMESTAMP; 
+		v_logidi            INTEGER       := 0;
+		v_logidj            INTEGER       := 0;
+		v_logidk            INTEGER       := 0;
+		v_logidl            INTEGER       := 0;
+	
+		v_time              DECIMAL(17,3);
+		v_step_counter      INTEGER       := 0;
+    	v_taking_time       DECIMAL(17,3);	
+BEGIN
+
+    --	Exception 
+    DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found
+    BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :v_logidi,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || ' (' ||
+                                                                    substr(::SQL_ERROR_MESSAGE, 1, 500) || ')'); 
+    END;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+                                                    I_LOGSID     => :v_logidi,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+                                                    I_MESSAGE    => 'ERROR',
+                                                    I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || ' (' ||
+                                                                    substr(::SQL_ERROR_MESSAGE, 1, 500) || ')'); 
+    END;
+
+    p_out_exitcode := -1;
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :v_logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');
+    --log_data_process.proc_start;
+    SELECT SESSION_CONTEXT('v_step_counter_bom_calculation') into v_step_counter FROM DUMMY;
+
+    insert into CAL_RUNTIME(PKG_NAME,PROC_NAME,START_T,PRD_GROUP)
+    select v_g_pkg_name,v_prc_name,CURRENT_DATE,v_product_group from dummy;
+
+    DELETE FROM MID_option_withsbb WHERE product_group = :v_product_group;
+
+    select "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy;
+    IF :v_debug = 'T'
+    THEN
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+    END IF;
+
+    DELETE FROM MID_eccplant_bom
+     WHERE item_type_f IN ('COMPONENT', 'DUMMY')
+       AND item_type_m  <> item_type_f
+       AND product_group = :v_product_group;
+
+    /*INSERT INTO MID_option_withsbb
+        (product_group, model, father, children, item_desc, plant, oem, brand,
+         asp_prd_family, country, lvl, qtyper, altgrup, altpri, altpercent, path, 
+         costflag, item_type_m, item_type_f, item_type_c, mtart_f, mtart_c,
+         schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c,
+         bom_plant, sbom_plant, bom_lvl, is_leaf, status, cost_plant, rid)
+    SELECT product_group, model, father, children, item_desc, plant, oem, brand,
+           asp_prd_family, country, lvl, qtyper, altgrup, altpri, altpercent, path, 
+           costflag, item_type_m, item_type_f, item_type_c, mtart_f, mtart_c, schgt_c, 
+           beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c, bom_plant, 
+           sbom_plant, bom_lvl, is_leaf, status, cost_plant, "$rowid$"
+      FROM MID_eccplant_bom
+     WHERE item_type_m   = 'OPTION'
+       AND item_type_c   = 'SBB'
+       AND product_group = :v_product_group;
+
+    DELETE FROM MID_eccplant_bom t1
+     WHERE product_group = :v_product_group
+       AND EXISTS(SELECT 1 FROM MID_option_withsbb t2
+                   WHERE t2.rid           = t1."$rowid$"
+                     AND t2.product_group = :v_product_group);
+
+    INSERT INTO MID_eccplant_bom
+        (product_group, model, father, children, item_desc, plant, oem, brand,
+         asp_prd_family, country, lvl, qtyper, altgrup, altpri, altpercent, path, 
+         costflag, item_type_m, item_type_f, item_type_c, mtart_f, mtart_c,
+         schgt_c, beskz_f, beskz_c, sobsl_f, sobsl_c, ekgrp_c, mfrgr_c, stawn_c,
+         bom_plant, sbom_plant, bom_lvl, is_leaf, status, cost_plant)
+    SELECT t1.product_group, t1.model, t1.father, t2.children, t2.item_desc, t1.
+           plant, t1.oem, t1.brand, t1.asp_prd_family, t1.country, t1.lvl, 
+           (t1.qtyper*t1.altpercent/100)*(t2.qtyper*t2.altpercent/100),
+           t2.altgrup, t2.altpri, 100 AS altpercent, NULL AS path, t2.costflag, 
+           t1.item_type_m, t1.item_type_f, t2.item_type_c, t1.mtart_f, t2.mtart_c, 
+           t2.schgt_c, t1.beskz_f, t2.beskz_c, t1.sobsl_f, t2.sobsl_c, t2.ekgrp_c, 
+           t2.mfrgr_c, t2.stawn_c, t1.bom_plant, t1.sbom_plant, t1.bom_lvl, t2.is_leaf, 
+           t2.status, t2.cost_plant
+      FROM MID_option_withsbb t1, MID_eccplant_bom t2
+     WHERE t1.sbom_plant    = t2.plant
+       AND t1.children      = t2.model
+       AND t1.product_group = :v_product_group
+       AND t2.product_group = :v_product_group;*/
+
+    select "cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy;
+	IF :v_debug = 'T'
+	THEN
+        v_step_counter := :v_step_counter + 1;
+        v_taking_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3')) - :v_time;
+        
+        IF :v_taking_time < 0 THEN    v_taking_time := :v_taking_time + 86400.000;   END IF;
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'INFO',
+                                                    I_LOGSID     => :v_logidj,
+                                                    I_EVENT_NAME => :v_full_name,
+                                                    I_MODULE     => 'EBGCFE',
+									                I_MESSAGE    => 'step '||to_char(:v_step_counter)||': ' ||
+									                                to_char(:v_taking_time) || ' sec'); 
+         v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));
+     END IF;
+
+     update CAL_RUNTIME x 
+        set end_t=CURRENT_DATE
+      where x.pkg_name   = v_g_pkg_name 
+        and x.proc_name  = v_prc_name 
+        and end_t is null 
+        and prd_group    = v_product_group;
+
+     p_out_exitcode := 0;
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                 I_LOGSID     => :v_logidi,
+                                                 I_EVENT_NAME => :v_full_name,
+                                                 I_MODULE     => 'EBGCFE');
+                                                 
+     exec 'SET ''v_step_counter_bom_calculation'' = '''||v_step_counter||'''';
+END;

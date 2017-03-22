@@ -1,0 +1,274 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_mo_pull::PRC_PRE_VMI_PROCESS" (
+  IN  iv_id VARCHAR(4), 
+  OUT on_exitcode INTEGER 
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "SZEBGVMI"
+    --READS SQL DATA 
+    /************************************************************************
+    *name       : PRC_PRE_VMI_PROCESS               --函数名
+    *function   : Process Before VMI Run            --函数功能
+    *input      : iv_id : site schedule id          --输入参数
+    *output     : on_exitcode : message code        --输出参数
+    *author     : Leonard Ling                      --作者
+    *CreateDate : 20141215                          --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）    
+    *************************************************************************/
+    AS         
+     gv_logic_name    VARCHAR(40)  := 'PKG_MO_PULL';    
+     v_logic_proc_name   VARCHAR(40) := 'PRC_PRE_VMI_PROCESS';
+     V_FUNC_FULL_NAME      VARCHAR(100) := :gv_logic_name || '.' || :v_logic_proc_name;       
+     logidi integer := 0;    
+     backup_id varchar(100);
+      n_row_cnt              NUMBER;                           -- add by xwu./2015/8/12 
+BEGIN
+   -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+            on_exitcode := ::SQL_ERROR_CODE;  
+			CALL "EX_LOG"."cdp.log.procedures::logProc"
+					(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+					I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'SZEBGVMI',
+					I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+		                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+		    --COMMIT;     --commented by Leonard
+    END; 
+    
+  -- process logic  
+      on_exitcode := -20099;
+   CALL "EX_LOG"."cdp.log.procedures::logProc"
+		(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'SZEBGVMI');
+
+------/* add by xwu, 2015/11/19 -- mo pull.25 for sc asn*/------
+   UPDATE z_pcdw_ds_mo SET seq_num = 99999 WHERE seq_num = 0 AND status = 'IN_PROCESS';
+------/* add by xwu, 2015/11/19 -- mo pull.25 for sc asn*/------
+
+------/* add by xwu, 2015/9/6 -- mo pull.25 for sc asn*/------
+   UPDATE z_pcdw_mo SET build_entity = productionordid;
+------ End -----------------------------------------------------
+
+/* ------------------------------------------------------------
+    update by xwu, 2015/8/12
+    func: X86_MO_PULL.docx -- 24 for sc-asn
+*/-------------------------------------------------------------
+         /*added by FangYuan*/
+         
+         SELECT   COUNT (1)
+           INTO   n_row_cnt
+           FROM   z_pcdw_ds_mo
+          WHERE   status = 'RELEASE';
+
+         UPDATE   z_pcdw_ds_mo rpt
+            SET   rpt.vmi_seq_num =
+                     (SELECT   vmi_seq_num - n_row_cnt - 1
+                        FROM   (SELECT   werks,
+                                         res_name,
+                                         work_ord_num,
+                                         seq_num,
+                                         ROW_NUMBER ()
+                                            OVER (ORDER BY vmi_seq_num)
+                                            vmi_seq_num
+                                  FROM   z_pcdw_ds_mo
+                                 WHERE   status = 'RELEASE') rpt2
+                       WHERE       rpt.werks = rpt2.werks
+                               AND rpt.res_name = rpt2.res_name
+                               AND rpt.work_ord_num = rpt2.work_ord_num
+                               AND rpt.seq_num = rpt2.seq_num),
+                  status = 'IN_PROCESS'
+          WHERE   status = 'RELEASE';
+-------------------------------------------------------		
+
+      -- add for ASN CR start;
+      DELETE FROM z_pcdw_mo_bom_orig;
+      --EXECUTE IMMEDIATE 'TRUNCATE TABLE r3_mo_bom_orig'; 
+
+      INSERT INTO z_pcdw_mo_bom_orig (productionordid,
+                                  bomname,
+                                  matnr,
+                                  qty,
+                                  itemcategory,
+                                  werks,
+                                  LOCATION,
+                                  sys_source,
+                                  dept, 
+                                  posnr,
+                                  sys_timestamp,
+                                  remark,
+                                  vendor,
+                                  LINENUM)
+         SELECT   productionordid,
+                  bomname,
+                  matnr,
+                  qty,
+                  itemcategory,
+                  werks,
+                  LOCATION,
+                  sys_source,
+                  dept,
+                  posnr,
+                  sys_created_date, --sys_timestamp,
+                  remark,
+                  vendor,
+                  LINENUM
+           FROM   z_pcdw_mo_bom;
+
+/* ------------------------------------------------------------
+    update by xwu, 2015/8/12
+    func: X86_MO_PULL.docx
+    to_number(linenum) -> to_number(posnr) 22.  for asn.
+*/-------------------------------------------------------------
+      UPDATE   z_pcdw_mo_bom
+         SET   LOCATION = null
+       WHERE   (productionordid, TO_NUMBER (posnr)) IN
+                     (SELECT   t1.productionordid, t1.linenum
+                        FROM   productionorders_bom_asn t1,
+                               z_pcdw_ds_mo t2
+                       WHERE       t1.asnflag = 'Y'
+                               AND t1.productionordid = t2.work_ord_num
+                               AND t2.status IN ('IN_PROCESS', 'ON_HOLD')
+                               --AND t1.status = 'IN_PROCESS');
+                               AND t1.status IN ('IN_PROCESS', 'ON_HOLD'));
+
+
+/* ------------------------------------------------------------
+    update by xwu, 2015/9/29
+    把 MW开头的location置为空
+*/-------------------------------------------------------------
+      update  z_pcdw_mo_bom
+            set  location = null 
+       where  location like 'MW%'
+          and  productionordid in 
+                ( select a.work_ord_num from z_pcdw_ds_mo as a where a.status in ('IN_PROCESS') ); 
+   -------------------------------------------------------------
+      --COMMIT;     --commented by Leonard
+
+      /* UPDATE ASN STATUS WHICH MO already be cancelled in ECC*/
+      UPDATE   productionorders_bom_asn a
+         SET   a.status = 'MO_DELETED'
+       WHERE   EXISTS
+                  (SELECT   1
+                     FROM   z_pcdw_mo b
+                    WHERE   b.status = 'Deleted'
+                            AND a.productionordid = b.productionordid);
+
+      --COMMIT;     --commented by Leonard
+
+      /* UPDATE ASN STATUS BACK TO IN_PROCESS WHICH CANCLED MO CHANGE BACK TO RELEASED*/
+
+      UPDATE   productionorders_bom_asn a
+         SET   a.status = 'IN_PROCESS'
+       WHERE   EXISTS
+                  (SELECT   1
+                     FROM   z_pcdw_mo b
+                    WHERE   b.status = 'Undelivery'
+                            AND a.productionordid = b.productionordid)
+               AND a.status = 'MO_DELETED';
+
+      --COMMIT;     --commented by Leonard
+
+      --add  for ASN CR end ;
+
+      DELETE FROM   PCDW.EXP_ECC_MO_STATUS
+            WHERE   werks IN (SELECT   siteid
+                                FROM   conf_site_schedule
+                               WHERE   ID = :iv_id);
+
+      --COMMIT;     --commented by Leonard
+
+	--BACK UP
+	DELETE FROM PCDW.BAK_EXP_ECC_MO_STATUS
+	 WHERE DAYS_BETWEEN(VMI_DATE,CURRENT_DATE)>90;	
+	
+	select "SZEBGVMI"."cdp.szebgvmi.sequences::EXP_ECC_MO_STATUS_ID".nextval
+	into backup_id from dummy;
+	
+	INSERT INTO PCDW.EXP_ECC_MO_STATUS (id,productionordid,
+                               werks,
+                               status,
+                               vmi_date,
+                               dept )
+    SELECT   "SZEBGVMI"."cdp.szebgvmi.sequences::EXP_ECC_MO_STATUS_ID".nextval,
+                  upr.work_ord_num,
+                  upr.werks,
+                  'VMIS',
+                  CURRENT_TIMESTAMP,    --SYSDATE
+                  t.dept
+           FROM   z_pcdw_ds_mo upr, conf_site_schedule t
+          WHERE upr.werks = t.siteid   -- add by xwu 2016/1/20, 使用conf_site_schedule关联代替后面的UPDATE.
+                  AND t.ID = :iv_id                                                                 
+          /*
+            upr.werks IN (SELECT   siteid
+                                         FROM   conf_site_schedule
+                                        WHERE   ID = :iv_id)
+          */
+                  AND upr.status = 'IN_PROCESS';
+
+-- update dept 2015/8/20
+--comment by  xwu 2016/1/20
+/*
+   UPDATE PCDW.EXP_ECC_MO_STATUS 
+          SET DEPT = ( SELECT DISTINCT dept FROM szebgvmi.conf_site_schedule WHERE ID = :iv_id);
+*/
+-- end	
+	
+	INSERT INTO PCDW.BAK_EXP_ECC_MO_STATUS (id,productionordid,PROCEDURE_NAME,
+                               werks,
+                               status,
+                               vmi_date,
+                               dept )
+    SELECT   :backup_id,
+         		  upr.work_ord_num,'PRC_PRE_VMI_PROCESS',
+                  upr.werks,
+                  'VMIF',
+                  CURRENT_DATE,
+                  t.dept
+           FROM   z_pcdw_ds_mo upr, conf_site_schedule t
+          WHERE   (EXISTS
+                      (SELECT   'x'
+                         FROM   mid_mo_line mid
+                        WHERE   mid.productionordid = upr.work_ord_num
+                                AND mid.werks = upr.werks)/*OR EXISTS (SELECT 'x'
+                   FROM mid_cancel_mo_line mid_c
+WHERE mid_c.productionordid = upr.work_ord_num
+  AND mid_c.werks = upr.werks)*/
+                                                                 )
+                  AND upr.werks = t.siteid   -- add by xwu 2016/1/20, 使用conf_site_schedule关联代替后面的UPDATE.
+                  AND t.ID = :iv_id                     
+/*                                                                 
+                  AND upr.werks IN (SELECT   siteid
+                                             FROM   conf_site_schedule
+                                            WHERE   ID = :iv_id) -- update from 1000 to iv_id.
+*/                                            
+                  AND upr.status = 'IN_PROCESS';
+
+-- update dept 2015/8/20
+--comment by  xwu 2016/1/20
+/*
+   UPDATE PCDW.EXP_ECC_MO_STATUS 
+          SET DEPT = ( SELECT DISTINCT dept FROM szebgvmi.conf_site_schedule WHERE ID = :iv_id);
+*/
+-- end	
+
+      IF ::ROWCOUNT >= 1          --IF SQL%ROWCOUNT >= 1
+      THEN
+         UPDATE   conf_cfg_xi_para xp
+            SET   xp.low = 1
+          WHERE       xp.progname = 'ZBAPI_MO_STATUS_UPDATE_INPUT'
+                  AND xp.paraclass = 'ACTION'
+                  AND xp.buid = iv_id;
+      ELSE
+         UPDATE   conf_cfg_xi_para xp
+            SET   xp.low = 0
+          WHERE       xp.progname = 'ZBAPI_MO_STATUS_UPDATE_INPUT'
+                  AND xp.paraclass = 'ACTION'
+                  AND xp.buid = iv_id;
+      END IF;  
+
+      on_exitcode := 0;
+      --COMMIT;     --commented by Leonard
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+			I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'SZEBGVMI'); 
+END;

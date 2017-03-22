@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_GETINFOGROUP" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_GETINFOGROUP"/>
+  <attributes>
+    <attribute id="ID" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_GROUP" columnName="GROUP_ID"/>
+    </attribute>
+    <attribute id="MODULE_ID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MODULE_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_GROUP" columnName="MODULE_ID"/>
+    </attribute>
+    <attribute id="NAME" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_GROUP" columnName="GROUP_NAME"/>
+    </attribute>
+    <attribute id="COMMENT" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="COMMENT"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_GROUP" columnName="COMMENT"/>
+    </attribute>
+    <attribute id="MODULE_NAME" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MODULE_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE" columnName="MODULE_NAME"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes>
+    <calculatedAttribute id="LOGINNAME" hidden="false" order="6" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOGINNAME"/>
+      <keyCalculation datatype="NVARCHAR" length="50">
+        <formula>null</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="FIRSTNAME" hidden="false" order="7" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="FIRSTNAME"/>
+      <keyCalculation datatype="NVARCHAR" length="30">
+        <formula>null</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="LASTNAME" hidden="false" order="8" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LASTNAME"/>
+      <keyCalculation datatype="NVARCHAR" length="30">
+        <formula>NULL</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="EMAILADDRESS" hidden="false" order="9" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="EMAILADDRESS"/>
+      <keyCalculation datatype="NVARCHAR" length="200">
+        <formula>null</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="STATUS" hidden="false" order="10" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="STATUS"/>
+      <keyCalculation datatype="NVARCHAR" length="20">
+        <formula>null</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="LOCALE" hidden="false" order="11" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCALE"/>
+      <keyCalculation datatype="NVARCHAR" length="16">
+        <formula>null</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="DESIGNATION" hidden="false" order="12" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="DESIGNATION"/>
+      <keyCalculation datatype="NVARCHAR" length="200">
+        <formula>null</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="CDP_PRIVILEGE_NAME" hidden="false" order="13" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CDP_PRIVILEGE_NAME"/>
+      <keyCalculation datatype="NVARCHAR" length="300">
+        <formula>'securityAccess'</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+  </calculatedAttributes>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_GROUP"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_GROUP"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_MODULE"/>
+        <leftColumns>
+          <columnName>MODULE_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MODULE_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_GROUP" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_MODULE" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="499" y="30"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

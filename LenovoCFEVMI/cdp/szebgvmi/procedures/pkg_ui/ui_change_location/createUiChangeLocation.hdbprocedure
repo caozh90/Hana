@@ -1,0 +1,63 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_change_location::createUiChangeLocation" (
+IN   MATNR NVARCHAR(18),
+IN   MATNR_DESCR NVARCHAR(40),
+IN   MO_NUM NVARCHAR(12),
+IN   STORAGE_LOC NVARCHAR(40),
+IN   LINE_NUM NVARCHAR(10),
+IN   STATUS  VARCHAR(40),
+OUT  result_status int,--0 for error, 1 for success
+OUT  error_message nvarchar(4096)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate1 int;
+		validate2 int;
+		CREATE_DATE TIMESTAMP;--相当于SYS_CREATED_DATE
+	--	STATUS nvarchar(25):='DRAFT';
+		REMARK NVARCHAR(40);	
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+	CREATE_DATE := :create_time;
+	
+		
+		INSERT INTO "SZEBGVMI"."UI_CHANGE_SL"(
+				 MATNR,
+				 MATNR_DESCR,
+				 MO_NUM,
+				 STORAGE_LOC,
+				 LINE_NUM,
+				 STATUS,
+				 REMARK,
+				 SYS_CREATED_DATE,
+				 SYS_CREATED_BY
+
+		 	)
+		 VALUES( :MATNR,
+				 :MATNR_DESCR,
+				 :MO_NUM,
+				 :STORAGE_LOC,
+				 :LINE_NUM,
+			 	 :STATUS,
+				 :REMARK,
+				 :CREATE_DATE,
+			 	 :currentUser
+			 	 );
+		result_status := 1;
+/*	SELECT count(1) into validate2
+	FROM UI_CHANGE_SL
+	WHERE (MATNR =:MATNR) AND (MO_NUM = :MO_NUM) AND (LINE_NUM = :LINE_NUM);
+	IF ( validate2 > 0 ) THEN			 	
+		result_status := 1;
+	END IF;
+*/
+END;

@@ -1,0 +1,101 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_flag::beforeCreateUiCostFlag"
+ ( 
+ 	    IN newInfo  "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COSTFLAG_T",
+		OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS
+		v_sbb_type   NVARCHAR(30);
+		v_vk	    NVARCHAR(30);
+		v_cost_flag NVARCHAR(10);
+		validate1   BIGINT;
+		v_zeinr     NVARCHAR(44);
+BEGIN
+/***************************** 
+*name      			 :   beforeCreateUiCostFlag
+*function    		 :               
+*input     			 :    oldInfo/newInfo
+*output     		 :    errorInfo            
+*author     		 :    chenwh3
+*beforeUpdateDate    :            
+*DeleteDate  		 : 
+*beforeCreateDate	 :    2015.07.24
+ *****************************/
+ 	SELECT sbb_type,vk,cost_flag 
+ 		INTO v_sbb_type,v_vk,v_cost_flag
+ 		FROM :newinfo;
+ --CHECK V_SBB_TYPE VK  CAN NOT BOTH BE 'N/A'  V1.8 	
+ 	IF (V_SBB_TYPE = 'N/A' AND  V_VK = 'N/A') THEN
+ 		errorinfo = select 400 as http_status_code, 
+            'VK/SBB_type cannot both be N/A.' error_message, 
+            '' detail from dummy;     
+ 		return;
+ 	END IF;		
+ 		
+ 
+--CHECK V_SBB_TYPE VK  CAN NOT BOTH BE NULL 	
+ 	IF (V_SBB_TYPE = '' or V_SBB_TYPE is null or V_SBB_TYPE = 'N/A') AND (V_VK = '' or V_VK is null or V_VK = 'N/A') THEN
+ 		errorinfo = select 400 as http_status_code, 
+            'VK/SBB_type cannot both be empty.' error_message, 
+            '' detail from dummy;     
+ 		return;
+ 	END IF;
+
+--CHECK V_SBB_TYPE VK  NOT BOTH BE NOT NULL 	
+ 	IF (V_SBB_TYPE != '' and V_SBB_TYPE is not null and V_SBB_TYPE != 'N/A') AND (V_VK != '' and V_VK is not null and V_VK != 'N/A') THEN
+ 		errorinfo = select 400 as http_status_code, 
+            'Either VK or SBB_type should be N/A.' error_message, 
+            '' detail from dummy;     
+ 		return;
+ 	END IF; 	
+ 	
+
+--CHECK VK VALID
+/*
+IF V_VK != '' and V_VK is not null and V_VK != 'N/A' THEN
+	SELECT COUNT(*) INTO VALIDATE1
+		FROM  "EBGCFE"."BIZ_FCSBBMAP"
+		WHERE VARCOND = :V_VK;
+	IF	VALIDATE1 <= 0
+	THEN
+		 errorinfo = select 400 as http_status_code, 
+            'VK :  VALIDATION FAILED, NOT EXIST IN BIZ_FCSBBMAP' error_message, 
+            '' detail from dummy;     
+		RETURN;
+	END IF;
+end if;
+--comment by zhengyl ,20160225
+*/
+
+--CHECK SBB_TYPE VALID
+IF V_SBB_TYPE != '' and V_SBB_TYPE is not null and V_SBB_TYPE != 'N/A' THEN
+	v_zeinr := 'L1 ' || :V_SBB_TYPE;
+ 	SELECT COUNT(*) INTO VALIDATE1
+ 		FROM "EBGCFE"."UI_ITEM"
+ 		WHERE ZEINR = :V_ZEINR;
+	IF	VALIDATE1 <= 0
+	THEN
+		 errorinfo = select 400 as http_status_code, 
+            'SBB_TYPE :  VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;     
+		RETURN;
+	END IF;
+end if;
+
+--CHECK key
+ 	SELECT count(*) INTO validate1
+ 		FROM "EBGCFE"."UI_COSTFLAG"
+ 		WHERE sbb_type = :v_sbb_type and vk = :v_vk;
+ 	if validate1 > 0
+ 	then
+ 		 errorinfo = select 400 as http_status_code, 
+            'the record exists' error_message, 
+            '' detail from dummy;     
+ 		return;
+ 	end if;
+ 	
+ 	
+END;

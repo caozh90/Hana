@@ -1,0 +1,77 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_real_dummy_mapping::beforeCreateRealDummyMapping" (
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_REAL_DUMMY_MAPPING_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      :                     beforeCreateRealDummyMapping
+*function    :               
+*input     ：               
+*output     :                
+*author     :                     shangqian
+*CreateDate    :                  2015.3.20
+*UpdateDate  :        
+*************************************************************************/
+	   aReal_part NVARCHAR(40); 
+	   aDummy_part NVARCHAR(18);
+	   aCommodity NVARCHAR(40);
+	   aOwner NVARCHAR(70);
+	   
+	   validate integer;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+select 	
+    REAL_PART,
+    DUMMY_PART,
+    COMMODITY,
+    OWNER
+  into 
+ 	aReal_part,
+	aDummy_part,
+	aCommodity,
+	aOwner
+  from :newInfo; 
+  
+  --REAL_PART  
+  select count(1) into validate from  "EBGCFE"."UI_ITEM" 
+  	    where product_group = 'EBG' and item = :aReal_part; 
+  if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'REAL_PART: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+  --DUMMY_PART  
+  select count(1) into validate from  "EBGCFE"."UI_DUMMYPART"
+  	    where product_group = 'EBG' and dummy_part = :aDummy_part; 
+  if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'DUMMY_PART: VALIDATION FAILED, NOT EXIST IN UI_DUMMYPART' error_message, 
+            '' detail from dummy;
+        return;
+   end if;
+   
+   --COMMODITY  
+  select count(1) into validate from  "EBGCFE"."CONF_PARAMETERS"
+  where pdomain='UI_COST_TAPE_ORI' and Pname='COMMODITY' and PVALUE=:aCommodity; 
+  if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'COMMODITY: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+   end if;
+   
+   --OWNER
+   if session_user != UCASE(:aOwner) then
+   		errorinfo = select 400 as http_status_code, 
+            'OWNER: VALIDATION FAILED' error_message, 
+            '' detail from dummy;
+        return;
+   end if;   
+END;

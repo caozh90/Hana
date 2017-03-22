@@ -1,0 +1,43 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_froce_item_type::beforeUpdateUiForceItemType" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FROCE_ITEM_TYPE"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_FROCE_ITEM_TYPE"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+        aProduct_group NVARCHAR(10);
+        aPart NVARCHAR(10);
+        aItem_type NVARCHAR(100);
+        
+        validate integer;
+BEGIN
+
+    select 
+        PRODUCT_GROUP,  
+        PART,
+        ITEM_TYPE
+      into 
+        aProduct_group,
+        aPart,
+        aItem_type
+      from :newInfo;
+    
+    --PART
+    select count(1) into validate from ebgcfe.UI_ITEM where ITEM=:aPART;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'PART: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --ITEM_TYPE
+    select count(1) into validate from ebgcfe. CONF_ITEMTYPE where ITEM_TYPE=:aITEM_TYPE;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'ITEM_TYPE: VALIDATION FAILED, NOT EXIST IN CONF_ITEMTYPE' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+END;

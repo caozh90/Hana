@@ -1,0 +1,86 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_source_priority::validationSourcePriority" (
+	 IN LOGICAL_PLANT NVARCHAR(40),
+	 IN MO_TYPE NVARCHAR(40),
+	 IN WAREHOUSE_NUMBER NVARCHAR(40),
+	 IN STORAGE_LOCATION NVARCHAR(40),
+	 IN STORAGE_TYPE NVARCHAR(40),
+	 IN PRIORITY INTEGER,
+	 IN OWNER NVARCHAR(40),
+	 IN INVENTORY_TYPE NVARCHAR(40),
+	 IN OPER_TYPE NVARCHAR(10),
+	 OUT ERROR NVARCHAR(300)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+	v_tmp INTEGER := 0;
+BEGIN
+	SELECT COUNT(1) INTO v_tmp FROM UI_SOURCING_PRIORITY WHERE LOGICAL_PLANT=:LOGICAL_PLANT 
+				AND MO_TYPE=:MO_TYPE AND WAREHOUSE_NUMBER=:WAREHOUSE_NUMBER 
+				AND STORAGE_LOCATION=:STORAGE_LOCATION AND STORAGE_TYPE=:STORAGE_TYPE; 
+	if v_tmp > 0 and OPER_TYPE = 'insert'
+	then
+		ERROR := 'Primary key constraint';
+		return;
+	end if;   
+	if v_tmp < 0 and OPER_TYPE = 'update'
+	then
+		ERROR := 'Primary key constraint';
+		return;
+	end if;
+	
+	select COUNT(1) into v_tmp from CONF_SITEMASTER WHERE SITEID = :LOGICAL_PLANT;
+	IF v_tmp = 0
+	then
+		ERROR := 'LOGICAL_PLANT: VALIDATION FAILED, DO NOT EXIST IN CONF_SITEMASTER';
+		return;
+	end if;
+	
+	SELECT count(1) into v_tmp FROM CONF_PARAMETER WHERE PTYPE='MO_TYPE' and pvalue = :MO_TYPE;
+	if :v_tmp = 0
+	then
+		ERROR := 'MO_TYPE: VALIDATION FAILED, DO NOT EXIST IN CONF_PARAMETER';
+		return;
+	END IF;
+	
+	select count(1) into v_tmp from CONF_WAHREHOUSE_INFO WHERE whs_no = :WAREHOUSE_NUMBER;
+	if v_tmp = 0
+	then 
+		ERROR := 'WAREHOUSE_NUMBER: VALIDATION FAILED, DO NOT EXIST IN CONF_WAHREHOUSE_INFO';
+		return;
+	end if;
+	
+	select count(1) into v_tmp from CONF_WAHREHOUSE_INFO where storage_location = :STORAGE_LOCATION;
+	if v_tmp = 0
+	then 
+		ERROR := 'STORAGE_LOCATION: VALIDATION FAILED, DO NOT EXIST IN CONF_WAHREHOUSE_INFO';
+		return;
+	end if;
+	
+	select count(1) into v_tmp from CONF_WAHREHOUSE_INFO where storage_type = :STORAGE_TYPE;
+	if v_tmp = 0
+	then 
+		ERROR := 'STORAGE_TYPE: VALIDATION FAILED, DO NOT EXIST IN CONF_WAHREHOUSE_INFO';
+		return;
+	end if;
+	
+	SELECT count(1) into v_tmp FROM CONF_WAHREHOUSE_INFO WHERE OWNER = :OWNER and IS_SOURCE='Y' AND WERKS= :LOGICAL_PLANT; 
+	--SELECT count(1) into v_tmp FROM CONF_PARAMETER WHERE PTYPE='' and PVALUE = :OWNER;
+	if v_tmp = 0
+	then 
+		ERROR := 'OWNER: VALIDATION FAILED, DO NOT EXIST IN CONF_WAHREHOUSE_INFO';
+		return;
+	end if;
+
+
+	SELECT COUNT(1) into v_tmp FROM CONF_PARAMETER WHERE PTYPE='INVENTORY_TYPE' and PVALUE = :INVENTORY_TYPE;
+	if v_tmp = 0
+	then 
+		ERROR := 'INVENTORY_TYPE: VALIDATION FAILED, DO NOT EXIST IN CONF_PARAMETER';
+		return;
+	end if;	
+	
+	ERROR := '';
+END;

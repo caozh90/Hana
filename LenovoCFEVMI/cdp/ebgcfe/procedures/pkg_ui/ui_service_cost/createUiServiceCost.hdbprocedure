@@ -1,0 +1,428 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_service_cost::createUiServiceCost" 
+	( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_SERVICE_COST_T",
+		OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+	) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	
+/************************************************************************
+*name        :      createUiServcieCost
+*function    :               
+*input       ：                 newInfo
+*output      :      errorInfo
+*author      :      billy Qiao
+*CreateDate  :      2015.9.6
+*UpdateDate  :      2015.9.6 
+*************************************************************************/
+	
+	AS
+	
+	aI_DETAIL NVARCHAR(300) := '';
+	alogide INTEGER := 0;
+	privilegeExists NVARCHAR(300);
+	
+	v_resourceExists BIGINT;
+	
+	V_CYCLE NVARCHAR(40);
+	V_PRODUCT_GROUP NVARCHAR(10);
+	V_MODEL NVARCHAR(40);
+	V_BRAND NVARCHAR(40);
+	V_SUBGEO NVARCHAR(20);
+	V_COUNTRY NVARCHAR(20);
+	V_M1 Decimal(15,4);
+	V_M2 Decimal(15,4);
+	V_M3 Decimal(15,4);
+	V_M4 Decimal(15,4);
+	V_M5 Decimal(15,4);
+	V_M6 Decimal(15,4);
+	V_M7 Decimal(15,4);
+	V_M8 Decimal(15,4);
+	V_M9 Decimal(15,4);
+	V_M10 Decimal(15,4);
+	V_M11 Decimal(15,4);
+	V_M12 Decimal(15,4);
+	V_M13 Decimal(15,4);
+	V_M14 Decimal(15,4);
+	V_M15 Decimal(15,4);
+	V_M16 Decimal(15,4);
+	V_M17 Decimal(15,4);
+	V_M18 Decimal(15,4);
+	V_ACTION NVARCHAR(100);
+	V_STATUS NVARCHAR(40);
+	
+	V_MESSAGEDETAIL NVARCHAR(300);
+	
+	v_item_type   VARCHAR(20);
+	v_proc_name   VARCHAR(100) := 'cdp.ebgcfe.procedures.pkg_ui.ui_service_cost::createUiServiceCost';
+	
+BEGIN
+--Exception Declare
+	DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+	
+--Exception Handler Declare
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+			aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_service_cost::createUiServiceCost error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+			
+	    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    	 I_TYPE=>'PROC_ERROR'	
+		     	,I_LOGSID=>:alogide
+		     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_service_cost::createUiServiceCost'
+		     	,I_MODULE=>'EBGCFE'
+		     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+		     	,I_DETAIL=>:aI_DETAIL
+	     	);	
+	 
+	 		errorInfo = select 400 as http_status_code, 
+	     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+	     		aI_DETAIL detail from dummy;
+		END;
+		
+--Check Privilege
+	call "SECURITY"."cdp.security.procedures::checkPrivilege"(
+	'ui_service_cost::createable',privilegeExists);
+
+	IF privilegeExists != 'OK' THEN
+		errorInfo = select 400 as http_status_code,
+						'NO AUTHORITY' as error_message,
+						privilegeExists as detail
+					from dummy;
+		RETURN;
+	END IF;
+
+--Log Start
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    I_TYPE=>'PROC_START',
+	        I_LOGSID=>:alogide,
+	        I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_service_cost::createUiServiceCost',
+	        I_MODULE=>'EBGCFE'
+	   	); 
+	   	
+--Get data from IN records which to be inserted
+	select
+		CYCLE,
+		PRODUCT_GROUP,
+		MODEL,
+		BRAND,
+		SUBGEO,
+		COUNTRY,
+		M1,
+		M2,
+		M3,
+		M4,
+		M5,
+		M6,
+		M7,
+		M8,
+		M9,
+		M10,
+		M11,
+		M12,
+		M13,
+		M14,
+		M15,
+		M16,
+		M17,
+		M18,
+		ACTION,
+		STATUS
+	into
+		V_CYCLE,
+		V_PRODUCT_GROUP,
+		V_MODEL,
+		V_BRAND,
+		V_SUBGEO,
+		V_COUNTRY,
+		V_M1,
+		V_M2,
+		V_M3,
+		V_M4,
+		V_M5,
+		V_M6,
+		V_M7,
+		V_M8,
+		V_M9,
+		V_M10,
+		V_M11,
+		V_M12,
+		V_M13,
+		V_M14,
+		V_M15,
+		V_M16,
+		V_M17,
+		V_M18,
+		V_ACTION,
+		V_STATUS
+	from
+		:newInfo
+	;--end select;
+
+--Data validation, Key must not be null
+	if V_CYCLE = '' or V_CYCLE is NULL then
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'CYCLE must not be NULL';
+	end if;
+	
+	if V_PRODUCT_GROUP = '' or V_PRODUCT_GROUP is NULL then
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'PRODUCT_GROUP must not be NULL';
+	end if;
+	
+	if V_MODEL = '' or V_MODEL is NULL then
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'MODEL must not be NULL';
+	end if;
+	
+	if V_COUNTRY = '' or V_COUNTRY is NULL then
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'COUNTRY must not be NULL';
+	end if;
+
+--Data validation, Duplicate Check
+	select
+		count(*)
+	into
+		v_resourceExists
+	from
+		"EBGCFE"."UI_SERVICECOST"
+	where
+		CYCLE = :V_CYCLE
+		and PRODUCT_GROUP = :V_PRODUCT_GROUP
+		and MODEL = :V_MODEL
+		and COUNTRY = :V_COUNTRY
+	;--end select;
+	
+	if v_resourceExists > 0 then
+	
+		V_MESSAGEDETAIL := '';
+		
+		errorInfo = select 11000 as http_status_code,
+						'the record key alread exist' as error_message,
+						V_MESSAGEDETAIL as detail
+					from dummy;
+		RETURN;
+	end if;
+	
+	--Added by Zhoubinbin 20160718, Validate master data for service parts
+	SELECT COUNT(0) INTO v_resourceExists 
+	  FROM ui_item
+	 WHERE product_group = :v_product_group
+	   AND item          = :v_model;
+	   
+	IF v_resourceExists = 0 AND v_brand = 'SERVICE'
+	THEN
+        INSERT INTO ui_item
+	       (cycle, product_group, brand, asp_prd_family, item, item_desc, 
+	        item_type, eol_status, sys_created_date, sys_created_by, 
+	        sys_last_modified_date, sys_last_modified_by)
+	    VALUES('CURRENT', v_product_group, v_brand, v_brand, v_model, v_brand,
+	           v_brand, 'OL', CURRENT_TIMESTAMP, v_proc_name, CURRENT_TIMESTAMP,
+	           v_proc_name);
+	          
+    ELSEIF v_resourceExists > 0
+    THEN
+	    SELECT item_type INTO v_item_type
+	      FROM ui_item
+	     WHERE product_group = :v_product_group
+	       AND item          = :v_model;
+	       
+	    IF v_item_type IS NOT NULL AND v_item_type <> 'SERVICE'
+	    THEN
+	        errorInfo = SELECT 11000 as http_status_code,
+						        'Item type is not SERVICE in UI_ITEM' as error_message,
+						         '' as detail
+					      FROM dummy;
+					      
+	        RETURN;
+	    ELSEIF v_item_type IS NULL AND v_brand = 'SERVICE'
+	    THEN
+	        INSERT INTO ui_item_log
+	            (cycle, product_group, brand, asp_prd_family, ecc_prod_family,
+                 machine_type, trmodel, item, item_desc, prod_h, item_type,
+                 item_source, eol_status, eol_startdate, eol_enddate, action, 
+                 status,sys_created_date, sys_created_by, sys_last_modified_date,
+                 sys_last_modified_by, geo, subgeo, country, commodity_code, hy_family,
+                 group_text, brand_text, series, subseries, stdpd, beskz, schgt, mtart,
+                 bismt, user_item_type, user_eol_status, user_item_desc, user_commodity_code, 
+                 user_asp_prd_family, brgew, gewei, custommodelflag, basewarranty, zlcod, zeinr, 
+                 zucod, x_entity_type, x_cofcat, x_specmoddesg, x_ww_annc_date, x_ww_withdraw_date, 
+                 x_cofsubcat, at_modified_by, at_action, at_modified_time)
+            SELECT cycle, product_group, brand, asp_prd_family, ecc_prod_family,
+                   machine_type, trmodel, item, item_desc, prod_h, item_type,
+                   item_source, eol_status, eol_startdate, eol_enddate, action, 
+                   status,sys_created_date, sys_created_by, sys_last_modified_date,
+                   sys_last_modified_by, geo, subgeo, country, commodity_code, hy_family,
+                   group_text, brand_text, series, subseries, stdpd, beskz, schgt, mtart,
+                   bismt, user_item_type, user_eol_status, user_item_desc, user_commodity_code, 
+                   user_asp_prd_family, brgew, gewei, custommodelflag, basewarranty, zlcod, zeinr, 
+                   zucod, x_entity_type, x_cofcat, x_specmoddesg, x_ww_annc_date, x_ww_withdraw_date, 
+                   x_cofsubcat, v_proc_name, 'UPDATE', CURRENT_TIMESTAMP
+              FROM ui_item
+             WHERE product_group = :v_product_group
+	           AND item          = :v_model;
+	           
+	       UPDATE ui_item
+	          SET item_type  = 'SERVICE',
+	              eol_status = 'OL'
+	        WHERE product_group = :v_product_group
+	          AND item          = :v_model;
+	          
+	   END IF;
+   END IF;
+
+--Insert record into table
+	insert into
+		"EBGCFE"."UI_SERVICECOST"(
+			CYCLE,
+			PRODUCT_GROUP,
+			MODEL,
+			BRAND,
+			SUBGEO,
+			COUNTRY,
+			M1,
+			M2,
+			M3,
+			M4,
+			M5,
+			M6,
+			M7,
+			M8,
+			M9,
+			M10,
+			M11,
+			M12,
+			M13,
+			M14,
+			M15,
+			M16,
+			M17,
+			M18,
+			ACTION,
+			STATUS,
+			SYS_CREATED_DATE,
+			SYS_CREATED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			SYS_LAST_MODIFIED_BY,
+			CHANGE_ID,
+			CHANGE_ACTION
+		)values(
+			:V_CYCLE,
+			:V_PRODUCT_GROUP,
+			:V_MODEL,
+			:V_BRAND,
+			:V_SUBGEO,
+			:V_COUNTRY,
+			:V_M1,
+			:V_M2,
+			:V_M3,
+			:V_M4,
+			:V_M5,
+			:V_M6,
+			:V_M7,
+			:V_M8,
+			:V_M9,
+			:V_M10,
+			:V_M11,
+			:V_M12,
+			:V_M13,
+			:V_M14,
+			:V_M15,
+			:V_M16,
+			:V_M17,
+			:V_M18,
+			:V_ACTION,
+			:V_STATUS,
+			CURRENT_UTCTIMESTAMP,			--SYS_CREATED_DATE,
+			SESSION_USER,					--SYS_CREATED_BY,
+			CURRENT_UTCTIMESTAMP,			--SYS_LAST_MODIFIED_DATE,
+			SESSION_USER,					--SYS_LAST_MODIFIED_BY,
+			SESSION_USER,					--CHANGE_ID,
+			'create'						--CHANGE_ACTION
+		);		
+
+--Insert log table
+	insert into
+		"EBGCFE"."UI_SERVICECOST_LOG"(
+			CYCLE,
+			PRODUCT_GROUP,
+			MODEL,
+			BRAND,
+			SUBGEO,
+			COUNTRY,
+			M1,
+			M2,
+			M3,
+			M4,
+			M5,
+			M6,
+			M7,
+			M8,
+			M9,
+			M10,
+			M11,
+			M12,
+			M13,
+			M14,
+			M15,
+			M16,
+			M17,
+			M18,
+			ACTION,
+			STATUS,
+			SYS_CREATED_DATE,
+			SYS_CREATED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			SYS_LAST_MODIFIED_BY,
+			CHANGE_ID,
+			CHANGE_ACTION,
+			AT_MODIFIED_BY,
+			AT_ACTION,
+			AT_MODIFIED_ON,
+			AT_MILLIS
+		)values(
+			:V_CYCLE,
+			:V_PRODUCT_GROUP,
+			:V_MODEL,
+			:V_BRAND,
+			:V_SUBGEO,
+			:V_COUNTRY,
+			:V_M1,
+			:V_M2,
+			:V_M3,
+			:V_M4,
+			:V_M5,
+			:V_M6,
+			:V_M7,
+			:V_M8,
+			:V_M9,
+			:V_M10,
+			:V_M11,
+			:V_M12,
+			:V_M13,
+			:V_M14,
+			:V_M15,
+			:V_M16,
+			:V_M17,
+			:V_M18,
+			:V_ACTION,
+			:V_STATUS,
+			CURRENT_UTCTIMESTAMP,		--SYS_CREATED_DATE,
+			SESSION_USER,				--SYS_CREATED_BY,
+			CURRENT_UTCTIMESTAMP,		--SYS_LAST_MODIFIED_DATE,
+			SESSION_USER,				--SYS_LAST_MODIFIED_BY,
+			SESSION_USER,				--CHANGE_ID,
+			'insert',					--CHANGE_ACTION,
+			SESSION_USER,				--AT_MODIFIED_BY,
+			'insert',					--AT_ACTION,
+			CURRENT_UTCTIMESTAMP,		--AT_MODIFIED_ON,
+			TO_DECIMAL(TO_VARCHAR(CURRENT_UTCTIMESTAMP,'HH24MISSFF3'))		--AT_MILLIS		
+		);		
+
+--Log End
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    I_TYPE=>'PROC_END',
+	        I_LOGSID=>:alogide,
+	        I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_service_cost::createUiServiceCost',
+	        I_MODULE=>'EBGCFE'
+	   	); 
+END;

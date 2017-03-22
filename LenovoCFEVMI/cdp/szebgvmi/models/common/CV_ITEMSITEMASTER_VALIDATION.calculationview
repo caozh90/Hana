@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_ITEMSITEMASTER_VALIDATION" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_ITEMSITEMASTER_VALIDATION"/>
+  <localVariables>
+    <variable id="IN_LOGIC_PLANT" parameter="true">
+      <descriptions defaultDescription="IN_"/>
+      <variableProperties datatype="NVARCHAR" length="40" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+    <variable id="IN_PART_NUMBER" parameter="true">
+      <descriptions defaultDescription="IN_PART_NUMBER"/>
+      <variableProperties datatype="NVARCHAR" length="120" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="ITEMSITEMASTER" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SZEBGVMI" columnObjectName="ITEMSITEMASTER"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="SITEID_FILTER">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$IN_LOGIC_PLANT$$"/>
+        </viewAttribute>
+        <viewAttribute id="ITEM_FILTER">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$IN_PART_NUMBER$$"/>
+        </viewAttribute>
+        <viewAttribute id="ITEMDESC"/>
+        <viewAttribute id="ITEM"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#ITEMSITEMASTER">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEMDESC" source="ITEMDESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_FILTER" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SITEID_FILTER" source="SITEID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="ITEMDESC" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEMDESC"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ITEMDESC"/>
+      </attribute>
+      <attribute id="ITEM" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ITEM"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures>
+      <measure id="CNT" hidden="false" order="1" aggregationType="sum" measureType="simple" calculatedMeasureType="counter" datatype="INTEGER">
+        <descriptions defaultDescription="CNT"/>
+        <exceptionAggregation exceptionAggregationType="countDistinct">
+          <attribute attributeName="ITEM"/>
+          <attribute attributeName="ITEMDESC"/>
+        </exceptionAggregation>
+        <formula>1</formula>
+      </measure>
+    </calculatedMeasures>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="220"/>
+        <rectangleSize height="64" width="201"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

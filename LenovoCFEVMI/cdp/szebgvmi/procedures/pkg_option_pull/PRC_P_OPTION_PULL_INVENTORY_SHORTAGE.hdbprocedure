@@ -1,0 +1,81 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_option_pull::PRC_P_OPTION_PULL_INVENTORY_SHORTAGE" ( 
+	IN iv_id VARCHAR(10),OUT on_exitcode NUMBER               
+	--2016/9/19 exitcode added by qilin3 PBI000000048822
+) 
+    language sqlscript sql security definer
+    default schema "SZEBGVMI"
+AS
+    v_request_id     varchar(10);
+    n_dis_quantity  decimal(13,3);
+    v_line_id           varchar(400);
+    v_status           varchar(1);
+    v_apo_status    varchar(20);        
+    v_plant             varchar(20);
+    v_dept              varchar(40);
+    v_logidi             integer  := 0;	
+    v_pkg_name            varchar (40)            := 'pkg_option_pull';
+    v_logic_proc_name  varchar (40)            := 'PRC_P_OPTION_PULL_INVENTORY_SHORTAGE';
+    v_full_name             varchar (100)            := v_pkg_name||'.'||v_logic_proc_name;
+
+BEGIN
+/************************************************************************
+*name       : PRC_P_OPTION_PULL_INVENTORY_SHORTAGE
+*function    :把mid option line中未找到的option request id, 
+                        更新到dispatch update及bak表中
+                        同时标记状态
+                  --option pull的如果这次running，发现存在没有生成pull line(也就是没有更新到mid_option_line中)的那些request, 
+                     放到"EXP_APO_OPTION_DISPATCH_UPDATE"中，状态=C, QTY=0.
+*2016/2/27 create by xwu.
+*************************************************************************/ 	
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;	                ---2016/9/19 added by qilin3 PBI000000048822
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512));                                                  
+	END;
+
+     -- default value
+     n_dis_quantity := 0;
+     v_status := 'C';
+     v_apo_status := 'NEW';
+
+     -- get plant, dept
+    select top 1 siteid, dept into v_plant, v_dept  
+    from "SZEBGVMI"."CONF_SITE_SCHEDULE" 
+    where id = :iv_id;
+    
+    DELETE FROM PCDW.EXP_APO_OPTION_DISPATCH_UPDATE t1
+    WHERE t1.plant IN (SELECT siteid
+                                  FROM CONF_SITE_SCHEDULE
+                                  WHERE ID = :iv_id);
+
+    insert into PCDW.EXP_APO_OPTION_DISPATCH_UPDATE (REQUEST_ID,QTY,PULLID,STATUS, SYS_TIMESTAMP,APO_STATUS, PLANT, DEPT)
+    select  
+          a.request_id,
+          :n_dis_quantity,
+          :v_line_id,
+          :v_status,
+          current_timestamp,
+          :v_apo_status,
+          :v_plant,
+          :v_dept
+    from z_pcdw_option_pull as a
+    where a.request_id not in(select ref_request_id from mid_option_line); 
+          
+    insert into PCDW.BAK_EXP_APO_OPTION_DISPATCH_UPDATE (REQUEST_ID,QTY,PULLID,STATUS, SYS_TIMESTAMP,APO_STATUS, PLANT, DEPT)
+    select  
+          a.request_id,
+          :n_dis_quantity,
+          :v_line_id,
+          :v_status,
+          current_timestamp,
+          v_apo_status,
+          :v_plant,
+          :v_dept
+    from z_pcdw_option_pull as a
+    where a.request_id not in(select ref_request_id from mid_option_line); 
+ 
+END;

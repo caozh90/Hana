@@ -1,0 +1,161 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_clear_difference::PRC_CLEAR_DIFFERENCE_RESPONSE" (
+	iv_id VARCHAR(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_CLEAR_DIFFERENCE_RESPONSE              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/01                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	
+	AS
+	v_logic_proc_name   VARCHAR (40) := 'PRC_CLEAR_DIFF_RESPONSE';
+	v_pkg_name VARCHAR(40) := 'PKG_CLEAR_DIFFERENCE';
+	v_full_name VARCHAR(100) := v_pkg_name||'.'||v_logic_proc_name;
+	v_logidi INTEGER := 0;
+BEGIN
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- COMMIT;      --comment by Eric Zhou
+	END;
+on_exitcode := -20099;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+      UPDATE clear_diff t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document,sys_last_modified_by,sys_last_modified_date) =
+                (SELECT DISTINCT 'OLD', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document,:v_full_name,current_timestamp
+                            FROM Z_PCDW_RSP_CLEAR_DIFF
+                           WHERE t.pull_line_id = pull_line_id
+                             AND t.pull_header_id = pull_header_id
+                             AND status = 'SUCCESS')
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_RSP_CLEAR_DIFF s
+                 WHERE s.pull_line_id = t.pull_line_id
+                   AND s.pull_header_id = t.pull_header_id
+                   AND s.status = 'SUCCESS')
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND status = 'SENT';                              --added @2007-11-12
+      
+      --2013.07.10 baiying MEX CSE Project AS
+      UPDATE pull_line line SET line.ECC_STATUS = 'CONFIRM_OLD'
+        WHERE EXISTS (
+            SELECT 'X'
+            FROM Z_PCDW_RSP_CLEAR_DIFF s
+                 WHERE s.pull_line_id = line.pull_line_id
+                   AND s.pull_header_id = line.pull_header_id
+                   AND s.status = 'SUCCESS')
+         AND line.werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+                        AND line.ECC_STATUS!='PULL_ERROR';
+
+      --2013.07.10 baiying MEX CSE Project AE
+
+      UPDATE clear_diff t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document) =
+                (SELECT DISTINCT 'OLD', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document
+                            FROM Z_PCDW_RSP_CLEAR_DIFF
+                           WHERE t.pull_header_id = pull_header_id
+                             AND pull_line_id IS NULL
+                             AND status = 'SUCCESS')
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_RSP_CLEAR_DIFF s
+                 WHERE s.pull_line_id IS NULL
+                   AND s.pull_header_id = t.pull_header_id
+                   AND s.status = 'SUCCESS')
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND status = 'SENT';
+
+      UPDATE clear_diff t
+         SET (status, reason_code, ecc_step, tr_number, tr_item_number,
+              material_document_year, material_document,sys_last_modified_by,sys_last_modified_date) =
+                (SELECT DISTINCT 'ERROR', reason_code, ecc_step, tr_number,
+                                 tr_item_number, material_document_year,
+                                 material_document,:v_full_name,current_timestamp
+                            FROM Z_PCDW_RSP_CLEAR_DIFF
+                           WHERE t.pull_line_id = pull_line_id
+                             AND t.pull_header_id = pull_header_id
+                             AND status = 'ERROR')
+       WHERE EXISTS (
+                SELECT 'x'
+                  FROM Z_PCDW_RSP_CLEAR_DIFF s
+                 WHERE s.pull_line_id = t.pull_line_id
+                   AND s.pull_header_id = t.pull_header_id
+                   AND s.status = 'ERROR')
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND status = 'SENT';                              
+         
+      UPDATE pull_line line SET line.ECC_STATUS = 'CONFIRM_ERROR'
+        WHERE EXISTS (
+            SELECT 'X'
+            FROM Z_PCDW_RSP_CLEAR_DIFF s
+                 WHERE s.pull_line_id = line.pull_line_id
+                   AND s.pull_header_id = line.pull_header_id
+                   AND s.status = 'ERROR')
+         AND line.werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id) and   line.ECC_STATUS <> 'PULL_ERROR';
+
+/*
+    从clear_diff更新数据到 DISPATCH_LIST
+    sys_source=('DF' or 'CSO') and confirm_qty = 0, by xwu 2015/11/12
+*/        
+      INSERT INTO dispatch_list
+                  (pull_line_id, pull_header_id, werks, src_storage_loc,src_storage_type,
+                   src_storage_bin, inventory_type, lifnr, whs_no, sys_auth_id,
+                   dest_storage_type, dest_storage_loc, dest_storage_bin,
+                   dispatch_qty, unreserved_qty, line_qty, loi_qty,
+                   difference_qty, sys_source, dept, matnr, status, sys_created_date)
+         SELECT a.pull_line_id, a.pull_header_id, a.werks, a.src_storage_loc,b.src_storage_type,
+                     b.src_storage_bin, b.inventory_type, b.lifnr, b.whs_no, 'L070' as sys_auth_id,
+                     a.dest_storage_type, a.dest_storage_loc, a.dest_storage_bin,
+                     0, 0, 0, 0, -1, a.sys_source, a.dept, a.matnr,
+                     'XI_IN_PROCESS', current_timestamp
+           FROM clear_diff b, pull_line a
+          WHERE a.pull_line_id = b.pull_line_id
+            AND a.pull_header_id = b.pull_header_id
+            AND a.sys_source IN ('DF', 'CSO')
+            AND b.confirmed_qty = 0
+            AND NOT EXISTS( SELECT 'X' FROM dispatch_list as t
+                                         WHERE a.pull_line_id = t.pull_line_id
+                                            AND a.pull_header_id = t.pull_header_id );
+----------------------------------------------------------------------
+
+      on_exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');
+END;

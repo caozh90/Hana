@@ -1,0 +1,1473 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_IDOC_MATMASTER_PREPROCESS" ( 
+ OUT  PO_RETURNCODE    DECIMAL
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW 
+	AS
+   /************************************************************************
+   *name        :               PRDPCDW.PRC_IDOC_MATMASTER_PREPROCESS
+   *function    :               specification for data initialization
+   *input       :
+   *output      :
+   *author      :               chenshengli
+   *CreateDate  :                2010-07-20
+   *UpdateDate  :                2011-06-09(YANJUN)/2014-05-08(lich)
+   *content:Add new field ZEIAR in PCDW_ITEMSITEMASTER for MBG project
+   *************************************************************************/
+   vProcStartTime   TIMESTAMP := CURRENT_TIMESTAMP;
+   v_DelteStr       VARCHAR (1024);
+   vMsg             VARCHAR (1024) := '';
+   vCode            DECIMAL := 0;
+   v_lockname     varchar(100) := 'PCDW_IDOC_MATMASTER_PREPROCESS';
+   v_lockhandle   varchar(200);
+   retlock        int;
+   n	 	 	  int;
+
+BEGIN
+
+	-- exception
+    --定义异常
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+	-- vMsg := SUBSTR (DBMS_UTILITY.format_error_backtrace, 1, 512);
+	  vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+        VALUES   (CURRENT_TIMESTAMP,
+                  'PRC_IDOC_MATMASTER_PREPROCESS',
+                  'OTHER ERROR',
+                  :vCode,
+                  :vMsg,
+                  '',
+                  '',
+                  '',
+                  'END');
+
+    exec 'commit';
+    END;
+	-- exception
+	
+	
+	/***
+	**日志处理
+	**删除一个月之前的日志数据，再插入当前日志
+	***/
+	
+   DELETE from "PCDW"."PCDW_PROC_LOG"
+	where days_between(eventtime,current_timestamp) >30;
+	
+   INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 0', 0,'','', '','', 'START');
+
+   EXEC 'COMMIT';
+
+	 -- acquire lock
+	 /* just ignore concurrency
+  	DBMS_LOCK.allocate_unique(v_lockname, v_lockhandle);
+   	retlock := DBMS_LOCK.request(lockhandle=>v_lockhandle);
+
+   	PO_RETURNCODE := 1;
+   	*/
+   
+   -- truncate mid table
+ /*  v_DelteStr := 'truncate table Z_MID_MMR_ITEM';
+   EXECUTE IMMEDIATE v_DelteStr;*/
+   DELETE FROM Z_MID_MMR_ITEM;
+   EXEC 'COMMIT';
+   
+   /*v_DelteStr := 'truncate  table PCDW_MID_ITEMLIST';
+   EXECUTE IMMEDIATE v_DelteStr;*/
+   DELETE FROM PCDW_MID_ITEMLIST;
+   EXEC 'COMMIT';
+   
+   /*v_DelteStr := 'truncate table PCDW_MID_ITEMSITEMASTER';
+   EXECUTE IMMEDIATE v_DelteStr;*/
+   DELETE FROM PCDW_MID_ITEMSITEMASTER;
+   EXEC 'COMMIT';
+   
+   --  insert into pcdw_mid_idoclist(IDOCNUM,
+   --                                SYS_CREATED_DATE,
+   --                                SYS_CREATED_BY,
+   --                                SYS_LAST_MODIFIED_DATE,
+   --                                SYS_LAST_MODIFIED_BY)
+   --  select IDOCNUM,
+   --         SYS_CREATED_DATE as SYS_CREATED_DATE,
+   --         'IDOC PREPROCESS' as SYS_CREATED_BY,
+   --         CURRENT_TIMESTAMP as SYS_LAST_MODIFIED_DATE,
+   --         'IDOC PREPROCESS' as SYS_LAST_MODIFIED_BY
+   --  from ECC_MARC
+   --  where flag=0;
+
+
+   --IDOC 如果在1min之外，则认为不存在同步问题 主键问题，只对工厂相关做限制  不能delete。。。
+   --  delete from pcdw_mid_idoclist a
+   --  where not exists(select 1 from ecc_marc
+   --                       where idocnum=a.idocnum)
+   --  and SYS_CREATED_DATE>SYS_LAST_MODIFIED_DATE-60/86400;
+
+
+   --  delete from pcdw_mid_idoclist a
+   --  where not exists(select 1 from ECC_MVKE
+   --                       where idocnum=a.idocnum)
+   --  and SYS_CREATED_DATE>SYS_LAST_MODIFIED_DATE-60/86400;
+
+   --  delete from pcdw_mid_idoclist a
+   --  where not exists(select 1 from ECC_MBEW
+   --                       where idocnum=a.idocnum)
+   --  and SYS_CREATED_DATE>SYS_LAST_MODIFIED_DATE-60/86400;
+
+   --  delete from pcdw_mid_idoclist a
+   --  where not exists(select 1 from ECC_MAKT
+   --                       where idocnum=a.idocnum)
+   --  and SYS_CREATED_DATE>SYS_LAST_MODIFIED_DATE-60/86400;
+
+   -- Do not need consider T023T and T179T
+   --  delete from pcdw_mid_idoclist a
+   --  where not exists(select 1 from ECC_T023T
+   --                       where idocnum=a.idocnum)
+   --  and SYS_CREATED_DATE>SYS_LAST_MODIFIED_DATE-60/86400;
+   --
+   --  delete from pcdw_mid_idoclist a
+   --  where not exists(select 1 from ECC_T179T
+   --                       where idocnum=a.idocnum)
+   --  and SYS_CREATED_DATE>SYS_LAST_MODIFIED_DATE-60/86400;
+   --  COMMIT;
+   
+   INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 1.0', 0,'','', '','', 'UPDATE FLAG 0->1');
+   --iii
+   UPDATE   ECC_MARA a
+      SET   flag = 1,SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+    WHERE   flag = 0;
+
+   INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 1.1', 0,'','', '','', 'UPDATE MARA FLAG');
+
+
+   UPDATE   ECC_MARC a
+      SET   flag = '1',SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+    WHERE   flag = '0';
+
+   INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 1.2', 0,'','', '','', 'UPDATE MARC FLAG');
+
+   UPDATE   ECC_MVKE a
+      SET   flag = '1',SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+    WHERE   flag = '0';
+
+   INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 1.3', 0,'','', '','', 'UPDATE MVKE FLAG');
+
+   UPDATE   ECC_MBEW a
+      SET   flag = '1',SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+    WHERE   flag = '0';
+
+   INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 1.4', 0,'','', '','', 'UPDATE MBEW FLAG');
+
+   UPDATE   ECC_MAKT a
+      SET   flag = '1',SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+    WHERE   flag = '0';
+
+  INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 1.5', 0,'','', '','', 'UPDATE MAKT FLAG');
+
+   UPDATE   ECC_T023T a
+      SET   flag = '1',SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+    WHERE   flag = '0';
+
+   INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 1.6', 0,'','', '','', 'UPDATE T023T FLAG');
+
+   UPDATE   ECC_T179T a
+      SET   flag = '1',SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+    WHERE   flag = '0';
+
+   INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 1.7', 0,'','', '','', 'UPDATE T179T FLAG');
+
+   UPDATE   ECC_QMAT a
+      SET   flag = '1',SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP --updated by kevin,20110929
+    WHERE   flag = '0'; -- Added by kevin liu,20110626
+   
+   
+   INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 1.8', 0,'','', '','', 'UPDATE QMAT FLAG');
+    -- Added by kevin liu,20110922
+
+   -- formulate item list, added by zhaish1 on 20141126 
+/* comment by xwu 2016/1/19 
+   INSERT INTO z_mid_mmr_item
+          (matnr, sys_created_date)
+   SELECT matnr, CURRENT_TIMESTAMP
+     FROM ecc_mara a
+    WHERE flag = '1';
+*/
+    
+   INSERT INTO z_mid_mmr_item
+          (matnr, sys_created_date)
+   SELECT matnr, CURRENT_TIMESTAMP
+     FROM ecc_marc a
+    WHERE flag = '1';
+    
+   INSERT INTO z_mid_mmr_item
+          (matnr, sys_created_date)
+   SELECT matnr, CURRENT_TIMESTAMP
+     FROM ecc_mvke a
+    WHERE flag = '1';
+    
+   INSERT INTO z_mid_mmr_item
+          (matnr, sys_created_date)
+   SELECT matnr, CURRENT_TIMESTAMP
+     FROM ecc_mbew a
+    WHERE flag = '1';
+    
+   INSERT INTO z_mid_mmr_item
+          (matnr, sys_created_date)
+   SELECT matnr, CURRENT_TIMESTAMP
+     FROM ecc_makt a
+    WHERE flag = '1';
+    
+   EXEC 'COMMIT';
+   
+   DELETE FROM z_mid_mmr_item a
+   WHERE "$rowid$" NOT IN (SELECT min("$rowid$") FROM z_mid_mmr_item GROUP BY matnr);
+     
+   EXEC 'COMMIT';
+   
+   --iv
+   INSERT INTO PCDW_MID_ITEMLIST (MATNR,
+                                  ERSDA,
+                                  MTART,
+                                  MATKL,
+                                  LVORM,
+                                  BISMT,
+                                  EAN11,
+                                  NUMTP,
+                                  EXTWG,
+                                  ZMTM,
+                                  RAUBE,
+                                  NORMT,
+                                  BRGEW,
+                                  NTGEW,
+                                  GEWEI,
+                                  MEINS,
+                                  ZPRFA,
+                                  --EM_COUNTRY,
+                                  --EM_GEO,
+                                  --EM_SUBGEO,
+                                  --DUMMYFG,
+                                  EM_PRDFAMILY, -- Modified by qinying for PF 2013/10/24
+                                  ZUCOD,
+                                  MFRPN,    --by Qiaoxi for ER2 on 2012.7.10
+                                  ZEINR,     --by Qiaoxi for PGI on 2012.6.20
+                                  SYS_CREATED_DATE,
+                                  SYS_CREATED_BY,
+                                  SYS_LAST_MODIFIED_DATE,
+                                  SYS_LAST_MODIFIED_BY--CCPRODH
+                                  ,/*add new fields for YPMM project by huangqr on 2012.11.26*/
+                                  MTBEZ,
+                                  MSTAE,
+                                  BLATT,
+                                  ZLCOD
+                                  ,ZEIAR --add by lich 20140508 for MBG project
+                                  )
+      SELECT   MATNR,
+               ERSDA,
+               MTART,
+               MATKL,
+               LVORM,
+               BISMT,
+               EAN11,
+               NUMTP,
+               EXTWG,
+               ZMTM,
+               RAUBE,
+               NORMT,
+               BRGEW,
+               NTGEW,
+               GEWEI,
+               MEINS,
+               ZPRFA,
+               --EM_COUNTRY,
+               --upper(EM_GEO),
+               --upper(EM_SUBGEO),
+               --DUMMYFG,
+               --EM_PRDFAMILY,
+--x86下都是新料               DECODE(REGEXP_INSTR (MATNR,'^[0-9]*$'),1,EM_PRDFAMILY,EXTWG),--Add by qinying for PF 2013/10/24
+               EXTWG,
+               ZUCOD,
+               MFRPN,    --by Qiaoxi for ER2 on 2012.7.10
+                ZEINR,      --by Qiaoxi for PGI on 2012.6.20
+               CURRENT_TIMESTAMP,
+               'PRC_IDOC_MATMASTER_PREPROCESS',
+               CURRENT_TIMESTAMP,
+               'PRC_IDOC_MATMASTER_PREPROCESS'
+               --CCPRODH
+               ,/*add new fields for YPMM project by huangqr on 2012.11.26*/
+               MTBEZ,
+               MSTAE,
+               BLATT,
+               ZLCOD
+               ,ZEIAR--add by lich 20140508 for MBG project
+        FROM   ECC_MARA a
+       WHERE   EXISTS (SELECT 1 FROM z_mid_mmr_item b WHERE b.matnr = a.matnr);
+
+     INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 2.0', 0,'','', 'MARA','PCDW_MID_ITEMLIST', 'ITEMLIST');
+   	 
+ --v
+ 
+   	tab_v = SELECT  	  matnr,
+                          maktx,
+                          maktx_ch,
+                          maktx_tch,
+                          flag,
+                          idocnum,
+                          idoctime,
+                          sys_created_date,
+                          sys_created_by,
+                          sys_last_modified_date,
+                          sys_last_modified_by
+                   FROM   ECC_MAKT a
+                  WHERE   EXISTS (SELECT 1 FROM z_mid_mmr_item b WHERE b.matnr = a.matnr);
+     select count(1) into n from :tab_v e,PCDW_MID_ITEMLIST p
+     where p.matnr = e.matnr;
+     
+     if :n>0 then
+     --如果有满足条件的数据，就需要先update，再insert不满足条件的数据
+     	UPDATE PCDW_MID_ITEMLIST P
+     	SET
+         P.MAKTX = E.MAKTX,
+         P.MAKTX_CH = E.MAKTX_CH,
+         P.MAKTX_TCH = E.MAKTX_CH,
+         p.SYS_CREATED_DATE = e.sys_created_date,
+         p.SYS_CREATED_BY = e.sys_created_by,
+         p.SYS_LAST_MODIFIED_DATE = e.sys_last_modified_date,
+         p.SYS_LAST_MODIFIED_BY = e.sys_last_modified_by
+       	from :tab_v E
+       	where p.matnr = e.matnr;
+       	
+       	INSERT  INTO  PCDW_MID_ITEMLIST(MATNR,
+                           MAKTX,
+                           MAKTX_CH,
+                           MAKTX_TCH,
+                           SYS_CREATED_DATE,
+                           SYS_CREATED_BY,
+                           SYS_LAST_MODIFIED_DATE,
+                           sys_last_modified_by)
+          SELECT   E.MATNR,
+                    E.MAKTX,
+                    E.MAKTX_CH,
+                    E.MAKTX_TCH,
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS'
+          from :tab_v E
+          where E.MATNR not in
+          (	
+          select MATNR
+          from PCDW_MID_ITEMLIST
+          );
+       	
+     ELSEIF :n=0 then
+     	INSERT  INTO  PCDW_MID_ITEMLIST(MATNR,
+                           MAKTX,
+                           MAKTX_CH,
+                           MAKTX_TCH,
+                           SYS_CREATED_DATE,
+                           SYS_CREATED_BY,
+                           SYS_LAST_MODIFIED_DATE,
+                           sys_last_modified_by)
+          SELECT   E.MATNR,
+                    E.MAKTX,
+                    E.MAKTX_CH,
+                    E.MAKTX_TCH,
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS'
+          from :tab_v E;
+       END IF ;
+              --WHERE   e.flag = 1
+     
+ /*  MERGE INTO   PCDW_MID_ITEMLIST P
+        USING   (SELECT   matnr,
+                          maktx,
+                          maktx_ch,
+                          maktx_tch,
+                          flag,
+                          idocnum,
+                          idoctime,
+                          sys_created_date,
+                          sys_created_by,
+                          sys_last_modified_date,
+                          sys_last_modified_by
+                   FROM   ECC_MAKT a
+                  WHERE   EXISTS (SELECT 1 FROM z_mid_mmr_item b WHERE b.matnr = a.matnr)) E
+           ON   (p.matnr = E.MATNR)
+   WHEN MATCHED
+   THEN
+      UPDATE SET
+         P.MAKTX = E.MAKTX,
+         P.MAKTX_CH = E.MAKTX_CH,
+         P.MAKTX_TCH = E.MAKTX_CH,
+         p.SYS_CREATED_DATE = e.sys_created_date,
+         p.SYS_CREATED_BY = e.sys_created_by,
+         p.SYS_LAST_MODIFIED_DATE = e.sys_last_modified_date,
+         p.SYS_LAST_MODIFIED_BY = e.sys_last_modified_by
+              --WHERE   e.flag = 1
+   WHEN NOT MATCHED
+   THEN
+      INSERT              (MATNR,
+                           MAKTX,
+                           MAKTX_CH,
+                           MAKTX_TCH,
+                           SYS_CREATED_DATE,
+                           SYS_CREATED_BY,
+                           SYS_LAST_MODIFIED_DATE,
+                           sys_last_modified_by)
+          VALUES   (E.MATNR,
+                    E.MAKTX,
+                    E.MAKTX_CH,
+                    E.MAKTX_TCH,
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS');
+	*/
+    INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 2.1', 0,'','', 'MAKT','PCDW_MID_ITEMLIST', 'ITEMLIST');
+
+
+   exec 'COMMIT';
+   	 
+      --vi
+   INSERT INTO PCDW_MID_ITEMSITEMASTER (ITEM,
+                                        SITEID,
+                                        PSTAT,
+                                        MMSTA,
+                                        MAABC,
+                                        BESKZ,
+                                        EPRIO,
+                                        STRGR,
+                                        LVORM,
+                                        SOBSL,
+                                        DISPO,
+                                        MATGR,
+                                        SCHGT,
+                                        BSTMI,
+                                        BSTRF,
+                                        BSTFE,
+                                        EKGRP,
+                                        STAWN,
+                                        PRGRP,
+                                        RGEKZ,
+                                    --    STORCOND,
+                                        PRCTR,
+                                        MFRGR,
+                                        STDPD,
+                                        ART,
+                                        SYS_CREATED_DATE,
+                                        SYS_CREATED_BY,
+                                        SYS_LAST_MODIFIED_DATE,
+                                        SYS_LAST_MODIFIED_BY
+                                        ,/*add new fields for YPMM project by huangqr on 2012.11.26*/
+                                        PLIFZ,
+                                        DZEIT,
+                                        WEBAZ,
+                                        KZKRI,
+                                        FABKZ,
+                                        FHORI,
+                                        LGFSB,
+                                        LOSGR,
+                                        QMATV,
+                                        INSMK, --xiechao added 20130509 for ypmm project
+                                        NEWFLAG --added by shenghui on 20140912
+                                        )
+      SELECT   MATNR,
+               WERKS,
+               PSTAT,
+               MMSTA,
+               MAABC,
+               BESKZ,
+               EPRIO,
+               STRGR,
+               LVORM,
+               SOBSL,
+               DISPO,
+               MATGR,
+               SCHGT,
+               BSTMI,
+               BSTRF,
+               BSTFE,
+               EKGRP,
+               STAWN,
+               PRGRP,
+               RGEKZ,
+           --    ATWRT,
+               PRCTR,
+               MFRGR,
+               STDPD, 
+               ART,
+               CURRENT_TIMESTAMP,
+               'PRC_IDOC_MATMASTER_PREPROCESS',
+               CURRENT_TIMESTAMP,
+               'PRC_IDOC_MATMASTER_PREPROCESS'
+               ,/*add new fields for YPMM project by huangqr on 2012.11.26*/
+               PLIFZ,
+               DZEIT,
+               WEBAZ,
+               KZKRI,
+               FABKZ,
+               FHORI,
+               LGFSB,
+               LOSGR,
+               QMATV,
+               INSMK, --xiechao added 20130509 for ypmm project
+               NEWFLAG --added by shenghui on 20140912
+        FROM   ECC_MARC a
+       WHERE   EXISTS (SELECT 1 FROM z_mid_mmr_item b WHERE b.matnr = a.matnr);
+
+       INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 3.0', 0,'','', 'MARC','PCDW_MID_ITEMSITEMASTER', 'PCDW_MID_ITEMSITEMASTER');
+
+
+   	exec 'COMMIT';
+   	
+   	--begin, modified by shenghui on 20141012
+   	
+   	tab_vi = SELECT A.MATNR MATNR,
+                   B.SITEID SITEID,
+                   A.PRODH PRODH,
+                   A.SVPRODH SVPRODH,
+                   A.PRAT1 PRAT1,
+                   A.LVORM LVORM,
+                   A.MVGR1 MVGR1,
+                   A.VKORG VKORG,
+                   A.VMSTA VMSTA,	 	--ADD BY SAP.GAVIN
+                   CURRENT_TIMESTAMP SYS_CREATED_DATE,
+                   'PRC_IDOC_MATMASTER_PREPROCESS' SYS_CREATED_BY,
+                   CURRENT_TIMESTAMP SYS_LAST_MODIFIED_DATE,
+                   'PRC_IDOC_MATMASTER_PREPROCESS' SYS_LAST_MODIFIED_BY
+              FROM ECC_MVKE A, CONF_SALEORGSITE_MAPPING B
+             WHERE EXISTS (SELECT 1 FROM z_mid_mmr_item E WHERE E.MATNR = A.MATNR) AND A.VKORG = B.VKORG;
+   	SELECT COUNT(1) INTO N FROM :tab_vi D,PCDW_MID_ITEMSITEMASTER C 
+   	where D.MATNR = C.ITEM AND D.SITEID = C.SITEID;
+   	
+   	if(:n>0) then 
+   	--此段逻辑只做更新？
+	   	UPDATE PCDW_MID_ITEMSITEMASTER C 
+	   	SET C.PRODH = D.PRODH,
+	              C.SVPRODH = D.SVPRODH,
+	              C.PRAT1 = D.PRAT1,
+	              C.LVORM = D.LVORM,
+	              C.MVGR1 = D.MVGR1,
+	              C.VKORG = D.VKORG,
+	              C.SYS_CREATED_DATE = CURRENT_TIMESTAMP,
+	              C.SYS_CREATED_BY = 'PRC_IDOC_MATMASTER_PREPROCESS',
+	              C.SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+	              C.SYS_LAST_MODIFIED_BY = 'PRC_IDOC_MATMASTER_PREPROCESS',
+	              C.VMSTA = D.VMSTA 	 --ADD BY SAP.GAVIN
+	    FROM :tab_vi D
+	 	where D.MATNR = C.ITEM AND D.SITEID = C.SITEID;
+	-- elseif :n=0 then
+	 
+	 END IF;
+	/*MERGE INTO PCDW_MID_ITEMSITEMASTER C
+     USING (SELECT A.MATNR MATNR,
+                   B.SITEID SITEID,
+                   A.PRODH PRODH,
+                   A.SVPRODH SVPRODH,
+                   A.PRAT1 PRAT1,
+                   A.LVORM LVORM, 
+                   A.MVGR1 MVGR1,
+                   A.VKORG VKORG,
+                   CURRENT_TIMESTAMP SYS_CREATED_DATE,
+                   'PRC_IDOC_MATMASTER_PREPROCESS' SYS_CREATED_BY,
+                   CURRENT_TIMESTAMP SYS_LAST_MODIFIED_DATE,
+                   'PRC_IDOC_MATMASTER_PREPROCESS' SYS_LAST_MODIFIED_BY
+              FROM ECC_MVKE A, CONF_SALEORGSITE_MAPPING B
+             WHERE EXISTS (SELECT 1 FROM z_mid_mmr_item E WHERE E.MATNR = A.MATNR) AND A.VKORG = B.VKORG) D
+        ON (D.MATNR = C.ITEM AND D.SITEID = C.SITEID)
+WHEN MATCHED
+THEN
+   UPDATE SET C.PRODH = D.PRODH,
+              C.SVPRODH = D.SVPRODH,
+              C.PRAT1 = D.PRAT1,
+              C.LVORM = D.LVORM,
+              C.MVGR1 = D.MVGR1,
+              C.VKORG = D.VKORG,
+              C.SYS_CREATED_DATE = CURRENT_TIMESTAMP,
+              C.SYS_CREATED_BY = 'PRC_IDOC_MATMASTER_PREPROCESS',
+              C.SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+              C.SYS_LAST_MODIFIED_BY = 'PRC_IDOC_MATMASTER_PREPROCESS';*/
+/*
+WHEN NOT MATCHED
+THEN
+   INSERT     (C.ITEM,
+               C.SITEID,
+               C.PRODH,
+               C.SVPRODH,
+               C.PRAT1,
+               C.LVORM,
+               C.MVGR1,
+               C.VKORG,
+               C.SYS_CREATED_DATE,
+               C.SYS_CREATED_BY,
+               C.SYS_LAST_MODIFIED_DATE,
+               C.SYS_LAST_MODIFIED_BY)
+       VALUES (D.MATNR,
+               D.SITEID,
+               D.PRODH,
+               D.SVPRODH,
+               D.PRAT1,
+               D.LVORM,
+               D.MVGR1,
+               D.VKORG,
+               CURRENT_TIMESTAMP,
+               'PRC_IDOC_MATMASTER_PREPROCESS',
+               CURRENT_TIMESTAMP,
+               'PRC_IDOC_MATMASTER_PREPROCESS');
+               */
+
+    	EXEC 'COMMIT';
+
+
+   --Start: by Qiaoxi for PGI on 2012.7.9
+          UPDATE PCDW_MID_ITEMSITEMASTER a
+             SET prodh =
+                 (SELECT b.prodh
+                    FROM ECC_MVKE b
+                   WHERE
+--                   b.flag = 1 AND             --Updated for PBI000000024226
+                      a.item = b.matnr
+                     AND b.vkorg = 'X')
+           WHERE a.prodh IS NULL
+             AND EXISTS (SELECT 1
+                    FROM ECC_MVKE b
+                   WHERE
+--                   b.flag = 1 AND
+                      a.item = b.matnr
+                     AND b.vkorg = 'X'
+                     AND b.prodh IS NOT NULL);
+            --end: by Qiaoxi for PGI on 2012.7.9
+
+	INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 3.1', 0,'','', 'MVKE','PCDW_MID_ITEMSITEMASTER', 'PCDW_MID_ITEMSITEMASTER');
+
+ 	 EXEC 'COMMIT';
+--end, modified by shenghui on 20141012
+
+   --vii
+   /*  vii.
+      Select MATNR, BWKEY, BKLAS, STPRS, PVPRS12, PEINH, VERPR, KALN1
+     from ECC_MBEW,
+          SYS_CREATED_DATE,
+          SYS_CREATED_BY,
+          SYS_LAST_MODIFIED_DATE,
+          SYS_LAST_MODIFIED_BY
+    where flag = 1, then merge
+     into PCDW_MID_ITEMSITEMASTER by primary key;*/
+	
+	tab_vii = SELECT   MATNR,
+                          BWKEY,
+                          BKLAS,
+                          STPRS,
+                          PVPRS12,
+                          PEINH,
+                          VERPR,
+                          KALN1,
+                          FLAG,
+                          IDOCNUM,
+                          IDOCTIME,
+                          SYS_CREATED_DATE,
+                          SYS_CREATED_BY,
+                          SYS_LAST_MODIFIED_DATE,
+                          SYS_LAST_MODIFIED_BY,
+                          WAERS,
+                          MTORG,  --by Qiaoxi for BRP on 2012.8.30
+                          OWNPR   --by liuyg5 for SC3 on 2016.9.7
+                   FROM   ECC_MBEW A
+                  WHERE   EXISTS (SELECT 1 FROM z_mid_mmr_item B WHERE B.MATNR = A.MATNR)
+                  	      --and bwkey <> 'X'
+                          and bwkey in('X470','U470','L070', 'B510');--add by qinying4 --Modified by Zhoubinbin 20170224, Add b510 plant
+	SELECT count(1) into n from :tab_vii e,PCDW_MID_ITEMSITEMASTER p
+	where p.ITEM = e.MATNR AND p.siteid = e.bwkey;
+
+	INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 3.1.1'||:n, 0,'','', 'MVKE','PCDW_MID_ITEMSITEMASTER', 'PCDW_MID_ITEMSITEMASTER');
+
+ 	 EXEC 'COMMIT';
+ 	 	
+	if :n >0 then
+	--如果有满足条件的记录，先更新这些记录，然后再insert没有match的记录
+		UPDATE PCDW_MID_ITEMSITEMASTER p
+		SET
+	         p.bklas = e.bklas,
+	         p.stprs = e.stprs,
+	         p.pvprs12 = e.pvprs12,
+	         p.peinh = e.peinh,
+	         p.verpr = e.verpr,
+	         p.kaln1 = e.kaln1,
+	         p.waers = e.waers,
+	         p.mtorg = e.mtorg,   --by Qiaoxi for BRP on 2012.8.30
+	         p.sys_created_date = CURRENT_TIMESTAMP,
+	         p.sys_created_by = 'PRC_IDOC_MATMASTER_PREPROCESS',
+	         p.sys_last_modified_date = CURRENT_TIMESTAMP,
+	         p.sys_last_modified_by = 'PRC_IDOC_MATMASTER_PREPROCESS',
+	         p.ownpr = e.ownpr
+	   	from :tab_vii e
+	   	where P.ITEM = E.MATNR AND p.siteid = e.bwkey;
+	   	
+	   	INSERT INTO PCDW_MID_ITEMSITEMASTER(siteid,
+                           item,
+                           sys_created_date,
+                           sys_created_by,
+                           sys_last_modified_date,
+                           sys_last_modified_by,
+                           bklas,
+                           stprs,
+                           pvprs12,
+                           peinh,
+                           verpr,
+                           kaln1,
+                           waers,
+                           mtorg,
+                           ownpr)   
+         select e.bwkey,
+                    e.matnr,
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    e.bklas,
+                    e.stprs,
+                    e.pvprs12,
+                    e.peinh,
+                    e.verpr,
+                    e.kaln1,
+                    e.waers,
+                    e.mtorg, --by Qiaoxi for BRP on 2012.8.30  
+                    e.ownpr --by liuyg5 for SC3 on 2016.9.7
+          from :tab_vii e
+          /*where (matnr,bwkey) not in
+          (
+          	select item,siteid
+          	from PCDW_MID_ITEMSITEMASTER
+          );*/
+          where not exists (select 1 from PCDW_MID_ITEMSITEMASTER p where p.item=e.matnr and p.siteid = e.bwkey); --modified by zhaishenghui 20170110
+	   	
+	 INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 3.1.2', 0,'','', 'MVKE','PCDW_MID_ITEMSITEMASTER', 'PCDW_MID_ITEMSITEMASTER');
+
+ 	 EXEC 'COMMIT';
+	ELSEIF :n=0 then
+		INSERT INTO PCDW_MID_ITEMSITEMASTER(siteid,
+                           item,
+                           sys_created_date,
+                           sys_created_by,
+                           sys_last_modified_date,
+                           sys_last_modified_by,
+                           bklas,
+                           stprs,
+                           pvprs12,
+                           peinh,
+                           verpr,
+                           kaln1,
+                           waers,
+                           mtorg,
+                           ownpr)   --by Qiaoxi for BRP on 2012.8.30
+         select e.bwkey,
+                    e.matnr,
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    e.bklas,
+                    e.stprs,
+                    e.pvprs12,
+                    e.peinh,
+                    e.verpr,
+                    e.kaln1,
+                    e.waers,
+                    e.mtorg, --by Qiaoxi for BRP on 2012.8.30  
+                    e.ownpr
+          from :tab_vii e;
+	end if;
+  /* MERGE INTO   PCDW_MID_ITEMSITEMASTER P
+        USING   (SELECT   MATNR,
+                          BWKEY,
+                          BKLAS,
+                          STPRS,
+                          PVPRS12,
+                          PEINH,
+                          VERPR,
+                          KALN1,
+                          FLAG,
+                          IDOCNUM,
+                          IDOCTIME,
+                          SYS_CREATED_DATE,
+                          SYS_CREATED_BY,
+                          SYS_LAST_MODIFIED_DATE,
+                          SYS_LAST_MODIFIED_BY,
+                          WAERS,
+                          MTORG  --by Qiaoxi for BRP on 2012.8.30
+                   FROM   ECC_MBEW A
+                  WHERE   EXISTS (SELECT 1 FROM z_mid_mmr_item B WHERE B.MATNR = A.MATNR) and bwkey <>'X') E  -- Add for blank Iodc filter
+           ON   (P.ITEM = E.MATNR AND p.siteid = e.bwkey )
+   WHEN MATCHED
+   THEN
+      UPDATE SET
+         p.bklas = e.bklas,
+         p.stprs = e.stprs,
+         p.pvprs12 = e.pvprs12,
+         p.peinh = e.peinh,
+         p.verpr = e.verpr,
+         p.kaln1 = e.kaln1,
+         p.waers = e.waers,
+         p.mtorg = e.mtorg,   --by Qiaoxi for BRP on 2012.8.30
+         p.sys_created_date = CURRENT_TIMESTAMP,
+         p.sys_created_by = 'PRC_IDOC_MATMASTER_PREPROCESS',
+         p.sys_last_modified_date = CURRENT_TIMESTAMP,
+         p.sys_last_modified_by = 'PRC_IDOC_MATMASTER_PREPROCESS'
+              --WHERE   e.flag = 1
+   WHEN NOT MATCHED
+   THEN
+      INSERT              (siteid,
+                           item,
+                           sys_created_date,
+                           sys_created_by,
+                           sys_last_modified_date,
+                           sys_last_modified_by,
+                           bklas,
+                           stprs,
+                           pvprs12,
+                           peinh,
+                           verpr,
+                           kaln1,
+                           waers,
+                           mtorg)   --by Qiaoxi for BRP on 2012.8.30
+          VALUES   (e.bwkey,
+                    e.matnr,
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    e.bklas,
+                    e.stprs,
+                    e.pvprs12,
+                    e.peinh,
+                    e.verpr,
+                    e.kaln1,
+                    e.waers,
+                    e.mtorg); --by Qiaoxi for BRP on 2012.8.30   
+                    */
+
+	INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 3.2', 0,'','', 'MBEW','PCDW_MID_ITEMSITEMASTER', 'PCDW_MID_ITEMSITEMASTER');
+
+   EXEC 'COMMIT';
+   
+   -- Added by kevin liu, 20110626 start...
+   --Logic  for field ART: ecc_qmat  art in('01','05','08')
+   UPDATE   pcdw_mid_itemsitemaster a
+      SET   art = 'QT'
+    WHERE   (item, siteid) IN
+                  (SELECT   matnr, werks
+                     FROM   (SELECT   matnr,
+                                      werks,
+                                      ROW_NUMBER ()
+                                         OVER (PARTITION BY matnr, werks
+                                               ORDER BY art)
+                                         AS rn
+                               FROM   ecc_qmat
+                              WHERE   art = ANY ('01', '05', '08')
+                                 --and FLAG = 1 --Comment flag by qinying 2014/11/19
+                                 and aktiv='X')
+                    WHERE   rn = 3);
+
+	INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 3.2.1', 0,'','', 'MBEW','PCDW_MID_ITEMSITEMASTER', 'PCDW_MID_ITEMSITEMASTER');
+  -- Added by kevin liu, 20110922
+
+   exec 'COMMIT';
+
+   -- Added by kevin liu, 20110626 end...
+
+   --viii
+   /*Select a.MATNR,b.SITEID,a.PRODH,a.SVPRODH,a.PRAT1,a.LVORM,a.MVGR1,a.VKORG,
+       SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,
+    SYS_LAST_MODIFIED_BY from ECC_MVKE a,
+    CONF_SALEORGSITE_MAPPING b, ECC_MARC c  where a.flag=1
+    and a.vkorg=b.vkorg and b.siteid=c.werks and
+    a.matnr=c.matnr then merge into PCDW_MID_ITEMSITEMASTER by primary key
+   ?????? viii ?????*/
+--modified by xiechao 20140910,start
+/*   MERGE INTO   PCDW_MID_ITEMSITEMASTER c
+        USING   (SELECT   a.MATNR MATNR,
+                          b.SITEID SITEID,
+                          a.PRODH PRODH,
+                          a.SVPRODH SVPRODH,
+                          a.PRAT1 PRAT1,
+                          a.LVORM LVORM,
+                          a.MVGR1 MVGR1,
+                          a.VKORG VKORG,
+                          CURRENT_TIMESTAMP SYS_CREATED_DATE,
+                          'PRC_IDOC_MATMASTER_PREPROCESS' SYS_CREATED_BY,
+                          CURRENT_TIMESTAMP SYS_LAST_MODIFIED_DATE,
+                          'PRC_IDOC_MATMASTER_PREPROCESS' SYS_LAST_MODIFIED_BY
+                          ,\*add new fields for YPMM project by huangqr on 2012.11.26*\
+                          PLIFZ,
+                          DZEIT,
+                          WEBAZ,
+                          KZKRI,
+                          FABKZ,
+                          FHORI,
+                          LGFSB,
+                          LOSGR,
+                          QMATV,
+                          c.INSMK --xiechao added 20130509 for ypmm project
+                   FROM   ECC_MVKE a, CONF_SALEORGSITE_MAPPING b, ECC_MARC c
+                  WHERE       a.vkorg = b.vkorg
+                          AND a.flag = 1
+                          AND c.flag = 1
+                          AND b.siteid = c.werks
+                          AND a.matnr = c.matnr) d
+           ON   (d.MATNR = c.item AND d.siteid = c.siteid)
+   WHEN MATCHED
+   THEN
+      UPDATE SET
+         c.prodh = d.prodh,
+         c.svprodh = d.svprodh,
+         c.prat1 = d.prat1,
+         c.lvorm = d.lvorm,
+         c.mvgr1 = d.mvgr1,
+         c.vkorg = d.vkorg,
+         c.sys_created_date = CURRENT_TIMESTAMP,
+         c.sys_created_by = 'PRC_IDOC_MATMASTER_PREPROCESS',
+         c.sys_last_modified_date = CURRENT_TIMESTAMP,
+         c.sys_last_modified_by = 'PRC_IDOC_MATMASTER_PREPROCESS'
+         ,\*add new fields for YPMM project by huangqr on 2012.11.26*\
+         c.PLIFZ = d.PLIFZ,
+         c.DZEIT = d.DZEIT,
+         c.WEBAZ = d.WEBAZ,
+         c.KZKRI = d.KZKRI,
+         c.FABKZ = d.FABKZ,
+         c.FHORI = d.FHORI,
+         c.LGFSB = d.LGFSB,
+         c.LOSGR = d.LOSGR,
+         c.QMATV = d.QMATV,
+         c.INSMK = d.INSMK --xiechao added 20130509 for ypmm project
+   WHEN NOT MATCHED
+   THEN
+      INSERT              (item,
+                           SITEID,
+                           PRODH,
+                           SVPRODH,
+                           PRAT1,
+                           LVORM,
+                           MVGR1,
+                           VKORG,
+                           SYS_CREATED_DATE,
+                           SYS_CREATED_BY,
+                           SYS_LAST_MODIFIED_DATE,
+                           SYS_LAST_MODIFIED_BY)
+          VALUES   (d.matnr,
+                    d.siteid,
+                    d.prodh,
+                    d.svprodh,
+                    d.prat1,
+                    d.lvorm,
+                    d.mvgr1,
+                    d.vkorg,
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS',
+                    CURRENT_TIMESTAMP,
+                    'PRC_IDOC_MATMASTER_PREPROCESS');*/
+   	   /*ix. Update PCDW_MID_ITEMSITEMASTER a by PCDW_MID_ITEMLIST  b where a.matnr =b.matnr*/
+   UPDATE   PCDW_MID_ITEMSITEMASTER a
+      SET
+            (ERSDA,
+            MTART,
+            MATKL,
+            LVORM,
+            BISMT,
+            EAN11,
+            NUMTP,
+            EXTWG,
+            ZMTM,
+            RAUBE,
+            NORMT,
+            BRGEW,
+            NTGEW,
+            GEWEI,
+            MEINS,
+            ZPRFA,
+            --EM_COUNTRY,
+            --EM_GEO,
+            --EM_SUBGEO,
+            --DUMMYFG,
+            PRODFAMILY, --Modified by qinying for PF 2013/10/24
+            MAKTX,
+            MAKTX_CH,
+            MAKTX_TCH,
+            ZUCOD,
+            MFRPN,   --by Qiaoxi for ER2 on 2012.7.10
+            ZEINR,      --by Qiaoxi for PGI on 2012.6.20
+            SYS_CREATED_DATE,
+            SYS_CREATED_BY,
+            SYS_LAST_MODIFIED_DATE,
+            SYS_LAST_MODIFIED_BY
+            --ccprodh
+            ,/*add new fields for YPMM project by huangqr on 2012.11.26*/
+            MTBEZ,
+            MSTAE,
+            BLATT,
+            ZLCOD,
+            ZEIAR,--add by lich 20140508 for MBG project
+            OWNPR
+            ) =
+               (SELECT   b.ERSDA,
+                         b.MTART,
+                         b.MATKL,
+                         b.LVORM,
+                         b.BISMT,
+                         b.EAN11,
+                         b.NUMTP,
+                         b.EXTWG,
+                         b.ZMTM,
+                         b.RAUBE,
+                         b.NORMT,
+                         b.BRGEW,
+                         b.NTGEW,
+                         b.GEWEI,
+                         b.MEINS,
+                         b.ZPRFA,
+                         --b.EM_COUNTRY,
+                         --b.EM_GEO,
+                         --b.EM_SUBGEO,
+                         --b.DUMMYFG,
+                         b.EM_PRDFAMILY, --Modified by qinying for PF 2013/10/24
+                         b.MAKTX,
+                         b.MAKTX_CH,
+                         b.MAKTX_TCH,
+                         ZUCOD,
+                         MFRPN,   --by Qiaoxi for ER2 on 2012.7.10
+                          ZEINR,     --by Qiaoxi for PGI on 2012.6.20
+                         CURRENT_TIMESTAMP,
+                         'PRC_IDOC_MATMASTER_PREPROCESS',
+                         CURRENT_TIMESTAMP,
+                         'PRC_IDOC_MATMASTER_PREPROCESS'
+                         --ccprodh
+                         ,/*add new fields for YPMM project by huangqr on 2012.11.26*/
+                         MTBEZ,
+                         MSTAE,
+                         BLATT,
+                         ZLCOD,
+                         ZEIAR,  --add by lich 20140508 for MBG project
+                         OWNPR  --add by liuyg5 for SC3 on 2016.9.7
+                  FROM   PCDW_MID_ITEMLIST b
+                 WHERE   b.matnr = a.item)
+    WHERE   EXISTS (SELECT   1
+                      FROM   PCDW_MID_ITEMLIST b
+                     WHERE   b.MATNR = a.item);
+
+	INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 4.0', 0,'','', 'PCDW_MID_ITEMLIST','PCDW_MID_ITEMSITEMASTER', 'Merge list to mid master');
+   	
+   	   --x  /*create fuction GET_ITEMCALSS ??itemclass??
+   /*  DECLARE
+        CURSOR cur IS
+       SELECT item from PCDW_MID_ITEMSITEMASTER FOR UPDATE;
+     v_item PCDW_MID_ITEMSITEMASTER.ITEM%TYPE;
+     -- ??????UPDATE?, ????FOR UPDATE??
+   BEGIN
+     OPEN cur;
+     FETCH cur
+       INTO v_item;
+     WHILE cur%FOUND LOOP
+       UPDATE PCDW_MID_ITEMSITEMASTER
+          SET ITEMCLASS = GET_ITEMCALSS(v_item)
+        WHERE CURRENT OF cur;
+     END LOOP;
+     CLOSE cur;
+   END;*\*/
+   
+   ---x  UPDATE itemclass FOR PCDW_MID_ITEMSITEMASTER
+
+
+
+  CALL "PCDW"."cdp.pcdw.procedures::PRC_UPDATE_ITEMCLASS"();
+  
+  -- error
+   -- call "PCDW"."cdp.pcdw.procedures::PRC_UPDATE_ITEMCLASS_SITEID" ('PCDW_MID_ITEMSITEMASTER');
+  --xi.  Merge PCDW_MID_ITEMSITEMASTER to PCDW_ITEMSITEMASTER
+	INSERT INTO PCDW_PROC_LOG
+      VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 5.0', 0,'','', '','', 'update item class');
+	
+	UPSERT PCDW_ITEMSITEMASTER(item, siteid, vkorg, maktx, maktx_ch, maktx_tch, matkl, eprio,
+              mmsta, strgr, pstat, mtart, prodfamily, stdpd, extwg, prgrp,
+              matgr, bstmi, bstrf, bstfe, beskz, sobsl, dispo, itemclass,
+              maabc, stawn, ekgrp, raube, rgekz, prctr, stprs, peinh, mvgr1,
+              prodh, svprodh, schgt, verpr, pvprs12, bklas, kaln1, mfrgr,
+              ersda, lvorm, bismt, ean11, numtp, zmtm, normt, brgew, ntgew,
+              gewei, meins, zprfa, 
+            --  storcond, 
+              prat1, em_country, em_geo,
+              em_subgeo, dummyfg, art, sys_created_date, sys_created_by,
+              sys_last_modified_date, sys_last_modified_by, ccprodh, waers,
+              zucod, mfrpn, mtorg, zeinr, basewarranty, quadate, announcedate,
+              withdrawdate, custommodelflag, issbb
+              /*add new fields for YPMM project by huangqr on 2012.11.26*/
+              ,MTBEZ,MSTAE,BLATT,ZLCOD,PLIFZ,DZEIT,WEBAZ,KZKRI,FABKZ,FHORI,LGFSB,LOSGR,QMATV,
+              PLATFORM,NESTPLATE,CIQ,MACHINECODE,BACCODE,HTSD,MIDHCOUNTRY,
+              INSMK, UD_PHC--xiechao added 20130509 for ypmm project
+              ,ZEIAR--add by lich 20140508 for mbg project
+              ,VMSTA -- ADD BY SAP.GAVIN
+              ,OWNPR) --add by liuyg5 for SC3 on 2016.9.7
+    SELECT 
+	       b.ITEM,
+	       b.SITEID,
+	       b.VKORG,
+	       b.MAKTX,
+	       b.MAKTX_CH,
+	       b.MAKTX_TCH,
+	       b.MATKL,
+	       b.EPRIO,
+	       b.MMSTA,
+	       b.STRGR,
+	       b.PSTAT,
+	       b.MTART,
+	       b.PRODFAMILY,--Modified by qinying for PF 2013/10/24
+	       b.STDPD,
+	       b.EXTWG,
+	       b.PRGRP,
+	       b.MATGR,
+	       b.BSTMI,
+	       b.BSTRF,
+	       b.BSTFE,
+	       b.BESKZ,
+	       b.SOBSL,
+	       b.DISPO,
+	       b.ITEMCLASS,
+	       b.MAABC,
+	       b.STAWN,
+	       b.EKGRP,
+	       b.RAUBE,
+	       b.RGEKZ,
+	       b.PRCTR,
+	       b.STPRS,
+	       b.PEINH,
+	       b.MVGR1,
+	       b.PRODH,
+	       b.SVPRODH,
+	       b.SCHGT,
+	       b.VERPR,
+	       b.PVPRS12,
+	       b.BKLAS,
+	       b.KALN1,
+	       b.MFRGR,
+	       b.ERSDA,
+	       b.LVORM,
+	       b.BISMT,
+	       b.EAN11,
+	       b.NUMTP,
+	       b.ZMTM,
+	       b.NORMT,
+	       b.BRGEW,
+	       b.NTGEW,
+	       b.GEWEI,
+	       b.MEINS,
+	       b.ZPRFA,
+	   --    b.STORCOND,
+	       b.PRAT1,
+	       '',--b.EM_COUNTRY,
+	       '',--b.EM_GEO,
+	       '',--b.EM_SUBGEO,
+	       '',--b.DUMMYFG,
+	       b.ART,
+	       b.SYS_CREATED_DATE,
+	       b.SYS_CREATED_BY,
+	       b.SYS_LAST_MODIFIED_DATE,
+	       b.SYS_LAST_MODIFIED_BY,
+	       '',--b.ccprodh,
+	       b.waers,
+	       b.zucod,
+	       b.mfrpn,  --by Qiaoxi for ER2 on 2012.7.10
+	       b.mtorg ,  --by Qiaoxi for BRP on 2012.8.30
+	       b.zeinr,    --by Qiaoxi for PGI on 2012.6.20
+	       '',--basewarranty
+	       '',--quadate
+	       '',--announcedate
+	       '',--withdrawdate
+	       '',--custommodelflag
+	       ''--issbb
+	       ,/*add new fields for YPMM project by huangqr on 2012.11.26*/
+	       b.MTBEZ,
+	       b.MSTAE,
+	       b.BLATT,
+	       b.ZLCOD,
+	       b.PLIFZ,
+	       b.DZEIT,
+	       b.WEBAZ,
+	       b.KZKRI,
+	       b.FABKZ,
+	       b.FHORI,
+	       b.LGFSB,
+	       b.LOSGR,
+	       b.QMATV,
+	       '',--PLATFORM,
+	       '',--NESTPLATE,
+	       '',--CIQ,
+	       '',--MACHINECODE,
+	       '',--BACCODE,
+	       '',--HTSD
+	       '', --MIDHCOUNTRY
+	       B.INSMK, --xiechao added 20130509 for ypmm project
+	       /*deleted
+	       CASE WHEN REGEXP_INSTR(B.ITEM, '^[0-9]*$') > 0
+	              THEN NVL(B.SVPRODH,B.PRODH) --Modified by qinying 2014/8/6
+	            ELSE B.PRODH END, --Add by Zhoubinbin 20131111 for PF project
+	       */
+	       b.prodh, -- Modified by SAP Gavin
+	       b.ZEIAR,--add by lich 20140508 for mbg project
+	       b.VMSTA, --ADD BY SAP.GAVIN
+	       b.ownpr
+           FROM PCDW_MID_ITEMSITEMASTER b;
+	
+	INSERT INTO PCDW_PROC_LOG
+     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 6.0', 0,'','', 'PCDW_MID_ITEMSITEMASTER','PCDW_ITEMSITEMASTER', 'Merge pcdw item master');
+    exec  'COMMIT';
+ 
+    /*  xii.  Select SPRAS,PRODH,STUFE,VTEXT,
+	  SYS_CREATED_DATE,SYS_CREATED_BY,
+	  SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY
+	   from ECC_T179T where flag=1,then merge into PCDW_PRODH.*/
+	
+	  tab_xii = SELECT SPRAS,
+	                PRODH,
+	                STUFE,
+	                VTEXT,
+	                SYS_CREATED_DATE,
+	                SYS_CREATED_BY,
+	                SYS_LAST_MODIFIED_DATE,
+	                SYS_LAST_MODIFIED_BY
+	           FROM ECC_T179T
+	          WHERE flag = '1';
+	  
+	  upsert PCDW_PRODH
+	  select 	  	SPRAS,
+	                PRODH,
+	                STUFE,
+	                VTEXT,
+	                SYS_CREATED_DATE,
+	                SYS_CREATED_BY,
+	                SYS_LAST_MODIFIED_DATE,
+	                SYS_LAST_MODIFIED_BY
+	  from ECC_T179T
+	  where flag='1';
+	          
+	  
+/*	  MERGE INTO PCDW_PRODH a
+	  USING (SELECT SPRAS,
+	                PRODH,
+	                STUFE,
+	                VTEXT,
+	                SYS_CREATED_DATE,
+	                SYS_CREATED_BY,
+	                SYS_LAST_MODIFIED_DATE,
+	                SYS_LAST_MODIFIED_BY
+	           FROM ECC_T179T
+	          WHERE flag = 1) b
+	  ON (a.spras = b.SPRAS AND a.prodh=b.prodh)
+	  WHEN MATCHED THEN
+	    UPDATE
+	       SET --a.PRODH                  = b.PRODH,
+	           a.STUFE                  = b.STUFE,
+	           a.VTEXT                  = b.VTEXT,
+	           a.SYS_CREATED_DATE       = CURRENT_TIMESTAMP,
+	           a.SYS_CREATED_BY         = 'PRC_IDOC_MATMASTER_PREPROCESS',
+	           a.SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+	           a.SYS_LAST_MODIFIED_BY   = 'PRC_IDOC_MATMASTER_PREPROCESS'
+	  WHEN NOT MATCHED THEN
+	    INSERT
+	    VALUES
+	      (b.SPRAS,
+	       b.PRODH,
+	       b.STUFE,
+	       b.VTEXT,
+	       b.SYS_CREATED_DATE,
+	       b.SYS_CREATED_BY,
+	       b.SYS_LAST_MODIFIED_DATE,
+	       b.SYS_LAST_MODIFIED_BY);
+	*/
+	INSERT INTO PCDW_PROC_LOG
+	     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 7.0', 0,'','', 'ECC_T179T','PCDW_PRODH', 'Merge PCDW_PRODH');
+	EXEC  'COMMIT';
+   	
+   /* xiii. Select SPRAS,MATKL,WGBEZ,WGBEZ60,FLAG,IDOCNUM,
+   IDOCTIME,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,
+   SYS_LAST_MODIFIED_BY from ECC_T023T where flag=1
+   ,then merge into PCDW_MATGROUP. */
+	
+		UPSERT PCDW_MATGROUP(
+			   SPRAS,
+		       MATKL,
+		       WGBEZ,
+		       WGBEZ60,
+		       SYS_CREATED_DATE,
+		       SYS_CREATED_BY,
+		       SYS_LAST_MODIFIED_DATE,
+		       SYS_LAST_MODIFIED_BY)
+		SELECT SPRAS,
+		       MATKL,
+		       WGBEZ,
+		       WGBEZ60,
+		       SYS_CREATED_DATE,
+		       SYS_CREATED_BY,
+		       SYS_LAST_MODIFIED_DATE,
+		       SYS_LAST_MODIFIED_BY
+		FROM ECC_T023T
+		WHERE flag=1;
+	
+	/*   MERGE INTO   PCDW_MATGROUP a
+	        USING   (SELECT   SPRAS,
+	                          MATKL,
+	                          WGBEZ,
+	                          WGBEZ60,
+	                          SYS_CREATED_DATE,
+	                          SYS_CREATED_BY,
+	                          SYS_LAST_MODIFIED_DATE,
+	                          SYS_LAST_MODIFIED_BY
+	                   FROM   ECC_T023T
+	                  WHERE   flag = 1) b
+	           ON   (a.spras = b.SPRAS AND a.matkl = b.matkl)
+	   WHEN MATCHED
+	   THEN
+	      UPDATE SET                        -- a.MATKL                  = b.MATKL,
+	         a.WGBEZ = b.WGBEZ,
+	         a.WGBEZ60 = b.WGBEZ60,
+	         a.SYS_CREATED_DATE = CURRENT_TIMESTAMP,
+	         a.SYS_CREATED_BY = 'PRC_IDOC_MATMASTER_PREPROCESS',
+	         a.SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+	         a.SYS_LAST_MODIFIED_BY = 'PRC_IDOC_MATMASTER_PREPROCESS'
+	   WHEN NOT MATCHED
+	   THEN
+	      INSERT              (SPRAS,
+	                           MATKL,
+	                           WGBEZ,
+	                           WGBEZ60,
+	                           SYS_CREATED_DATE,
+	                           SYS_CREATED_BY,
+	                           SYS_LAST_MODIFIED_DATE,
+	                           SYS_LAST_MODIFIED_BY)
+	          VALUES   (b.SPRAS,
+	                    b.MATKL,
+	                    b.WGBEZ,
+	                    b.WGBEZ60,
+	                    b.SYS_CREATED_DATE,
+	                    b.SYS_CREATED_BY,
+	                    b.SYS_LAST_MODIFIED_DATE,
+	                    b.SYS_LAST_MODIFIED_BY);
+	*/
+	
+		INSERT INTO PCDW_PROC_LOG
+		     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 8.0', 0,'','', 'ECC_T023T','PCDW_MATGROUP', 'Merge PCDW_MATGROUP');
+		
+		exec 'COMMIT';
+	   	
+	   --xiv ?
+	   --xv update
+	   UPDATE   ECC_MARA
+	      SET   flag = '2'
+	    WHERE   flag = '1';
+	
+	   UPDATE   ECC_MARC
+	      SET   flag = '2'
+	    WHERE   flag = '1';
+	
+	   UPDATE   ECC_MVKE
+	      SET   flag ='2'
+	    WHERE   flag = '1';
+	
+	   UPDATE   ECC_MBEW
+	      SET   flag = '2'
+	    WHERE   flag = '1';
+	
+	   UPDATE   ECC_MAKT
+	      SET   flag = '2'
+	    WHERE   flag = '1';
+	
+	   UPDATE   ECC_T023T
+	      SET   flag = '2'
+	    WHERE   flag = '1';
+	
+	   UPDATE   ECC_T179T
+	      SET   flag = '2'
+	    WHERE   flag = '1';
+	
+	   UPDATE   ECC_QMAT
+	      SET   flag = '2'
+	    WHERE   flag = '1';                             --Added by kevin liu,20110626
+	
+	   exec 'COMMIT';
+		INSERT INTO PCDW_PROC_LOG
+	     VALUES    (CURRENT_TIMESTAMP, 'PRC_IDOC_MATMASTER_PREPROCESS','STEP 9.0', 0,'','', '','', 'UPDATE FLAG 2->1');
+	
+	   PO_RETURNCODE := 0;
+	   CALL "PCDW"."cdp.pcdw.procedures::PRC_IDOC_CLFMAS02"(:PO_RETURNCODE);
+	   CALL "PCDW"."cdp.pcdw.procedures::PRC_IDOC_IPC_ATTRIBUTE"(:PO_RETURNCODE);
+	--Start,Xiechao Added For Pf Project 20130808
+	--Modified by Zhoubinbin 2013-11-11
+/*		UPDATE PCDW_ITEMSITEMASTER A
+		   SET     --A.UD_ITEMCATEGORY = FN_GET_MMR_ATTRIBUTE(A.MTART, A.ZEINR, A.PRODH, A.MATKL, A.ITEM, A.STRGR,A.MVGR1,A.BESKZ||A.SOBSL, 'CATEGORY'),
+		           A.UD_ITEMCATEGORY = FN_GET_MMR_ATTRIBUTE(A.MTART, A.ZEINR, A.UD_PHC, A.MATKL, A.ITEM, A.STRGR,A.MVGR1,A.BESKZ||A.SOBSL, 'CATEGORY'),
+		           A.UD_ODM_FLAG     = FN_GET_MMR_ATTRIBUTE(A.EXTWG, A.ITEM, A.ZLCOD, A.MTART, NULL, NULL, NULL,NULL,'ODM'),
+		           A.UD_BU_FLAG      = FN_GET_MMR_ATTRIBUTE(A.UD_PHC, A.ITEM, NULL, NULL, NULL, NULL, NULL,NULL,'BU')
+		           --A.UD_PHC          = FN_GET_MMR_ATTRIBUTE(A.PRODH, A.SVPRODH, NULL, NULL, NULL, NULL, NULL,NULL,'PHC')
+		 WHERE EXISTS (SELECT 1
+		                 FROM PCDW_MID_ITEMSITEMASTER B
+		                WHERE A.ITEM = B.ITEM AND A.SITEID = B.SITEID);
+		 EXEC 'COMMIT';
+*/		--End,Xiechao Added For Pf Project 20130808
+
+   -- release lock
+ --  retlock := DBMS_LOCK.release(lockhandle=>v_lockhandle);
+
+   INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                              EVENTNAME,
+                              SUBEVENT,
+                              MSGCODE,
+                              EVENTMSG,
+                              EVENTTYPE,
+                              DATASOURCE,
+                              DATADEST,
+                              EVENTDESCR)
+     VALUES   (CURRENT_TIMESTAMP,
+               'PRC_IDOC_MATMASTER_PREPROCESS',
+               'SUCCESS',
+               :vCode,
+               :vMsg,
+               '',
+               '',
+               '',
+               'END');
+
+	exec 'COMMIT';
+	
+	
+   	
+END;

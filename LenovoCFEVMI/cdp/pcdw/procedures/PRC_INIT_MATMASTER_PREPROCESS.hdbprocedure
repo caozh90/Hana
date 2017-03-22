@@ -1,0 +1,677 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_INIT_MATMASTER_PREPROCESS" ( 
+  IN P_SITEID  VARCHAR(100) 
+ )  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW 
+	AS
+	   	vProcStartTime   TIMESTAMP := CURRENT_TIMESTAMP; 
+   	   	v_DelteStr       VARCHAR (1024);
+   		vMsg             VARCHAR (1024) := '';
+   		vCode            DECIMAL := 0;
+   		v_P_SITEID       VARCHAR (50); 
+   		n  	         	int ;
+   		logid1	    	int :=1;
+   		v_full_name		varchar(100):='PRC_INIT_MATMASTER_PREPROCESS';
+   		i		        int;
+   		--Added by Gavin
+   		MTART_ARRAY nvarchar(18) array;
+   		ZEINR_ARRAY nvarchar(44) array;
+   		PRODH_ARRAY nvarchar(18) array;
+   		MATKL_ARRAY nvarchar(40) array;
+   		ITEM_ARRAY nvarchar(120) array;
+   		STRGR_ARRAY NVARCHAR(18) ARRAY;
+   		MVGR1_ARRAY NVARCHAR(40) ARRAY;
+   		BESKZ_ARRAY NVARCHAR(40) ARRAY;
+   		SOBSL_ARRAY NVARCHAR(2) ARRAY;
+   		UD_PHC_ARRAY NVARCHAR(20) ARRAY;
+   		EXTWG_ARRAY NVARCHAR(18) ARRAY;
+   		ZLCOD_ARRAY NVARCHAR(18) ARRAY;
+   		SVPRODH_ARRAY NVARCHAR(18) ARRAY;
+   		UD_ITEMCATEGORY NVARCHAR(10);
+		UD_ODM_FLAG   nvarchar(10);
+	    UD_BU_FLAG	nvarchar(20);
+   		-- End by Gavin
+/*----------------------------------------------------------------------------------------------------------
+    ecc_mara_init , pcdw_itemsitemaster 增加x_cofcat ,x_cofsubcat字段
+    修改相应的程序.    
+    by xwu2015/12/24
+    
+    ECC_MARA_INIT, PCDW_ITEMSITEMASTER 增加X_SPECMODDESG
+    修改相应的程序.
+    by xwu 2016/1/15.
+*/----------------------------------------------------------------------------------------------------------
+	 
+BEGIN  
+	
+	--exception
+	 DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	 BEGIN
+      --  vMsg := SUBSTR (DBMS_UTILITY.format_error_backtrace, 1, 512);
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      	vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                                 EVENTNAME,
+                                 SUBEVENT,
+                                 MSGCODE,
+                                 EVENTMSG,
+                                 EVENTTYPE,
+                                 DATASOURCE,
+                                 DATADEST,
+                                 EVENTDESCR)
+           VALUES (CURRENT_TIMESTAMP,
+                   'PRC_INIT_MATMASTER_PREPROCESS',
+                   'OTHERS ERROR',
+                   vCode,
+                   vMsg,
+                   '',
+                   '',
+                   '',
+                   'END');
+
+      exec 'COMMIT';
+ 	 
+     END;
+	-- exception
+
+
+	v_P_SITEID := :P_SITEID;
+
+   INSERT INTO PCDW_PROC_LOG
+        VALUES (vProcStartTime,
+                'PRC_INIT_MATMASTER_PREPROCESS',
+                '',
+                NULL,
+                '',
+                '',
+                '',
+                'PCDW_MID_ITEMLIST',
+                'START');
+
+   EXEC 'COMMIT';
+	
+	DELETE FROM PCDW_ITEMSITEMASTER WHERE siteid in( :v_P_SITEID );
+	
+	--b
+   -- Added by kevin liu, 20110408 start...
+   --Logic for field ART: art in('01','05','08')
+   UPDATE ECC_MARC_INIT a
+      SET art = 'QT'
+    WHERE (MATNR, Z_WFNAME) IN (SELECT MATNR, Z_WFNAME
+                                  FROM (SELECT MATNR,
+                                               WERKS,
+                                               Z_WFNAME,
+                                               ROW_NUMBER ()
+                                               OVER (
+                                                  PARTITION BY z_wfname,
+                                                               matnr,
+                                                               werks
+                                                  ORDER BY art)
+                                                  AS rn
+                                          FROM ecc_qmat_init b
+                                         WHERE b.art = ANY ('01', '05', '08')
+                                               AND werks = P_SITEID)
+                                 WHERE rn = 3)
+          AND werks = P_SITEID;
+
+   exec 'COMMIT';
+
+   -- Added by kevin liu, 20110408 end...
+
+   INSERT INTO PCDW_ITEMSITEMASTER  (item,
+                                     siteid,
+                                     pstat,
+                                     mmsta,
+                                     maabc,
+                                     beskz,
+                                     eprio,
+                                     strgr,
+                                     lvorm,
+                                     sobsl,
+                                     dispo,
+                                     matgr,
+                                     schgt,
+                                     bstmi,
+                                     bstrf,
+                                     bstfe,
+                                     ekgrp,
+                                     stawn,
+                                     prgrp,
+                                     RGEKZ,
+                                     STORCOND,
+                                     PRCTR,
+                                     MFRGR,
+                                     STDPD,
+                                     art,
+                                     sys_created_date,
+                                     sys_created_by,
+                                     sys_last_modified_date,
+                                     sys_last_modified_by,
+                                     CCPRODH,
+                                     PLIFZ,--add by huangqr on 2012.11.26 for YPMM project
+                                     DZEIT,--add by huangqr on 2012.11.26 for YPMM project
+                                     WEBAZ,--add by huangqr on 2012.11.26 for YPMM project
+                                     KZKRI,--add by huangqr on 2012.11.26 for YPMM project
+                                     FABKZ,--add by huangqr on 2012.11.26 for YPMM project
+                                     FHORI,--add by huangqr on 2012.11.26 for YPMM project
+                                     LGFSB,--add by huangqr on 2012.11.26 for YPMM project
+                                     LOSGR,--add by huangqr on 2012.11.26 for YPMM project
+                                     QMATV,--add by huangqr on 2012.11.26 for YPMM project
+                                     INSMK --xiechao added 20130509 for ypmm project
+                                      )
+      SELECT DISTINCT MATNR,
+             WERKS,
+             PSTAT,
+             MMSTA,
+             MAABC,
+             BESKZ,
+             EPRIO,
+             STRGR,
+             LVORM,
+             SOBSL,
+             DISPO,
+             MATGR,
+             SCHGT,
+             BSTMI,
+             BSTRF,
+             BSTFE,
+             EKGRP,
+             STAWN,
+             PRGRP,
+             RGEKZ,
+             ATWRT,
+             PRCTR,
+             MFRGR,
+             STDPD,
+             ART,
+             CURRENT_TIMESTAMP,
+             'PRC_INIT_MATMASTER_PREPROCESS',
+             CURRENT_TIMESTAMP,
+             'PRC_INIT_MATMASTER_PREPROCESS',
+             CCPRODH,
+             PLIFZ,--add by huangqr on 2012.11.26 for YPMM project
+             DZEIT,--add by huangqr on 2012.11.26 for YPMM project
+             WEBAZ,--add by huangqr on 2012.11.26 for YPMM project
+             KZKRI,--add by huangqr on 2012.11.26 for YPMM project
+             FABKZ,--add by huangqr on 2012.11.26 for YPMM project
+             FHORI,--add by huangqr on 2012.11.26 for YPMM project
+             LGFSB,--add by huangqr on 2012.11.26 for YPMM project
+             LOSGR,--add by huangqr on 2012.11.26 for YPMM project
+             QMATV,--add by huangqr on 2012.11.26 for YPMM project
+             INSMK --xiechao added 20130509 for ypmm project             
+        FROM ECC_MARC_INIT
+       WHERE werks IN (:v_P_SITEID);
+	/*c. Select MATNR,BWKEY,BKLAS,STPRS,PVPRS12,PEINH,VERPR,KALN1
+   from ECC_MBEW_INIT, SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY where BWKEY in P_SITEID,then merge into PCDW_ITEMSITEMASTER by primary key*/
+  
+  -- Merge into sql
+   tab_c =  SELECT MATNR,
+                      BWKEY,
+                      BKLAS,
+                      STPRS,
+                      PVPRS12,
+                      PEINH,
+                      VERPR,
+                      KALN1,
+                      WAERS,
+                      MTORG,                  --by Qiaoxi for BRP on 2012.8.30
+                      SYS_CREATED_DATE,
+                      SYS_CREATED_BY,
+                      SYS_LAST_MODIFIED_DATE,
+                      SYS_LAST_MODIFIED_BY,
+                      OWNPR					 --by liuyg5 for SC3 on 2016.9.7
+                 FROM ECC_MBEW_INIT
+                WHERE BWKEY IN (:v_P_SITEID);
+   
+   upsert PCDW_ITEMSITEMASTER(item,siteid,BKLAS,
+                  STPRS,
+                  PVPRS12,
+                  PEINH,
+                  VERPR,
+                  KALN1,
+                  WAERS,
+                  MTORG,                      --by Qiaoxi for BRP on 2012.8.30
+                  SYS_CREATED_DATE,
+                  SYS_CREATED_BY,
+                  SYS_LAST_MODIFIED_DATE,
+                  SYS_LAST_MODIFIED_BY,
+                  OWNPR) 
+   select b.matnr,
+            	  b.BWKEY,
+           		  b.bklas,
+                  b.stprs,
+                  b.pvprs12,
+                  b.peinh,
+                  b.verpr,
+                  b.kaln1,
+                  b.WAERS,
+                  b.MTORG,                    --by Qiaoxi for BRP on 2012.8.30
+                  CURRENT_TIMESTAMP,
+                  'PRC_INIT_MATMASTER_PREPROCESS',
+                  CURRENT_TIMESTAMP,
+                  'PRC_INIT_MATMASTER_PREPROCESS',
+                  ownpr		                 --by liuyg5 for SC3 on 2016.9.7
+   from :tab_c b;
+   
+   
+  -- Merge part end
+ 
+   exec 'COMMIT';
+
+	--d
+   /*    Select a.MATNR,
+         b.SITEID,
+         a.PRODH,
+         a.SVPRODH,
+         a.PRAT1,
+         a.LVORM,
+         a.MVGR1,
+         a.VKORG,
+         SYS_CREATED_DATE,
+         SYS_CREATED_BY,
+         SYS_LAST_MODIFIED_DATE,
+         SYS_LAST_MODIFIED_BY
+    from ECC_MVKE_INIT a, CONF_SALEORGSITE_MAPPING b, ECC_MARC_INIT c
+   where a.vkorg = b.vkorg
+     and b.siteid = c.werks
+     and a.matnr = c.matnr
+     and c.werks in (P_siteid) then merge
+    into PCDW_ITEMSITEMASTER by primary key*/
+	
+    tab_d = SELECT a.MATNR MATNR,
+                      b.SITEID SITEID,
+                      a.PRODH PRODH,
+                      a.SVPRODH SVPRODH,
+                      a.PRAT1 PRAT1,
+                      a.LVORM LVORM,
+                      a.MVGR1 MVGR1,
+                      a.VKORG VKORG,
+                      CURRENT_TIMESTAMP SYS_CREATED_DATE,
+                      'PRC_INIT_MATMASTER_PREPROCESS' SYS_CREATED_BY,
+                      CURRENT_TIMESTAMP SYS_LAST_MODIFIED_DATE,
+                      'PRC_INIT_MATMASTER_PREPROCESS' SYS_LAST_MODIFIED_BY,
+                      c.ccprodh CCPRODH,
+                      a.VMSTA VMSTA --ADD BY SAP.GAVIN
+                 FROM ECC_MVKE_INIT a,
+                      CONF_SALEORGSITE_MAPPING b,
+                      ECC_MARC_INIT c
+                WHERE     a.vkorg = b.vkorg
+                      AND b.siteid = c.werks
+                      AND a.matnr = c.matnr
+                      AND a.z_wfname = c.z_wfname
+                      AND c.werks = :v_P_SITEID;
+    /*Merge into -> upsert*/
+    upsert PCDW_ITEMSITEMASTER(item,
+                  SITEID,
+                  PRODH,
+                  SVPRODH,
+                  PRAT1,
+                  LVORM,
+                  MVGR1,
+                  VKORG,
+                  SYS_CREATED_DATE,
+                  SYS_CREATED_BY,
+                  SYS_LAST_MODIFIED_DATE,
+                  SYS_LAST_MODIFIED_BY,
+                  ccprodh,
+                  vmsta --ADD BY SAP.GAVIN
+                  )
+    select d.matnr,
+                  d.SITEID,
+                  d.PRODH,
+                  d.SVPRODH,
+                  d.PRAT1,
+                  d.LVORM,
+                  d.MVGR1,
+                  d.VKORG,
+                  CURRENT_TIMESTAMP,
+                  'PRC_INIT_MATMASTER_PREPROCESS',
+                  CURRENT_TIMESTAMP,
+                  'PRC_INIT_MATMASTER_PREPROCESS',
+                  d.ccprodh,
+                  d.VMSTA --ADD BY SAP.GAVIN
+           from :tab_d d;              
+       	exec 'COMMIT';
+
+	
+	--e
+   /*  Update PCDW_MID_ITEMSITEMASTER a by ECC_MARA_INIT  b where a.matnr =b.matnr*/
+
+   --begin: add IPC attribute init for PGI by Qiaoxi on 2012/12/10
+    --Modified for PF by qinying, start 2013/08/13
+    /*
+    update ECC_MARA_INIT a
+    set QUADATE=(select to_date(ATTRIBUTE_VALUE,'YYYYMMDD') from IPC_MM_ATTRIBUTE c where c.matnr=a.matnr and c.ATTRIBUTE_NAME='QD')
+    where exists (select 1 from IPC_MM_ATTRIBUTE b where b.MATNR = a.matnr)
+      and a.z_wfname IN (SELECT z_wfname
+                           FROM CONF_SITEMAPPING
+                          WHERE siteid = P_SITEID);*/
+    update ECC_MARA_INIT a
+    set QUADATE=(select MAP(ATTRIBUTE_VALUE,'00000000',NULL,TO_DATE(ATTRIBUTE_VALUE,'YYYYMMDD'))--Modified by qinying on 2013/11/15
+                from ECC_ZDATES_QD c where c.matnr=a.matnr and c.ATTRIBUTE_NAME='QD')
+    where exists (select 1 from ECC_ZDATES_QD b where b.MATNR = a.matnr)
+      and a.z_wfname IN (SELECT z_wfname
+                           FROM CONF_SITEMAPPING
+                          WHERE siteid = :P_SITEID);
+    --Modified for PF by qinying, end 2013/08/13
+
+    update ECC_MARA_INIT a
+    set ANNOUNCEDATE=(select to_date(ATTRIBUTE_VALUE,'YYYYMMDD') from IPC_MM_ATTRIBUTE c where c.matnr=a.matnr and c.ATTRIBUTE_NAME='WAD')
+    where exists (select 1 from IPC_MM_ATTRIBUTE b where b.MATNR = a.matnr)
+      and a.z_wfname IN (SELECT z_wfname
+                           FROM CONF_SITEMAPPING
+                          WHERE siteid = :P_SITEID);
+
+    update ECC_MARA_INIT a
+    set WITHDRAWDATE=(select to_date(ATTRIBUTE_VALUE,'YYYYMMDD') from IPC_MM_ATTRIBUTE c where c.matnr=a.matnr and c.ATTRIBUTE_NAME='WWD')
+    where exists (select 1 from IPC_MM_ATTRIBUTE b where b.MATNR = a.matnr)
+      and a.z_wfname IN (SELECT z_wfname
+                           FROM CONF_SITEMAPPING
+                          WHERE siteid = :P_SITEID);
+
+    exec 'commit';
+   --end: add IPC attribute init for PGI by Qiaoxi on 2012/12/10
+	
+	 UPDATE PCDW_ITEMSITEMASTER b
+      SET (ERSDA,
+           MTART,
+           MATKL,
+           LVORM,
+           BISMT,
+           EAN11,
+           NUMTP,
+           EXTWG,
+           ZMTM,
+           RAUBE,
+           NORMT,
+           BRGEW,
+           NTGEW,
+           GEWEI,
+           MEINS,
+           ZPRFA,
+           EM_COUNTRY,
+           EM_GEO,
+           EM_SUBGEO,
+           DUMMYFG,
+           PRODFAMILY,
+           SYS_CREATED_DATE,
+           SYS_CREATED_BY,
+           SYS_LAST_MODIFIED_DATE,
+           SYS_LAST_MODIFIED_BY,
+           ccprodh,                           --by Qiaoxi for ER2 on 2012.7.10
+           ZUCOD,
+           MFRPN
+           , /*add new fields for PGI by Qiaoxi on 2012.6.18*/
+          zeinr,
+          basewarranty,
+          quadate,
+          announcedate,
+          withdrawdate,
+          custommodelflag,
+          issbb,
+          /*add new fields for YPMM project by huangqr on 2012.11.26*/
+          MTBEZ,
+          MSTAE,
+          BLATT,
+          ZLCOD,
+          PLATFORM,
+          NESTPLATE,
+          CIQ,
+          MACHINECODE,
+          BACCODE,
+          HTSD,
+          MIDHCOUNTRY
+          ,ZEIAR--add by lich 20140508 for MBG project
+          ,BOMID--add by lich 20140611 for MBG project
+          ,SMT --ADD BY SAP.GAVIN
+          ,X_ENTITY_TYPE
+          ,x_country_announce_date
+          ,x_country_withdraw_date
+          ,X_WW_ANNC_DATE     --add by liss 20150805
+          ,X_WW_WITHDRAW_DATE --add by liss 20150805
+          ,X_UNIT_CLASS                  --add by xwu 20150909
+          ,X_COFCAT                         --add by xwu 20151224
+          ,X_COFSUBCAT                   --add by xwu 20151224,
+          ,BASE_MOD                  --add by xiechao 20160112
+          ,X_SPECMODDESG            --add by xwu 2016/1/15
+          ) =
+             (SELECT a.ERSDA,
+                     a.MTART,
+                     a.MATKL,
+                     a.LVORM,
+                     a.BISMT,
+                     a.EAN11,
+                     a.NUMTP,
+                     a.EXTWG,
+                     a.ZMTM,
+                     a.RAUBE,
+                     a.NORMT,
+                     a.BRGEW,
+                     a.NTGEW,
+                     a.GEWEI,
+                     a.MEINS,
+                     a.ZPRFA,
+                     a.EM_COUNTRY,
+                     UPPER (a.EM_GEO),
+                     UPPER (a.EM_SUBGEO),
+                     a.DUMMYFG,
+                     -- Modified by qinying for PF start
+                     --a.EM_PRDFAMILY,
+                     
+                     
+     --             DECODE(REGEXP_INSTR (a.matnr, '^[0-9]*$'),1,a.EM_PRDFAMILY,a.EXTWG),
+     				a.EXTWG, -- x86全是新料 Modified by SAP Gavin
+                     -- Modified by qinying for PF end
+                     CURRENT_TIMESTAMP,
+                     'PRC_INIT_MATMASTER_PREPROCESS',
+                     CURRENT_TIMESTAMP,
+                     'PRC_INIT_MATMASTER_PREPROCESS',
+                     ccprodh,
+                     ZUCOD,
+                     MFRPN,
+                     zeinr,
+                     basewarranty,
+                     quadate,
+                     announcedate,
+                     withdrawdate,
+                     custommodelflag,
+                     issbb,
+                     /*add new fields for YPMM project by huangqr on 2012.11.26*/
+                     a.MTBEZ,
+                     a.MSTAE,
+                     a.BLATT,
+                     a.ZLCOD,
+                     a.PLATFORM,
+                     a.NESTPLATE,
+                     a.CIQ,
+                     a.MACHINECODE,
+                     a.BACCODE,
+                     a.HTSD,
+                     a.MIDHCOUNTRY
+                     ,a.ZEIAR--add by lich 20140508 for MBG project
+                     ,a.BOMID--add by lich 20140611 for MBG project
+                     ,a.SMT --ADD BY SAP.GAVIN
+                     ,a.X_ENTITY_TYPE
+                     ,to_date(x_country_announce_date) as x_country_announce_date     --note:由于mara_init下面4个字段类型变更为varchar.
+          	 	 	 ,to_date(x_country_withdraw_date) as x_country_withdraw_date
+          	 	 	 ,to_date(X_WW_ANNC_DATE) as X_WW_ANNC_DATE                    --add by liss 20150805
+          			 ,to_date(X_WW_WITHDRAW_DATE) as X_WW_WITHDRAW_DATE  --add by liss 20150805
+          			 ,X_UNIT_CLASS                 --add by liss 20150909          			 
+		             ,X_COFCAT                         --add by xwu 20151224
+		             ,X_COFSUBCAT                   --add by xwu 20151224
+		             ,BASE_MOD                  --add by xiechao 20160112
+		             ,X_SPECMODDESG            -- add by xwu 2016/1/15
+                FROM ECC_MARA_INIT a
+               WHERE a.MATNR = b.item
+                     AND a.z_wfname IN (SELECT z_wfname
+                                          FROM CONF_SITEMAPPING
+                                         WHERE siteid = P_SITEID))
+    WHERE b.siteid = P_SITEID;
+
+   exec 'COMMIT';
+	
+	--f
+   /*  f.  Update PCDW_MID_ITEMSITEMASTER a by ECC_MAKT_INIT  b where a.matnr =b.matnr*/
+   UPDATE PCDW_ITEMSITEMASTER a
+      SET (a.maktx, a.maktx_ch, a.maktx_tch) =
+             (SELECT b.maktx, b.maktx_ch, b.maktx_tch
+                FROM ECC_MAKT_INIT b
+               WHERE a.ITEM = b.MATNR
+                     --and a.siteid = P_SITEID
+                     AND b.z_wfname IN (SELECT z_wfname
+                                          FROM CONF_SITEMAPPING
+                                         WHERE siteid = :P_SITEID))
+    WHERE siteid = :P_SITEID;
+
+   exec 'COMMIT';
+
+    --Add by Zhoubinbin 2013-11-11
+   /*   
+    UPDATE PCDW_ITEMSITEMASTER
+       SET UD_PHC = CASE WHEN REGEXP_INSTR(ITEM, '^[0-9]*$') > 0
+                           THEN IFNULL (SVPRODH,PRODH)--Modified by qinying 2014/6/23
+                         ELSE PRODH END
+     WHERE SITEID = :P_SITEID;
+
+    COMMIT;*/
+    
+     UPDATE PCDW_ITEMSITEMASTER
+       SET UD_PHC =  PRODH	--Modified by SAP Gavin
+     WHERE SITEID = :P_SITEID;
+     exec 'commit';
+	
+	--Start,Xiechao Added For Pf Project 20130808
+    --Modified by Zhoubinbin 2013-11-11
+	
+    CALL "PCDW"."cdp.pcdw.procedures::PRC_UPDATE_ITEMCLASS_SITEID" (:P_SITEID);
+	
+	
+	--h
+   -- execute immediate 'truncate table PCDW_PRODH';
+   --commit;
+
+   --i
+
+   /*  Select SPRAS,
+        PRODH,
+        STUFE,
+        VTEXT,
+        SYS_CREATED_DATE,
+        SYS_CREATED_BY,
+        SYS_LAST_MODIFIED_DATE,
+        SYS_LAST_MODIFIED_BY
+   from ECC_T179T_INIT then insert
+   into PCDW_PRODH.*/
+   /* insert into PCDW_PRODH
+   (SPRAS,
+    PRODH,
+    STUFE,
+    VTEXT,
+    SYS_CREATED_DATE,
+    SYS_CREATED_BY,
+    SYS_LAST_MODIFIED_DATE,
+    SYS_LAST_MODIFIED_BY)
+   select SPRAS,
+          PRODH,
+          STUFE,
+          VTEXT,
+          SYS_CREATED_DATE,
+          SYS_CREATED_BY,
+          SYS_LAST_MODIFIED_DATE,
+          SYS_LAST_MODIFIED_BY
+     from ECC_T179T_INIT;*/
+     
+     tab_i =  SELECT SPRAS,
+                      PRODH,
+                      STUFE,
+                      VTEXT,
+                      SYS_CREATED_DATE,
+                      SYS_CREATED_BY,
+                      SYS_LAST_MODIFIED_DATE,
+                      SYS_LAST_MODIFIED_BY
+                 FROM ECC_T179T_INIT
+                WHERE z_wfname IN (SELECT z_wfname
+                                     FROM CONF_SITEMAPPING
+                                    WHERE siteid IN (:v_P_SITEID));
+     
+     upsert PCDW_PRODH(SPRAS,
+                  PRODH,
+                  STUFE,
+                  VTEXT,
+                  SYS_CREATED_DATE,
+                  SYS_CREATED_BY,
+                  SYS_LAST_MODIFIED_DATE,
+                  SYS_LAST_MODIFIED_BY)   
+          select b.SPRAS,
+                  b.PRODH,
+                  b.STUFE,
+                  b.VTEXT,
+                  CURRENT_TIMESTAMP,
+                  'PRC_INIT_MATMASTER_PREPROCESS',
+                  CURRENT_TIMESTAMP,
+                  'PRC_INIT_MATMASTER_PREPROCESS'
+          from :tab_i b;
+     
+   exec 'COMMIT';
+	
+	--j
+   ---execute immediate 'truncate table PCDW_MATGROUP';
+   -- commit;
+   --K
+   
+   tab_k = SELECT SPRAS,
+                      matkl,
+                      wgbez,
+                      wgbez60,
+                      SYS_CREATED_DATE,
+                      SYS_CREATED_BY,
+                      SYS_LAST_MODIFIED_DATE,
+                      SYS_LAST_MODIFIED_BY
+                 FROM ECC_T023T_INIT
+                WHERE z_wfname IN (SELECT z_wfname
+                                     FROM CONF_SITEMAPPING
+                                    WHERE siteid IN (:v_P_SITEID));
+    
+    upsert PCDW_MATGROUP(spras,
+                  matkl,
+                  wgbez,
+                  wgbez60,
+                  sys_created_date,
+                  sys_created_by,
+                  sys_last_modified_date,
+                  sys_last_modified_by)
+          select b.spras,
+                  b.matkl,
+                  b.wgbez,
+                  b.wgbez60,
+                  CURRENT_TIMESTAMP,
+                  'PRC_INIT_MATMASTER_PREPROCESS',
+                  CURRENT_TIMESTAMP,
+                  'PRC_INIT_MATMASTER_PREPROCESS'
+          from :tab_k b;
+    
+   exec 'COMMIT';
+	
+	--end
+   INSERT INTO PCDW_PROC_LOG (EVENTTIME,
+                              EVENTNAME,
+                              SUBEVENT,
+                              MSGCODE,
+                              EVENTMSG,
+                              EVENTTYPE,
+                              DATASOURCE,
+                              DATADEST,
+                              EVENTDESCR)
+        VALUES (CURRENT_TIMESTAMP,
+                'PRC_INIT_MATMASTER_PREPROCESS',
+                'SUCCESS',
+                vCode,
+                vMsg,
+                '',
+                '',
+                '',
+                'END');
+
+   exec 'COMMIT';
+END;

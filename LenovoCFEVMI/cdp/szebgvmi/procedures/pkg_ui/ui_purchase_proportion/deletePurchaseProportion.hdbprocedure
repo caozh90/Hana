@@ -1,0 +1,72 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_purchase_proportion::deletePurchaseProportion" (
+	 ITEM NVARCHAR(40),
+	 VENDORID NVARCHAR(40),
+	 LOGICAL_PLANT NVARCHAR(40),
+	 START_DATE LONGDATE
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+BEGIN              
+    	aI_DETAIL :='deletePurchaseProportion error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'deletePurchaseProportion'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+END;  
+  
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'vmipurchaseproportion::deleteable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+ --START
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'deletePurchaseProportion'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+  --delete操作需要写入日志
+		insert into "SZEBGVMI"."UI_PURCHASE_PROP_VMI_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				ITEM,VENDORID,LOGICAL_PLANT,PROPORTION,START_DATE,END_DATE,SYS_SOURCE)
+		select
+			session_user,
+			'delete',
+			current_timestamp,
+			ITEM,VENDORID,LOGICAL_PLANT,PROPORTION,START_DATE,END_DATE,SYS_SOURCE
+		from  "SZEBGVMI"."UI_PURCHASE_PROP_VMI" 
+		where ITEM = :ITEM and LOGICAL_PLANT = :LOGICAL_PLANT and VENDORID = :VENDORID 
+			and TO_VARCHAR(START_DATE,'yyyy-mm-dd hh24:mi:ss') = TO_VARCHAR(:START_DATE,'yyyy-mm-dd hh24:mi:ss')
+			;
+	delete from  "SZEBGVMI"."UI_PURCHASE_PROP_VMI" 
+			where ITEM = :ITEM and LOGICAL_PLANT = :LOGICAL_PLANT and VENDORID = :VENDORID 
+			and TO_VARCHAR(START_DATE,'yyyy-mm-dd hh24:mi:ss') = TO_VARCHAR(:START_DATE,'yyyy-mm-dd hh24:mi:ss');
+
+--END
+aI_DETAIL := 'deletePurchaseProportion successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'deletePurchaseProportion'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;     		   	

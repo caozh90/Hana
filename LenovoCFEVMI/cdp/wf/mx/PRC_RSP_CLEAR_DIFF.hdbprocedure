@@ -1,0 +1,11 @@
+PROCEDURE "MXEBGVMI"."cdp.wf.mx::PRC_RSP_CLEAR_DIFF" (
+	IN p_wfname VARCHAR(20), OUT p_out_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+	AS
+BEGIN
+	CALL "cdp.mxebgvmi.procedures.pkg_pcdw_to_vmi::PRC_RSP_CLEAR_DIFF"(:p_wfname,p_out_exitcode);
+END;

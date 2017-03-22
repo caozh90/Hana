@@ -1,0 +1,128 @@
+PROCEDURE "DS_INFO_SZ"."cdp.dssz.procedures.ds_management.hana_ds_con_info::createHanaDsConInfo" (
+IN newInfo "DS_INFO_SZ"."HANA_DS_CON_INFO",
+OUT errorInfo "DS_INFO_SZ"."cdp.dssz.data::DS_INFO_SZ_T.HttpError"
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA DS_INFO_SZ
+	AS
+/************************************************************************
+*name      : createHanaDsConInfo              --函数名
+*function  : 在表HANA_DS_CON_INFO中创建数据              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-1-8       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	 HOST NVARCHAR(100);
+	 WEBSERVER_PORT NVARCHAR(10);
+	 URL_PATH_POSTFIX NVARCHAR(200);
+	 CMS_PORT NVARCHAR(10);
+	 USER_NAME NVARCHAR(100);
+	 PASSWORD NVARCHAR(100);
+	 CMS_SYSTEM NVARCHAR(200);
+	 CMS_AUTHENTICATION NVARCHAR(50);
+	 REPONAME NVARCHAR(100);
+	 JOBSERVER NVARCHAR(100);
+	 SERVERGROUP NVARCHAR(100);
+	 
+	 n int;
+	 error_message nvarchar(1024);
+	 	privilegeExists  NVARCHAR(30) ;
+	 path varchar(100):='cdp.ds.procedures.ds_management.hana_ds_con_info';
+	 proc_name varchar(100) :='createHanaDsConInfo';
+	 logid0 INTEGER :=0;
+BEGIN
+	--验证权限
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'configuration::access'		,privilegeExists           );
+    IF  :privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		:privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    --start log
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'DS',
+                                               I_DETAIL=>:path||'::'||:proc_name||' Start!');
+
+	select 
+	 HOST,
+	 WEBSERVER_PORT, 
+	 URL_PATH_POSTFIX ,
+	 CMS_PORT,
+	 USER_NAME,
+	 PASSWORD,
+	 CMS_AUTHENTICATION,
+	 REPONAME,
+	 JOBSERVER,
+	 SERVERGROUP
+	into
+	 HOST,
+	 WEBSERVER_PORT, 
+	 URL_PATH_POSTFIX,
+	 CMS_PORT,
+	 USER_NAME,
+	 PASSWORD,
+	 CMS_AUTHENTICATION,
+	 REPONAME,
+	 JOBSERVER,
+	 SERVERGROUP	
+	from :newInfo;
+	
+	select count(1) into n from "DS_INFO_SZ"."HANA_DS_CON_INFO"
+	where  HOST = :HOST and WEBSERVER_PORT = :WEBSERVER_PORT;
+	 
+	if(n>0) then
+		error_message := '"HOST"('||:HOST||') and "WEBSERVER_PORT"('||:WEBSERVER_PORT
+		||')::Duplicated record!';
+		errorInfo = select 400 as http_status_code, 
+	    	'ERROR::'||:error_message ERROR_MESSAGE, 
+	    	:error_message DETAIL from dummy;
+	    return;
+	end if;
+	
+	if(LENGTH(:JOBSERVER)=0 and LENGTH(:SERVERGROUP)=0) then
+		error_message := 'JOBSERVER and SERVERGROUP cannot be null bothly';
+		errorInfo = select 400 as http_status_code, 
+	    	'ERROR' ERROR_MESSAGE, 
+	    	:error_message DETAIL from dummy;
+	    return;
+	end if;
+	
+	insert into "DS_INFO_SZ"."HANA_DS_CON_INFO"
+	(
+	 HOST,
+	 WEBSERVER_PORT, 
+	 URL_PATH_POSTFIX ,
+	 CMS_PORT ,
+	 USER_NAME ,
+	 PASSWORD ,
+	 CMS_SYSTEM ,
+	 CMS_AUTHENTICATION ,
+	 REPONAME ,
+	 JOBSERVER ,
+	 SERVERGROUP 
+	)
+	values(
+	 :HOST,
+	 :WEBSERVER_PORT, 
+	 :URL_PATH_POSTFIX ,
+	 :CMS_PORT ,
+	 :USER_NAME ,
+	 :PASSWORD ,
+	 :CMS_SYSTEM ,
+	 :CMS_AUTHENTICATION ,
+	 :REPONAME ,
+	 :JOBSERVER ,
+	 :SERVERGROUP 
+	);
+ 	--end log
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logid0,
+                                               I_EVENT_NAME=>:path||'::'||:proc_name,I_MODULE=>'DS',
+                                               I_DETAIL=>:path||'::'||:proc_name||'  END!');		
+	
+
+END;

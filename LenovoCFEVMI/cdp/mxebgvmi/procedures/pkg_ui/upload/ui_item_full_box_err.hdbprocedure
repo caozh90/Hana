@@ -1,0 +1,44 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_item_full_box_err" (
+IN 	 	error_message	varchar(1024),
+IN 	 	business_name NVARCHAR(4096),
+IN		item NVARCHAR(4096),
+IN	 	vendorid NVARCHAR(4096),
+IN		box_size NVARCHAR(4096),
+IN		seq	nvarchar(20),
+IN 	 	position int
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      : ui_item_full_box_err              --函数名
+*function  : 保存向表ui_item_full_box上传数据时产生的错误信息              --函数功能
+*input     ：    table_name, error_message, business_name, item, vendorid, box_size, seq, position  --输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014/12/10       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		business_code varchar(20);
+		table_name nvarchar(20) :='UI_ITEM_FULL_BOX';
+		privilegeExists  NVARCHAR(30);
+BEGIN
+	
+     	--添加business信息
+     	business_code := :seq;
+     	  
+		call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,0,1,:table_name);
+     	
+     	--记录upload的错误
+     	INSERT INTO "MXEBGVMI"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("MXEBGVMI"."cdp.mxebgvmi.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || :business_code,:position,:error_message,:table_name,:business_name); 
+     	
+     	--详细记录upload的数据信息
+     	insert into "MXEBGVMI"."UI_ITEM_FULL_BOX_ERR_DETAIL"(CODE,POSITION,ITEM,VENDORID,BOX_SIZE)
+		VALUES(:table_name || :business_code,:position,:item,:vendorid,:box_size);
+	
+
+END;

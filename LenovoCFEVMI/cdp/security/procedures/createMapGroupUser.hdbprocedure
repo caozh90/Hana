@@ -1,0 +1,162 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::createMapGroupUser" ( 
+	--IN	aMODULE_ID NVARCHAR(10)	
+    --,
+    IN	aGROUP_ID BIGINT	--//usergroup id
+    ,IN	aUSER_ID BIGINT  	--//USER ID
+	,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+	
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aID NVARCHAR(10);	
+	
+    aPublicGROUP_ID BIGINT;	--//usergroup id		
+   
+    aMODULE_ID NVARCHAR(10);
+    aMODULE_NAME NVARCHAR(256); 
+    aREAL_ROLE_NAME NVARCHAR(256);  
+    aUSER_NAME  NVARCHAR(256);  
+    groupUserExists Integer := 0;
+    privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+	将 一些用户加入到某个用户组中。
+	
+	1、首先检查这个用户是否存在。
+	2、如果不存在，则返回。
+	3、这个用户组中是否存在这个用户，如果存在，则返回。
+	4、如果这个用户族中不存在，则insert map_group_user
+	5、检查 这个用户是否在public group 当中，如果在，则从中删除。
+	
+	6、如果成功，则将某个用户赋予这个role
+	
+ *****************************/
+ 
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到aROLE_ID ,则返回，同时告知不存在这个权限明细
+			aI_DETAIL :='cdp.security.procedures::createMapGroupUser can not find the USER : '||aUSER_ID ||' in this group : '||aGROUP_ID||'.';
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createMapGroupUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL); 
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::createMapGroupUser error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createMapGroupUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);    	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityUserAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+  --START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createMapGroupUser"'
+	,I_MODULE=>:aMODULE_NAME); 
+	
+  SELECT "MODULE_NAME" INTO aMODULE_NAME FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE"
+  WHERE "MODULE_ID" = :aMODULE_ID;
+  
+  
+  -- 检查这个user 和 group 是否存在，并且在同样的module  中  
+  SELECT A."MODULE_ID", A."REAL_ROLE_NAME",C."USER_NAME" into aMODULE_ID,aREAL_ROLE_NAME ,aUSER_NAME
+   FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" A
+    	,"SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER" B
+    	,"SECURITY"."cdp.security.data::userManagement.INFO_USER" C
+     WHERE A."MODULE_ID" = B."MODULE_ID" 
+     AND A."MODULE_ID" = :aMODULE_ID    
+     AND A."GROUP_ID" = :aGROUP_ID
+     AND B."USER_ID" = :aUSER_ID 
+     AND B."USER_ID" = C."USER_ID";
+ 
+ --需要检查这个user 是否已经存在这个map_group_user 当中，如果存在，则返回    
+     SELECT top 1 count(1) into groupUserExists FROM "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER" A
+    	--,"SECURITY"."cdp.security.data::userManagement.INFO_MODULE" B
+     WHERE "MODULE_ID" = :aMODULE_ID
+      AND "GROUP_ID" = :aGROUP_ID
+     AND "USER_ID" = :aUSER_ID ;
+     if  :groupUserExists > 0 then
+    	 aI_DETAIL := 'cdp.security.procedures::createMapGroupUser  find the GROUP_User : '||:aGROUP_ID ||','||:aUSER_ID||' exists';
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createMapGroupUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000020'
+     	,I_DETAIL=>:aI_DETAIL); 
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'GROUP_User exist' error_message, 
+     		aI_DETAIL detail from dummy;
+     	return ;
+     end if;
+     
+     
+  SELECT "GROUP_ID" INTO aPublicGROUP_ID FROM 
+  "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" 
+  WHERE "MODULE_ID" = aMODULE_ID
+  and "GROUP_NAME" = 'Public Group'
+; 
+   --确定存在之后，就可以进行添加了
+   --**## exec 'GRANT "'||aREAL_ROLE_NAME||'" TO ' || :aUSER_NAME;
+   
+	    insert into "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"
+	    ("ID" ,"GROUP_ID","USER_ID" ,"MODULE_ID")
+	    values("SECURITY"."cdp.security.data::mapGroupUserSeqId".NEXTVAL
+	    	,:aGROUP_ID ,:aUSER_ID,:aMODULE_ID);  
+  
+  
+  
+  DELETE FROM "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"
+  WHERE "USER_ID" =:aUSER_ID AND "GROUP_ID"= :aPublicGROUP_ID ;
+  
+ 	
+ 	--如果成功添加,则log添加成功！
+	    aI_DETAIL := 'cdp.security.procedures::createMapGroupUser ('||:aGROUP_ID||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::createMapGroupUser"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000011'
+     	,I_DETAIL=>:aI_DETAIL);	
+     		
+END;

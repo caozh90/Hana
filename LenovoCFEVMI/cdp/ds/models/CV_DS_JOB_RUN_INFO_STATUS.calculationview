@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_DS_JOB_RUN_INFO_STATUS" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_DS_JOB_RUN_INFO_STATUS"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="DS_JOB_RUN_INFO" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews/>
+  <logicalModel id="DS_JOB_RUN_INFO">
+    <attributes>
+      <attribute id="JOBSTATUS" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="当前作业的状态（RUNNING, ERROR, FINISHED)"/>
+        <keyMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="JOBSTATUS"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="JOBRUNID" order="2" aggregationType="count" measureType="simple">
+        <descriptions defaultDescription="Data Services 唯一标示一个Job运行的ID"/>
+        <measureMapping schemaName="DS_INFO" columnObjectName="DS_JOB_RUN_INFO" columnName="JOBRUNID"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

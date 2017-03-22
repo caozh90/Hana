@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_CONFIRMED_PULL_SHORTAGE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_CONFIRMED_PULL_SHORTAGE"/>
+  <defaultSchema schemaName="MXEBGVMI"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="MO_ID" length="12"/>
+        <viewAttribute datatype="VARCHAR" id="WERKS" length="4"/>
+        <viewAttribute datatype="VARCHAR" id="PRODUCTION_LINE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="PULL_HEADER_ID" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="PULL_LINE_ID" length="14"/>
+        <viewAttribute datatype="VARCHAR" id="PART_NUMBER" length="18"/>
+        <viewAttribute datatype="VARCHAR" id="CONFIRMED_DATE" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="CONFIRMED_TIME" length="10"/>
+        <viewAttribute datatype="DECIMAL" id="CONFIRMED_QTY" length="18" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="TOTAL_PULLED_QTY" length="18" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="DIFFERENCE" length="19" scale="3"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = SELECT
+	 A.PRODUCTIONORDID AS MO_ID,
+	 B.WERKS ,
+	 C.PRODUCTION_LINE,
+	 C.PULL_HEADER_ID,
+	 C.PULL_LINE_ID,
+	 C.MATNR AS PART_NUMBER,
+	 TO_CHAR(B.SYS_TIMESTAMP,
+	'YYYY/MM/DD') AS CONFIRMED_DATE,
+	 TO_CHAR(B.SYS_TIMESTAMP,
+	'HH24:MI:SS') AS CONFIRMED_TIME,
+	 (SUM(B.CONFIRMED_QTY)) AS CONFIRMED_QTY,
+	 (SUM(C.FULL_BOX_QTY)) AS TOTAL_PULLED_QTY,
+	 (SUM(C.FULL_BOX_QTY - B.CONFIRMED_QTY)) AS DIFFERENCE
+FROM &quot;MXEBGVMI&quot;.MID_MO_LINE A 
+RIGHT OUTER JOIN &quot;MXEBGVMI&quot;.CLEAR_DIFF B ON A.PULL_LINE_ID = B.PULL_LINE_ID,
+	 &quot;MXEBGVMI&quot;.PULL_LINE C 
+WHERE (B.PULL_LINE_ID = C.PULL_LINE_ID 
+	AND B.CONFIRMED_QTY &lt; C.FULL_BOX_QTY) 
+GROUP BY A.PRODUCTIONORDID,
+	 B.WERKS,
+	 C.PRODUCTION_LINE,
+	 C.PULL_HEADER_ID,
+	 C.PULL_LINE_ID,
+	 C.MATNR,
+	 TO_CHAR(B.SYS_TIMESTAMP,
+	'YYYY/MM/DD'),
+	 TO_CHAR(B.SYS_TIMESTAMP,
+	'HH24:MI:SS') 
+ORDER BY 1,
+	 2,
+	 3,
+	 4,
+	 5,
+	 6,
+	 7,
+	 8 ;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="MO_ID" hidden="false" order="1">
+        <descriptions defaultDescription="MO_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MO_ID"/>
+      </attribute>
+      <attribute id="WERKS" hidden="false" order="2">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping columnObjectName="Script_View" columnName="WERKS"/>
+      </attribute>
+      <attribute id="PRODUCTION_LINE" hidden="false" order="3">
+        <descriptions defaultDescription="PRODUCTION_LINE"/>
+        <keyMapping columnObjectName="Script_View" columnName="PRODUCTION_LINE"/>
+      </attribute>
+      <attribute id="PULL_HEADER_ID" hidden="false" order="4">
+        <descriptions defaultDescription="PULL_HEADER_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="PULL_HEADER_ID"/>
+      </attribute>
+      <attribute id="PULL_LINE_ID" hidden="false" order="5">
+        <descriptions defaultDescription="PULL_LINE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="PULL_LINE_ID"/>
+      </attribute>
+      <attribute id="PART_NUMBER" hidden="false" order="6">
+        <descriptions defaultDescription="Part Number"/>
+        <keyMapping columnObjectName="Script_View" columnName="PART_NUMBER"/>
+      </attribute>
+      <attribute id="CONFIRMED_DATE" hidden="false" order="7">
+        <descriptions defaultDescription="CONFIRMED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="CONFIRMED_DATE"/>
+      </attribute>
+      <attribute id="CONFIRMED_TIME" hidden="false" order="8">
+        <descriptions defaultDescription="CONFIRMED_TIME"/>
+        <keyMapping columnObjectName="Script_View" columnName="CONFIRMED_TIME"/>
+      </attribute>
+      <attribute id="CONFIRMED_QTY" hidden="false" order="9">
+        <descriptions defaultDescription="CONFIRMED_QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="CONFIRMED_QTY"/>
+      </attribute>
+      <attribute id="TOTAL_PULLED_QTY" hidden="false" order="10">
+        <descriptions defaultDescription="TOTAL_PULLED_QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="TOTAL_PULLED_QTY"/>
+      </attribute>
+      <attribute id="DIFFERENCE" hidden="false" order="11">
+        <descriptions defaultDescription="DIFFERENCE"/>
+        <keyMapping columnObjectName="Script_View" columnName="DIFFERENCE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

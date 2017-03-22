@@ -1,0 +1,295 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::createUiCtoFcAdder" 
+( 
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTOFC_ADDER_T"
+    ,OUT  errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA
+	AS  
+	   aI_DETAIL 	     NVARCHAR(300) :='';
+	   alogide 			 INTEGER :=0;
+	   privilegeExists   NVARCHAR(300)  ; 
+	   v_CTO             NVARCHAR(18);
+	   v_FC	         NVARCHAR(40);
+	   v_PLANT              NVARCHAR(40);
+	   v_SUBGEO            NVARCHAR(40);
+	   v_ADDER_NAME			 NVARCHAR(200);
+	   v_COST_LEVEL			 NVARCHAR(10);
+	   v_TBA_TYPE			 NVARCHAR(40);
+	   V_M1	 DECIMAL(15,4);
+	   V_M2	 DECIMAL(15,4);
+	   V_M3	 DECIMAL(15,4);
+	   V_M4	 DECIMAL(15,4);
+	   V_M5	 DECIMAL(15,4);
+	   V_M6	 DECIMAL(15,4);
+	   V_M7	 DECIMAL(15,4);
+	   V_M8	 DECIMAL(15,4);
+	   V_M9	 DECIMAL(15,4);
+	   V_M10	 DECIMAL(15,4);
+       V_M11	 DECIMAL(15,4);
+       V_M12	 DECIMAL(15,4);
+	   V_M13	 DECIMAL(15,4);
+	   V_M14	 DECIMAL(15,4);
+	   V_M15	 DECIMAL(15,4);
+	   V_M16	 DECIMAL(15,4);
+	   V_M17	 DECIMAL(15,4);
+	   V_M18	 DECIMAL(15,4);
+	   v_resourceExists  INT := 0;
+	   VALIDATE0		 INT := 0;
+	   VALIDATE1		 INT := 0;
+	   VALIDATE2		 INT := 0;
+	    		
+BEGIN
+/***************************** 
+*name       :    createUiXoutfrWeight
+*function   :               
+*input      :    newInfo
+*output     :    errorInfo            
+*author     :    chris
+*DeleteDate :                  
+*UpdateDate :    
+*CreateDate :    2016.05.19
+ *****************************/
+ DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+	BEGIN
+		aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::createUiCtoFcAdder error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+		
+		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::createUiCtoFcAdder'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+	END;
+
+--check the privilege
+	call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_ctofc_adder::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' || :privilegeExists as  error_message, 
+              privilegeExists as detail from dummy;
+       RETURN ;
+    END IF;
+--start
+ 	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::createUiCtoFcAdder'
+       ,I_MODULE=>'EBGCFE'
+   	);
+
+ 
+	SELECT  CTO,       UPPER(FC),	      PLANT,    SUBGEO,
+			ADDER_NAME,COST_LEVEL,TBA_TYPE,
+			M1 ,M2 ,M3 ,M4, 
+			M5 ,M6 ,M7 ,M8, 
+			M9 ,M10,M11,M12,
+			M13,M14,M15,M16,
+			M17,M18
+ 	  INTO V_CTO,       V_FC,	      V_PLANT,    V_SUBGEO,
+		   V_ADDER_NAME,V_COST_LEVEL,V_TBA_TYPE,
+		   V_M1 ,V_M2 ,V_M3 ,V_M4, 
+		   V_M5 ,V_M6 ,V_M7 ,V_M8, 
+		   V_M9 ,V_M10,V_M11,V_M12,
+		   V_M13,V_M14,V_M15,V_M16,
+		   V_M17,V_M18
+ 		FROM :newinfo;
+--***********************************************************************-- 
+--------ADDER_NAME
+SELECT COUNT(1) INTO VALIDATE0 FROM :newinfo
+WHERE ADDER_NAME IN (
+	SELECT item_value
+  	  FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+	   	  ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'ADDER_NAME'))     
+);
+IF VALIDATE0 <=0  THEN
+	errorinfo = select 400 as http_status_code, 
+	            'ADDER_NAME:' || :V_ADDER_NAME ||' NOT EXIST IN UI_ADDER_CONF' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+END IF;	
+--------CTO
+	SELECT COUNT(1) INTO VALIDATE0
+  	  FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+	   	  ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'CTO')) 
+      WHERE
+	   	  ITEM_VALUE = :v_CTO;
+	   	  	
+	IF VALIDATE0 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'CTO:' || :v_CTO ||' NOT  EXIST' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;  
+     
+     VALIDATE0 := 0;
+--------FC     
+	SELECT COUNT(1) INTO VALIDATE0
+  	  FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+	   	  ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'FC')) 
+      WHERE
+	   	  ITEM_VALUE = UPPER(:v_FC);
+	   	  	
+	IF VALIDATE0 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'FC:' || :v_FC ||' NOT  EXIST' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;  
+     
+     VALIDATE0 := 0;     
+--------SUBGEO
+	SELECT COUNT(1) INTO VALIDATE0
+  	  FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+	   	  ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'SUBGEO')) 
+      WHERE
+	   	  ITEM_VALUE = UPPER(:v_SUBGEO);
+	   	  	
+	IF VALIDATE0 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'SUBGEO:' || :v_SUBGEO ||' NOT  EXIST' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;  
+     
+     VALIDATE0 := 0;       	  	
+--------PLANT
+	SELECT COUNT(1) INTO VALIDATE0
+  	  FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+	   	  ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'PLANT')) 
+      WHERE
+	   	  ITEM_VALUE = UPPER(:v_PLANT);
+	   	  	
+	IF VALIDATE0 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'PLANT:' || :v_PLANT ||' NOT  EXIST' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;  
+     
+     VALIDATE0 := 0; 
+ --------TBA_TYPE
+	SELECT COUNT(1) INTO VALIDATE0
+  	  FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+	   	  ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'TBA_TYPE')) 
+      WHERE
+	   	  ITEM_VALUE = UPPER(:v_TBA_TYPE);
+	   	  	
+	IF VALIDATE0 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'TBA_TYPE:' || :v_TBA_TYPE ||' NOT  EXIST' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;  
+     
+     VALIDATE0 := 0;
+ --------COST_LEVEL
+	SELECT COUNT(1) INTO VALIDATE0
+  	  FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_ctofc_adder/CV_UI_CTOFC_ADDER_C_DDL" 
+	   	  ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'COST_LEVEL')) 
+      WHERE
+	   	  ITEM_VALUE = UPPER(:v_COST_LEVEL);
+	   	  	
+	IF VALIDATE0 <= 0 THEN
+	 	  errorinfo = select 400 as http_status_code, 
+	            'COST_LEVEL:' || :v_COST_LEVEL ||' NOT  EXIST' error_message, 
+	            '' detail from dummy;        
+        RETURN;
+     END IF;  
+     
+     VALIDATE0 := 0;
+--***********************************************************************-- 
+     
+--check the record EXIST     
+     SELECT COUNT(1) INTO v_resourceExists
+      FROM "EBGCFE"."UI_CTOFC_ADDER" a , :newInfo b
+      WHERE a.CYCLE = 'CURRENT' AND
+            a.PRODUCT_GROUP = 'EBG' AND
+            a.CTO = V_CTO AND
+            a.FC = V_FC AND
+            a.PLANT = V_PLANT AND
+            a.SUBGEO = V_SUBGEO AND
+            a.ADDER_NAME = b.ADDER_NAME;
+            
+ 	IF	v_resourceExists > 0
+ 	THEN
+   		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+   		
+   		 errorinfo = select 400 as http_status_code, 
+            'the record exists' error_message, 
+            '' detail from dummy;        
+        RETURN;
+   	END IF;
+
+ ---INSERT INTO UI_XOUTFR_WEIGHT  
+ 
+ 	INSERT INTO "EBGCFE"."UI_CTOFC_ADDER"
+			      (  CYCLE, PRODUCT_GROUP,
+	                 CTO,       FC,	       PLANT,    SUBGEO,
+					 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+					 M1 ,M2 ,M3 ,M4 ,
+					 M5 ,M6 ,M7 ,M8 ,
+					 M9 ,M10,M11,M12,
+					 M13,M14,M15,M16,
+					 M17,M18,
+					 ACTION,
+			        SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY )
+		   VALUES ( 'CURRENT','EBG',
+		            :V_CTO,       :V_FC,	      :V_PLANT,    :V_SUBGEO,
+					:V_ADDER_NAME,:V_COST_LEVEL,:V_TBA_TYPE,
+					:V_M1 ,:V_M2 ,:V_M3 ,:V_M4, 
+					:V_M5 ,:V_M6 ,:V_M7 ,:V_M8, 
+					:V_M9 ,:V_M10,:V_M11,:V_M12,
+					:V_M13,:V_M14,:V_M15,:V_M16,
+					:V_M17,:V_M18,
+					'insert',
+					CURRENT_TIMESTAMP,SESSION_USER,
+					CURRENT_TIMESTAMP,SESSION_USER);
+
+	
+--insert into log
+		INSERT INTO "EBGCFE"."UI_CTOFC_ADDER_LOG"(
+		                     CYCLE,  PRODUCT_GROUP,
+			                 CTO,       FC,	       PLANT,    SUBGEO,
+							 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+							 M1 ,M2 ,M3 ,M4 ,
+							 M5 ,M6 ,M7 ,M8 ,
+							 M9 ,M10,M11,M12,
+							 M13,M14,M15,M16,
+							 M17,M18,		                    
+							 SYS_CREATED_DATE,		 SYS_CREATED_BY,							
+							 SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY,
+							 AT_ACTION,	AT_MILLIS)
+		SELECT  'CURRENT',  'EBG',
+                 CTO,       FC,	       PLANT,    SUBGEO,
+				 ADDER_NAME,COST_LEVEL,TBA_TYPE,
+				 M1 ,M2 ,M3 ,M4 ,
+				 M5 ,M6 ,M7 ,M8 ,
+				 M9 ,M10,M11,M12,
+				 M13,M14,M15,M16,
+				 M17,M18,
+		        CURRENT_TIMESTAMP,SESSION_USER,
+		        CURRENT_TIMESTAMP,SESSION_USER,
+		        'create',  TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+	 	FROM :newInfo 	;
+	   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::createUiCtoFcAdder successfully inserted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_adder::createUiCtoFcAdder'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);  
+END;

@@ -1,0 +1,47 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::getRolegroupAndRoleNotIn" (
+    IN IN_MODULE_ID NVARCHAR(10),
+    IN IN_GROUP_ID BIGINT,
+    IN IN_USER_ID BIGINT,
+    OUT OUT_ROLEGROUPROLE "SECURITY"."cdp.security.data::userManagement.RoleGroupRoleT") 
+
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	READS SQL DATA AS
+	
+BEGIN
+    
+   OUT_ROLEGROUPROLE= 
+   select rolegroup_id,rolegroup_name,rolegroup_comment,role_id,role_name,role_comment from
+	(select a.rolegroup_id,a.rolegroup_name,a.comment as rolegroup_comment,c.role_id,d.role_name,d.comment as role_comment from 
+	"SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" a
+	left join
+	(select rolegroup_id from "SECURITY"."cdp.security.data::userManagement.MAP_ALL"
+	where module_id=:IN_MODULE_ID and group_id=:IN_GROUP_ID and user_id=:IN_USER_ID) b
+	on a.rolegroup_id=b.rolegroup_id
+	inner join
+	"SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" c
+	on a.rolegroup_id=c.rolegroup_id
+	inner join
+	"SECURITY"."cdp.security.data::userManagement.INFO_ROLES" d
+	on c.role_id=d.role_id
+	where b.rolegroup_id is null)
+	union all
+	(select c.rolegroup_id,e.rolegroup_name,e.comment as rolegroup_comment,c.role_id,d.role_name,d.comment as role_comment from
+	(select a.role_id,0 as rolegroup_id from
+	(select role_id from "SECURITY"."cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" where rolegroup_id=0) a
+	left join
+	(select role_id from "SECURITY"."cdp.security.data::userManagement.MAP_ALL"
+	where module_id=:IN_MODULE_ID and group_id=:IN_GROUP_ID and user_id=:IN_USER_ID and rolegroup_id=0) b
+	on a.role_id=b.role_id
+	where b.role_id is null) c
+	inner join
+	"SECURITY"."cdp.security.data::userManagement.INFO_ROLES" d
+	on c.role_id=d.role_id
+	inner join
+	"SECURITY"."cdp.security.data::userManagement.INFO_ROLEGROUP" e
+	on c.rolegroup_id=e.rolegroup_id)
+	order by rolegroup_id,role_id;
+    
+
+END;

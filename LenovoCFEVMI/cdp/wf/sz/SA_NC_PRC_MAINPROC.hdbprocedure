@@ -1,0 +1,11 @@
+PROCEDURE "SZEBGVMI"."cdp.wf.sz::SA_NC_PRC_MAINPROC" ( 
+  IN iv_id VARCHAR(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+BEGIN
+  CALL "cdp.szebgvmi.procedures.pkg_sa_netchange::PRC_MAINPROC"(:iv_id, on_exitcode);
+END;

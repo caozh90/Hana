@@ -1,0 +1,194 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_option_dispatch::PRC_OPTION_DISPATCH_TRANSFER" (
+	iv_id VARCHAR(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA
+/************************************************************************
+*name      : PRC_OPTION_DISPATCH_TRANSFER              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/08                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/ 	 	 
+	AS
+	  v_logidi INTEGER := 0;	
+	  v_pkg_name          VARCHAR (40)            := 'PKG_OPTION_DISPATCH';
+	  v_logic_proc_name   VARCHAR (40)            := 'PRC_OPTION_DISPATCH_TRANSFER';
+	  v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+	  v_dept                VARCHAR(40);	  
+	  
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- COMMIT;      --comment by Eric Zhou
+	END;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+on_exitcode := -20099;
+
+      DELETE FROM pcdw.EXP_ECC_OPTION_DISPATCH_LIST
+            WHERE werks IN (SELECT siteid
+                              FROM conf_site_schedule
+                             WHERE ID = :iv_id);
+
+      DELETE FROM Z_PCDW_RSP_OPTION_DISPATCH;
+
+      --COMMIT;                              --COMMENT BY Eric Zhou
+
+/*
+   add by xwu. 2015/8/26
+*/ 
+     select top 1 dept into v_dept  from "MXEBGVMI"."CONF_SITE_SCHEDULE" as a;
+---------------------------
+
+	 --BACK UP
+	 DELETE FROM pcdw.BAK_EXP_ECC_OPTION_DISPATCH_LIST
+	 WHERE DAYS_BETWEEN(SYS_TIMESTAMP,CURRENT_TIMESTAMP)>90;
+
+	 INSERT INTO pcdw.BAK_EXP_ECC_OPTION_DISPATCH_LIST
+                  (werks, pull_line_id, pull_header_id, src_storage_type,
+                   src_storage_loc, src_storage_bin, dest_storage_type,
+                   dest_storage_loc, dest_storage_bin,sa_number,
+                   inventory_type, lifnr, whs_no,unreserved_qty, dispatch_qty,
+                   difference_qty, dept, matnr, status, sa_line_id, ecc_step,
+                   tr_number, tr_item_number, material_document_year,
+                   material_document,warehouse_owner,SYS_TIMESTAMP)
+     SELECT werks, pull_line_id, pull_header_id, src_storage_type,
+                src_storage_loc, src_storage_bin, dest_storage_type,
+                dest_storage_loc, dest_storage_bin,sa_number, inventory_type,
+                lifnr, whs_no,unreserved_qty, dispatch_qty, difference_qty,
+                :v_dept, matnr, status, sa_line_id, ecc_step, tr_number,        -- updated from dept to :dept 2015/8/26 by xwu.
+                tr_item_number, material_document_year, material_document,warehouse_owner,CURRENT_TIMESTAMP
+           FROM dispatch_list list,ui_option_dest_mapping as  mapping
+          WHERE list.werks = mapping.logical_plant and list.dest_storage_loc = mapping.destination_location AND 
+             list.src_storage_type=mapping.source_type and list.src_storage_loc=mapping.source_location and
+             list.src_storage_bin=mapping.source_bin and list.dest_storage_type=mapping.destination_type and 
+             list.dest_storage_loc=mapping.destination_location and  list.dest_storage_bin=mapping.destination_bin
+          	 and status = 'XI_IN_PROCESS'
+            AND (   list.sys_source = 'CSO'
+                 OR list.sys_source = 'DF'
+                 OR dest_storage_loc IN (
+                    select storage_location from conf_wahrehouse_info 
+                    where owner='FG')
+                )
+            AND werks IN (SELECT siteid
+                            FROM conf_site_schedule
+                           WHERE ID = iv_id);
+
+      INSERT INTO pcdw.EXP_ECC_OPTION_DISPATCH_LIST
+                  (werks, pull_line_id, pull_header_id, src_storage_type,
+                   src_storage_loc, src_storage_bin, dest_storage_type,
+                   dest_storage_loc, dest_storage_bin,sa_number,
+                   inventory_type, lifnr, whs_no,unreserved_qty, dispatch_qty,
+                   difference_qty, dept, matnr, status, sa_line_id, ecc_step,
+                   tr_number, tr_item_number, material_document_year,
+                   material_document,warehouse_owner,SYS_TIMESTAMP)
+         SELECT werks, pull_line_id, pull_header_id, src_storage_type,
+                src_storage_loc, src_storage_bin, dest_storage_type,
+                dest_storage_loc, dest_storage_bin,sa_number, inventory_type,
+                lifnr, whs_no,unreserved_qty, dispatch_qty, difference_qty,
+                :v_dept, matnr, status, sa_line_id, ecc_step, tr_number,        -- updated from dept to :dept 2015/8/26 by xwu.
+                tr_item_number, material_document_year, material_document,warehouse_owner,CURRENT_TIMESTAMP
+           FROM dispatch_list list,ui_option_dest_mapping as  mapping
+          WHERE list.werks = mapping.logical_plant and list.dest_storage_loc = mapping.destination_location AND 
+             list.src_storage_type=mapping.source_type and list.src_storage_loc=mapping.source_location and
+             list.src_storage_bin=mapping.source_bin and list.dest_storage_type=mapping.destination_type and 
+             list.dest_storage_loc=mapping.destination_location and  list.dest_storage_bin=mapping.destination_bin
+          	 and status = 'XI_IN_PROCESS'
+            AND (   list.sys_source = 'CSO'
+                 OR list.sys_source = 'DF'
+                 OR dest_storage_loc IN (
+                    select storage_location from conf_wahrehouse_info 
+                    where owner='FG')
+                )
+            AND werks IN (SELECT siteid
+                            FROM conf_site_schedule
+                           WHERE ID = iv_id);
+
+----------------------- add by xwu 2015/10/10 ------------------------------
+-- 未找到的记录，dispatch list状态置为error, reason code = no mapping
+         var_tmp1 = 
+	         SELECT pull_line_id, pull_header_id
+	           FROM dispatch_list list,ui_option_dest_mapping as  mapping
+	          WHERE list.werks = mapping.logical_plant and list.dest_storage_loc = mapping.destination_location AND 
+	             list.src_storage_type=mapping.source_type and list.src_storage_loc=mapping.source_location and
+	             list.src_storage_bin=mapping.source_bin and list.dest_storage_type=mapping.destination_type and 
+	             list.dest_storage_loc=mapping.destination_location and  list.dest_storage_bin=mapping.destination_bin
+	          	 and status = 'XI_IN_PROCESS'
+	            AND (   list.sys_source = 'CSO'
+	                 OR list.sys_source = 'DF'
+	                 OR dest_storage_loc IN (
+	                    select storage_location from conf_wahrehouse_info 
+	                    where owner='FG')
+	                )
+	            AND werks IN (SELECT siteid
+	                            FROM conf_site_schedule
+	                           WHERE ID = iv_id);
+         
+         update DISPATCH_LIST
+               set STATUS = 'ERROR',  REASON_CODE = 'NO MAPPING OPTION_DESTING_MAPPING_UI'
+           where ( pull_header_id, pull_line_id ) in ( 
+                            select pull_header_id, pull_line_id  
+			                 from DISPATCH_LIST as a
+			                 where status='XI_IN_PROCESS'
+			                    and ( sys_source = 'CSO'
+			                       or  sys_source = 'DF'
+			                       or  dest_storage_loc in ( select storage_location from conf_wahrehouse_info where owner='FG') )
+			                    and not exists ( select 1 from :var_tmp1 as b 
+			                                             where a.pull_header_id = b.pull_header_id
+			                                                and a.pull_line_id = b.pull_line_id ) ) ;
+--------------------------------------------------------------------------------
+
+
+      IF ::ROWCOUNT >= 1
+      THEN
+         UPDATE conf_cfg_xi_para xp
+            SET xp.low = 1
+          WHERE xp.progname = 'ZRFC_VMI_MEX_OPTION_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      ELSE
+         UPDATE conf_cfg_xi_para xp
+            SET xp.low = 0
+          WHERE xp.progname = 'ZRFC_VMI_MEX_OPTION_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      END IF;
+
+      UPDATE dispatch_list
+         SET status = 'SENT'
+       WHERE status = 'XI_IN_PROCESS'
+         AND (   sys_source = 'CSO'
+              OR sys_source = 'DF'
+              OR dest_storage_loc IN (select storage_location from conf_wahrehouse_info where owner = 'FG')
+             )
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND EXISTS(SELECT DISTINCT 'x' FROM pcdw.EXP_ECC_OPTION_DISPATCH_LIST zlist
+                  WHERE zlist.pull_header_id=DISPATCH_LIST.pull_header_id
+                    and zlist.pull_line_id=DISPATCH_LIST.pull_line_id);--CRQ000000023449 Added by baiying 2010.10.13;
+
+      --COMMIT;                                     --comment by Eric Zhou
+      on_exitcode := 0;            
+             
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');             
+END;

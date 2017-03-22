@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_MO_PULL_SIGNAL_SUMMARY_DDL" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" alwaysAggregateResult="true" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_MO_PULL_SIGNAL_SUMMARY_DDL"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="RPT_PULL_SIGNAL_INFO" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews/>
+  <logicalModel id="RPT_PULL_SIGNAL_INFO">
+    <attributes>
+      <attribute id="PRODUCTIONORDID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTIONORDID"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="PRODUCTIONORDID"/>
+      </attribute>
+      <attribute id="MATNR" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="MATNR"/>
+      </attribute>
+      <attribute id="PULL_HEADER_ID" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PULL_HEADER_ID"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="PULL_HEADER_ID"/>
+      </attribute>
+      <attribute id="DISPATCH_HEADER_ID" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPATCH_HEADER_ID"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="DISPATCH_HEADER_ID"/>
+      </attribute>
+      <attribute id="SOURCE_TYPE" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SOURCE_TYPE"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="SOURCE_TYPE"/>
+      </attribute>
+      <attribute id="DESTINATION_TYPE" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DESTINATION_TYPE"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="DESTINATION_TYPE"/>
+      </attribute>
+      <attribute id="STORAGE_CONDITION" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STORAGE_CONDITION"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="STORAGE_CONDITION"/>
+      </attribute>
+      <attribute id="PRODUCTION_LINE" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTION_LINE"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="PRODUCTION_LINE"/>
+      </attribute>
+      <attribute id="LOGICAL_PLANT" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOGICAL_PLANT"/>
+        <keyMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="LOGICAL_PLANT"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="SYS_TIMESTAMP" hidden="false" order="2" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_TIMESTAMP"/>
+        <keyCalculation datatype="VARCHAR" length="30">
+          <formula>string(seconddate(&quot;SYS_TIMESTAMP_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="BOM_QTY" order="5" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="BOM_QTY"/>
+        <measureMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="BOM_QTY"/>
+      </measure>
+      <measure id="PULL_QTY" order="7" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="PULL_QTY"/>
+        <measureMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="PULL_QTY"/>
+      </measure>
+      <measure id="CONFIRMED_QTY" order="9" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="CONFIRMED_QTY"/>
+        <measureMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="CONFIRMED_QTY"/>
+      </measure>
+      <measure id="DISPATCH_QTY" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DISPATCH_QTY"/>
+        <measureMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="DISPATCH_QTY"/>
+      </measure>
+      <measure id="SYS_TIMESTAMP_RAW" order="16" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="SYS_TIMESTAMP_1"/>
+        <measureMapping schemaName="SZEBGVMI" columnObjectName="RPT_PULL_SIGNAL_INFO" columnName="SYS_TIMESTAMP"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures>
+      <measure id="MS" hidden="false" order="1" aggregationType="sum" measureType="simple" datatype="BIGINT">
+        <descriptions defaultDescription="MS"/>
+        <formula>1</formula>
+      </measure>
+    </calculatedMeasures>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="64" width="221"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

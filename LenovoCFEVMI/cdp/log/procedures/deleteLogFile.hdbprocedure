@@ -1,0 +1,24 @@
+PROCEDURE "EX_LOG"."cdp.log.procedures::deleteLogFile" ( ) 
+	LANGUAGE SQLSCRIPT
+	--SQL SECURITY INVOKER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS
+    
+    hostname varchar(20);
+    log_arr varchar(50) array;
+    index_i integer;
+BEGIN
+    select distinct host into hostname from sys.m_tracefiles;
+
+    log_files=
+    select file_name from sys.m_tracefiles
+    where file_name like 'access_log-'||to_date(add_days(current_date,-1),'YYYY-MM-DD')||'%';
+    
+    log_arr:=array_agg(:log_files.file_name);
+    
+    for index_i in 1..CARDINALITY(:log_arr) do
+        exec 'alter system remove traces('''||hostname||''','''||:log_arr[:index_i]||''')';    
+    end for;
+        
+END;

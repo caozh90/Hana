@@ -1,0 +1,44 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteSessionModuleUserForOData" (
+	IN newInfo "SECURITY"."cdp.security.data::userManagement.DataSessionModuleT"
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"  ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SECURITY"
+	--READS SQL DATA 
+	AS
+
+	 aXSSESSION_ID NVARCHAR(64);
+	   aCOMMENT NVARCHAR(256)	;
+    	aMODULE_ID NVARCHAR(10);
+    	aUSER_ID BIGINT;
+    	aMODULE_NAME NVARCHAR(256);
+
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	 
+BEGIN
+/***************************** 
+	Write your procedure logic  
+ *****************************/
+
+	
+   select 
+    
+    MODULE_ID
+    --,USER_ID
+    ,XSSESSION_ID
+	,COMMENT
+  into 
+    aMODULE_ID
+    --,aUSER_ID
+    ,aXSSESSION_ID
+	,aCOMMENT
+  from :newInfo;
+
+call "SECURITY"."cdp.security.procedures::deleteSessionModuleUser" (
+	aXSSESSION_ID
+	,aCOMMENT
+	,aMODULE_ID    
+    ,errorInfo); 
+
+END;

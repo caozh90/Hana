@@ -1,0 +1,348 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_mo_pull::PRC_P_SUPPLIER_PRIORITY_CALCULATE" (IN iv_id VARCHAR(10)
+, OUT on_exitcode NUMBER ) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "SZEBGVMI"
+    --READS SQL DATA 
+    /************************************************************************
+    *name      : PRC_P_SUPPLIER_PRIORITY_CALCULATE              --函数名
+    *function  :                --函数功能
+    *input     ：  iv_id       --输入参数
+    *output     :          --输出参数
+    *author     : FangYuan               --作者
+    *CreateDate : 20141215                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/
+    AS         
+     gv_logic_name    VARCHAR2 (40)  := 'PKG_MO_PULL';    
+     v_logic_proc_name   VARCHAR2 (40) := 'PRC_P_SUPPLIER_PRIORITY_CALCULATE';
+     logidi integer:=0;
+     logidj integer:=0;
+     
+      n_count         SMALLINT;
+      n_priority      SMALLINT;
+      v_matnr         VARCHAR(18);
+      v_werks         VARCHAR(4);
+      v_lifnr         VARCHAR(16);
+      v_matnr2        VARCHAR(18);
+      v_werks2        VARCHAR(4);
+      v_lifnr2        VARCHAR(16);
+      n_proportion1   DECIMAL (5, 2);
+      n_ui_count      DECIMAL;     
+     
+     
+BEGIN
+
+      DECLARE CURSOR cur FOR
+      (SELECT   DISTINCT fp.item, fp.siteid
+            FROM   z_pcdw_purchase_proportion fp, ui_purchase_prop_vmi vmi
+           WHERE       fp.item = vmi.item
+                   AND fp.siteid = vmi.logical_plant
+                   AND fp.siteid IN (SELECT   siteid
+                                       FROM   conf_site_schedule
+                                   WHERE  ID = :iv_id));
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         on_exitcode := ::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+
+
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');     
+
+      FOR cur_item as cur
+      DO
+            DELETE FROM   z_pcdw_purchase_proportion
+                  WHERE   item = cur_item.item AND siteid = cur_item.siteid;
+
+            --COMMIT;   
+               
+            INSERT INTO z_pcdw_purchase_proportion (item,
+                                                itemname,
+                                                siteid,
+                                                supplierid,
+                                                suppliernmae,
+                                                proportion,
+                                                startdate)
+               SELECT   DISTINCT vmi.item,
+                                 vmi.itemdesc,
+                                 vmi.logical_plant,
+                                 vmi.vendorid || '_' || vmi.logical_plant,
+                                 vmi.vendorname,
+                                 vmi.proportion,
+                                 vmi.start_date
+                 FROM   ui_purchase_prop_vmi vmi
+                WHERE   vmi.item = cur_item.item
+                        AND vmi.logical_plant = cur_item.siteid;
+      
+      END FOR;
+
+
+      INSERT INTO z_pcdw_purchase_proportion (item,
+                                          itemname,
+                                          siteid,
+                                          supplierid,
+                                          suppliernmae,
+                                          proportion,
+                                          startdate)
+         SELECT   DISTINCT vmi.item,
+                           vmi.itemdesc,
+                           vmi.logical_plant,
+                           vmi.vendorid || '_' || vmi.logical_plant,
+                           vmi.vendorname,
+                           vmi.proportion,
+                           vmi.start_date
+           FROM   ui_purchase_prop_vmi vmi
+          WHERE   vmi.item NOT IN (SELECT   item
+                                     FROM   z_pcdw_purchase_proportion fp
+                                    WHERE   fp.item = vmi.item)
+                  AND vmi.logical_plant IN (SELECT   siteid
+                                              FROM   conf_site_schedule
+                                             WHERE   ID = :iv_id);
+
+
+      /* percent in ud_purchase_proportion */
+      /*          SUBTRACT                 */
+      /* percent in r3_receipt_history     */
+
+     /* add distinct and material doc for z_pcdw_inventory have muitple row*/
+     
+    TEMP_C= SELECT   distinct r.matnr matnr,
+                                             r.werks werks,
+                                             i.lifnr lifnr,
+                                             r.qty,
+                                             m.operation,
+                                             r.material_doc
+                                      -- IFNULL(ratio_to_report(sum(IFNULL(r.qty,0))) over (partition by i.matnr, i.werks), 0) proportion
+                                      /* if the movement_type is "SUB" then the quantity should be negative */
+                                      /*IFNULL (ratio_to_report (SUM (CASE m.operation
+                                                                                                                                                                                      WHEN 'SUB'
+                                                                       THEN IFNULL (-r.qty, 0)
+                                                                    ELSE IFNULL (r.qty, 0)
+                                                                 END)) OVER (PARTITION BY i.matnr, i.werks), 0) proportion*/
+                                      --IFNULL (ratio_to_report (SUM (r.qty)) OVER (PARTITION BY r.matnr, r.werks), 0) proportion
+                                      FROM   z_pcdw_inventory i 
+                                      left outer join z_pcdw_receipt_history r 
+                                      on i.matnr = r.matnr  AND i.werks = r.werks AND i.lifnr = r.lifnr and i.lifnr IS NOT NULL and i.lifnr <> 'NONE'
+                                      inner join conf_movement_type m
+                                      on r.movement_type = m.movement_type
+                                     
+                             
+                                      
+                                             /*WHERE SUBSTR (r.lifnr(+), 1, (CASE  WHEN INSTR (r.lifnr(+), '_', 1) > 0
+                                                     THEN INSTR (r.lifnr(+), '_', 1)
+                                                 ELSE 999
+                                         END) - 1 )*/
+                                         
+                                   --delete group by for GR QTY same QTY, miss GR issue
+                                  /*
+                                  GROUP BY   r.matnr,
+                                             r.werks,
+                                             i.lifnr,
+                                           --  r.qty,
+                                             m.operation
+                                  */ 
+                                  ORDER BY   r.matnr, r.werks, i.lifnr;
+                                  
+    
+    TEMP_B1=SELECT c.matnr matnr, c.werks werks,c.lifnr lifnr,
+           SUM(CASE WHEN c.operation ='SUB' THEN IFNULL (-c.qty, 0)  ELSE IFNULL (c.qty, 0) END) sum_mwl
+           FROM :TEMP_C C
+           GROUP BY c.matnr, c.werks,c.lifnr;
+    
+ --   INSERT INTO SUPPLIER_PRIORITY_TEMP_B1(MATNR,WERKS,LIFNR,SUM_MWL)
+ --   SELECT MATNR,WERKS,LIFNR,SUM_MWL FROM :TEMP_B1;
+    
+    TEMP_B2=SELECT c.matnr matnr, c.werks werks,
+           SUM(CASE WHEN c.operation ='SUB' THEN IFNULL (-c.qty, 0)  ELSE IFNULL (c.qty, 0) END) sum_mw
+           FROM :TEMP_C C
+           GROUP BY c.matnr, c.werks;
+           
+ --   INSERT INTO SUPPLIER_PRIORITY_TEMP_B2(MATNR,WERKS,SUM_MW)
+ --   SELECT MATNR,WERKS,SUM_MW FROM :TEMP_B2;
+           
+    /*
+    TEMP_B=SELECT a.matnr matnr, a.werks werks,a.lifnr lifnr,IFNULL(a.sum_mwl/b.sum_mw,0) proportion
+           FROM SUPPLIER_PRIORITY_TEMP_B1 a left outer join SUPPLIER_PRIORITY_TEMP_B2 b
+           on a.matnr=b.matnr and a.werks=b.werks; */
+           
+    ----处理b.sum_mw=0的异常
+    
+    ---remove a.lifnr=b.lifnr
+    TEMP_B = (SELECT a.matnr matnr, a.werks werks,a.lifnr lifnr,IFNULL(a.sum_mwl/b.sum_mw,0) proportion
+           FROM :TEMP_B1 a left outer join :TEMP_B2 b   -- modify by xwu 2016/1/27 add lifnr join condition
+           on a.matnr=b.matnr and a.werks=b.werks where b.sum_mw !=0
+           )
+           union
+           (
+	           SELECT a.matnr matnr, a.werks werks,a.lifnr lifnr,b.sum_mw proportion
+	           FROM :TEMP_B1 a left outer join :TEMP_B2 b -- modify by xwu 2016/1/27 add lifnr join condition
+	           on a.matnr=b.matnr and a.werks=b.werks where b.sum_mw =0
+           );
+      
+    BEGIN
+    DECLARE CURSOR cur_priority FOR
+    (            SELECT   a.matnr matnr,
+                     a.werks werks,
+                     SUBSTRING (a.lifnr,1,(CASE WHEN locate (a.lifnr, '_', 1) > 0 THEN locate (a.lifnr, '_', 1) ELSE 999 END)- 1 ) lifnr,
+                     IFNULL (a.proportion, 0) proportion1,
+                     IFNULL (b.proportion, 0) proportion2,
+                     (IFNULL (a.proportion, 0) - IFNULL (b.proportion, 0)) proportion,
+                     ROW_NUMBER ()
+                        OVER (
+                           PARTITION BY a.matnr, a.werks
+                           ORDER BY (IFNULL (a.proportion, 0) - IFNULL (b.proportion, 0)) DESC
+                        )
+                        priority
+              FROM   (SELECT   DISTINCT i.matnr matnr,
+                                        i.werks werks,
+                                        i.lifnr lifnr,
+                                        IFNULL (p.proportion, 0) proportion
+                        -- row_number() over (partition by i.matnr,i.werks order by rownum) rank
+                        FROM   z_pcdw_inventory i,
+                               z_pcdw_purchase_proportion p,
+                               (  SELECT   p2.item item,
+                                           p2.siteid siteid,
+                                           p2.supplierid supplierid,
+                                           MAX (p2.startdate) maxdate
+                                    FROM   z_pcdw_inventory i2,
+                                           z_pcdw_purchase_proportion p2
+                                   WHERE   i2.matnr = p2.item
+                                           AND i2.werks = p2.siteid
+                                           AND i2.lifnr =
+                                                 SUBSTRING ( p2.supplierid,  1,
+                                                    (CASE WHEN locate ( p2.supplierid,  '_', 1 ) > 0
+                                                        THEN locate (p2.supplierid, '_', 1)
+                                                        ELSE 999
+                                                     END) - 1 )
+                                GROUP BY   p2.item, p2.siteid, p2.supplierid) p3
+                       WHERE       i.matnr = p.item
+                               AND i.werks = p.siteid
+                               AND i.lifnr IS NOT NULL
+                               AND i.lifnr <> 'NONE'
+                               AND i.lifnr =
+                                     SUBSTRING (  p.supplierid, 1,
+                                        (CASE  WHEN locate (p.supplierid, '_', 1) > 0
+                                            THEN locate (p.supplierid, '_', 1)
+                                            ELSE  999
+                                         END)
+                                        - 1 )
+                               AND p.startdate = p3.maxdate
+                               AND p3.item = p.item
+                               AND p3.siteid = p.siteid
+                               AND p3.supplierid = p.supplierid
+                      --order by matnr, werks, lifnr
+                      UNION ALL
+                      SELECT   DISTINCT mid.matnr matnr,
+                                        mid.werks werks,
+                                        z.lifnr lifnr,
+                                        mid.proportion proportion
+                        FROM   (  SELECT   i.matnr,
+                                           i.werks,
+                                           ROUND (1 / COUNT ( * ), 2) proportion
+                                    FROM   (SELECT   DISTINCT matnr, werks, lifnr
+                                              FROM   z_pcdw_inventory
+                                             WHERE   lifnr <> 'NONE') i
+                                   WHERE   NOT EXISTS
+                                              (SELECT   'x'
+                                                 FROM   z_pcdw_purchase_proportion p
+                                                WHERE   i.matnr = p.item
+                                                        AND i.werks = p.siteid)
+                                GROUP BY   i.matnr, i.werks) mid,
+                               z_pcdw_inventory z
+                       WHERE       mid.matnr = z.matnr
+                               AND mid.werks = z.werks
+                               AND z.lifnr <> 'NONE' --order by matnr, werks, lifnr
+                                                               ) a left outer join
+                     :TEMP_B b
+                     on  a.matnr = b.matnr
+                     AND a.werks = b.werks
+                     AND a.lifnr = b.lifnr
+          ORDER BY   a.matnr, a.werks, a.lifnr);
+          
+      FOR cur_priority_item as cur_priority
+      DO 
+      BEGIN
+	    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	    BEGIN
+	         
+	          --n_sqlcode := ::SQL_ERROR_CODE;
+              --v_sqlerrm := SUBSTR (SQL_ERROR_MESSAGE, 1, 512);
+	          logidj:=0;           
+	          CALL "EX_LOG"."cdp.log.procedures::logProc"
+	            (I_TYPE=>'WARN',I_LOGSID=>:logidj,
+	            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'SZEBGVMI',
+	            I_MESSAGE=>'CUR_PRIORITY:'
+                           || cur_priority_item.werks
+                           || '_'
+                           || cur_priority_item.matnr, I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+	            
+	         --COMMIT;
+	           
+	    END;      
+      
+            n_count := 0;
+            v_matnr := cur_priority_item.matnr;
+            v_werks := cur_priority_item.werks;
+            v_lifnr := cur_priority_item.lifnr;
+            n_priority := cur_priority_item.priority;
+            n_proportion1 := IFNULL (cur_priority_item.proportion1, 0);
+
+            /*
+                                                                                                                                                       IF (V_LIFNR = 'NONE') THEN
+                    V_LIFNR := '3PL';
+                END IF;
+            --  dbms_output.PUT_LINE('Material:' || V_MATNR || ', Plant:' || V_WERKS || ', Vendor:' || V_LIFNR);
+                IF NOT (N_PROPORTION1 = 0 AND N_PRIORITY > 1) THEN
+                    UPDATE UD_PRIORITY
+                       SET PRIORITY = N_PRIORITY
+                     WHERE WERKS = V_WERKS
+                       AND MATNR = V_MATNR
+                       AND LIFNR = V_LIFNR;
+                    IF SQL%ROWCOUNT = 0 THEN
+                        INSERT INTO UD_PRIORITY(MATNR, WERKS, LIFNR, PRIORITY)
+                            VALUES (V_MATNR, V_WERKS, V_LIFNR, N_PRIORITY);
+                    END IF;
+                END IF;
+            */
+            IF LENGTH (:v_lifnr) < 11
+            THEN
+               INSERT INTO mid_supplier_priority (matnr,
+                                        werks,
+                                        lifnr,
+                                        priority)
+                 VALUES   (v_matnr,
+                           v_werks,
+                           v_lifnr,
+                           n_priority);
+            END IF;
+
+      END;         
+      END FOR;  
+    END;
+	
+	 --mid_supplier_priority  backup
+	 INSERT INTO BAK_MID_SUPPLIER_PRIORITY
+	 ( MATNR,WERKS,LIFNR,PRIORITY,ARCHIVED_DATE)
+	 SELECT MATNR,WERKS,LIFNR,PRIORITY,CURRENT_TIMESTAMP 
+	 FROM MID_SUPPLIER_PRIORITY;
+
+      exec 'commit';    -- add by xwu 2016/3/9
+	 
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!');  
+
+
+END;

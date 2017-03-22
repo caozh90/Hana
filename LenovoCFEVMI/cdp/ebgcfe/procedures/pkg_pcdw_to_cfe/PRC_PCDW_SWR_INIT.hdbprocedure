@@ -1,0 +1,346 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_SWR_INIT" ( 
+  IN  P_PRODUCT_GROUP   VARCHAR(20),
+  OUT P_EXIT_CODE       INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/*************************************************************************
+*name       : PRC_PCDW_SWR_INIT       
+*function   : Load SWR data from PCDW
+*input      ：p_product_group : product group
+*output     : p_exit_code : error code  
+*author     : ZHOUBINBIN
+*CreateDate : 2015-09-12
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+  -- data
+  DECLARE v_g_pkg_name        VARCHAR(30) := 'PKG_PCDW_TO_CFE';
+  DECLARE v_prc_name          VARCHAR(30) := 'PRC_PCDW_SWR_INIT';
+  DECLARE v_full_name         VARCHAR(60) := :v_g_pkg_name ||'.'|| :v_prc_name;
+  DECLARE logidi              INTEGER := 0;
+  DECLARE v_init_date         TIMESTAMP;  
+  DECLARE n                   INTEGER;
+  DECLARE v_exitcode          INTEGER;
+  DECLARE v_exitmess          VARCHAR(100);
+  DECLARE v_subprc_name       VARCHAR(70); 
+  DECLARE v_exit_message      VARCHAR(500);
+  
+  -- exception
+  DECLARE exp_procedure CONDITION FOR SQL_ERROR_CODE 10001;   
+  DECLARE EXIT HANDLER FOR exp_procedure   
+  BEGIN
+      P_EXIT_CODE := ::SQL_ERROR_CODE;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR', 
+                                                  I_LOGSID     => :logidi,
+		                                          I_EVENT_NAME => :v_full_name,
+		                                          I_MODULE     => 'EBGCFE',
+		                                          I_MESSAGE    => 'ERROR', 
+		                                          I_DETAIL     => :v_exit_message); 			           
+  END;
+      
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+  BEGIN     
+      P_EXIT_CODE := ::SQL_ERROR_CODE;
+             
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+		I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+		I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+  END;   
+    
+  -- process logic
+  P_EXIT_CODE := -1;
+  V_EXIT_MESSAGE := 'FAILED';
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                              I_LOGSID     => :logidi,
+		                                      I_EVENT_NAME => :v_full_name,
+		                                      I_MODULE     => 'EBGCFE');  
+
+  DELETE FROM MID_SWR;
+  DELETE FROM MID_LASTEST_SWRSBB_STRU;
+  DELETE FROM BIZ_SWR;
+  DELETE FROM BIZ_SWRCOST;
+  DELETE FROM BIZ_SWRENTL;
+  DELETE FROM BIZ_SUPRATE;
+  
+  INSERT INTO MID_SWR
+      (MATNR, SBBFC, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+       SOURCE, SYS_CREATED_DATE)
+  SELECT MATNR, SBBFC, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS,
+         'SBB' SOURCE, CURRENT_TIMESTAMP
+    FROM (
+          SELECT MAP(LENGTH(MATNR), 18, RIGHT(MATNR, 10), MATNR) AS MATNR, 
+                 MAP(LENGTH(SBBNO), 18, RIGHT(SBBNO, 10), SBBNO) AS SBBFC,
+                 MAP(LENGTH(RANUM), 18, RIGHT(RANUM, 10), RANUM) AS RANUM,
+                 DATAB, DATBI, MENGE, ERDAT, STATUS, 'SBB', CURRENT_TIMESTAMP,
+                 --Added by Zhoubinbin 20160819, Mutiple same IP in fg/sbb, get latest datab date IP for fg/sbb
+                 ROW_NUMBER() OVER(PARTITION BY MATNR, SBBNO, RANUM ORDER BY DATAB DESC) PRI
+            FROM PCDW.PCDW_SBBSWR
+           WHERE STATUS <> 'D'
+             --Modified by Zhoubinbin 20161010, change CURRENT_TIMESTAMP to current_date
+             --AND CURRENT_TIMESTAMP BETWEEN DATAB AND DATBI
+             AND CURRENT_DATE BETWEEN TSTAMP AND DATBI
+             )
+   WHERE PRI = 1;
+   
+  INSERT INTO MID_SWR
+      (MATNR, SBBFC, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+       SOURCE, SYS_CREATED_DATE)
+  SELECT MATNR, SBBFC, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+         'FC' SOURCE, CURRENT_TIMESTAMP
+    FROM (
+          SELECT MAP(LENGTH(MATNR), 18, RIGHT(MATNR, 10), MATNR) AS MATNR, 
+                 FCODE||'_'||MAP(LENGTH(MATNR), 18, RIGHT(MATNR, 10), MATNR) AS SBBFC,
+                 MAP(LENGTH(RANUM), 18, RIGHT(RANUM, 10), RANUM) AS RANUM,
+                 DATAB, DATBI, MENGE, ERDAT, STATUS, 
+                 --Added by Zhoubinbin 20160819, Mutiple same IP in fg/sbb, get latest datab date IP for fg/sbb
+                 ROW_NUMBER() OVER(PARTITION BY MATNR, FCODE, RANUM ORDER BY DATAB DESC) PRI
+            FROM PCDW.PCDW_FCSWR
+           WHERE STATUS <> 'D'
+             --Modified by Zhoubinbin 20161010, change CURRENT_TIMESTAMP to current_date
+             --AND CURRENT_TIMESTAMP BETWEEN DATAB AND DATBI
+             AND CURRENT_DATE BETWEEN TSTAMP AND DATBI
+             )
+    WHERE PRI = 1;   
+     
+  INSERT INTO MID_LASTEST_SWRSBB_STRU
+      (MATNR, SBBFC, ERDAT, SOURCE, SYS_CREATED_DATE)
+  SELECT MATNR, SBBFC, ERDAT, SOURCE, CURRENT_TIMESTAMP
+    FROM (SELECT MATNR, SBBFC, ERDAT, SOURCE,
+                 ROW_NUMBER() OVER(PARTITION BY SBBFC ORDER BY ERDAT DESC) AS PRI
+            FROM MID_SWR
+           WHERE IFNULL(SBBFC, '') <> '')
+   WHERE PRI = 1;
+ 
+  INSERT INTO MID_LASTEST_SWRSBB_STRU
+      (MATNR, SBBFC, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+       SOURCE, SYS_CREATED_DATE)
+  SELECT '', T1.SBBFC, T2.RANUM, T2.DATAB, T2.DATBI, T2.MENGE, 
+         T2.ERDAT, T2.STATUS, T2.SOURCE, CURRENT_TIMESTAMP
+    FROM MID_LASTEST_SWRSBB_STRU T1,
+         MID_SWR                 T2
+   WHERE IFNULL(T1.MATNR, '') = IFNULL(T2.MATNR, '')
+     AND T1.SBBFC             = T2.SBBFC
+     --Comment by Zhoubinbin 20160817
+     --AND T1.ERDAT             = T2.ERDAT
+     ;
+     
+  INSERT INTO BIZ_SWR
+      (MATNR, SBBFC, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+       SOURCE, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+       SYS_LAST_MODIFIED_BY)
+  SELECT MATNR, SBBFC, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+         SOURCE, CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP,
+         V_FULL_NAME
+    FROM (SELECT T.*, 
+                 ROW_NUMBER() OVER(PARTITION BY MATNR, RANUM ORDER BY ERDAT DESC) PRI
+            FROM MID_SWR T
+           WHERE IFNULL(SBBFC, '') = '')
+   WHERE PRI = 1;
+   
+  INSERT INTO BIZ_SWR
+      (MATNR, SBBFC, MENGE, SOURCE, SYS_CREATED_DATE, SYS_CREATED_BY, 
+       SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY)
+  SELECT DISTINCT
+         MATNR, SBBFC, 1 AS MENGE, SOURCE, CURRENT_TIMESTAMP, V_FULL_NAME, 
+         CURRENT_TIMESTAMP, V_FULL_NAME
+    FROM MID_SWR
+   WHERE IFNULL(MATNR, '') <> ''
+     AND IFNULL(SBBFC, '') <> '';  
+     
+  INSERT INTO BIZ_SWR
+       (MATNR, SBBFC, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+       SOURCE, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+       SYS_LAST_MODIFIED_BY)
+  SELECT MATNR, SBBFC, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+         SOURCE, CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP, 
+         V_FULL_NAME
+    FROM MID_LASTEST_SWRSBB_STRU
+   WHERE IFNULL(RANUM, '') <> '';
+   
+  INSERT INTO UI_ITEM
+      (CYCLE, PRODUCT_GROUP, ITEM, ITEM_DESC, BRAND, ASP_PRD_FAMILY, ITEM_TYPE, EOL_STATUS,
+       SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY)
+  SELECT DISTINCT 
+         'CURRENT' AS CYCLE, P_PRODUCT_GROUP, SBBFC AS ITEM, T3.CHAR_DESC AS ITEM_DESC, 
+         'FEATURECODE' AS BRAND, 'FEATURECODE' AS ASP_PRD_FAMILY, 'SBB' AS ITEM_TYPE, 
+         'OL' AS EOL_STATUS, CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP, 
+         V_FULL_NAME
+    FROM BIZ_SWR T1, BIZ_FCSBBMAP T3
+   WHERE T1.SOURCE            = 'FC'
+     AND IFNULL(T1.MATNR, '') = ''
+     AND T1.SBBFC             = T3.FC
+     AND NOT EXISTS(SELECT 1 FROM UI_ITEM T2
+                     WHERE T2.PRODUCT_GROUP = P_PRODUCT_GROUP
+                       AND T2.ITEM          = T1.SBBFC);
+  
+  INSERT INTO UI_ITEM_LOG
+      (CYCLE, PRODUCT_GROUP, BRAND, ASP_PRD_FAMILY, ECC_PROD_FAMILY,
+       MACHINE_TYPE, TRMODEL, ITEM, ITEM_DESC, PROD_H, ITEM_TYPE,
+       ITEM_SOURCE, EOL_STATUS, EOL_STARTDATE, EOL_ENDDATE, GEO, SUBGEO, 
+       COUNTRY, COMMODITY_CODE, HY_FAMILY, GROUP_TEXT, BRAND_TEXT, SERIES, 
+       SUBSERIES, STDPD, BESKZ, SCHGT, MTART, BISMT, USER_ITEM_TYPE, 
+       USER_EOL_STATUS, USER_ITEM_DESC, USER_COMMODITY_CODE, USER_ASP_PRD_FAMILY, 
+       BRGEW, GEWEI, CUSTOMMODELFLAG, BASEWARRANTY, ZLCOD, ZEINR, ZUCOD, X_ENTITY_TYPE, 
+       ACTION, STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+       SYS_LAST_MODIFIED_BY, AT_MODIFIED_BY, AT_ACTION, AT_MODIFIED_ON) 
+  SELECT CYCLE, PRODUCT_GROUP, BRAND, ASP_PRD_FAMILY, ECC_PROD_FAMILY,
+         MACHINE_TYPE, TRMODEL, ITEM, ITEM_DESC, PROD_H, ITEM_TYPE,
+         ITEM_SOURCE, EOL_STATUS, EOL_STARTDATE, EOL_ENDDATE, GEO, SUBGEO, 
+         COUNTRY, COMMODITY_CODE, HY_FAMILY, GROUP_TEXT, BRAND_TEXT, SERIES, 
+         SUBSERIES, STDPD, BESKZ, SCHGT, MTART, BISMT, USER_ITEM_TYPE, 
+         USER_EOL_STATUS, USER_ITEM_DESC, USER_COMMODITY_CODE, USER_ASP_PRD_FAMILY, 
+         BRGEW, GEWEI, CUSTOMMODELFLAG, BASEWARRANTY, ZLCOD, ZEINR, ZUCOD, X_ENTITY_TYPE, 
+         ACTION, STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+         SYS_LAST_MODIFIED_BY, V_FULL_NAME AS AT_MODIFIED_BY, 'UPDATE' AS AT_ACTION,
+         CURRENT_TIMESTAMP AS AT_MODIFIED_ON
+    FROM UI_ITEM T1 
+   WHERE T1.PRODUCT_GROUP = P_PRODUCT_GROUP
+     AND T1.ITEM_TYPE    <> 'SWR'
+     AND EXISTS(SELECT 1 FROM BIZ_SWR T2
+                 WHERE T2.RANUM = T1.ITEM);   
+                                  
+  UPDATE UI_ITEM T1
+     SET T1.ITEM_TYPE              = 'SWR',
+         T1.SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+         T1.SYS_LAST_MODIFIED_BY   = V_FULL_NAME
+   WHERE T1.PRODUCT_GROUP = P_PRODUCT_GROUP
+     AND T1.ITEM_TYPE    <> 'SWR'
+     AND EXISTS(SELECT 1 FROM BIZ_SWR T2
+                 WHERE T2.RANUM = T1.ITEM);
+                 
+  INSERT INTO UI_ITEM
+      (CYCLE, PRODUCT_GROUP, ITEM, ITEM_DESC, ITEM_TYPE, EOL_STATUS, 
+       SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE, 
+       SYS_LAST_MODIFIED_BY)
+  SELECT DISTINCT
+         'CURRENT' AS CYCLE, P_PRODUCT_GROUP, RANUM AS ITEM, 'SWROYALTY' AS ITEM_DESC,
+         'SWR' AS ITEM_TYPE, 'OL' AS EOL_STATUS, CURRENT_TIMESTAMP, V_FULL_NAME, 
+         CURRENT_TIMESTAMP, V_FULL_NAME
+    FROM BIZ_SWR T1
+   WHERE IFNULL(T1.RANUM, '') <> ''
+     AND NOT EXISTS(SELECT 1 FROM UI_ITEM T2
+                     WHERE T2.PRODUCT_GROUP = P_PRODUCT_GROUP
+                       AND T2.ITEM          = T1.RANUM);
+  
+  --Get cost of software from PCDW                     
+  INSERT INTO BIZ_SWRCOST
+      (LENIP, RAGRP, DATAB, DATBI, IPTXT, IPLTXT, IPTYP, WAERS, RYRATE, 
+       STATUS, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE, 
+       SYS_LAST_MODIFIED_BY, LIFNR)
+  SELECT T1.LENIP, T1.RAGRP, DATAB, T1.DATBI, T1.IPTXT, T1.IPLTXT, T1.IPTYP, 
+         'USD' AS WAERS, T1.RYRATE/T2.M1 AS RYRATE,  T1.STATUS, CURRENT_TIMESTAMP, 
+         V_FULL_NAME, CURRENT_TIMESTAMP, V_FULL_NAME, T1.LIFNR
+    FROM (SELECT T.*, ROW_NUMBER() OVER(PARTITION BY LENIP, RAGRP ORDER BY DATAB DESC) AS PRI
+            FROM PCDW.PCDW_SWRCOST T
+           WHERE CURRENT_TIMESTAMP BETWEEN TSTAMP AND DATBI
+             AND STATUS <> 'D')  T1,
+         UI_EXCHANGE_RATE T2
+   WHERE T1.WAERS = T2.CURRENCY_NAME
+     AND T1.PRI   = 1;
+     
+  INSERT INTO BIZ_SWRENTL
+      (MATNR, FCODE, COMPT, DATAB, DATBI, LENPN, STATUS, PRNAM, RATIO, RATE,
+       WAERS, AMORT, DURAT, MEASURE, LIFNR, SPLER, SUPPN, UPDAT, UPTIM,
+       ERDAT, ERZET, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE, 
+       SYS_LAST_MODIFIED_BY)
+  SELECT T1.FCODE, '', T2.COMPT, T2.DATAB, T2.DATBI, T2.LENPN, T2.STATUS, 
+         T2.PRNAM, T2.RATIO, T2.RATE, T2.WAERS, T2.AMORT, T2.DURAT, 
+         T2.MEASURE, T2.LIFNR, T2.SPLER, T2.SUPPN, T2.UPDAT, T2.UPTIM,
+         T2.ERDAT, T2.ERZET, CURRENT_TIMESTAMP, V_FULL_NAME, 
+         CURRENT_TIMESTAMP, V_FULL_NAME 
+    FROM (SELECT MATNR, FCODE||'_'||MATNR AS FCODE, 
+                 ROW_NUMBER() OVER(PARTITION BY MATNR, FCODE ORDER BY ERDAT DESC) PRI
+            FROM PCDW.PCDW_SWRENTL
+           WHERE IFNULL(FCODE, '') <> ''
+             AND STATUS            <> 'D'
+             AND CURRENT_TIMESTAMP BETWEEN TSTAMP AND DATBI) T1,
+         PCDW.PCDW_SWRENTL T2
+   WHERE T1.PRI       = 1
+     AND T1.MATNR     = T2.MATNR
+     AND T1.FCODE     = T2.FCODE||'_'||T2.MATNR
+     AND T2.STATUS   <> 'D'
+     AND CURRENT_TIMESTAMP BETWEEN T2.TSTAMP AND T2.DATBI;
+     
+  INSERT INTO BIZ_SWRENTL
+      (MATNR, FCODE, COMPT, DATAB, DATBI, LENPN, STATUS, PRNAM, RATIO, RATE,
+       WAERS, AMORT, DURAT, MEASURE, LIFNR, SPLER, SUPPN, UPDAT, UPTIM,
+       ERDAT, ERZET, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE, 
+       SYS_LAST_MODIFIED_BY)
+  SELECT MATNR, FCODE, COMPT, DATAB, DATBI, LENPN, STATUS, PRNAM, RATIO, RATE,
+         WAERS, AMORT, DURAT, MEASURE, LIFNR, SPLER, SUPPN, UPDAT, UPTIM,
+         ERDAT, ERZET, CURRENT_TIMESTAMP, V_FULL_NAME, CURRENT_TIMESTAMP, 
+         V_FULL_NAME
+    FROM PCDW.PCDW_SWRENTL
+   WHERE IFNULL(FCODE, '') = ''
+     AND STATUS   <> 'D'
+     AND CURRENT_TIMESTAMP BETWEEN TSTAMP AND DATBI;
+     
+  UPDATE BIZ_SWRENTL T1
+     SET T1.RATE  = T1.RATE/T2.M1,
+         T1.WAERS = 'USD'
+    FROM UI_EXCHANGE_RATE T2
+   WHERE T1.WAERS  = T2.CURRENCY_NAME
+     AND T1.WAERS <> 'USD';
+     
+  INSERT INTO BIZ_SUPRATE
+      (LIFNR, LAND1, SPLER, LANDX50, RAGRP, SYS_CREATED_DATE, SYS_CREATED_BY,
+       SYS_LAST_MODIFIED_DATE, SYS_LAST_MODIFIED_BY)
+  SELECT LIFNR, LAND1, SPLER, LANDX50, RAGRP, CURRENT_TIMESTAMP, V_FULL_NAME, 
+         CURRENT_TIMESTAMP, V_FULL_NAME
+    FROM PCDW.PCDW_SUPRATE;
+  
+  --Modified by Zhoubinbin 20160810, should get latest ip for OPTIONs
+  --add by zhangxj @20160301
+  INSERT INTO BIZ_SWR
+       (MATNR, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+       SOURCE, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+       SYS_LAST_MODIFIED_BY)
+  SELECT t2.matnr,t1.ranum,t1.datab,t1.datbi,t2.qty*t1.menge,t1.erdat,NULL,
+         t2.source,CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_full_name
+    FROM pcdw.pcdw_fcswr t1,
+        (SELECT a.matnr,a.stdpd AS cto,a.atnam AS vk,a.atwrt AS qty,SUBSTR_BEFORE(b.fc,'_') AS fc,a.sys_created_by AS source
+           FROM pcdw.pcdw_seo_cto_vk_mapping a,biz_fcsbbmap b
+          WHERE a.stdpd            = b.matnr
+            AND a.atnam            = b.varcond 
+            AND LOCATE(b.fc,'_')   > 0 ) t2
+   WHERE t1.matnr   = t2.cto
+     AND t1.fcode   = t2.fc
+     --Added by Zhoubinbin 20160811, filter not effective or expire data
+     AND t1.status  <> 'D' 
+     AND current_date BETWEEN t1.tstamp AND t1.datbi
+     AND NOT EXISTS (SELECT 1 FROM biz_swr b
+                      WHERE t2.matnr = b.matnr);
+                      
+  /*INSERT INTO BIZ_SWR
+       (MATNR, RANUM, DATAB, DATBI, MENGE, ERDAT, STATUS, 
+       SOURCE, SYS_CREATED_DATE, SYS_CREATED_BY, SYS_LAST_MODIFIED_DATE,
+       SYS_LAST_MODIFIED_BY)  
+  SELECT t1.matnr, t4.ranum, t4.datab, t4.datbi, t1.atwrt*t4.menge, t4.erdat,
+         NULL, t1.sys_created_by ,CURRENT_TIMESTAMP, v_full_name, CURRENT_TIMESTAMP,
+         v_full_name
+    FROM pcdw.pcdw_seo_cto_vk_mapping t1,
+         biz_fcsbbmap                 t2,
+         biz_swr                      t3,
+         biz_swr                      t4
+   WHERE t1.stdpd          = t2.matnr
+     AND t1.atnam          = t2.varcond 
+     AND t2.matnr          = t3.matnr
+     AND t2.fc             = t3.sbbfc
+     AND LOCATE(t2.fc,'_') > 0
+     AND t3.sbbfc          = t4.sbbfc
+     AND IFNULL(t3.matnr, '') <> ''
+     AND IFNULL(t4.matnr, '')  = ''
+     AND NOT EXISTS (SELECT 1 FROM biz_swr t5
+                      WHERE t5.matnr = t1.matnr);*/
+  --end of modified by zhangxj 
+  p_exit_code := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                              I_LOGSID     => :logidi,
+	                                          I_EVENT_NAME => :v_full_name,
+	                                          I_MODULE     => 'EBGCFE'); 
+  --COMMIT;     	                                      
+END;

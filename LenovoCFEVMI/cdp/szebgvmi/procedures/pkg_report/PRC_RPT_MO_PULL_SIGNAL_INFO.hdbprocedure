@@ -1,0 +1,240 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_report::PRC_RPT_MO_PULL_SIGNAL_INFO" (
+	iv_id VARCHAR2(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_RPT_MO_PULL_SIGNAL_INFO              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/05                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+	  v_logidi INTEGER := 0;	
+	  v_pkg_name          VARCHAR (40)            := 'PKG_REPORT';
+	  v_logic_proc_name   VARCHAR (40)            := 'PRC_RPT_MO_PULL_SIGNAL_INFO';
+	  v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+	  
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 on_exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+		 
+                  
+        -- ---- COMMIT;      --comment by Eric Zhou                      --comment by Eric Zhou;      --comment by Eric Zhou
+	END;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+             
+on_exitcode := -20099;
+      
+      UPDATE   PULL_LINE P
+         SET   STATUS = 'DISPATCHED'
+       WHERE   
+       
+                P.PULL_TYPE NOT IN
+                        ('EXCESS', 'SHIPPING_GROUP', 'SHIPPING')
+               AND EXISTS
+                     (SELECT   1
+                        FROM   CLEAR_DIFF C
+                       WHERE       P.PULL_LINE_ID = C.PULL_LINE_ID
+                               AND P.PULL_HEADER_ID = C.PULL_HEADER_ID) --MODIFY BY NANCY WEI 2013/08/19 
+               AND EXISTS
+                     (SELECT   1
+                        FROM   DISPATCH_LIST D
+                       WHERE       P.PULL_LINE_ID = D.PULL_LINE_ID
+                               AND P.PULL_HEADER_ID = D.PULL_HEADER_ID
+                               AND D.STATUS IN ('CONFIRM', 'ERROR'));
+                               
+      --There's no pull confirmation about the Special PULL from 3PL
+      UPDATE   PULL_LINE P
+         SET   STATUS = 'DISPATCHED'
+       WHERE   P.PULL_TYPE IN ('EXCESS', 'SHIPPING_GROUP', 'SHIPPING')
+               AND EXISTS
+                     (SELECT   1
+                        FROM   DISPATCH_LIST D
+                       WHERE       P.PULL_LINE_ID = D.PULL_LINE_ID
+                               AND P.PULL_HEADER_ID = D.PULL_HEADER_ID
+                               AND D.STATUS IN ('CONFIRM', 'ERROR'));
+                       
+      --Update the 'CONFIRM_OLD' value of pull's ECC_STATUS when no different quantity between confirmation quantity and pull's
+      UPDATE pull_line line SET line.ECC_STATUS = 'CONFIRM_OLD'
+        WHERE EXISTS (
+            SELECT 'X'
+            FROM clear_diff s
+                 WHERE s.pull_line_id = line.pull_line_id
+                   AND s.pull_header_id = line.pull_header_id
+                   AND s.difference_qty <= 0
+                   AND s.status = 'OLD')
+         AND line.werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND line.status = 'DISPATCHED' AND line.ECC_STATUS = 'PULL_OLD';
+      
+      -- COMMIT;      --comment by Eric Zhou; 
+             
+      --Update the 'Reject' Value of Status in Dispatch List when the status's pull is reject
+       UPDATE   DISPATCH_LIST D
+         SET   STATUS = 'REJECT', REASON_CODE = 'Pull was rejected by 3PL'
+       WHERE   STATUS = 'CONFIRM'
+               AND PULL_TYPE NOT IN ('EXCESS', 'SHIPPING_GROUP', 'SHIPPING')
+               AND EXISTS
+                     (SELECT   1
+                        FROM   PULL_LINE P
+                       WHERE       P.PULL_HEADER_ID = D.PULL_HEADER_ID
+                               AND P.PULL_LINE_ID = D.PULL_LINE_ID
+                               AND P.STATUS = 'REJECT')
+               AND WERKS IN (SELECT   siteid
+                               FROM   conf_site_schedule
+                              WHERE   ID = IV_ID);
+                              
+       --Update dispatch status if the pull was not confirmed last time, but was confirmed this time                       
+        UPDATE   DISPATCH_LIST D
+         SET   STATUS = 'CONFIRM',
+               REASON_CODE = 'Pull was confirmed and Dispatch was resubmitted'
+        WHERE       STATUS = 'ERROR'
+               AND REASON_CODE = 'Pull confirmation failed'
+               AND PULL_TYPE NOT IN ('EXCESS', 'SHIPPING_GROUP', 'SHIPPING')
+               AND EXISTS
+                     (SELECT   1
+                        FROM   PULL_LINE P
+                       WHERE       P.PULL_HEADER_ID = D.PULL_HEADER_ID
+                               AND P.PULL_LINE_ID = D.PULL_LINE_ID
+                               AND P.ECC_STATUS = 'CONFIRM_OLD')
+               AND WERKS IN (SELECT   siteid
+                               FROM   conf_site_schedule
+                              WHERE   ID = IV_ID);
+                              
+          /* If the Dipatch list recived before Pull Confirmation,set status to ERROR for resubmit in UI*/
+         UPDATE   DISPATCH_LIST D
+         SET   STATUS = 'ERROR', REASON_CODE = 'Pull confirmation failed'
+            WHERE   STATUS = 'CONFIRM'
+               AND PULL_TYPE NOT IN ('EXCESS', 'SHIPPING_GROUP', 'SHIPPING')
+               AND NOT EXISTS
+                       (SELECT   1
+                          FROM   CLEAR_DIFF C
+                         WHERE       C.PULL_HEADER_ID = D.PULL_HEADER_ID
+                                 AND C.PULL_LINE_ID = D.PULL_LINE_ID )--MODIFY BY NANCY WEI 2013/08/19
+              -- AND EXISTS
+              --       (SELECT   1
+              --          FROM   PULL_LINE P
+              --        WHERE       P.PULL_HEADER_ID = D.PULL_HEADER_ID
+              --                 AND P.PULL_LINE_ID = D.PULL_LINE_ID
+              --                 AND P.ECC_STATUS <> 'CONFIRM_OLD')  --2013.05.23 baiying Modify
+                               --AND P.FULL_BOX_QTY <> P.CONFIRM_QTY)
+               AND WERKS IN (SELECT   siteid
+                               FROM   conf_site_schedule
+                              WHERE   ID = IV_ID);
+      --2013.07.16 CONFIRM DISPATCH AUTOMATICALLY For MEX PROJECT baiying AE                      
+
+      UPDATE dispatch_list
+         SET status = 'XI_IN_PROCESS'
+       WHERE status = 'CONFIRM' --2013.07.23  COMPLETED改为Confim. MEX CSE PROJECT  baiying Added
+         AND sys_source IN ('FP', 'CSE')
+         AND dest_storage_loc NOT IN (select storage_location from conf_wahrehouse_info where owner = 'FG')
+         AND pull_type <> 'PACKAGING'
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id);
+
+      UPDATE dispatch_list
+         SET status = 'XI_IN_PROCESS'
+       WHERE status = 'CONFIRM' --2013.07.23  COMPLETED改为Confim. MEX CSE PROJECT  baiying Added
+         AND (   sys_source = 'CSO'
+              OR sys_source = 'DF'
+              OR dest_storage_loc IN (select storage_location from conf_wahrehouse_info where owner = 'FG')
+             )
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id);
+
+      -- COMMIT;      --comment by Eric Zhou;
+
+--PBI000000004109  Update by baiying 2011.11.28
+      INSERT INTO rpt_pull_signal_info
+                  (productionordid, matnr, bom_qty, pull_header_id, pull_qty,
+                   dispatch_header_id, confirmed_qty, dispatch_qty,
+                   source_type, destination_type, storage_condition,
+                   production_line, logical_plant, remark)
+         SELECT ml.productionordid, ml.matnr,SUM(bom.qty) as qty,
+                         ml.pull_header_id, SUM(ml.pull_qty) as pull_qty, ml.pull_line_id,
+                         cd.confirmed_qty, dl.dispatch_qty,
+                         ml.src_storage_type, ml.dest_storage_type,
+                         ism.ud_storage_condition, ml.production_line,
+                         ml.werks, ml.remark
+                    FROM mid_mo_line ml,
+                         ITEMSITEMASTER ism,
+                         dispatch_list dl,
+                         clear_diff cd,
+                         z_pcdw_mo_bom bom
+                   WHERE (   bom.qty > 0
+                          OR bom.LOCATION IS NOT NULL AND bom.qty > 0
+                         )
+                     AND ml.bomname = bom.bomname
+                     AND ml.werks = bom.werks
+                     AND ml.matnr = bom.matnr
+                     AND ml.productionordid = bom.productionordid
+                     AND ml.posnr = bom.posnr
+                     AND ml.werks = ism.siteid
+                     AND ml.matnr = ism.item
+                     AND ml.werks = dl.werks
+                     AND ml.pull_line_id = dl.pull_line_id
+                     AND ml.pull_header_id = dl.pull_header_id
+                     AND dl.status = 'XI_IN_PROCESS'
+                     /*AND ml.src_storage_bin = dl.src_storage_bin
+                     AND ml.src_storage_loc = dl.src_storage_loc
+                     AND ml.src_storage_type = dl.src_storage_type
+                     AND ml.dest_storage_bin = dl.dest_storage_bin
+                     AND ml.dest_storage_loc = dl.dest_storage_loc
+                     AND ml.dest_storage_type = dl.dest_storage_type
+                     AND ml.sys_source = dl.sys_source
+                     AND ml.src_storage_bin = cd.src_storage_bin
+                     AND ml.src_storage_loc = cd.src_storage_loc
+                     AND ml.src_storage_type = cd.src_storage_type*/
+                     AND ml.werks = cd.werks
+                     AND ml.pull_line_id = cd.pull_line_id
+                     AND ml.pull_header_id = cd.pull_header_id
+                     AND ml.werks IN (SELECT siteid
+                                        FROM conf_site_schedule
+                                       WHERE ID = iv_id)
+                     AND NOT EXISTS (
+                            SELECT 'X'
+                              FROM rpt_pull_signal_info rpsi
+                             WHERE rpsi.dispatch_header_id = ml.pull_line_id
+                               AND ml.pull_header_id = dl.pull_header_id
+                               AND ml.pull_line_id = dl.pull_line_id)
+                GROUP BY ml.productionordid,
+                         ml.matnr,
+                         ml.pull_header_id,
+                         ml.pull_line_id,
+                         cd.confirmed_qty,
+                         dl.dispatch_qty,
+                         ml.src_storage_type,
+                         ml.dest_storage_type,
+                         ism.ud_storage_condition,
+                         ml.production_line,
+                         ml.werks,
+                         ml.remark;
+--PBI000000004109  Update by baiying 2011.11.28
+
+      on_exitcode := 0;
+      -- COMMIT;      --comment by Eric Zhou;
+             
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'SZEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success'); 
+			              
+END;

@@ -1,0 +1,79 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_sos::beforeCreateUiSOS" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_SOS_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	AS 
+		aProdFamily NVARCHAR(100);
+        aPlant NVARCHAR(30);
+        aSubGeo NVARCHAR(20);
+        aBrand NVARCHAR(40);
+        aEol_status NVARCHAR(20);
+        
+        validate integer;     
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ select 
+        PROD_FAMILY,
+        PLANT,
+        SUBGEO,
+        BRAND,
+        EOL_STATUS
+      into 
+        aProdFamily,
+        aPlant,
+        aSubGeo,
+        aBrand,
+        aEol_status
+      from :newInfo;
+      
+      --brand
+      select count(1) into validate from UI_prodfamily where BRAND=:aBrand;
+      if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'BRAND: VALIDATION FAILED, NOT EXIST IN UI_PRODFAMILY' error_message, 
+            '' detail from dummy;
+        return;
+       end if; 
+      
+      --PROD_FAMILY
+      select count(1) into validate from UI_prodfamily where BRAND=:aBrand AND prod_family=:aProdFamily;
+      if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'PROD_FAMILY: VALIDATION FAILED, NOT EXIST IN UI_PRODFAMILY' error_message, 
+            '' detail from dummy;
+        return;
+       end if; 
+       
+       
+       --PLANT
+      select count(1) into validate from UI_PLANT where PLANT=:aPlant ;
+      if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'PLANT: VALIDATION FAILED, NOT EXIST IN UI_PLANT' error_message, 
+            '' detail from dummy;
+        return;
+       end if; 
+              
+       --SUBGEO
+      select count(1) into validate from UI_REGION where Subgeo=:aSubGeo;
+      if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'SUBGEO: VALIDATION FAILED, NOT EXIST IN UI_REGION' error_message, 
+            '' detail from dummy;
+        return;
+       end if; 
+              
+       --EOL_STATUS 
+      select count(1) into validate from conf_parameters where pdomain='UI_SOS' and pname='EOL_STATUS' AND pvalue=:aEol_status;
+      if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'EOL_STATUS: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+       end if;        
+END;

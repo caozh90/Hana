@@ -1,0 +1,40 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_stdcost_daily_err" ( 
+
+IN 	ITEM varchar(120),
+IN 	PLANT varchar(20),
+IN 	STDCOST  varchar(400),
+IN 	 	table_name varchar(100),
+IN 	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER,
+IN 	 	error_message	varchar(4096)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_stdcost_daily_err              --函数名
+*function  : 保存在上传数据至表UI_STDCOST_DAILY时产生的错误信息              --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Li shunshun               --作者
+*CreateDate    : 2015-08-10       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+
+BEGIN
+
+	    call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || to_varchar(:business_code),:business_name,0,1,:table_name); 
+
+     	--记录upload的错误
+     	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+     	VALUES("EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+     	:table_name || to_varchar(:business_code),:position,:error_message,:table_name,:business_name); 
+     	--详细记录upload的数据信息
+     	insert into "EBGCFE"."UI_STDCOST_DAILY_ERR_DETAIL"(CODE,POSITION,
+			CYCLE,PRODUCT_GROUP,ITEM,PLANT,STDCOST)
+		VALUES(:table_name || to_varchar(:business_code),:position,
+			'CURRENT','EBG',:ITEM,:PLANT,:STDCOST);
+END;

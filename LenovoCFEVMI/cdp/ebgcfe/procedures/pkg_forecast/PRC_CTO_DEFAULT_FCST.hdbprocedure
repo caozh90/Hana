@@ -1,0 +1,244 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_forecast::PRC_CTO_DEFAULT_FCST"(
+	IN p_in_product_group VARCHAR(200),
+	OUT p_out_exitcode  INTEGER,
+    OUT p_out_exitmess  VARCHAR(500) 
+)     
+    LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_CTO_DEFAULT_FCST            
+*function   : BIZ_CTO_DEFAULT_FCST update process
+*input      ：
+*output     : p_out_exitcode : error code / p_out_exitmess : error message
+*author     : 
+*CreateDate : 2015-10-17
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等
+*************************************************************************/		
+	AS	
+BEGIN 
+    -- data
+
+    DECLARE v_prc_name 	         VARCHAR(30)  := 'PRC_CTO_DEFAULT_FULL_PRE';
+    DECLARE v_g_pkg_name 	     VARCHAR(30)  := 'pkg_forecast';
+    DECLARE v_full_name      	 VARCHAR(60)  := v_g_pkg_name ||'.'|| v_prc_name;
+    DECLARE v_time               BIGINT;
+    DECLARE v_taking_time        BIGINT;
+    DECLARE v_debug              CHAR;
+    DECLARE v_step_counter       INT;
+    DECLARE v_init_date          TIMESTAMP;
+    declare logidi               int :=0;
+    declare v_runlvl             VARCHAR(20);
+    declare v_tbatype_usdollar   VARCHAR(20);
+    declare v_cycle_name         VARCHAR(40);
+    declare Default_VK_Cost      INTEGER;
+    
+
+	-- exception
+    DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299    --HANA SQL Error Code 1299--No data found   
+    BEGIN   
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );      
+   		 CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+   		                                             I_LOGSID     => :logidi,
+   		                                             I_EVENT_NAME => :v_full_name,
+   		                                             I_MODULE     => 'EBGCFE',
+		                                             I_MESSAGE    => 'ERROR',
+		                                             I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                     substr(::SQL_ERROR_MESSAGE, 1, 500) ); 
+    END;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := substr(::SQL_ERROR_MESSAGE, 1, 500 );  
+ 	 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+ 	 	                                            I_LOGSID      => :logidi,
+ 	 	                                            I_EVENT_NAME  => :v_full_name,
+ 	 	                                            I_MODULE      => 'EBGCFE',
+		                                            I_MESSAGE     => 'ERROR',
+		                                            I_DETAIL      => to_char(::SQL_ERROR_CODE) || ':' ||
+                                                                     substr(::SQL_ERROR_MESSAGE, 1, 500) );                                   
+    END;
+
+    p_out_exitcode := -1;
+    p_out_exitmess := 'FAILED';
+    
+    SELECT "EBGCFE"."cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_TBATYPE_USDOLLAR  
+      INTO v_tbatype_usdollar 
+      FROM dummy;     
+    
+    SELECT "EBGCFE"."cdp.ebgcfe.functions::FUNC_PKG_CONS"().DEFAULT_VK_COST  
+      INTO Default_VK_Cost 
+      FROM dummy;  
+      
+    select session_context('v_step_counter_bom_calculation') into v_step_counter from dummy;
+
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');    
+   
+
+  	
+  	SELECT "EBGCFE"."cdp.ebgcfe.functions::FUNC_PKG_CONS"().C_F_DEBUG into v_debug from dummy; 
+  	IF v_debug='T' then
+        v_time := to_decimal(to_char(CURRENT_TIMESTAMP, 'sssss.ff3'));     
+    END IF;
+   
+
+SELECT cycle_name INTO v_cycle_name FROM ui_control_point WHERE control_point = 'BAKE' AND control_point_status ='COMPLETED';
+
+     --1.clear MID_CFE_CTO_DEFAULT_FCST data
+		delete from  MID_CTO_DEFAULT_FCST;
+		delete from  BIZ_CTO_DEFAULT_FCST;
+		
+	---2.Use UI_COST_FLAG Maintained SBB type as 2nd. priority 
+		insert into MID_CTO_DEFAULT_FCST (
+			 VARIANT,
+			 CURRENCY_NAME,
+			 PRICE_UNIT,
+			 M1,
+			 M2,
+			 M3,
+			 M4,
+			 M5,
+			 M6,
+			 M7,
+			 M8,
+			 M9,
+			 M10,
+			 M11,
+			 M12,
+			 SYS_CREATED_DATE) 
+		select distinct F.varcond as variant ,
+				'USD' as currency_name, 
+				'EA' as price_unit, 
+				Default_VK_Cost as M1,
+				Default_VK_Cost as M2,
+				Default_VK_Cost as M3,
+				Default_VK_Cost as M4,
+				Default_VK_Cost as M5,
+				Default_VK_Cost as M6,
+				Default_VK_Cost as M7,
+				Default_VK_Cost as M8,
+				Default_VK_Cost as M9,
+				Default_VK_Cost as M10,
+				Default_VK_Cost as M11,
+				Default_VK_Cost as M12,
+				current_timestamp as sys_created_date
+		from 
+			BIZ_FCSBBMAP_HIS F, UI_COSTFLAG C ,UI_ITEM_HIS I
+		WHERE C.PRODUCT_GROUP = F.PRODUCT_GROUP 
+		AND   F.CYCLE=v_cycle_name
+		AND   C.PRODUCT_GROUP=p_in_product_group
+		AND   C.COST_FLAG = 'Y'
+		AND   C.VK = 'N/A'
+		AND   C.SBB_TYPE = SUBSTRING(item_desc,LOCATE(item_desc,' ')+1,LOCATE(SUBSTR_AFTER(item_desc,LEFT(item_desc,LOCATE(item_desc,' '))),' ')-1 )
+		AND   I.item=F.IDNRK
+		AND   I.ITEM_TYPE='SBB'
+        AND   I.product_group=F.product_group
+		AND   I.CYCLE=F.CYCLE
+	    AND   NOT EXISTS (
+		         select 1 from BIZ_CTO_DEFAULT_FCST
+		         where variant=F.varcond);
+		    	
+		
+		
+	---2.Use UI_COST_FLAG Maintained specific VKs as 1st. priority 	
+		upsert MID_CTO_DEFAULT_FCST (
+			 VARIANT,
+			 CURRENCY_NAME,
+			 PRICE_UNIT,
+			 M1,
+			 M2,
+			 M3,
+			 M4,
+			 M5,
+			 M6,
+			 M7,
+			 M8,
+			 M9,
+			 M10,
+			 M11,
+			 M12,
+			 SYS_CREATED_DATE) 
+		select 
+			 distinct C.VK as variant,
+			'USD' as currency_name,
+			'EA' as price_unit,
+			Default_VK_Cost as M1,
+			Default_VK_Cost as M2,
+			Default_VK_Cost as M3,
+			Default_VK_Cost as M4,
+			Default_VK_Cost as M5,
+			Default_VK_Cost as M6,
+			Default_VK_Cost as M7,
+			Default_VK_Cost as M8,
+			Default_VK_Cost as M9,
+			Default_VK_Cost as M10,
+			Default_VK_Cost as M11,
+			Default_VK_Cost as M12,
+			current_timestamp as sys_created_date
+		from BIZ_FCSBBMAP_HIS F,UI_COSTFLAG C
+		where C.product_group = F.product_group
+		and   C.cost_flag = 'Y'
+		and   C.sbb_type = 'N/A'
+		and   C.vk = F.varcond
+		and   F.product_group= p_in_product_group
+		and   F.CYCLE= v_cycle_name;
+		
+	--3.Delete table MID_CTO_DEFAULT_FCST where cost_type='N' and sbb_type='N/A'
+	
+		delete from MID_CTO_DEFAULT_FCST  m
+		where exists (select * from UI_COSTFLAG f where m.variant=f.vk and f.sbb_type='N/A' and f.cost_flag='N' and product_group=p_in_product_group);
+		
+	--4.Delete and update table BIZ_CTO_DEFAULT_FCST using MID table
+		
+
+		insert into BIZ_CTO_DEFAULT_FCST (
+			 VARIANT,
+			 CURRENCY_NAME,
+			 PRICE_UNIT,
+			 M1,
+			 M2,
+			 M3,
+			 M4,
+			 M5,
+			 M6,
+			 M7,
+			 M8,
+			 M9,
+			 M10,
+			 M11,
+			 M12,
+			 SYS_CREATED_DATE) 
+		select  VARIANT,
+			 	CURRENCY_NAME,
+			 	PRICE_UNIT,
+			 	M1,
+			 	M2,
+			 	M3,
+			 	M4,
+			 	M5,
+			 	M6,
+			 	M7,
+			 	M8,
+			 	M9,
+			 	M10,
+			 	M11,
+			 	M12,
+			 	SYS_CREATED_DATE
+		 from MID_CTO_DEFAULT_FCST;
+	
+    
+	
+
+        
+     p_out_exitcode := 0;
+     p_out_exitmess := 'SUCCESSFUL';
+     
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  
+  	
+END;

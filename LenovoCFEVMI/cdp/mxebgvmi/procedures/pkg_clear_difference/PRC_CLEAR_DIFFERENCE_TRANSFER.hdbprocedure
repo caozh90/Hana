@@ -1,0 +1,184 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_clear_difference::PRC_CLEAR_DIFFERENCE_TRANSFER" (
+	iv_id VARCHAR(10), OUT on_exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA 
+	AS
+/************************************************************************
+*name      : PRC_CLEAR_DIFFERENCE_TRANSFER              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : on_exitcode               --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/01                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	v_logic_proc_name   VARCHAR2 (40) := 'PRC_CLEAR_DIFFERENCE_TRANSFER';
+	v_pkg_name VARCHAR(40) := 'PKG_CLEAR_DIFFERENCE';
+	v_full_name VARCHAR(100) := v_pkg_name||'.'||v_logic_proc_name;
+	v_logidi INTEGER := 0;
+BEGIN
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+	on_exitcode := ::SQL_ERROR_CODE;
+	CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                  
+	
+       
+         --commit;   --comment by Eric Zhou
+	END;
+on_exitcode := -20099;
+CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+             I_DETAIL=>iv_id||':'||'Start');
+
+      DELETE FROM PCDW.EXP_ECC_CLEAR_DIFF t1
+            WHERE t1.werks IN (SELECT siteid
+                                 FROM conf_site_schedule
+                                WHERE ID = iv_id);
+
+      DELETE FROM Z_PCDW_RSP_CLEAR_DIFF;
+
+      --added by wenfei@2007-11-12
+      UPDATE clear_diff
+         SET status = 'XI_IN_PROCESS'
+       WHERE status = 'COMPLETED'
+         AND pull_type NOT IN ('PACKAGING', 'CANDYMAN', 'MANUAL_PACKAGING')
+         AND difference_qty > 0
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id);
+
+      --commit;      --comment by Eric Zhou
+
+	--BACK UP
+	DELETE FROM PCDW.BAK_EXP_ECC_CLEAR_DIFF
+	WHERE DAYS_BETWEEN(SYS_TIMESTAMP,CURRENT_TIMESTAMP)>90;
+	
+	INSERT INTO PCDW.BAK_EXP_ECC_CLEAR_DIFF
+                  (pull_line_id, pull_header_id, werks, src_storage_type,
+                   src_storage_loc, src_storage_bin, inventory_type,
+                   confirmed_qty, request_qty, difference_qty, whs_no, lifnr,
+                   dept, matnr, status,ECC_STEP,TR_NUMBER,TR_ITEM_NUMBER,
+                MATERIAL_DOCUMENT_YEAR,MATERIAL_DOCUMENT,SYS_TIMESTAMP)
+         SELECT pull_line_id, pull_header_id, werks, src_storage_type,
+                src_storage_loc, src_storage_bin, inventory_type,
+                confirmed_qty, request_qty, difference_qty, whs_no, lifnr,
+                dept, matnr, status,ECC_STEP,TR_NUMBER,TR_ITEM_NUMBER,
+                MATERIAL_DOCUMENT_YEAR,MATERIAL_DOCUMENT,CURRENT_TIMESTAMP
+           FROM clear_diff
+          WHERE status = 'XI_IN_PROCESS'
+            AND pull_type NOT IN
+                                ('PACKAGING', 'CANDYMAN', 'MANUAL_PACKAGING')
+            AND werks IN (SELECT siteid
+                            FROM conf_site_schedule
+                           WHERE ID = iv_id);
+
+     INSERT INTO PCDW.EXP_ECC_CLEAR_DIFF
+                  (pull_line_id, pull_header_id, werks, src_storage_type,
+                   src_storage_loc, src_storage_bin, inventory_type,
+                   confirmed_qty, request_qty, difference_qty, whs_no, lifnr,
+                   dept, matnr, status,ECC_STEP,TR_NUMBER,TR_ITEM_NUMBER,
+                MATERIAL_DOCUMENT_YEAR,MATERIAL_DOCUMENT,SYS_TIMESTAMP)
+         SELECT pull_line_id, pull_header_id, werks, src_storage_type,
+                src_storage_loc, src_storage_bin, inventory_type,
+                confirmed_qty, request_qty, difference_qty, whs_no, lifnr,
+                dept, matnr, status,ECC_STEP,TR_NUMBER,TR_ITEM_NUMBER,
+                MATERIAL_DOCUMENT_YEAR,MATERIAL_DOCUMENT,CURRENT_TIMESTAMP
+           FROM clear_diff
+          WHERE status = 'XI_IN_PROCESS'
+            AND pull_type NOT IN
+                                ('PACKAGING', 'CANDYMAN', 'MANUAL_PACKAGING')
+            AND werks IN (SELECT siteid
+                            FROM conf_site_schedule
+                           WHERE ID = iv_id);
+      IF ::ROWCOUNT >= 1
+      THEN
+         UPDATE CONF_CFG_XI_PARA xp
+            SET xp.low = 1
+          WHERE xp.progname = 'ZRFC_VMI_MEX_PULLRET_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      ELSE
+         UPDATE CONF_CFG_XI_PARA xp
+            SET xp.low = 0
+          WHERE xp.progname = 'ZRFC_VMI_MEX_PULLRET_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      END IF;
+
+      --this is added to unreserve the  quantity for ODM
+      INSERT INTO dispatch_list
+                  (pull_line_id, pull_header_id, werks, src_storage_loc,
+                   dest_storage_type, dest_storage_loc, dest_storage_bin,
+                   dispatch_qty, unreserved_qty, line_qty, loi_qty,
+                   difference_qty, sys_source, dept, matnr, status)
+         SELECT a.pull_line_id, a.pull_header_id, a.werks, a.src_storage_loc,
+                a.dest_storage_type, a.dest_storage_loc, a.dest_storage_bin,
+                0, a.unreserved_qty, 0, 0, 0, a.sys_source, a.dept, a.matnr,
+                'COMPLETED'
+           FROM clear_diff b, pull_line a
+          WHERE a.pull_line_id = b.pull_line_id
+            AND a.pull_header_id = b.pull_header_id
+            AND a.sys_source IN ('DF', 'CSO')
+            AND b.confirmed_qty = 0
+            AND b.pull_type NOT IN
+                                ('PACKAGING', 'CANDYMAN', 'MANUAL_PACKAGING')
+            AND NOT EXISTS (
+                   SELECT 'x'
+                     FROM dispatch_list s
+                    WHERE s.pull_line_id = a.pull_line_id
+                      AND s.pull_header_id = a.pull_header_id)
+            AND a.werks IN (SELECT siteid
+                              FROM conf_site_schedule
+                             WHERE ID = iv_id);
+
+      
+                        
+      --2013.07.10 baiying MEX CSE Project AS
+        UPDATE pull_line line SET line.ECC_STATUS = 'CONFIRM_OLD'
+        WHERE EXISTS (
+            SELECT 'X'
+            FROM clear_diff s
+                 WHERE s.pull_line_id = line.pull_line_id
+                   AND s.pull_header_id = line.pull_header_id
+                   AND s.status = 'COMPLETED'
+                   AND s.difference_qty <= 0)
+         AND line.werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id)
+         AND line.status = 'OLD';
+       --2013.07.10 baiying MEX CSE Project AS
+       
+       UPDATE clear_diff
+         SET status = 'OLD',SYS_LAST_MODIFIED_BY = :v_full_name, SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP
+       WHERE status = 'COMPLETED' --2013.07.10 baiying MEX CSE Project Modify
+         AND difference_qty <= 0
+         AND pull_type NOT IN ('PACKAGING', 'CANDYMAN', 'MANUAL_PACKAGING')
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id);
+       
+        
+      UPDATE clear_diff
+         SET status = 'SENT'
+       WHERE status = 'XI_IN_PROCESS'
+         AND pull_type NOT IN ('PACKAGING', 'CANDYMAN', 'MANUAL_PACKAGING')
+         AND difference_qty > 0
+         AND werks IN (SELECT siteid
+                         FROM conf_site_schedule
+                        WHERE ID = iv_id);
+
+      --commit;    --comment by Eric Zhou
+      on_exitcode := 0;
+ CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');
+END;

@@ -1,0 +1,188 @@
+PROCEDURE "SECURITY"."cdp.security.procedures::deleteInfoGroup" (
+	IN aGROUP_NAME NVARCHAR(200)
+   -- in aMODULE_NAME NVARCHAR(200)
+,OUT errorInfo "SECURITY"."cdp.security.data::userManagement.HttpError"
+             ) 
+LANGUAGE SQLSCRIPT SQL SECURITY DEFINER 
+DEFAULT SCHEMA "SECURITY"
+AS 
+
+	groupExists Integer := 0;
+	alogidk INTEGER :=0;
+	aI_DETAIL NVARCHAR(300) :='';
+	
+	aGROUP_ID BIGINT; 
+    aMODULE_ID NVARCHAR(10);       
+   -- aGROUP_NAME NVARCHAR(200);
+    aCOMMENT NVARCHAR(200); 
+     	
+    aMODULE_NAME NVARCHAR(256);
+    privilegeExists  NVARCHAR(300)  ;
+BEGIN
+
+/***************************** 
+	delete Info user group
+	成功则 drop role：
+	cdp.security.cdr.group::GROUP_ID
+	
+	example:
+	
+call "SECURITY"."cdp.security.procedures::deleteInfoGroup" (
+'aGROUP_NAME NVARCHAR(200)',
+    'aMODULE_NAME NVARCHAR(200)'
+,?            );
+ 
+)
+ *****************************/
+      
+      
+    --exception     
+   DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN     
+     --如果没有找到amodule_ID ,则返回，
+			aI_DETAIL :='cdp.security.procedures::deleteInfoGroup can not find the module : '||aMODULE_NAME ||' .';
+			
+     CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+     	
+     	--,I_DETAIL=>'cdp.security.procedures::createUser can not find the role : '||aMODULE_PATH||'.roles::PUBLIC');
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.security.procedures::deleteInfoGroupForOData error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	--如果产生异常，返回，并且告知异常。
+    	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'ERR'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+     	,I_DETAIL=>:aI_DETAIL);
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END; 
+  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'securityUserAdmin'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+  CALL  "SECURITY"."cdp.security.procedures::getSessionModuleIDForProc" (aMODULE_ID ,aMODULE_NAME);
+  --START
+CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG',I_STATUS=>'START'
+	,I_LOGSID=>:alogidk
+	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoGroup"'
+	,I_MODULE=>:aMODULE_NAME); 
+	 
+
+    if aGROUP_NAME = 'Public Group' then
+    aI_DETAIL := 'cdp.security.procedures::deleteGroupForOData   the Public Group can not be deleted .';
+    
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000006'
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'Public Group can not be deleted' error_message, 
+     		aI_DETAIL detail from dummy;
+    return ;
+    end if;
+      SELECT "MODULE_ID" INTO aMODULE_ID FROM "SECURITY"."cdp.security.data::userManagement.INFO_MODULE"
+  WHERE "MODULE_NAME" = :aMODULE_NAME;
+  
+    
+     
+     SELECT top 1 count(1) into groupExists FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" A    
+     WHERE A."MODULE_ID" = :aMODULE_ID
+          AND A."GROUP_NAME" = :aGROUP_NAME ;
+     if  :groupExists = 0 then
+    	 aI_DETAIL := 'cdp.security.procedures::deleteInfoGroup  not find the GROUP_NAME : '||:aGROUP_NAME||' exists .';
+    	 
+     	CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'WARN'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'W000000007'
+     	,I_DETAIL=>:aI_DETAIL);
+     	
+     	errorInfo = select 400 as http_status_code, 
+     		'GROUP NAME exist' error_message, 
+     		aI_DETAIL detail from dummy;
+     		
+     	return ;
+     end if;
+     
+     
+     SELECT MODULE_ID ,GROUP_ID into aMODULE_ID  ,aGROUP_ID
+    FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" 
+    WHERE "MODULE_ID" = :aMODULE_ID AND "GROUP_NAME" = :aGROUP_NAME;
+    
+    delete from "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" 
+  	where  GROUP_ID = :aGROUP_ID and MODULE_ID = :aMODULE_ID;
+   		
+
+delete from "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER" 
+  	where  GROUP_ID = :aGROUP_ID ;
+	    
+	 delete from "SECURITY"."cdp.security.data::userManagement.MAP_ALL" 
+  	where  GROUP_ID = :aGROUP_ID 
+  	;
+  		
+  		delete from "SECURITY"."cdp.security.data::userManagement.MAP_RESOURCE_USER" 
+  	where  GROUP_ID = :aGROUP_ID; 
+  	
+  	
+ --**##  	exec 'DROP ROLE "cdp.security.cdr.group::' ||:aGROUP_ID ||'"';
+  	
+  	SELECT GROUP_ID into aGROUP_ID
+    FROM "SECURITY"."cdp.security.data::userManagement.INFO_GROUP" 
+    WHERE "MODULE_ID" = :aMODULE_ID AND "GROUP_NAME" = 'Public Group';
+  	
+  	--要将在这个模块当中的 \并且不再 group 当中的用户，加入到缺省的 public group当中来。
+  insert into "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"
+	    ("ID" ,"GROUP_ID","USER_ID" ,"MODULE_ID")
+	    SELECT "SECURITY"."cdp.security.data::mapGroupUserSeqId".NEXTVAL
+	    ,:aGROUP_ID,"USER_ID" ,"MODULE_ID"
+	    FROM "SECURITY"."cdp.security.data::userManagement.MAP_MODULE_USER"
+	    WHERE "USER_ID" NOT IN (
+	    SELECT "USER_ID" FROM "SECURITY"."cdp.security.data::userManagement.MAP_GROUP_USER"
+	    WHERE "MODULE_ID" = aMODULE_ID
+	    )	    
+;
+
+
+  	
+	    --如果成功添加,则log添加成功！
+	    aI_DETAIL := 'cdp.security.procedures::deleteInfoGroup ('||:aGroup_NAME||' ,) successfully executed . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProcBASE"(
+ 		I_EVENT_TYPE=>'SEC_LOG'	
+     	,I_STATUS=>'END'
+     	,I_LOGSID=>:alogidk
+     	,I_EVENT_NAME=>'"SECURITY"."cdp.security.procedures::deleteInfoGroup"'
+     	,I_MODULE=>:aMODULE_NAME
+     	,I_MESSAGE=>'S000000007'
+     	,I_DETAIL=>:aI_DETAIL); 
+     		
+END;

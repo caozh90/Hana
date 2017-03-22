@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_GETMAPALL_ROLEGROUP" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_GETMAPALL_ROLEGROUP"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="cdp.security.data::userManagement.MAP_ALL" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+    </DataSource>
+    <DataSource id="cdp.security.data::userManagement.INFO_ROLEGROUP" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_ROLEGROUP"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="GROUP_ID"/>
+        <viewAttribute id="USER_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="COMMENT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#cdp.security.data::userManagement.MAP_ALL">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GROUP_ID" source="GROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="USER_ID" source="USER_ID"/>
+      </input>
+      <input node="#cdp.security.data::userManagement.INFO_ROLEGROUP">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+      </input>
+      <joinAttribute name="MODULE_ID"/>
+      <joinAttribute name="ROLEGROUP_ID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="ROLEGROUP_ID"/>
+        <viewAttribute id="GROUP_ID"/>
+        <viewAttribute id="USER_ID"/>
+        <viewAttribute id="ROLEGROUP_NAME"/>
+        <viewAttribute id="COMMENT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_ID" source="ROLEGROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GROUP_ID" source="GROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="USER_ID" source="USER_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ROLEGROUP_NAME" source="ROLEGROUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="COMMENT" source="COMMENT"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="COMMENT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="COMMENT"/>
+      </attribute>
+      <attribute id="ROLEGROUP_NAME" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLEGROUP_NAME"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLEGROUP_NAME"/>
+      </attribute>
+      <attribute id="USER_ID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="USER_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="USER_ID"/>
+      </attribute>
+      <attribute id="GROUP_ID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="GROUP_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="GROUP_ID"/>
+      </attribute>
+      <attribute id="ROLEGROUP_ID" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLEGROUP_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="ROLEGROUP_ID"/>
+      </attribute>
+      <attribute id="MODULE_ID" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MODULE_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="DISPLAY_NAME" hidden="false" order="7" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPLAY_NAME"/>
+        <keyCalculation datatype="NVARCHAR" length="256">
+          <formula>IF(&quot;ROLEGROUP_ID&quot;= 0 ,'Other Roles' ,&quot;ROLEGROUP_NAME&quot;)</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="ROLE_ID" hidden="false" order="8" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_ID"/>
+        <keyCalculation datatype="BIGINT">
+          <formula>0</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="ROLE_NAME" hidden="false" order="9" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyCalculation datatype="NVARCHAR" length="256">
+          <formula>IF(&quot;ROLEGROUP_ID&quot;= 0 ,'Other Roles' ,&quot;ROLEGROUP_NAME&quot;)</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="243"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

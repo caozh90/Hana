@@ -1,0 +1,207 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_cost_calcu_formu::beforeUpdateUiCostCalcuFormu" (
+		 IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_CALCU_FORMU_T",
+		 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_COST_CALCU_FORMU_T",
+		 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA EBGCFE
+    --READS SQL DATA
+/************************************************************************
+*name      :                     beforeCreateUiCostCalcuFormu
+*function    :               
+*input     ：               newInfo
+*output     :    errorInfo            
+*author     :                     Fang Yuan
+*CreateDate    :                  2015.01.22
+*UpdateDate  :        
+*************************************************************************/ 
+    AS
+       aI_DETAIL NVARCHAR(300) :='';
+       alogide INTEGER :=0;
+       v_product_group NVARCHAR(10);
+       v_prod_family NVARCHAR(120); 
+       v_category NVARCHAR(10);
+       v_brand NVARCHAR(40);
+       v_plant NVARCHAR(20);
+       v_subgeo NVARCHAR(20);
+       v_resourceExists BIGINT;
+       v_level1_tbas NVARCHAR(200); 
+       v_level2_tbas NVARCHAR(200); 
+       v_level3_tbas NVARCHAR(200); 
+       v_level4_tbas NVARCHAR(200); 
+       v_level5_tbas NVARCHAR(200); 
+       v_level6_tbas NVARCHAR(200); 
+       
+       v_position INTEGER := 0;
+       v_level_temp NVARCHAR(200);
+       validate integer;
+BEGIN
+
+    
+        select 'EBG',PRODFAMILY,CATEGORY,BRAND,PLANT,SUBGEO,LEVEL1_TBAS,LEVEL2_TBAS,
+        LEVEL3_TBAS,LEVEL4_TBAS,LEVEL5_TBAS,LEVEL6_TBAS into v_product_group,v_prod_family,v_category
+        ,v_brand,v_plant,v_subgeo,v_level1_tbas,v_level2_tbas,v_level3_tbas,v_level4_tbas,
+        v_level5_tbas,v_level6_tbas from :newInfo;  
+        
+    --BRAND
+    select  count(1) into validate from UI_PRODFAMILY where BRAND = :v_brand; 
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'BRAND: VALIDATION FAILED, NOT EXIST IN UI_PRODFAMILY' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --PROD_FAMILY
+    select  count(1) into validate from UI_PRODFAMILY where BRAND = :v_brand and PROD_FAMILY = :v_prod_family; 
+    if :v_prod_family = 'ALL' then
+    	validate := 1;
+    end if;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'PROD_FAMILY: VALIDATION FAILED, NOT EXIST IN UI_PRODFAMILY' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --CATEGORY
+    select  count(1) into validate from 
+        conf_parameters where pdomain='UI_COST_CALCU_FORMU' and pname='CATEGORY' and Pvalue = :v_category; 
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'CATEGORY: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --PLANT
+    select  count(1) into validate from ui_plant where PLANT = :v_plant;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'PLANT: VALIDATION FAILED, NOT EXIST IN UI_PLANT' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --SUBGEO
+    select  count(1) into validate from ui_region where subgeo = :v_subgeo;
+    if :v_subgeo = 'ALL' then
+    	validate := 1;
+    end if;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'SUBGEO: VALIDATION FAILED, NOT EXIST IN UI_REGION' error_message, 
+            '' detail from dummy;
+        return;
+    end if; 
+    
+--check  v_level1_tbas to v_level6_tbas   
+   	--1
+   	v_level1_tbas:=replace(:v_level1_tbas,',',';');
+    while(:v_level1_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level1_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level1_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        errorinfo = select 400 as http_status_code, 
+	            'LEVEL1_TBAS: VALIDATION FAILED, NOT EXIST IN UI_ADDER_CONF' error_message, 
+	            '' detail from dummy;
+	        return;
+	    end if;
+    	v_level1_tbas := SUBSTR_AFTER(:v_level1_tbas,';');
+    end while;
+    --2
+    v_level2_tbas:=replace(:v_level2_tbas,',',';');
+    
+    while(:v_level2_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level2_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level2_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        errorinfo = select 400 as http_status_code, 
+	            'LEVEL2_TBAS: VALIDATION FAILED, NOT EXIST IN UI_ADDER_CONF' error_message, 
+	            '' detail from dummy;
+	        return;
+	    end if;
+    	v_level2_tbas := SUBSTR_AFTER(:v_level2_tbas,';');
+    end while;
+    --3
+    v_level3_tbas:=replace(:v_level3_tbas,',',';');
+    
+    while(:v_level3_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level3_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level3_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        errorinfo = select 400 as http_status_code, 
+	            'LEVEL3_TBAS: VALIDATION FAILED, NOT EXIST IN UI_ADDER_CONF' error_message, 
+	            '' detail from dummy;
+	        return;
+	    end if;
+    	v_level3_tbas := SUBSTR_AFTER(:v_level3_tbas,';');
+    end while;
+    --4
+    v_level4_tbas:=replace(:v_level4_tbas,',',';');
+    
+    while(:v_level4_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level4_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level4_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        errorinfo = select 400 as http_status_code, 
+	            'LEVEL4_TBAS: VALIDATION FAILED, NOT EXIST IN UI_ADDER_CONF' error_message, 
+	            '' detail from dummy;
+	        return;
+	    end if;
+    	v_level4_tbas := SUBSTR_AFTER(:v_level4_tbas,';');
+    end while;
+    --5
+    v_level5_tbas:=replace(:v_level5_tbas,',',';');
+    
+    while(:v_level5_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level5_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level5_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        errorinfo = select 400 as http_status_code, 
+	            'LEVEL5_TBAS: VALIDATION FAILED, NOT EXIST IN UI_ADDER_CONF' error_message, 
+	            '' detail from dummy;
+	        return;
+	    end if;
+    	v_level5_tbas := SUBSTR_AFTER(:v_level5_tbas,';');
+    end while;
+    --6
+    v_level6_tbas:=replace(:v_level6_tbas,',',';');
+    
+    while(:v_level6_tbas != '') do    
+    	v_level_temp :=  SUBSTR_BEFORE(:v_level6_tbas,';');
+    	if(v_level_temp = '')
+    	then
+    		v_level_temp := :v_level6_tbas;
+    	end if;   	    	   	    	   	
+    	select  count(1) into validate from UI_ADDER_CONF where ADDER_NAME = :v_level_temp;
+	    if validate = 0  then
+	        errorinfo = select 400 as http_status_code, 
+	            'LEVEL6_TBAS: VALIDATION FAILED, NOT EXIST IN UI_ADDER_CONF' error_message, 
+	            '' detail from dummy;
+	        return;
+	    end if;
+    	v_level6_tbas := SUBSTR_AFTER(:v_level6_tbas,';');
+    end while;
+END;

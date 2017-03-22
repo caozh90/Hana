@@ -1,0 +1,155 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_IDOC_IPC_ATTRIBUTE" (
+OUT PO_RETURNCODE DECIMAL ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA PCDW
+	AS 
+   /************************************************************************
+   *name        :               PRC_IDOC_IPC_ATTRIBUTE
+   *function    :               master data update for IPC attribute
+   *input       :
+   *output      : 
+   *author      :               qiaoxi    
+   *CreateDate  :                2012-12-12
+   *UpdateDate  :               --??????(?????????????)
+   *************************************************************************/
+   vProcStartTime TIMESTAMP := CURRENT_TIMESTAMP;
+   v_DelteStr     NVARCHAR(1024);
+   vMsg           NVARCHAR(1024) := '';
+   vCode          DECIMAL := 0;
+BEGIN
+
+	--exception
+	 DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	 BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+      	vCode := ::SQL_ERROR_CODE;
+
+      INSERT INTO PCDW_PROC_LOG
+         (EVENTTIME,
+          EVENTNAME,
+          SUBEVENT,
+          MSGCODE,
+          EVENTMSG,
+          EVENTTYPE,
+          DATASOURCE,
+          DATADEST,
+          EVENTDESCR)
+      VALUES
+         (CURRENT_TIMESTAMP,
+          'PRC_IDOC_IPC_ATTRIBUTE',
+          'OTHER ERROR',
+          :vCode,
+          :vMsg,
+          '',
+          '',
+          '',
+          'END');
+
+      exec 'COMMIT';
+ 	 
+     END;
+	-- exception
+
+
+
+   INSERT INTO PCDW_PROC_LOG
+   VALUES
+      (:vProcStartTime,
+       'PRC_IDOC_IPC_ATTRIBUTE',
+       '',
+       NULL,
+       '',
+       '',
+       '',
+       '',
+       'START');
+   EXEC 'COMMIT';
+
+   PO_RETURNCODE := 1;
+
+   UPDATE IPC_MM_ATTRIBUTE a
+      SET flag = 1
+    WHERE flag = 0
+      AND EXISTS
+    (SELECT 1 FROM PCDW_ITEMSITEMASTER B WHERE A.MATNR = B.ITEM);
+
+   EXEC 'COMMIT';
+   --Comment for PF by qinying, start 20123/08/13
+   /*UPDATE PCDW_ITEMSITEMASTER a
+      SET QUADATE               =
+          (SELECT to_date(ATTRIBUTE_VALUE,'YYYYMMDD')
+             FROM IPC_MM_ATTRIBUTE c
+            WHERE c.matnr = a.item
+              AND c.ATTRIBUTE_NAME = 'QD'
+              AND c.flag = 1),
+          SYS_LAST_MODIFIED_DATE = SYSDATE,
+          SYS_LAST_MODIFIED_BY   = 'PRC_IDOC_IPC_ATTRIBUTE'
+    WHERE EXISTS (SELECT 1
+             FROM IPC_MM_ATTRIBUTE b
+            WHERE b.MATNR = a.item
+              AND b.flag = 1);*/
+   --Comment for PF by qinying, end 20123/08/13
+	
+	  UPDATE PCDW_ITEMSITEMASTER a
+      SET ANNOUNCEDATE          =
+          (SELECT to_date(ATTRIBUTE_VALUE,'YYYYMMDD')
+             FROM IPC_MM_ATTRIBUTE c
+            WHERE c.matnr = a.item
+              AND c.ATTRIBUTE_NAME = 'WAD'
+              AND c.flag = 1),
+          SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+          SYS_LAST_MODIFIED_BY   = 'PRC_IDOC_IPC_ATTRIBUTE'
+    WHERE EXISTS (SELECT 1
+             FROM IPC_MM_ATTRIBUTE b
+            WHERE b.MATNR = a.item
+              AND b.flag = 1);
+
+   UPDATE PCDW_ITEMSITEMASTER a
+      SET WITHDRAWDATE          =
+          (SELECT to_date(ATTRIBUTE_VALUE,'YYYYMMDD')
+             FROM IPC_MM_ATTRIBUTE c
+            WHERE c.matnr = a.item
+              AND c.ATTRIBUTE_NAME = 'WWD'
+              AND c.flag = 1),
+          SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+          SYS_LAST_MODIFIED_BY   = 'PRC_IDOC_IPC_ATTRIBUTE'
+    WHERE EXISTS (SELECT 1
+             FROM IPC_MM_ATTRIBUTE b
+            WHERE b.MATNR = a.item
+              AND b.flag = 1);
+   EXEC 'COMMIT';
+	
+	--Add for PF by qingying, start 2013/08/14
+   --PRC_IDOC_ECCTABLE_UPDATE ( PO_RETURNCODE );
+   CALL "PCDW"."cdp.pcdw.procedures::PRC_IDOC_ECCTABLE_UPDATE"(:PO_RETURNCODE);
+   --Add for PF by qingying, end 2013/08/14
+
+   UPDATE IPC_MM_ATTRIBUTE a SET flag = 2 WHERE flag = 1;
+
+   EXEC 'COMMIT';
+
+   PO_RETURNCODE := 0;
+
+   INSERT INTO PCDW_PROC_LOG
+      (EVENTTIME,
+       EVENTNAME,
+       SUBEVENT,
+       MSGCODE,
+       EVENTMSG,
+       EVENTTYPE,
+       DATASOURCE,
+       DATADEST,
+       EVENTDESCR)
+   VALUES
+      (CURRENT_TIMESTAMP,
+       'PRC_IDOC_IPC_ATTRIBUTE',
+       'SUCCESS',
+       :vCode,
+       :vMsg,
+       '',
+       '',
+       '',
+       'END');
+   EXEC 'COMMIT';
+END;

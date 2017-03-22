@@ -1,0 +1,127 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_control_cycle::createUiCycleControl" ( 
+			IN newInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_CONTROL_CYCLE_T",
+			OUT errorInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	--SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aItem NVARCHAR(40);
+		aLogicPlant NVARCHAR(40);
+		aPhysicPlant NVARCHAR(40);
+		aWareHouseNumber NVARCHAR(40);
+		aStorageLocation NVARCHAR(40);
+		aStorageType NVARCHAR(40);
+		aStorageBin NVARCHAR(40);
+		
+		resourceExists BIGINT;
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ 
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.mxebgvmi.procedures::createUiCycleControl error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::createUiCycleControl'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'controlcycle::createable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::createUiCycleControl'
+       ,I_MODULE=>'MXEBGVMI'
+   	); 
+   	
+select 
+	ITEM,	
+    LOGICAL_PLANT,
+    PHYSICAL_PLANT,
+    WAREHOUSE_NUMBER,
+    STORAGE_LOCATION,
+    STORAGE_TYPE,
+    STORAGE_BIN
+  into 
+ 	aItem,
+ 	aLogicPlant,
+	aPhysicPlant,
+	aWareHouseNumber,
+	aStorageLocation,
+	aStorageType,
+	aStorageBin
+  from :newInfo;
+  
+    SELECT top 1 count(1) into resourceExists FROM "MXEBGVMI"."UI_CONTROL_CYCLE" A    
+     WHERE A.ITEM = :aItem
+          AND A.LOGICAL_PLANT = :aLogicPlant
+          AND A.PHYSICAL_PLANT = :aPhysicPlant;
+   
+    if  :resourceExists > 0 
+    then
+	    errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;
+    end if;
+    
+    
+    insert into "MXEBGVMI"."UI_CONTROL_CYCLE"
+  	(ITEM, LOGICAL_PLANT, PHYSICAL_PLANT, WAREHOUSE_NUMBER, STORAGE_LOCATION, STORAGE_TYPE, STORAGE_BIN,SYS_SOURCE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE)
+  	values(:aItem, :aLogicPlant, :aPhysicPlant, :aWareHouseNumber, :aStorageLocation, :aStorageType, :aStorageBin,'UI',
+  	SESSION_USER ,CURRENT_TIMESTAMP,SESSION_USER ,CURRENT_TIMESTAMP);
+  	--log
+  	insert into "MXEBGVMI"."UI_CONTROL_CYCLE_LOG"
+  	(ITEM, LOGICAL_PLANT, PHYSICAL_PLANT, WAREHOUSE_NUMBER, STORAGE_LOCATION, STORAGE_TYPE, STORAGE_BIN,SYS_SOURCE,
+  	AT_MODIFIED_BY,
+	AT_ACTION,
+	AT_MODIFIED_TIME
+  	)
+  	values
+  	(
+  	:aItem, :aLogicPlant, :aPhysicPlant, :aWareHouseNumber, :aStorageLocation, :aStorageType, :aStorageBin,'UI',
+  	 SESSION_USER,
+     'create',
+     CURRENT_DATE
+  	);
+  	
+  	
+  	    /*END*/
+ 	    aI_DETAIL := 'cdp.mxebgvmi.procedures::createUiCycleControl ('||:aItem||' ,) successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::createUiCycleControl'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	 	
+END;

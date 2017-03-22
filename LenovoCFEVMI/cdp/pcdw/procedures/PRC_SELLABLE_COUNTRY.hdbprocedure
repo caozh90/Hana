@@ -1,0 +1,96 @@
+PROCEDURE "PCDW"."cdp.pcdw.procedures::PRC_SELLABLE_COUNTRY" (  
+    OUT P_OUT_EXITCODE INTEGER
+) 
+    LANGUAGE SQLSCRIPT
+    SQL SECURITY DEFINER 
+    DEFAULT SCHEMA PCDW 
+    AS 
+
+/***************************** 
+-- author:      zhangxj
+-- create date: 2016-01-28
+-- description: sellable_country data into pcdw  
+-- modify [1]:  
+ *****************************/
+     
+     vmsg                 VARCHAR(1024);
+     vcode                INTEGER;
+     v_prc_name           VARCHAR(30)       := 'PRC_SELLABLE_COUNTRY';   
+     v_logidi             INTEGER           := 0;
+     v_status             VARCHAR(20)       := 'INSERT';
+     
+BEGIN
+
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+   P_OUT_EXITCODE := ::SQL_ERROR_CODE;
+   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE		=>'PROC_ERROR',
+										       I_LOGSID		=>:V_LOGIDI,
+									    	   I_EVENT_NAME =>:V_PRC_NAME,
+											   I_MODULE		=>'PCDW',
+											   I_MESSAGE	=>'ERROR',
+											   I_DETAIL		=>TO_CHAR(::SQL_ERROR_CODE) || ':' ||SUBSTR(::SQL_ERROR_MESSAGE, 1, 512));                                                  
+  
+   vmsg :=   SUBSTR(::SQL_ERROR_MESSAGE, 1, 500);
+   vcode := ::SQL_ERROR_CODE;
+   
+   insert into pcdw_proc_log (eventtime,eventname,subevent,msgcode,eventmsg,eventtype,datasource,datadest,eventdescr)
+   values (current_timestamp,:v_prc_name,'others error',:vcode,:vmsg,'','','','end');  
+   
+  END;
+
+  CALL "EX_LOG"."cdp.log.procedures::logProc"( I_TYPE		=>'PROC_START',
+  											   I_LOGSID	  	=>:V_LOGIDI,
+											   I_EVENT_NAME =>:V_PRC_NAME,
+											   I_MODULE		=>'PCDW',
+										       I_DETAIL		=>:V_PRC_NAME||':'||'START');
+			    
+      
+  --run log
+  INSERT INTO pcdw_proc_log (eventtime,eventname,subevent,msgcode,eventmsg,eventtype,datasource,datadest,eventdescr)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,null,null,null,null,'IPC_SELLABLE_COUNTRY','PCDW_SELLABLE_COUNTRY',null);     
+                     
+  --start
+  DELETE FROM bak_ipc_sellable_country
+  WHERE days_between(sys_last_modified_date,CURRENT_TIMESTAMP)>90;
+  --back up
+  INSERT INTO bak_ipc_sellable_country
+  			(item,country,prodclass,announce_date,withdraw_date,option,cofcat,deletion_flag,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by,iad,eow) 
+  SELECT item,country,prodclass,announce_date,withdraw_date,option,cofcat,deletion_flag,sys_created_date,sys_created_by,CURRENT_TIMESTAMP,v_prc_name,iad,eow
+    FROM ipc_sellable_country;
+  
+  --into pcdw
+  
+  DELETE FROM pcdw_sellable_country  a
+        WHERE EXISTS (SELECT 1 FROM ipc_sellable_country b
+                       WHERE a.item      = b.item
+                         AND a.country   = b.country
+                         AND a.prodclass = b.prodclass
+                         AND a.cofcat    = b.cofcat);
+                        
+  INSERT INTO pcdw_sellable_country
+  	(item,country,prodclass,announce_date,withdraw_date,option,cofcat,deletion_flag,status,sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by,iad,eow) 
+  SELECT item,country,prodclass,announce_date,withdraw_date,option,cofcat,deletion_flag,v_status,sys_created_date,sys_created_by,CURRENT_TIMESTAMP,v_prc_name,iad,eow
+    FROM (SELECT item,country,prodclass,announce_date,withdraw_date,option,cofcat,deletion_flag,
+                 ROW_NUMBER()  OVER (PARTITION BY item,country,prodclass,cofcat ORDER BY withdraw_date DESC ) AS rn1,
+                 sys_created_date,sys_created_by,iad,eow
+           FROM pcdw.ipc_sellable_country)
+          WHERE rn1=1 ;--1st proirity.
+
+  
+  --delete delta data
+  DELETE FROM ipc_sellable_country;
+    
+  --end
+  INSERT INTO pcdw_proc_log (eventtime,eventname,subevent,msgcode,eventmsg,eventtype,datasource,datadest,eventdescr)
+  VALUES (CURRENT_TIMESTAMP,:v_prc_name,'SUCCESS',:vcode,:vmsg,'','','','end');     
+   
+  P_OUT_EXITCODE := 0; 
+  CALL "EX_LOG"."cdp.log.procedures::logProc" (I_TYPE       =>'PROC_END',
+  											   I_LOGSID     =>:V_LOGIDI,
+			 								   I_EVENT_NAME =>:V_PRC_NAME,
+			 								   I_MODULE     =>'PCDW',
+											   I_DETAIL     =>:V_PRC_NAME||':'||'SUCCESS');
+END;
+ 
+ 

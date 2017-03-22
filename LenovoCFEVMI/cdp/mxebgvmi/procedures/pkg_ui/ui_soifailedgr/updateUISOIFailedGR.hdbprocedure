@@ -1,0 +1,171 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_soifailedgr::updateUISOIFailedGR" (
+		IN newInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_SOIFAILEDGR_T"
+		,IN oldInfo  "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_SOIFAILEDGR_T"
+		,OUT errorInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS	
+
+		aMATNR			NVARCHAR(20);
+		aMATNR_DESCR	NVARCHAR(255);
+		--aPO_NUMBER		NVARCHAR(10);
+		--aPO_LINE_ID		NVARCHAR(10);
+		aHOLD_TYPE		NVARCHAR(1);
+		aHOLD_QTY		Decimal(13,3);
+		aWHS_NO			NVARCHAR(3);
+		--aINVOICE_NUMBER	NVARCHAR(16);
+		aWERKS			NVARCHAR(4);
+		aLIFNR			NVARCHAR(10);
+		aQTY			Decimal(13,3);
+		
+		aTPL_RECEIPT_LINE_ID	NVARCHAR(20);
+	 	aTPL_RECEIPT_ID			NVARCHAR(20);
+	 	aTPL_ID					NVARCHAR(60);
+
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.mxebgvmi.procedures::updateUISOIFailedGR error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::updateUISOIFailedGR'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'soifailed::editable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		:privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ --START
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::updateUISOIFailedGR'
+       ,I_MODULE=>'MXEBGVMI'
+   	); 
+  
+ select
+    	MATNR
+		,MATNR_DESCR
+		--,PO_NUMBER
+		--,PO_LINE_ID
+		,HOLD_TYPE
+		,HOLD_QTY
+		,WHS_NO
+		--,INVOICE_NUMBER
+		,WERKS
+		,LIFNR
+		,QTY      
+  into  	
+		aMATNR
+		,aMATNR_DESCR
+		--,aPO_NUMBER
+		--,aPO_LINE_ID
+		,aHOLD_TYPE
+		,aHOLD_QTY
+		,aWHS_NO
+		--,aINVOICE_NUMBER
+		,aWERKS
+		,aLIFNR
+		,aQTY	
+  from :newInfo;
+ 
+ select
+    TPL_RECEIPT_LINE_ID,
+	TPL_RECEIPT_ID,
+	TPL_ID   
+  into  	
+ 	aTPL_RECEIPT_LINE_ID,
+	aTPL_RECEIPT_ID,
+	aTPL_ID					
+  from :oldInfo;  
+    
+  update "MXEBGVMI"."SOI_GR"
+  	set   MATNR = :aMATNR
+		,MATNR_DESCR = :aMATNR_DESCR
+		--,PO_NUMBER	= :aPO_NUMBER
+		--,PO_LINE_ID = :aPO_LINE_ID
+		,HOLD_TYPE = :aHOLD_TYPE
+		,HOLD_QTY = :aHOLD_QTY
+		,WHS_NO = :aWHS_NO
+		--,INVOICE_NUMBER = :aINVOICE_NUMBER
+		,WERKS = :aWERKS
+		,LIFNR = :aLIFNR
+		,QTY	= :aQTY 
+		,SYS_LAST_MODIFIED_BY = session_user
+		,SYS_LAST_MODIFIED_DATE = current_timestamp
+  	where  TPL_RECEIPT_LINE_ID = :aTPL_RECEIPT_LINE_ID
+	and	TPL_RECEIPT_ID	=	:aTPL_RECEIPT_ID
+	and TPL_ID	=	:aTPL_ID		
+;
+
+--LOG--
+INSERT INTO "MXEBGVMI"."SOI_GR_LOG"
+(
+	    MATNR
+		,MATNR_DESCR
+		--,PO_NUMBER
+		--,PO_LINE_ID
+		,HOLD_TYPE
+		,HOLD_QTY
+		,WHS_NO
+		--,INVOICE_NUMBER
+		,WERKS
+		,LIFNR
+		,QTY,TPL_RECEIPT_LINE_ID
+		,TPL_RECEIPT_ID
+		,TPL_ID,AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME
+)
+VALUES
+(
+		:aMATNR
+		,:aMATNR_DESCR
+		--,aPO_NUMBER
+		--,aPO_LINE_ID
+		,:aHOLD_TYPE
+		,:aHOLD_QTY
+		,:aWHS_NO
+		--,aINVOICE_NUMBER
+		,:aWERKS
+		,:aLIFNR
+		,:aQTY,
+		:aTPL_RECEIPT_LINE_ID,
+		:aTPL_RECEIPT_ID,
+		:aTPL_ID		
+		,session_user
+		,'update'
+		,current_timestamp	
+);
+
+
+
+/*END*/
+ 	    aI_DETAIL := 'cdp.mxebgvmi.procedures::updateUISOIFailedGR ('||:aTPL_RECEIPT_LINE_ID||' ,) successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.mxebgvmi.procedures::updateUISOIFailedGR'
+	     	,I_MODULE=>'MXEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	 	      	 
+END;

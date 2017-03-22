@@ -1,0 +1,65 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.ui_nocut_so_priority::deleteNocutSoPriority" (
+	 IN LOGICAL_PLANT NVARCHAR(40),
+	 IN DELIVERY_PRIORITY INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	--READS SQL DATA 
+	AS
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;
+BEGIN
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+BEGIN              
+    	aI_DETAIL :='deleteNocutSoPriority error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'deleteNocutSoPriority'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+END;  
+  call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'nocutsopriority::deleteable'		,privilegeExists           );
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+ --START
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'deleteNocutSoPriority'
+       ,I_MODULE=>'SZEBGVMI'
+   	); 
+
+delete from  "SZEBGVMI"."UI_NOCUT_SO_PRIORITY"
+		where LOGICAL_PLANT = :LOGICAL_PLANT and DELIVERY_PRIORITY = :DELIVERY_PRIORITY;  	
+
+--delete log
+insert into "SZEBGVMI"."UI_NOCUT_SO_PRIORITY_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				LOGICAL_PLANT,DELIVERY_PRIORITY)
+VALUES
+			 	(SESSION_USER,
+			 	'delete',
+			 	CURRENT_TIMESTAMP,
+				:LOGICAL_PLANT,:DELIVERY_PRIORITY);	 	
+   	
+--END
+aI_DETAIL := 'deleteNocutSoPriority successfully created . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'deleteNocutSoPriority'
+	     	,I_MODULE=>'SZEBGVMI'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	   	
+END;

@@ -1,0 +1,144 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_create_data_sw::PRC_CREATE_SBOM" (OUT PO_RETURNCODE INTEGER)
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_CREATE_SBOM        
+*function   : Prepare SBOM Data for SW
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2015-07-15
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+BEGIN 
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_SBOM', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_SBOM', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+   
+   PO_RETURNCODE := 1;
+     --Step1:获取数据
+      DELETE FROM z_mid_pcdw_sbom_sw;
+
+       --cto
+      INSERT INTO z_mid_pcdw_sbom_sw
+        (planning_item_id, component_id, attach_type)
+        SELECT DISTINCT NAME, idnrk, 'Variable'
+          FROM ecc_bom t1
+         WHERE EXISTS (SELECT 1
+                  FROM conf_parameters_sw t2
+                 WHERE t2.domain = 'PLANT_FILTER'
+                       AND t1.werks = t2.name1)
+               AND EXISTS (SELECT 1
+                  FROM pcdw_itemsitemaster t3
+                 WHERE t3.zucod LIKE 'H%'
+                       AND t3.mtart = 'ZXMT'
+                       AND t1.name = t3.item
+                       AND t1.werks = t3.siteid)
+               AND EXISTS (SELECT 1
+                  FROM pcdw_itemsitemaster t4
+                 WHERE t4.zucod LIKE 'H%'
+                      --AND t4.itemclass = 'SBB' 
+                       AND (t4.strgr = 'ZS' OR substr(t4.zucod, 1, 4) = 'HCSB')
+                       AND t1.idnrk = t4.item
+                       AND t1.werks = t4.siteid);
+
+      --bundle
+        INSERT INTO z_mid_pcdw_sbom_sw
+          (planning_item_id, component_id, attach_rate, attach_type)
+          SELECT DISTINCT planning_item_id, component_id, attach_rate, attach_type
+            FROM (SELECT t1.bundle AS planning_item_id, t1.country, t2.sbb AS component_id,
+                          t1.qty * t2.qty AS attach_rate, 'Fixed' AS attach_type,
+                          dense_rank() over(PARTITION BY t1.bundle ORDER BY t1.country) AS id
+                     FROM pcdw.pcdw_bundle_bom t1, pcdw_seo_bom t2
+                    WHERE t1.seo = t2.seo
+                          AND t1.country = t2.country
+                          AND EXISTS (SELECT 1
+                             FROM pcdw_itemsitemaster t3
+                            WHERE t3.zucod LIKE 'H%'
+                                  AND t1.bundle = t3.item
+                                  AND t3.mtart = 'ZREV')
+                          AND EXISTS
+                    (SELECT 1
+                             FROM pcdw_itemsitemaster t4
+                            WHERE t2.sbb = t4.item
+                                  AND t4.zucod LIKE 'H%'
+                                 --AND t4.itemclass = 'SBB'
+                                  AND (t4.strgr = 'ZS' OR substr(t4.zucod, 1, 4) = 'HCSB')))
+           WHERE id = 1;
+
+      --mtm
+      INSERT INTO z_mid_pcdw_sbom_sw
+        (planning_item_id, component_id, attach_rate, attach_type)
+        SELECT DISTINCT seo, sbb, qty, 'Fixed'
+          FROM (SELECT seo, country, sbb, qty, dense_rank() over(PARTITION BY seo ORDER BY country) id
+                   FROM pcdw_seo_bom t1
+                  WHERE EXISTS (SELECT 1
+                           FROM pcdw_itemsitemaster t2
+                          WHERE t2.zucod LIKE 'H%'
+                                AND t1.seo = t2.item
+                                AND t2.mtart = 'ZREV')
+                        AND NOT EXISTS (SELECT 1 FROM pcdw.pcdw_bundle_bom t3 WHERE t1.seo = t3.seo)
+                        AND EXISTS (SELECT 1
+                           FROM pcdw_itemsitemaster t4
+                          WHERE t1.sbb = t4.item
+                                AND t4.zucod LIKE 'H%'
+                                --AND t4.itemclass = 'SBB'
+                                AND (t4.STRGR = 'ZS' or SUBSTR(t4.ZUCOD,1,4)='HCSB'))
+                        AND NOT EXISTS (SELECT 1
+                           FROM pcdw.z_mid_pcdw_sbom_sw t5
+                          WHERE t1.seo = t5.planning_item_id
+                                AND t1.sbb = t5.component_id))
+         WHERE id = 1;
+    
+  INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_SBOM', 'SUCCESS', NULL, '', '', '', '', 'step 1');
+   EXEC 'COMMIT';  
+   
+  --Step2:删除无效数据
+  DELETE FROM z_mid_pcdw_sbom_sw t1
+   WHERE NOT EXISTS (SELECT 1
+            FROM pcdw_product_master_sw t2
+           WHERE t2.planning_item_id = t1.planning_item_id);
+  
+  DELETE FROM z_mid_pcdw_sbom_sw a
+    WHERE "$rowid$" NOT IN
+          (SELECT MIN("$rowid$")
+             FROM z_mid_pcdw_sbom_sw
+            GROUP BY planning_item_id, component_id);
+                      
+  INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_SBOM', 'SUCCESS', NULL, '', '', '', '', 'step 2');
+  EXEC 'COMMIT';     
+            
+   --Step3:插入目标表
+   DELETE FROM pcdw_sbom_sw ;
+    
+    INSERT INTO pcdw_sbom_sw
+      (planning_item_id, component_id, attach_rate, attach_type,sys_created_date, sys_created_by, sys_last_modified_date,sys_last_modified_by)
+     SELECT planning_item_id, component_id, attach_rate, attach_type,current_timestamp, 'pkg_create_data_sw.PRC_CREATE_SBOM', current_timestamp, 'pkg_create_data_sw.PRC_CREATE_SBOM'
+      FROM z_mid_pcdw_sbom_sw;
+      
+  INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_SBOM', 'SUCCESS', NULL, '', '', '', '', 'step 3');
+   EXEC 'COMMIT';  
+   
+   PO_RETURNCODE := 0;
+   -- log process end
+    INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_CREATE_SBOM', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';    
+END;

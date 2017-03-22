@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_BAK_PCDW_MO_BOM" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_BAK_PCDW_MO_BOM"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="BAK_PCDW_MO_BOM" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SZEBGVMI" columnObjectName="BAK_PCDW_MO_BOM"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="PRODUCTIONORDID"/>
+        <viewAttribute id="BOMNAME"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="POSNR"/>
+        <viewAttribute id="SYS_CREATED_DATE"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="DATE" id="Is_during_the_day">
+          <formula>adddays(now(),-90)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#BAK_PCDW_MO_BOM">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRODUCTIONORDID" source="PRODUCTIONORDID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BOMNAME" source="BOMNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="POSNR" source="POSNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_CREATED_DATE" source="SYS_CREATED_DATE"/>
+      </input>
+      <filter>&quot;SYS_CREATED_DATE&quot; >&quot;Is_during_the_day&quot;</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="PRODUCTIONORDID" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRODUCTIONORDID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="PRODUCTIONORDID"/>
+      </attribute>
+      <attribute id="BOMNAME" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="BOMNAME"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="BOMNAME"/>
+      </attribute>
+      <attribute id="MATNR" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="POSNR" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="POSNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="POSNR"/>
+      </attribute>
+      <attribute id="SYS_CREATED_DATE" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="SYS_CREATED_DATE"/>
+      </attribute>
+      <attribute id="Is_during_the_day" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Is_during_the_day"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="Is_during_the_day"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="47" width="140"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

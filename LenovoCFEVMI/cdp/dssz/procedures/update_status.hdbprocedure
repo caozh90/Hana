@@ -1,0 +1,34 @@
+PROCEDURE "DS_INFO_SZ"."cdp.dssz.procedures::update_status" (
+IN update_sql nvarchar(2048)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      : update_status              --函数名
+*function  : 更新调用DS的页面对应的表，将需要更改的记录更新              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-1-14       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+    BEGIN      
+      	select 'NO data found!' error_message from dummy;
+    END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+    	select 'Error happened!' error_message from dummy;
+    END; 
+    --exception 
+
+
+	exec update_sql;
+	
+
+END;

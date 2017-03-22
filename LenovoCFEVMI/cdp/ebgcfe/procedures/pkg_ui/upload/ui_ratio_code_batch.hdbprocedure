@@ -1,0 +1,284 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratio_code_batch"
+(
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_RATIO_CODE_BATCH_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+/************************************************************************
+*name        :      UI_RATIO_CODE
+*function    :      upload data UI_RATIO_CODE        
+*input       ：              business_name etc
+*output      :                
+*author      :      ZHAODAN1
+*CreateDate  :      2016.6.30
+*UpdateDate  :        
+*************************************************************************/ 
+
+	AS
+	n int;
+	insert_n int;
+	update_n int;
+	error_num int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'UI_RATIO_CODE';
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	--call "EBGDF"."cdp.ebgdf.procedures.pkg_ui.upload::ui_mfi_ppn_err"(::SQL_ERROR_MESSAGE,:business_name,:SEQ,:position,
+		--	:ABCD_T,:SBB,:PPN);
+    END; 
+       
+	--procedure begin
+	
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_TIMESTAMP INTO create_time FROM DUMMY;
+	
+	
+
+    brandNew =      
+	SELECT b.FAMILY FAMILY, a.BRAND BRAND FROM UI_PRODFAMILY a, :newInfo b
+	WHERE a.PROD_FAMILY = b.FAMILY AND
+	      b.FAMILY <> 'N/A' AND 
+	      b.MACHINETYPE = 'N/A' AND
+	      b.ITEM = 'ALL';
+	      
+	newInfo =
+	SELECT 
+		CYCLE,   PRODUCT_GROUP,
+		GEO,     
+		b.BRAND,    
+		a.FAMILY,  MACHINETYPE,
+		ITEM,	 RATIO_CODE,
+		BUSINESS_NAME, SEQ , POSITION
+    FROM :newInfo a,:brandNew b
+    WHERE a.FAMILY = b.FAMILY AND
+    	  a.FAMILY <> 'N/A' AND 
+	      a.MACHINETYPE = 'N/A' AND
+	      a.ITEM = 'ALL' 
+    UNION
+	SELECT 
+		CYCLE,   PRODUCT_GROUP,
+		GEO,     
+		'N/A' BRAND,    
+		FAMILY,  MACHINETYPE,
+		ITEM,	 RATIO_CODE,
+		BUSINESS_NAME, SEQ , POSITION
+    FROM :newInfo a
+    WHERE a.FAMILY = 'N/A' OR 
+	      a.MACHINETYPE <> 'N/A' OR
+	      a.ITEM <> 'ALL'      ;      
+
+	
+	
+    FAMILY_ERROR = 
+	SELECT 
+		CYCLE,   PRODUCT_GROUP,
+		GEO,     BRAND,    
+		FAMILY,  MACHINETYPE,
+		ITEM,	 RATIO_CODE, 
+		'"FAMILY"::'||FAMILY||' is illegal' ERROR_MESSAGE,
+		BUSINESS_NAME, 	SEQ,	POSITION
+	FROM :newInfo a
+	WHERE a.FAMILY NOT IN ( SELECT PROD_FAMILY FROM UI_PRODFAMILY UNION
+	                        SELECT 'N/A' FAMILY FROM DUMMY );
+
+
+	MACHINETYPE_ERROR =
+	SELECT 
+		CYCLE,   PRODUCT_GROUP,
+		GEO,     BRAND,    
+		FAMILY,  MACHINETYPE,
+		ITEM,	 RATIO_CODE, 
+		'"MACHINETYPE"::'||MACHINETYPE||' is illegal' ERROR_MESSAGE,
+		BUSINESS_NAME, 	SEQ,	POSITION
+	FROM :newInfo a
+	WHERE a.MACHINETYPE NOT IN ( SELECT MACHINETYPE FROM UI_MACHINETYPE  UNION
+	                             SELECT 'N/A' MACHINETYPE FROM DUMMY );
+	
+    ITEM_ERROR =
+	SELECT 
+		CYCLE,   PRODUCT_GROUP,
+		GEO,     BRAND,    
+		FAMILY,  MACHINETYPE,
+		ITEM,	 RATIO_CODE, 
+		'"ITEM"::'||ITEM||' is illegal' ERROR_MESSAGE,
+		BUSINESS_NAME, 	SEQ,	POSITION
+	FROM :newInfo a
+	WHERE UPPER(a.ITEM) NOT IN ( SELECT UPPER(ITEM) FROM UI_ITEM  WHERE ITEM_TYPE IN ('CTO','MTM','OPTION','BUNDLE')
+	                                    UNION
+	                                    SELECT '' ITEM FROM DUMMY UNION
+	                                    SELECT NULL ITEM FROM DUMMY UNION
+	                                    SELECT 'ALL' ITEM FROM DUMMY);
+	         
+	GEO_ERROR =
+	SELECT 
+		CYCLE,   PRODUCT_GROUP,
+		GEO,     BRAND,    
+		FAMILY,  MACHINETYPE,
+		ITEM,	 RATIO_CODE, 
+		'"GEO"::'||GEO||' is illegal' ERROR_MESSAGE,
+		BUSINESS_NAME, 	SEQ,	POSITION
+	FROM :newInfo a
+	WHERE a.GEO NOT IN ( SELECT DISTINCT GEO FROM UI_REGION );
+	
+	ERROR_INFO =                       
+	SELECT 
+		CYCLE,   PRODUCT_GROUP,
+		GEO,     BRAND,    
+		FAMILY,  MACHINETYPE,
+		ITEM,	 RATIO_CODE, 
+		STRING_AGG(ERROR_MESSAGE,',') "ERROR_MESSAGE",
+ 		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION
+ 	FROM (
+ 		SELECT * FROM :FAMILY_ERROR UNION
+ 		SELECT * FROM :MACHINETYPE_ERROR UNION
+ 		SELECT * FROM :ITEM_ERROR UNION
+ 		SELECT * FROM :GEO_ERROR
+ 	) GROUP BY CYCLE,   PRODUCT_GROUP,
+		GEO,     BRAND,    
+		FAMILY,  MACHINETYPE,
+		ITEM,	 RATIO_CODE,
+		BUSINESS_NAME,
+ 		SEQ,
+ 		POSITION ;	
+ 	
+ 	SELECT count(1) into error_num FROM :ERROR_INFO;
+ 	IF error_num >0 THEN
+ 	   RIGHT_REC = SELECT CYCLE,   PRODUCT_GROUP,
+						  GEO,     BRAND,    
+						  FAMILY,  MACHINETYPE,
+						  ITEM,	   RATIO_CODE, 
+						  :currentUser "SYS_CREATED_BY",
+						  :create_time "SYS_CREATED_DATE",
+						  :currentUser "SYS_LAST_MODIFIED_BY",
+						  :create_time "SYS_LAST_MODIFIED_DATE"
+				  FROM :newInfo as a
+				  WHERE NOT EXISTS(
+				  	SELECT 1 FROM :ERROR_INFO
+				  	WHERE  CYCLE = a.CYCLE   AND PRODUCT_GROUP = a.PRODUCT_GROUP AND
+						   GEO = a.GEO       AND BRAND = a.BRAND AND    
+						   FAMILY = a.FAMILY AND MACHINETYPE = a.MACHINETYPE AND
+						   ITEM = a.ITEM
+				  )	;
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_ratio_code_batch_err"(:ERROR_INFO);		  
+	ELSE
+		RIGHT_REC = SELECT CYCLE,   PRODUCT_GROUP,
+						  GEO,     BRAND,    
+						  FAMILY,  MACHINETYPE,
+						  ITEM,	   RATIO_CODE, 
+						  :currentUser "SYS_CREATED_BY",
+						  :create_time "SYS_CREATED_DATE",
+						  :currentUser "SYS_LAST_MODIFIED_BY",
+						  :create_time "SYS_LAST_MODIFIED_DATE"
+				  FROM :newInfo ;			  	  
+ 	END IF;
+ 	
+   -- insert
+	INSERT_TABLE = select * from :right_rec as a where not exists (
+			SELECT 1
+			FROM UI_RATIO_CODE
+			WHERE CYCLE = a.CYCLE   AND PRODUCT_GROUP = a.PRODUCT_GROUP AND
+				  GEO = a.GEO       AND BRAND = a.BRAND AND    
+				  FAMILY = a.FAMILY AND MACHINETYPE = a.MACHINETYPE AND
+				  ITEM = a.ITEM
+		);
+	-- update
+	UPDATE_TABLE = select * from :right_rec as a where exists (
+			SELECT 1
+			FROM UI_RATIO_CODE
+			WHERE CYCLE = a.CYCLE   AND PRODUCT_GROUP = a.PRODUCT_GROUP AND
+				  GEO = a.GEO       AND BRAND = a.BRAND AND    
+				  FAMILY = a.FAMILY AND MACHINETYPE = a.MACHINETYPE AND
+				  ITEM = a.ITEM
+		);	
+		
+	SELECT count(1) into n
+	 	FROM :RIGHT_REC;	
+	SELECT count(1) into insert_n
+	 	FROM :INSERT_TABLE;	 
+	SELECT count(1) into update_n
+	 	FROM :UPDATE_TABLE;	 
+	 	
+	IF insert_n > 0 THEN
+		INSERT INTO "EBGCFE"."UI_RATIO_CODE"(
+				 CYCLE,PRODUCT_GROUP,BRAND,FAMILY,GEO,MACHINETYPE,ITEM,
+				 RATIO_CODE,
+				 SYS_CREATED_BY,SYS_CREATED_DATE,SYS_LAST_MODIFIED_BY,
+				 SYS_LAST_MODIFIED_DATE,ACTION)
+		SELECT   CYCLE,PRODUCT_GROUP,BRAND,FAMILY,GEO,MACHINETYPE,ITEM,
+				 RATIO_CODE,
+				 SYS_CREATED_BY,SYS_CREATED_DATE,SYS_LAST_MODIFIED_BY,
+				 SYS_LAST_MODIFIED_DATE,'insert'
+		FROM     :INSERT_TABLE;		
+		
+		--insert操作需要写入日志
+		insert into "EBGCFE"."UI_RATIO_CODE_LOG"(
+			CYCLE,PRODUCT_GROUP,BRAND,FAMILY,GEO,MACHINETYPE,ITEM,RATIO_CODE,
+			SYS_CREATED_BY,
+	 		SYS_CREATED_DATE,
+	 		SYS_LAST_MODIFIED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS
+		)
+		SELECT   CYCLE,PRODUCT_GROUP,BRAND,FAMILY,GEO,MACHINETYPE,ITEM, RATIO_CODE,
+				 SYS_CREATED_BY,SYS_CREATED_DATE,SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,
+				 :currentUser,'insert',:create_time,TO_DECIMAL(TO_VARCHAR(:create_time,'HH24MISSFF3'))
+			
+		FROM     :INSERT_TABLE;	 		 
+				 
+	END IF; 		
+	
+	
+	IF update_n > 0 THEN
+		update "UI_RATIO_CODE"  as b 
+		from :UPDATE_TABLE as a ,"UI_RATIO_CODE"  as b
+		set	b.RATIO_CODE = UPPER(a.RATIO_CODE),
+			b.SYS_LAST_MODIFIED_BY = :currentUser,
+			b.SYS_LAST_MODIFIED_DATE =:create_time,
+			b.ACTION = 'update'
+		where b.CYCLE = a.CYCLE   AND b.PRODUCT_GROUP = a.PRODUCT_GROUP AND
+		  b.GEO = a.GEO       AND b.BRAND = a.BRAND AND    
+		  b.FAMILY = a.FAMILY AND b.MACHINETYPE = a.MACHINETYPE AND
+		  b.ITEM = a.ITEM;
+		  
+		
+		--insert操作需要写入日志
+		insert into "EBGCFE"."UI_RATIO_CODE_LOG"(
+			CYCLE,PRODUCT_GROUP,BRAND,FAMILY,GEO,MACHINETYPE,ITEM,RATIO_CODE,
+			SYS_CREATED_BY,
+	 		SYS_CREATED_DATE,
+	 		SYS_LAST_MODIFIED_BY,
+			SYS_LAST_MODIFIED_DATE,
+			AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS
+		)
+		SELECT   CYCLE,PRODUCT_GROUP,BRAND,FAMILY,GEO,MACHINETYPE,ITEM, RATIO_CODE,
+				 SYS_CREATED_BY,SYS_CREATED_DATE,SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,
+				 :currentUser,'update',:create_time,TO_DECIMAL(TO_VARCHAR(:create_time,'HH24MISSFF3'))
+			
+		FROM     :UPDATE_TABLE;	  
+	END IF; 
+	
+	
+
+		-- passing successful total numbers
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:n,0,:table_name);
+
+END;

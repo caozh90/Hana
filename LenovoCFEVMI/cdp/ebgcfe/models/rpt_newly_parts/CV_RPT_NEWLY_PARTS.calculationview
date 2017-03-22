@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_RPT_NEWLY_PARTS" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_RPT_NEWLY_PARTS"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="AT_RPT_NEWLY_PARTS" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/cdp.ebgcfe.models.rpt_newly_parts/attributeviews/AT_RPT_NEWLY_PARTS</resourceUri>
+    </DataSource>
+    <DataSource id="Projection_E$$$$AT_RPT_NEWLY_PARTS$$" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/cdp.ebgcfe.models.rpt_newly_parts/attributeviews/AT_RPT_NEWLY_PARTS</resourceUri>
+    </DataSource>
+    <DataSource id="BIZ_CBOM_MTMSBB" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="EBGCFE" columnObjectName="BIZ_CBOM_MTMSBB"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_F">
+      <viewAttributes>
+        <viewAttribute id="CFE_PLANT"/>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="STPRS"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="BESKZ"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="ITEM_TYPE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#AT_RPT_NEWLY_PARTS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CFE_PLANT" source="CFE_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STPRS" source="STPRS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BESKZ" source="BESKZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+      </input>
+      <filter>(&quot;BESKZ&quot; ='F') and (isNull(&quot;STPRS&quot;) or &quot;STPRS&quot; =999999.99 or &quot;STPRS&quot; =999.99 or &quot;STPRS&quot; =0) and (&quot;ITEM_TYPE&quot; = 'COMPONENT' or &quot;ITEM_TYPE&quot;='OPTION') and (&quot;CFE_PLANT&quot;='L070')</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_E">
+      <viewAttributes>
+        <viewAttribute id="CFE_PLANT"/>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="STPRS"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="BESKZ"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="ITEM_TYPE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_E$$$$AT_RPT_NEWLY_PARTS$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CFE_PLANT" source="CFE_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STPRS" source="STPRS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BESKZ" source="BESKZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+      </input>
+      <filter>(&quot;BESKZ&quot; ='E') and (isNull(&quot;STPRS&quot;) or &quot;STPRS&quot; =999999.99 or &quot;STPRS&quot; =999.99 or &quot;STPRS&quot; =0) and (&quot;ITEM_TYPE&quot;='OPTION') and (&quot;CFE_PLANT&quot;='L070')</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="CFE_PLANT"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="ITEM_TYPE"/>
+        <viewAttribute id="CFE_PLANT_1"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_E">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CFE_PLANT" source="CFE_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CFE_PLANT_1" source="CFE_PLANT"/>
+      </input>
+      <input node="#BIZ_CBOM_MTMSBB">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="MODEL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CFE_PLANT" source="PLANT"/>
+      </input>
+      <joinAttribute name="ITEM"/>
+      <joinAttribute name="CFE_PLANT"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_2">
+      <viewAttributes>
+        <viewAttribute id="ITEM"/>
+        <viewAttribute id="CFE_PLANT"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_DATE"/>
+        <viewAttribute id="SYS_LAST_MODIFIED_BY"/>
+        <viewAttribute id="ITEM_DESC"/>
+        <viewAttribute id="ITEM_TYPE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CFE_PLANT" source="CFE_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_F">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM" source="ITEM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CFE_PLANT" source="CFE_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_DATE" source="SYS_LAST_MODIFIED_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SYS_LAST_MODIFIED_BY" source="SYS_LAST_MODIFIED_BY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_DESC" source="ITEM_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ITEM_TYPE" source="ITEM_TYPE"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Union_2">
+    <attributes>
+      <attribute id="ITEM" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping columnObjectName="Union_2" columnName="ITEM"/>
+      </attribute>
+      <attribute id="PLANT" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLANT"/>
+        <keyMapping columnObjectName="Union_2" columnName="CFE_PLANT"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE_RAW" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE_RAW"/>
+        <keyMapping columnObjectName="Union_2" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Union_2" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="ITEM_DESC" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_DESC"/>
+        <keyMapping columnObjectName="Union_2" columnName="ITEM_DESC"/>
+      </attribute>
+      <attribute id="ITEM_TYPE" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_TYPE"/>
+        <keyMapping columnObjectName="Union_2" columnName="ITEM_TYPE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="SYS_LAST_MODIFIED_DATE" hidden="false" order="1" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyCalculation datatype="VARCHAR" length="20">
+          <formula>string(seconddate(&quot;SYS_LAST_MODIFIED_DATE_RAW&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="250" y="40"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_F" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="140" y="264"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_E" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="400" y="380"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="400" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="250" y="120"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,169 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_confirmed_pull::PRC_CONFIRMED_PULL_MANUAL_TRA" (
+    IN iv_id VARCHAR(10), OUT on_exitcode DECIMAL
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "SZEBGVMI"
+	--READS SQL DATA 
+	AS
+
+	/************************************************************************
+	*name      : copy from PRC_CONFIRMED_PULL_TRANSFER
+	*function  :               --函数功能
+	*input     ：  iv_id       --输入参数
+	*output     :on_exitcode          --输出参数
+	*author     : FangYuan               --作者
+	*CreateDate : 20150315                  --创建时间
+	*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+	*update by xwu. 2015/8/27 
+	* dept --> :v_dept from CONF_site_schedule .	
+	*************************************************************************/  
+    gv_logic_name    VARCHAR2 (40)  := 'PKG_CONFIRMED_PULL';	
+	v_logic_proc_name   VARCHAR(40) := 'PRC_CONFIRMED_PULL_TRANSFER';
+    logidi integer:=0;
+	v_dept  VARCHAR(40);
+	
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+           
+         on_exitcode := ::SQL_ERROR_CODE;
+
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'SZEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);   
+            
+        /*
+         COMMIT;*/        
+    END;
+
+
+      on_exitcode := -20099;
+      
+      CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!');
+
+--   add by xwu. 2015/8/26
+     select top 1 dept into v_dept  from "SZEBGVMI"."CONF_SITE_SCHEDULE" as a;
+---------------------------
+
+      DELETE FROM "PCDW"."EXP_ECC_PULL_LINE_MANUAL" t1
+            WHERE t1.werks IN (SELECT siteid
+                                 FROM CONF_SITE_SCHEDULE
+                                WHERE ID = iv_id);
+
+      --deleted for pull split reason, 
+      /* 
+        DELETE FROM Z_PCDW_RSP_PULL_LINE;
+      */
+
+      --added by wenfei@2007-11-12
+      UPDATE pull_line
+         SET status = 'XI_IN_PROCESS_MANUAL'
+       WHERE status = 'COMPLETED'
+         AND pull_type NOT IN
+                ('PACKAGING', 'CANDYMAN', 'KANBANREPORT', 'MANUAL_PACKAGING')
+         AND werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE
+                        WHERE ID = iv_id);
+
+     -- COMMIT;
+      INSERT INTO "PCDW"."BAK_EXP_ECC_PULL_LINE_MANUAL"
+                  (pull_line_id, pull_header_id, werks, src_storage_type,
+                   src_storage_loc, src_storage_bin, dest_storage_type,
+                   dest_storage_loc, dest_storage_bin, inventory_type,
+                   confirmed_qty, whs_no, lifnr, dept, matnr, status,
+                   ECC_STEP,TR_NUMBER,TR_ITEM_NUMBER,MATERIAL_DOCUMENT_YEAR,
+                   MATERIAL_DOCUMENT)
+         SELECT pull_line_id, pull_header_id, werks, src_storage_type,
+                src_storage_loc, src_storage_bin, dest_storage_type,
+                dest_storage_loc, dest_storage_bin, inventory_type,
+                full_box_qty, whs_no, line_supplierid, :v_dept, matnr, status,      -- updated from dept to :dept 2015/8/26 by xwu.
+                ECC_STEP,TR_NUMBER,TR_ITEM_NUMBER,MATERIAL_DOCUMENT_YEAR,
+                   MATERIAL_DOCUMENT
+           FROM pull_line
+          WHERE status = 'XI_IN_PROCESS_MANUAL'
+            AND pull_type NOT IN
+                   ('PACKAGING',
+                    'CANDYMAN',
+                    'KANBANREPORT',
+                    'MANUAL_PACKAGING'
+                   )
+            AND werks IN (SELECT siteid
+                            FROM CONF_SITE_SCHEDULE
+                           WHERE ID = iv_id);
+
+
+
+      INSERT INTO "PCDW"."EXP_ECC_PULL_LINE_MANUAL"
+                  (pull_line_id, pull_header_id, werks, src_storage_type,
+                   src_storage_loc, src_storage_bin, dest_storage_type,
+                   dest_storage_loc, dest_storage_bin, inventory_type,
+                   confirmed_qty, whs_no, lifnr, dept, matnr, status,
+                   ECC_STEP,TR_NUMBER,TR_ITEM_NUMBER,MATERIAL_DOCUMENT_YEAR,
+                   MATERIAL_DOCUMENT)
+         SELECT pull_line_id, pull_header_id, werks, src_storage_type,
+                src_storage_loc, src_storage_bin, dest_storage_type,
+                dest_storage_loc, dest_storage_bin, inventory_type,
+                full_box_qty, whs_no, line_supplierid, :v_dept, matnr, status,     -- updated from dept to :dept 2015/8/26 by xwu.
+                ECC_STEP,TR_NUMBER,TR_ITEM_NUMBER,MATERIAL_DOCUMENT_YEAR,
+                MATERIAL_DOCUMENT
+           FROM pull_line
+          WHERE status = 'XI_IN_PROCESS_MANUAL'
+            AND pull_type NOT IN
+                   ('PACKAGING',
+                    'CANDYMAN',
+                    'KANBANREPORT',
+                    'MANUAL_PACKAGING'
+                   )
+            AND werks IN (SELECT siteid
+                            FROM CONF_SITE_SCHEDULE
+                           WHERE ID = iv_id);
+
+	-- for pull split reason, do not need this temp table anymore
+	/*
+      IF ::ROWCOUNT >= 1
+      THEN
+         UPDATE CONF_CFG_XI_PARA xp
+            SET xp.low = 1
+          WHERE xp.progname = 'ZRFC_VMI_MEX_PULLECC_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      ELSE
+         UPDATE CONF_CFG_XI_PARA xp
+            SET xp.low = 0
+          WHERE xp.progname = 'ZRFC_VMI_MEX_PULLECC_INPUT'
+            AND xp.paraclass = 'ACTION'
+            AND xp.buid = iv_id;
+      END IF;
+     */
+      
+     --2013.07.11 baiying MEX CSE Project AS
+      UPDATE pull_line line SET line.ECC_STATUS = 'PULL_OLD'
+        WHERE status = 'OLD'
+        AND pull_type IN ('PACKAGING', 'CANDYMAN','KANBANREPORT','MANUAL_PACKAGING')
+        AND werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE
+                        WHERE ID = iv_id);
+     --2013.07.11 baiying MEX CSE Project AS
+
+      UPDATE pull_line
+         SET status = 'SENT',
+             ECC_STATUS ='SENT' --modify by nancy wei 2013/08/22
+       WHERE status = 'XI_IN_PROCESS_MANUAL'
+         AND pull_type NOT IN
+                ('PACKAGING', 'CANDYMAN', 'KANBANREPORT', 'MANUAL_PACKAGING')
+         AND werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE
+                        WHERE ID = iv_id);
+
+      --COMMIT;
+      
+       CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'SZEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!');
+      on_exitcode := 0;
+
+END;

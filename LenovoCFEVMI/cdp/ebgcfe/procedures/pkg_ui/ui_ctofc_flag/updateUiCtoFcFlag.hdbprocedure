@@ -1,0 +1,123 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_flag::updateUiCtoFcFlag" ( 
+         IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTOFC_FLAG",
+		 IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_CTOFC_FLAG",
+		 OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name        :      updateUiCtoFcFlag
+*function    :               
+*input       ：              newInfo&oldInfo
+*output      :      errorInfo            
+*author      :      zhaodan
+*CreateDate  :      2016.1.15
+*UpdateDate  :              
+*************************************************************************/ 	
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	resourceExists BIGINT;
+	privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_flag::updateUiCtoFcFlag error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_flag::updateUiCtoFcFlag'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_ctofc_flag::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_flag::updateUiCtoFcFlag'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+	
+--update into UI_CTOFC_FLAG table
+update "EBGCFE"."UI_CTOFC_FLAG" a set (a.ANNOUNCE_DATE,a.WITHDRAW_DATE,
+                                       a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY,a.ACTION) = 
+				(b.ANNOUNCE_DATE,b.WITHDRAW_DATE,
+				CURRENT_TIMESTAMP,SESSION_USER,'update')
+		FROM :newInfo b 
+		where a.CYCLE = b.CYCLE
+		  and a.PRODUCT_GROUP = b.PRODUCT_GROUP
+		  AND a.CTO = b.CTO 
+		  AND a.FC = b.FC; 
+
+--insert log table
+--INSERT INTO UI_CTOFC_FLAG_LOG TABLE
+insert into "EBGCFE"."UI_CTOFC_FLAG_LOG"(
+	 CYCLE,
+		 PRODUCT_GROUP,
+		 CTO,
+	     FC,
+	     ANNOUNCE_DATE,
+	     WITHDRAW_DATE,
+		 ACTION,
+		 STATUS,
+		 CHANGE_ID,
+		 CHANGE_ACTION,
+		 SYS_CREATED_DATE,
+		 SYS_CREATED_BY,
+		 SYS_LAST_MODIFIED_DATE,
+		 SYS_LAST_MODIFIED_BY,
+		 AT_MODIFIED_BY,
+		 AT_ACTION,
+		 AT_MODIFIED_ON,
+		 AT_MILLIS
+	 )SELECT 
+	        'CURRENT',
+		    'EBG',
+		    a.CTO,
+		    a.FC,
+		    a.ANNOUNCE_DATE,
+		    a.WITHDRAW_DATE,
+		    'insert',
+		    '',--STATUS
+		    '',--CHANGE_ID
+		    '',--CHANGE_ACTION
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+		    CURRENT_TIMESTAMP,
+		    SESSION_USER,
+	 		SESSION_USER,
+	 		'update',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))  FROM :oldInfo a; 	
+
+   	
+aI_DETAIL := 'ccdp.ebgcfe.procedures.pkg_ui.ui_ctofc_flag::updateUiCtoFcFlag successfully updated . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_ctofc_flag::updateUiCtoFcFlag'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);
+END;

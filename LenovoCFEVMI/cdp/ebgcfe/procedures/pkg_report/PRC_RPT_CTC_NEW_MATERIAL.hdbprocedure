@@ -1,0 +1,175 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_report::PRC_RPT_CTC_NEW_MATERIAL" (
+	IN p_in_cycle VARCHAR(40),
+	IN p_in_delta_cycle	VARCHAR(40),
+	OUT p_out_exitcode  INTEGER,
+    OUT p_out_exitmess  VARCHAR(500) 
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	AS
+		v_g_pkg_name        VARCHAR(30)  := 'PKG_REPORT'; 
+		v_prc_name          VARCHAR(30)  := 'PRC_RPT_CTC_NEW_MATERIAL';
+     	v_full_name         VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+       	logidi              INTEGER := 0;
+       	v_product_group     VARCHAR(10)  := 'EBG';
+   
+BEGIN
+/***************************** 
+-- Author:      zhangxj
+-- Create date: 2016-02-25
+-- Description: rpt_ctc_new_material
+-- Modify [1]:  
+ *****************************/
+ 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+	BEGIN
+    	p_out_exitcode := ::SQL_ERROR_CODE;     
+	    p_out_exitmess := SUBSTR(::SQL_ERROR_MESSAGE, 1, 500 );  
+ 	 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE        => 'PROC_ERROR',
+ 	 	                                            I_LOGSID      => :logidi,
+ 	 	                                            I_EVENT_NAME  => :v_full_name,
+ 	 	                                            I_MODULE      => 'EBGCFE',
+		                                            I_MESSAGE     => 'ERROR',
+		                                            I_DETAIL      => TO_CHAR(::SQL_ERROR_CODE) || ':' ||
+                                                                     SUBSTR(::SQL_ERROR_MESSAGE, 1, 500) );                                   
+    END;
+    
+    
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                 I_LOGSID     => :logidi,
+		                                         I_EVENT_NAME => :v_full_name,
+		                                         I_MODULE     => 'EBGCFE');  
+
+	--delete last version date
+	
+	DELETE FROM rpt_ctc_new_material;
+	
+	IF p_in_cycle = 'CURRENT' THEN
+		--mtm,option 
+		tab1 = SELECT DISTINCT a.brand,a.asp_prd_family,a.item,a.item_type,a.item_desc,a.eol_status 
+		         FROM ui_item a,biz_costadder_mtm b
+		        WHERE a.item          = b.model
+		          AND a.product_group = b.product_group
+		          AND b.children      = 'LEVEL0_ALL_COST'
+		          AND a.item_type     = b.model_type
+		        --AND b.m1            IS NOT NULL  
+		          AND item_type IN (SELECT pvalue FROM conf_parameters
+		                             WHERE pdomain  = 'RPT_CTC_NEW_MATERIAL'
+		                               AND pname    = 'ITEM_TYPE');	
+        --cto 
+		tab1 = SELECT * FROM :tab1
+		       UNION ALL
+		       SELECT DISTINCT a.brand,a.asp_prd_family,a.item,a.item_type,a.item_desc,a.eol_status
+		         FROM ui_item a,biz_costadder_cto b
+		        WHERE a.item          = b.model
+		          AND a.product_group = b.product_group
+		          AND b.children      = 'LEVEL0_ALL_COST'
+		          AND a.item_type     = b.model_type
+		       -- AND b.m1            IS NOT NULL
+		          AND a.item_type IN (SELECT pvalue FROM conf_parameters
+		                             WHERE pdomain  = 'RPT_CTC_NEW_MATERIAL'
+		                               AND pname    = 'ITEM_TYPE');			                               
+        --sbb 
+		tab1 = SELECT * FROM :tab1
+		       UNION ALL
+		       SELECT DISTINCT a.brand,a.asp_prd_family,a.item,a.item_type,a.item_desc,a.eol_status
+		         FROM ui_item a,biz_costadder_cto b
+		        WHERE a.item          = b.father
+		          AND a.product_group = b.product_group
+		          AND b.children      = 'LEVEL0_ALL_COST'
+		     --   AND b.m1            IS NOT NULL
+		          AND a.item_type IN (SELECT pvalue FROM conf_parameters
+		                             WHERE pdomain  = 'RPT_CTC_NEW_MATERIAL'
+		                               AND pname    = 'ITEM_TYPE');		                               	                               
+	ELSE
+		--mtm option
+		tab1 = SELECT DISTINCT a.brand,a.asp_prd_family,a.item,a.item_type,a.item_desc,a.eol_status
+		         FROM ui_item_his a,biz_costadder_mtm_his b
+		        WHERE a.cycle_productgroup   = p_in_cycle||v_product_group
+		          AND a.cycle_productgroup = b.cycle_productgroup
+		          AND a.item               = b.model
+		          AND b.children           = 'LEVEL0_ALL_COST'
+		          AND a.item_type     = b.model_type
+		          AND b.m1            IS NOT NULL
+		          AND a.item_type IN (SELECT pvalue FROM conf_parameters
+		                             WHERE pdomain  = 'RPT_CTC_NEW_MATERIAL'
+		                               AND pname    = 'ITEM_TYPE');	
+        --cto
+		tab1 = SELECT * FROM :tab1
+		       UNION ALL
+		       SELECT DISTINCT a.brand,a.asp_prd_family,a.item,a.item_type,a.item_desc,a.eol_status
+		         FROM ui_item_his a,biz_costadder_cto_his b
+		        WHERE a.cycle_productgroup   = p_in_cycle||v_product_group
+		          AND a.cycle_productgroup = b.cycle_productgroup
+		          AND a.item               = b.model
+		          AND b.children           = 'LEVEL0_ALL_COST'
+		          AND a.item_type          = b.model_type
+		          AND b.m1                 IS NOT NULL
+		          AND a.item_type IN (SELECT pvalue FROM conf_parameters
+		                             WHERE pdomain  = 'RPT_CTC_NEW_MATERIAL'
+		                               AND pname    = 'ITEM_TYPE');			                               
+        --sbb
+		tab1 = SELECT * FROM :tab1
+		       UNION ALL
+		       SELECT DISTINCT a.brand,a.asp_prd_family,a.item,a.item_type,a.item_desc,a.eol_status
+		         FROM ui_item_his a,biz_costadder_cto_his b
+		        WHERE a.cycle_productgroup = p_in_cycle||v_product_group
+		          AND a.cycle_productgroup = b.cycle_productgroup
+		          AND a.item               = b.father
+		          AND b.children           = 'LEVEL0_ALL_COST'
+		          AND b.m1                 IS NOT NULL
+		          AND a.item_type IN (SELECT pvalue FROM conf_parameters
+		                             WHERE pdomain  = 'RPT_CTC_NEW_MATERIAL'
+		                               AND pname    = 'ITEM_TYPE');
+	END IF;
+	
+
+	IF p_in_delta_cycle = 'CURRENT' THEN
+		
+		tab2 = SELECT DISTINCT model AS item FROM  biz_costadder_mtm;
+		tab2 = SELECT * FROM :tab2
+		       UNION ALL
+		       SELECT DISTINCT model AS item FROM  biz_costadder_cto;
+		tab2 = SELECT * FROM :tab2
+		       UNION ALL
+		       SELECT DISTINCT father AS item FROM  biz_costadder_cto;                                       
+	ELSE
+		
+		tab2 = SELECT DISTINCT model AS item FROM  biz_costadder_mtm_his 
+		        WHERE cycle_productgroup = p_in_delta_cycle||v_product_group
+		        and m1 is not null ;
+		tab2 = SELECT * FROM :tab2
+		       UNION ALL
+		       SELECT DISTINCT model AS item FROM  biz_costadder_cto_his
+		        WHERE cycle_productgroup = p_in_delta_cycle||v_product_group
+		        and m1 is not null ;
+		tab2 = SELECT * FROM :tab2
+		       UNION ALL
+		       SELECT DISTINCT father AS item FROM  biz_costadder_cto_his
+		        WHERE cycle_productgroup = p_in_delta_cycle||v_product_group
+		        and m1 is not null ;    
+		                               
+	END IF;
+ 
+	INSERT INTO rpt_ctc_new_material
+		(product_group,cycle,delta_cycle,brand,family,model,item_type,item_desc,eol_status,status,
+		 sys_created_date,sys_created_by,sys_last_modified_date,sys_last_modified_by)
+	SELECT v_product_group,p_in_cycle,p_in_delta_cycle,brand,family,model,item_type,item_desc,eol_status,
+		   NULL,CURRENT_TIMESTAMP,v_full_name,CURRENT_TIMESTAMP,v_full_name
+      FROM (SELECT brand,asp_prd_family AS family,item AS model,item_type,item_desc,eol_status 
+              FROM :tab1 a
+             WHERE NOT EXISTS (SELECT * FROM :tab2 b
+                                WHERE a.item = b.item )
+           );
+           
+    p_out_exitcode := 0;
+    p_out_exitmess := 'SUCCESSFUL';
+     
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');  	 
+END;

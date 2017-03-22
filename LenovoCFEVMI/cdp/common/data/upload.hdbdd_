@@ -1,0 +1,51 @@
+namespace cdp.common.data;
+
+@Schema: 'SECURITY'
+context upload {
+
+    @Catalog.tableType : #COLUMN
+    ENTITY UPLOAD_RESULT_INFO{
+    	key UPLOAD_ID: String(20);
+    	BUSINESS_NAME: String(100);
+	 	SUCCESS: Integer64;
+	 	ERROR: Integer64;
+	 	BUSINESS_TIME: UTCTimestamp;
+	 	TABLE_NAME: String(200);
+	 	MODULE: String(15);
+    };
+    
+    @Catalog.tableType : #COLUMN
+    ENTITY UPLOAD_ERROR_INFO{
+    	key UPLOAD_ID: String(20);
+	 	key POSITION: Integer64;
+	 	ERROR_MESSAGE: String(4096);
+	 	TABLE_NAME: String(200);
+    	BUSINESS_NAME: String(100);
+	 	ERR_TIME:UTCTimestamp;
+	 	MODULE: String(15);
+	 	SQL_SATATMENT: String(1000);
+    };
+/*    
+    @Catalog.tableType: #COLUMN
+    ENTITY VALIDATION_CONF{
+    	key SCHEMA_NAME: String(200);
+    	key TBALE_NAME: String(200);
+    	key PROC_NAME: String(500);
+    };
+*/    
+    @Catalog.tableType: #COLUMN
+    ENTITY VALIDATION_DETAIL{
+    	key SCHEMA_NAME: String(200);
+    	key TABLE_NAME: String(200);
+    	key COLUMN_NAME: String(200);
+    	//根据不同的VALIDATION_TYPE，VALIDATION_DETAIL不一样，
+    	//SQL类型,则是sql语句;
+    	//VARCHAR类型，则是VARCHAR的长度;
+    	//TIME类型，则是TO_DATE(?),TO_TIMESTAMP(?)类似函数
+    	VALIDATION_DETAIL: String(500);    
+    	VALIDATION_TYPE:String(20);
+    	ERROR_MSG: String(500);
+    	VALIDATION_PARAMETERS: String(200);
+    };
+};
+

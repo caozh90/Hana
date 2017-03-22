@@ -1,0 +1,205 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::createUiAdditionalCost" ( 
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_ADDITIONAL_COST_T",
+	OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER  
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+/************************************************************************
+*name        :      createUiAdditionalCost
+*function    :               
+*input       ：              newInfo
+*output      :      errorInfo            
+*author      :      leon Bian
+*CreateDate  :      2015.8.10
+*UpdateDate  :        
+*************************************************************************/ 	
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	v_resourceExists BIGINT;
+	V_CYCLE NVARCHAR(40);
+	V_PRODUCT_GROUP NVARCHAR(10);
+	V_RATIO_CODE NVARCHAR(100);
+	V_SUBGEO NVARCHAR(20);
+	V_COUNTRY NVARCHAR(20);
+	V_TBA_TYPE NVARCHAR(40);
+	V_ADDITIONAL_COST DECIMAL(15,4);
+	V_ACTION NVARCHAR(100);
+	V_STATUS NVARCHAR(40);
+	V_CHANGE_ID NVARCHAR(100);
+	V_CHANGE_ACTION NVARCHAR(40);
+	
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::createUiAdditionalCost error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::createUiAdditionalCost'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_additional_cost::createable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::createUiAdditionalCost'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+   	
+select CYCLE,
+	   PRODUCT_GROUP,
+	   RATIO_CODE,
+	   SUBGEO,
+	   COUNTRY,
+	   TBA_TYPE,
+	   ADDITIONAL_COST,
+	   ACTION,
+	   STATUS,
+	   CHANGE_ID,
+	   CHANGE_ACTION
+into   V_CYCLE,
+	   V_PRODUCT_GROUP,
+	   V_RATIO_CODE,
+	   V_SUBGEO,
+	   V_COUNTRY,
+	   V_TBA_TYPE,
+	   V_ADDITIONAL_COST,
+	   V_ACTION,
+	   V_STATUS,
+	   V_CHANGE_ID,
+	   V_CHANGE_ACTION
+from :newInfo;  
+		
+select count(1) into v_resourceExists from "EBGCFE"."UI_ADDITIONAL_COST" 
+where CYCLE = :V_CYCLE 
+  and PRODUCT_GROUP = :V_PRODUCT_GROUP 
+  AND RATIO_CODE = :V_RATIO_CODE 
+  AND SUBGEO = :V_SUBGEO
+  and COUNTRY = :V_COUNTRY
+  AND TBA_TYPE = :V_TBA_TYPE; 
+
+--if item exits in database
+if  :v_resourceExists > 0 
+    then
+	    /*errorInfo = select 400 as http_status_code, 
+	     		'the record exists' error_message, 
+	     		'the record exists' DETAIL from dummy;
+	     		
+	     	return;*/
+	    SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record exists';
+	    
+end if;	
+
+/*
+if V_ADDITIONAL_COST <> '' and V_ADDITIONAL_COST = ascii(V_ADDITIONAL_COST) then
+	errorinfo = select 400 as http_status_code, 
+            'V_ADDITIONAL_COST:' || :V_ADDITIONAL_COST ||' IS NOT A NUMERICAL' error_message, 
+            '' detail from dummy;        
+        RETURN;
+end if;
+*/
+--insert into UI_ADDITIONAL_COST table
+
+insert into "EBGCFE"."UI_ADDITIONAL_COST"(CYCLE,
+							   PRODUCT_GROUP,
+							   RATIO_CODE,
+							   SUBGEO,
+							   COUNTRY,
+							   TBA_TYPE,
+							   ADDITIONAL_COST,
+							   SYS_CREATED_BY,
+							   SYS_CREATED_DATE,
+							   SYS_LAST_MODIFIED_BY, 
+							   SYS_LAST_MODIFIED_DATE,
+							   ACTION,
+							   STATUS,
+							   CHANGE_ID,
+							   CHANGE_ACTION
+									) 
+	values ('CURRENT',
+	   'EBG',
+	   V_RATIO_CODE,
+	   V_SUBGEO,
+	   V_COUNTRY,
+	   V_TBA_TYPE,
+	   CASE :V_ADDITIONAL_COST WHEN NULL THEN 0 ELSE :V_ADDITIONAL_COST END,
+	   SESSION_USER,
+	   CURRENT_TIMESTAMP,
+	   SESSION_USER,
+	   CURRENT_TIMESTAMP,
+	   'insert',
+	   V_STATUS,
+	   V_CHANGE_ID,
+	   V_CHANGE_ACTION);
+	
+--INSERT INTO UI_ADDITIONAL_COST_LOG TABLE
+insert into "EBGCFE"."UI_ADDITIONAL_COST_LOG"(
+	"PRODUCT_GROUP",
+	"RATIO_CODE",
+	"SUBGEO",
+	"COUNTRY",
+	"TBA_TYPE",
+	"ADDITIONAL_COST",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"STATUS",
+	"CHANGE_ID",
+	"CHANGE_ACTION",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+	 )SELECT 
+	        'EBG',
+	        a.RATIO_CODE,
+			a."SUBGEO",
+			a."COUNTRY",
+			a."TBA_TYPE",
+			a."ADDITIONAL_COST",
+			a."SYS_CREATED_DATE",
+			a."SYS_CREATED_BY",
+			a."SYS_LAST_MODIFIED_DATE",
+			a."SYS_LAST_MODIFIED_BY",
+			a."STATUS",
+			a."CHANGE_ID",
+			a."CHANGE_ACTION",
+	 		SESSION_USER,
+	 		'insert',
+	 		CURRENT_TIMESTAMP,
+	 		TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')) FROM :newInfo a; 							
+		
+	  	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::createUiAdditionalCost successfully inserted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_additional_cost::createUiAdditionalCost'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   	
+END;

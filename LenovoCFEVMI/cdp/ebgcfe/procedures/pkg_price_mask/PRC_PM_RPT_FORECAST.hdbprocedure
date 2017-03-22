@@ -1,0 +1,110 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_price_mask::PRC_PM_RPT_FORECAST"(
+  IN  P_IN_PRODUCT_GROUP   VARCHAR(20),
+  IN  P_IN_TIME_FENCE      VARCHAR(40),
+  IN  P_IN_PROFIT_CENTER   VARCHAR(40),
+  IN  P_IN_OEM_NAME        VARCHAR(40),
+  OUT P_OUT_EXIT_CODE      INTEGER,
+  OUT P_OUT_EXIT_MESSAGE   VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA  
+/************************************************************************
+*name       : PRC_PM_RPT_FORECAST      
+*function   : Generate price mask forecast report
+*input      ：   p_in_product_group, p_in_time_fence, p_in_profit_center, p_in_oem_name
+*output     : p_out_exit_code : error code / p_out_exit_message : error message
+*author     : Binbin Zhou
+*CreateDate : 2016-2-30
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+    -- data
+    DECLARE v_pkg_name          VARCHAR(30) := 'PKG_PRICE_MASK';
+    DECLARE v_prc_name          VARCHAR(30) := 'PRC_PM_RPT_FORECAST';
+    DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+    DECLARE logidi              INTEGER     := 0;
+    DECLARE v_row_count         INTEGER     := 0;
+    DECLARE v_node_lvl          INTEGER     := 0;
+    
+    DECLARE v_bom_pri           INTEGER;
+
+    -- exception 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN
+        p_out_exit_code    := ::SQL_ERROR_CODE;
+        p_out_exit_message := ::SQL_ERROR_MESSAGE;
+                          
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+	                                                I_LOGSID     => :logidi,
+		                                            I_EVENT_NAME => :v_full_name, 
+		                                            I_MODULE     => 'EBGCFE',
+		                                            I_MESSAGE    => 'ERROR', 
+		                                            I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || 
+		                                                            substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+    -- process logic
+    P_OUT_EXIT_CODE    := -1;
+    P_OUT_EXIT_MESSAGE := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');
+	
+	DELETE FROM pm_rpt_forecast
+	WHERE product_group = :p_in_product_group;	 
+	
+    tab_pm_tape = SELECT product_group, part_number, SUM(m1) m1
+                    FROM (
+                          SELECT t1.product_group, t1.part_number, t1.cost_elem, MAX(t1.m1) m1
+                            FROM ui_cost_tape t1
+                           WHERE t1.product_group = :p_in_product_group
+                             AND EXISTS(SELECT 1 FROM conf_parameters t2
+                                         WHERE t2.pvalue  = t1.cost_elem
+                                           AND t2.pdomain = 'PRICE_MASK'
+                                           AND t2.pname   = 'TAPE_COST_ELEM')
+                          GROUP BY t1.product_group, t1.part_number, t1.cost_elem
+                         )
+                  GROUP BY product_group, part_number;
+                  
+    tab_pm_bom  = SELECT t1.product_group, t1.item, t1.bs_part, t1.part_qty*t2.m1 AS pm_cost
+                    FROM (SELECT * FROM pm_ui_bs_bom
+                           WHERE product_group = :p_in_product_group) t1
+                         LEFT JOIN
+                         :tab_pm_tape t2
+                      ON t1.product_group = t2.product_group
+                     AND t1.bs_part       = t2.part_number;                                    
+    
+    INSERT INTO pm_rpt_forecast
+        (product_group, mtm, plant, pm_amount, unit, per, uom, status,
+         user_action, sys_created_by, sys_created_date, sys_last_modified_by,
+         sys_last_modified_date)
+    SELECT t1.product_group, t1.item, 'ALL' AS plant, SUM(t1.pm_cost) AS pm_amount,
+           'USD' AS unit, 1 AS per, 'EA' AS uom, 'ACTIVE' AS status, NULL AS user_action,
+           :v_full_name, CURRENT_TIMESTAMP, :v_full_name, CURRENT_TIMESTAMP
+      FROM :tab_pm_bom t1
+     WHERE NOT EXISTS(SELECT 1 FROM :tab_pm_bom t2
+                       WHERE t2.product_group = t1.product_group
+                         AND t2.item          = t1.item
+                         AND t2.pm_cost IS NULL)
+    GROUP BY t1.product_group, t1.item;
+    
+    INSERT INTO pm_rpt_forecast
+        (product_group, mtm, plant, status, sys_created_by, sys_created_date, 
+         sys_last_modified_by, sys_last_modified_date)
+    SELECT DISTINCT
+           t1.product_group, t1.item, 'ALL' AS plant, 'ACTIVE' AS status, 
+           :v_full_name, CURRENT_TIMESTAMP, :v_full_name, CURRENT_TIMESTAMP
+      FROM :tab_pm_bom t1
+     WHERE t1.pm_cost IS NULL;  
+      
+    p_out_exit_code    := 0;
+    p_out_exit_message := 'SUCCESSFUL';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+	                                            I_EVENT_NAME => :v_full_name,
+	                                            I_MODULE     => 'EBGCFE');  	
+END;

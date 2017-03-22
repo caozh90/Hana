@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_GETMAPRESOURCE_USER" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_GETMAPRESOURCE_USER"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="AT_GETMAPRESOURCE_USER001" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/cdp.security.models/attributeviews/AT_GETMAPRESOURCE_USER001</resourceUri>
+    </DataSource>
+    <DataSource id="cdp.security.data::userManagement.MAP_RESOURCE_USER" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_RESOURCE_USER"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <viewAttributes>
+        <viewAttribute id="MODULE_ID"/>
+        <viewAttribute id="RESOURCE_TYPE"/>
+        <viewAttribute id="VALUE"/>
+        <viewAttribute id="GROUP_ID"/>
+        <viewAttribute id="USER_ID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#AT_GETMAPRESOURCE_USER001">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RESOURCE_TYPE" source="RESOURCE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VALUE" source="VALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GROUP_ID" source="GROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="USER_ID" source="USER_ID"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#cdp.security.data::userManagement.MAP_RESOURCE_USER">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MODULE_ID" source="MODULE_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RESOURCE_TYPE" source="RESOURCE_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VALUE" source="VALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GROUP_ID" source="GROUP_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="USER_ID" source="USER_ID"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Union_1">
+    <attributes>
+      <attribute id="MODULE_ID" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping columnObjectName="Union_1" columnName="MODULE_ID"/>
+      </attribute>
+      <attribute id="RESOURCE_TYPE" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="RESOURCE_TYPE"/>
+        <keyMapping columnObjectName="Union_1" columnName="RESOURCE_TYPE"/>
+      </attribute>
+      <attribute id="VALUE" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VALUE"/>
+        <keyMapping columnObjectName="Union_1" columnName="VALUE"/>
+      </attribute>
+      <attribute id="USER_ID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="USER_ID"/>
+        <keyMapping columnObjectName="Union_1" columnName="USER_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="CDP_PRIVILEGE_NAME" hidden="false" order="5" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CDP_PRIVILEGE_NAME"/>
+        <keyCalculation datatype="NVARCHAR" length="300">
+          <formula>'securityBase'</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

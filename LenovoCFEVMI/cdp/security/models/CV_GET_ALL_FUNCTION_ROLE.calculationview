@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_GET_ALL_FUNCTION_ROLE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="SCRIPT_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_GET_ALL_FUNCTION_ROLE"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="ROLEGROUP_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="ROLE_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="MODULE_NAME" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="MODULE_ID" length="20"/>
+        <viewAttribute datatype="BIGINT" id="MS"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script, Created by Eric Zhou ************/ 
+ BEGIN 
+ 	 var_out = select groups.ROLEGROUP_NAME as ROLEGROUP_NAME,
+ 	 				  roles.ROLE_NAME as ROLE_NAME,
+ 	 				  modules.MODULE_NAME as MODULE_NAME,
+ 	 				  modules.MODULE_ID as MODULE_ID,
+ 	 				  sum(0) as MS
+ 	 		   from 
+ 	  &quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE&quot; as maps,
+ 	  &quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_ROLEGROUP&quot; as groups,
+ 	  &quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_ROLES&quot; as roles,
+ 	  &quot;SECURITY&quot;.&quot;cdp.security.data::userManagement.INFO_MODULE&quot; as modules
+ 	  where maps.ROLEGROUP_ID = groups.ROLEGROUP_ID
+ 	  and maps.ROLE_ID = roles.ROLE_ID
+ 	  and maps.MODULE_ID = modules.MODULE_ID
+ 	  and maps.MODULE_ID = roles.MODULE_ID
+ 	  and maps.MODULE_ID = groups.MODULE_ID
+ 	  group by modules.MODULE_ID,MODULE_NAME,ROLEGROUP_NAME,ROLE_NAME
+ 	  order by MODULE_NAME,ROLEGROUP_NAME,ROLE_NAME
+ 	  ;
+ 	  
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="ROLEGROUP_NAME" order="1">
+        <descriptions defaultDescription="ROLEGROUP_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLEGROUP_NAME"/>
+      </attribute>
+      <attribute id="ROLE_NAME" order="2">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="MODULE_NAME" order="3">
+        <descriptions defaultDescription="MODULE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="MODULE_NAME"/>
+      </attribute>
+      <attribute id="MODULE_ID" order="4">
+        <descriptions defaultDescription="MODULE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MODULE_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="MS" order="5" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MS"/>
+        <measureMapping columnObjectName="Script_View" columnName="MS"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

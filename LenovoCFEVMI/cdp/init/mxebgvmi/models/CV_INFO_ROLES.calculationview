@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_INFO_ROLES" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_INFO_ROLES"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="DISPLAY_ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="COMMENT" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="IS_SYSROLE" length="5"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+
+ BEGIN 
+  
+ 
+ 	 var_out = 
+SELECT  'cdp.mxebgvmi.roles::Access' as ROLE_NAME,'MXEBGVMI Access' AS DISPLAY_ROLE_NAME ,'base role ' AS COMMENT ,'TRUE' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ds.roles::Access' as ROLE_NAME,'DS Access' AS DISPLAY_ROLE_NAME ,'ds base role ' AS COMMENT ,'TRUE' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::Base' as ROLE_NAME,'securityBase' AS DISPLAY_ROLE_NAME ,'base role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::Access' as ROLE_NAME,'securityAccess' AS DISPLAY_ROLE_NAME ,'open user management view. ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::userAdmin' as ROLE_NAME,'securityUserAdmin' AS DISPLAY_ROLE_NAME ,' user and user group management . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleSetup' as ROLE_NAME,'securityRoleSetup' AS DISPLAY_ROLE_NAME ,' role and role group management . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleAdmin' as ROLE_NAME,'securityRoleAdmin' AS DISPLAY_ROLE_NAME ,' grant activated role  . ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAccess' as ROLE_NAME,'logAccess' AS DISPLAY_ROLE_NAME ,'to view the log information of related module.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAdmin' as ROLE_NAME,'logAdmin' AS DISPLAY_ROLE_NAME ,'can delete log information of related module.' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+/*
+--Monitor\Search
+--view name
+--1.   receipts          receipts             'Receipts'
+2.   pullSignals       pullsignals          'Pull Signals'
+3.   pullLines         pulllines            'Pull Lines'
+4.   dispatches        dispatches           'Dispatches'
+5.   events            events               'Events'
+6.   sa                sa                   'SA'
+*/
+UNION SELECT  'cdp.mxebgvmi.roles.receipts::access' as ROLE_NAME,'receipts::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.receipts::exportable' as ROLE_NAME,'receipts::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.pullsignals::access' as ROLE_NAME,'pullsignals::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.pullsignals::exportable' as ROLE_NAME,'pullsignals::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.pulllines::access' as ROLE_NAME,'pulllines::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.pulllines::exportable' as ROLE_NAME,'pulllines::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.dispatches::access' as ROLE_NAME,'dispatches::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.dispatches::exportable' as ROLE_NAME,'dispatches::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.events::access' as ROLE_NAME,'events::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.events::exportable' as ROLE_NAME,'events::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.sa::access' as ROLE_NAME,'sa::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.sa::exportable' as ROLE_NAME,'sa::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+/*
+end Monitor\Search
+*/
+
+/*Excute\Manage
+view name
+1. balanceFailedDispatches					balancefaileddispatches					'Balance Failed Dispatches'
+2. confirmBalanceDispatches					confirmbalancedispatches				'Confirm Balance Dispatches'
+3. confirmDispatches						confirmdispatches						'Confirm Dispatches'
+4. confirmLinetoExcessDispatches			confirmlinetoexcessdispatches			'Confirm Line to Excess Dispatches'
+5. createCycleTime							createcyceltime							'Create Cycel Time'
+6. failedDispatches							faileddispatches						'Failed Dispatches'
+7. failedPullConfirmationResubmission		failedpullconfirmationresubmission		'Failed Pull Confirmation &amp; Resubmission'
+8. failedPullResubmission					failedpullresubmission					'Failed Pull Resubmission'
+9. linetoExcessFailedDispatches				linetoexcessfaileddispatches			'Line to Excess Failed Dispatches'
+10. loiFailedGR								loifailed								'LOI Failed'
+11. soiFailedGR								soifailed								'SOI Failed'
+*/
+
+UNION SELECT  'cdp.mxebgvmi.roles.balancefaileddispatches::access' as ROLE_NAME,'balancefaileddispatches::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.balancefaileddispatches::exportable' as ROLE_NAME,'balancefaileddispatches::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.balancefaileddispatches::confirm' as ROLE_NAME,'balancefaileddispatches::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.balancefaileddispatches::deleteable' as ROLE_NAME,'balancefaileddispatches::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+
+UNION SELECT  'cdp.mxebgvmi.roles.confirmbalancedispatches::access' as ROLE_NAME,'confirmbalancedispatches::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmbalancedispatches::exportable' as ROLE_NAME,'confirmbalancedispatches::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmbalancedispatches::confirm' as ROLE_NAME,'confirmbalancedispatches::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmbalancedispatches::deleteable' as ROLE_NAME,'confirmbalancedispatches::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.confirmdispatches::access' as ROLE_NAME,'confirmdispatches::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmdispatches::exportable' as ROLE_NAME,'confirmdispatches::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmdispatches::confirm' as ROLE_NAME,'confirmdispatches::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmdispatches::deleteable' as ROLE_NAME,'confirmdispatches::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.confirmlinetoexcessdispatches::access' as ROLE_NAME,'confirmlinetoexcessdispatches::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmlinetoexcessdispatches::exportable' as ROLE_NAME,'confirmlinetoexcessdispatches::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmlinetoexcessdispatches::confirm' as ROLE_NAME,'confirmlinetoexcessdispatches::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmlinetoexcessdispatches::deleteable' as ROLE_NAME,'confirmlinetoexcessdispatches::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.createcyceltime::access' as ROLE_NAME,'createcyceltime::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.createcyceltime::exportable' as ROLE_NAME,'createcyceltime::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.createcyceltime::createable' as ROLE_NAME,'createcyceltime::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.createcyceltime::deleteable' as ROLE_NAME,'createcyceltime::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.createcyceltime::editable' as ROLE_NAME,'createcyceltime::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.faileddispatches::access' as ROLE_NAME,'faileddispatches::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.faileddispatches::exportable' as ROLE_NAME,'faileddispatches::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.faileddispatches::confirm' as ROLE_NAME,'faileddispatches::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.faileddispatches::editable' as ROLE_NAME,'faileddispatches::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.faileddispatches::deleteable' as ROLE_NAME,'faileddispatches::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.failedpullconfirmationresubmission::access' as ROLE_NAME,'failedpullconfirmationresubmission::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.failedpullconfirmationresubmission::exportable' as ROLE_NAME,'failedpullconfirmationresubmission::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.failedpullconfirmationresubmission::confirm' as ROLE_NAME,'failedpullconfirmationresubmission::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.failedpullconfirmationresubmission::deleteable' as ROLE_NAME,'failedpullconfirmationresubmission::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.failedpullresubmission::access' as ROLE_NAME,'failedpullresubmission::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.failedpullresubmission::exportable' as ROLE_NAME,'failedpullresubmission::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.failedpullresubmission::confirm' as ROLE_NAME,'failedpullresubmission::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.failedpullresubmission::deleteable' as ROLE_NAME,'failedpullresubmission::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.linetoexcessfaileddispatches::access' as ROLE_NAME,'linetoexcessfaileddispatches::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.linetoexcessfaileddispatches::exportable' as ROLE_NAME,'linetoexcessfaileddispatches::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.linetoexcessfaileddispatches::confirm' as ROLE_NAME,'linetoexcessfaileddispatches::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.linetoexcessfaileddispatches::deleteable' as ROLE_NAME,'linetoexcessfaileddispatches::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.loifailed::access' as ROLE_NAME,'loifailed::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.loifailed::exportable' as ROLE_NAME,'loifailed::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.loifailed::confirm' as ROLE_NAME,'loifailed::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.loifailed::editable' as ROLE_NAME,'loifailed::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.loifailed::deleteable' as ROLE_NAME,'loifailed::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.soifailed::access' as ROLE_NAME,'soifailed::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.soifailed::exportable' as ROLE_NAME,'soifailed::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.soifailed::confirm' as ROLE_NAME,'soifailed::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.soifailed::editable' as ROLE_NAME,'soifailed::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.soifailed::deleteable' as ROLE_NAME,'soifailed::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+/*
+end Excute\Manage
+*/
+
+
+/*
+
+Excute\ create pull
+view name
+1. manualPull						manualpull					'Manual Pull'
+2. manualPackaging					manualpackaging				'Manual Packaging'
+3. pullFromSupplier					pullfromsupplier			'Pull From Supplier'
+
+*/
+UNION SELECT  'cdp.mxebgvmi.roles.manualpull::access' as ROLE_NAME,'manualpull::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpull::uploadable' as ROLE_NAME,'manualpull::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpull::exportable' as ROLE_NAME,'manualpull::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpull::createable' as ROLE_NAME,'manualpull::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpull::deleteable' as ROLE_NAME,'manualpull::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpull::editable' as ROLE_NAME,'manualpull::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpackaging::access' as ROLE_NAME,'manualpackaging::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpackaging::createable' as ROLE_NAME,'manualpackaging::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpackaging::deleteable' as ROLE_NAME,'manualpackaging::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpackaging::editable' as ROLE_NAME,'manualpackaging::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.manualpackaging::exportable' as ROLE_NAME,'manualpackaging::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.pullfromsupplier::access' as ROLE_NAME,'pullfromsupplier::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.pullfromsupplier::createable' as ROLE_NAME,'pullfromsupplier::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.pullfromsupplier::deleteable' as ROLE_NAME,'pullfromsupplier::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.pullfromsupplier::editable' as ROLE_NAME,'pullfromsupplier::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.pullfromsupplier::uploadable' as ROLE_NAME,'pullfromsupplier::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.pullfromsupplier::exportable' as ROLE_NAME,'pullfromsupplier::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+/*
+end Excute\ create pull
+*/
+
+/*Execute \ changelocation*/
+UNION SELECT  'cdp.mxebgvmi.roles.changelocation::access' as ROLE_NAME,'changelocation::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.changelocation::createable' as ROLE_NAME,'changelocation::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.changelocation::deleteable' as ROLE_NAME,'changelocation::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.changelocation::editable' as ROLE_NAME,'changelocation::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.changelocation::exportable' as ROLE_NAME,'changelocation::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.changelocation::uploadable' as ROLE_NAME,'changelocation::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+/*end Execute\ changeloation*/
+
+/*
+
+ARCH_SEARCH
+view name --- ROLE NAME --- COMMENTS
+1. archivedPullSignals                  archivedpullsignals        'Archived Pull Signals '
+2. archivedPullLines                    archivedpulllines                 'Archived Pull Lines '
+3. archivedDispatches                   archiveddispatches                'Archived Dispatches '
+4. archivedReceipts                     archivedreceipts                  'Archived Receipts '
+
+*/
+UNION SELECT  'cdp.mxebgvmi.roles.archivedpullsignals::access' as ROLE_NAME,'archivedpullsignals::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.archivedpullsignals::exportable' as ROLE_NAME,'archivedpullsignals::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.archivedpulllines::access' as ROLE_NAME,'archivedpulllines::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.archivedpulllines::exportable' as ROLE_NAME,'archivedpulllines::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.archivedreceipts::access' as ROLE_NAME,'archivedreceipts::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.archivedreceipts::exportable' as ROLE_NAME,'archivedreceipts::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.archiveddispatches::access' as ROLE_NAME,'archiveddispatches::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.archiveddispatches::exportable' as ROLE_NAME,'archiveddispatches::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+/*
+end ARCH_SEARCH
+*/
+
+
+/*
+
+Control\Mapping
+view name
+1.controlcycle					controlCycle					Control Cycle
+2.destinationmapping			destinationMapping				Destination Mapping
+3.optiondestinationmapping		optionDestinationMapping		Option Destination
+4.vmipurchaseproportion			vmiPurchaseProportion			VMI Purchase Proportion
+5.sourcingpriority				sourcingPriority				Sourcing Priority
+6.urgentmomaintaince			urgentMOMaintaince				Urgent MO Maintaince
+7.nocutsopriority				nocutSoPriority					Nocut SO Priority
+8.fullBoxSize					fullboxsize						Full Box Size
+
+*/
+UNION SELECT  'cdp.mxebgvmi.roles.controlcycle::access' as ROLE_NAME,'controlcycle::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.controlcycle::uploadable' as ROLE_NAME,'controlcycle::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.controlcycle::exportable' as ROLE_NAME,'controlcycle::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.controlcycle::createable' as ROLE_NAME,'controlcycle::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.controlcycle::deleteable' as ROLE_NAME,'controlcycle::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.controlcycle::editable' as ROLE_NAME,'controlcycle::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.mobomlocation::access' as ROLE_NAME,'mobomlocation::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.mobomlocation::uploadable' as ROLE_NAME,'mobomlocation::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.mobomlocation::createable' as ROLE_NAME,'mobomlocation::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.mobomlocation::deleteable' as ROLE_NAME,'mobomlocation::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.mobomlocation::editable' as ROLE_NAME,'mobomlocation::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.mobomlocation::exportable' as ROLE_NAME,'mobomlocation::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.destinationmapping::access' as ROLE_NAME,'destinationmapping::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.destinationmapping::createable' as ROLE_NAME,'destinationmapping::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.destinationmapping::deleteable' as ROLE_NAME,'destinationmapping::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.destinationmapping::editable' as ROLE_NAME,'destinationmapping::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.destinationmapping::uploadable' as ROLE_NAME,'destinationmapping::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.destinationmapping::exportable' as ROLE_NAME,'destinationmapping::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.optiondestinationmapping::access' as ROLE_NAME,'optiondestination::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.optiondestinationmapping::createable' as ROLE_NAME,'optiondestinationmapping::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.optiondestinationmapping::deleteable' as ROLE_NAME,'optiondestinationmapping::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.optiondestinationmapping::editable' as ROLE_NAME,'optiondestinationmapping::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.optiondestinationmapping::uploadable' as ROLE_NAME,'optiondestinationmapping::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.optiondestinationmapping::exportable' as ROLE_NAME,'optiondestinationmapping::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.vmipurchaseproportion::access' as ROLE_NAME,'vmipurchaseproportion::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.vmipurchaseproportion::exportable' as ROLE_NAME,'vmipurchaseproportion::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.vmipurchaseproportion::uploadable' as ROLE_NAME,'vmipurchaseproportion::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.vmipurchaseproportion::createable' as ROLE_NAME,'vmipurchaseproportion::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.vmipurchaseproportion::deleteable' as ROLE_NAME,'vmipurchaseproportion::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.vmipurchaseproportion::editable' as ROLE_NAME,'vmipurchaseproportion::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.sourcingpriority::access' as ROLE_NAME,'sourcingpriority::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.sourcingpriority::exportable' as ROLE_NAME,'sourcingpriority::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.sourcingpriority::createable' as ROLE_NAME,'sourcingpriority::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.sourcingpriority::deleteable' as ROLE_NAME,'sourcingpriority::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.sourcingpriority::editable' as ROLE_NAME,'sourcingpriority::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.sourcingpriority::uploadable' as ROLE_NAME,'sourcingpriority::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.urgentmomaintaince::access' as ROLE_NAME,'urgentmomaintaince::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.urgentmomaintaince::exportable' as ROLE_NAME,'urgentmomaintaince::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.urgentmomaintaince::uploadable' as ROLE_NAME,'urgentmomaintaince::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.urgentmomaintaince::createable' as ROLE_NAME,'urgentmomaintaince::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.urgentmomaintaince::deleteable' as ROLE_NAME,'urgentmomaintaince::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.urgentmomaintaince::editable' as ROLE_NAME,'urgentmomaintaince::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.urgentmomaintaince::trigger' as ROLE_NAME,'urgentmomaintaince::trigger' AS DISPLAY_ROLE_NAME ,'trigger role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.urgentmomaintaince::confirm' as ROLE_NAME,'urgentmomaintaince::confirm' AS DISPLAY_ROLE_NAME ,'confirm role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.nocutsopriority::access' as ROLE_NAME,'nocutsopriority::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.nocutsopriority::exportable' as ROLE_NAME,'nocutsopriority::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.nocutsopriority::uploadable' as ROLE_NAME,'nocutsopriority::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.nocutsopriority::createable' as ROLE_NAME,'nocutsopriority::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.nocutsopriority::deleteable' as ROLE_NAME,'nocutsopriority::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.fullboxsize::access' as ROLE_NAME,'fullboxsize::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.fullboxsize::exportable' as ROLE_NAME,'fullboxsize::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.fullboxsize::uploadable' as ROLE_NAME,'fullboxsize::uploadable' AS DISPLAY_ROLE_NAME ,'uploadable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.fullboxsize::createable' as ROLE_NAME,'fullboxsize::createable' AS DISPLAY_ROLE_NAME ,'createable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.fullboxsize::deleteable' as ROLE_NAME,'fullboxsize::deleteable' AS DISPLAY_ROLE_NAME ,'deleteable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.fullboxsize::editable' as ROLE_NAME,'fullboxsize::editable' AS DISPLAY_ROLE_NAME ,'editable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+/*
+end Control\Mapping
+*/
+/*
+
+PM Report
+view name --- ROLE NAME --- COMMENTS
+1.confirmedPullShortage               confirmedpullshortage                 'Confirmed Pull Shortage'
+2.dispatchShortage                    dispatchshortage                      'Dispatch Shortage'
+3.inventoryComparisonReport           inventorycomparisonreport             'Inventory Comparison Report'
+4.moCutbackMaterialReturnReport       mocutbackmaterialreturnreport         'MO Cutback Material Return Report'
+5.moCutbackReport                     mocutbackreport                       'MO Cutback Report'
+6.moDestinationChangeError            modestinationchangeerror              'MO Destination Change Error'
+7.moPullSignalSummary                 mopullsignalsummary                   'MO pull signal Summary'
+8.moPulledInformation                 mopulledinformation                   'MO Pulled Information'
+9.onHoldMOLines                       onholdmolines                         'ON HOLD MO LINES'
+10.poComparisonReport                 pocomparisonreport                    'PO Comparison Report'
+11.saForVMI                           saformexicovmi                        'SA for Mexico VMI'
+*/
+
+UNION SELECT  'cdp.mxebgvmi.roles.confirmedpullshortage::access' as ROLE_NAME,'confirmedpullshortage::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.confirmedpullshortage::exportable' as ROLE_NAME,'confirmedpullshortage::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.dispatchshortage::access' as ROLE_NAME,'dispatchshortage::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.dispatchshortage::exportable' as ROLE_NAME,'dispatchshortage::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.inventorycomparisonreport::access' as ROLE_NAME,'inventorycomparisonreport::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.inventorycomparisonreport::exportable' as ROLE_NAME,'inventorycomparisonreport::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.mocutbackmaterialreturnreport::access' as ROLE_NAME,'mocutbackmaterialreturnreport::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.mocutbackmaterialreturnreport::exportable' as ROLE_NAME,'mocutbackmaterialreturnreport::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.mocutbackreport::access' as ROLE_NAME,'mocutbackreport::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.mocutbackreport::exportable' as ROLE_NAME,'mocutbackreport::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.modestinationchangeerror::access' as ROLE_NAME,'modestinationchangeerror::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.modestinationchangeerror::exportable' as ROLE_NAME,'modestinationchangeerror::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.mopullsignalsummary::access' as ROLE_NAME,'mopullsignalsummary::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.mopullsignalsummary::exportable' as ROLE_NAME,'mopullsignalsummary::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.mopulledinformation::access' as ROLE_NAME,'mopulledinformation::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.mopulledinformation::exportable' as ROLE_NAME,'mopulledinformation::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.onholdmolines::access' as ROLE_NAME,'onholdmolines::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.onholdmolines::exportable' as ROLE_NAME,'onholdmolines::exportable' AS DISPLAY_ROLE_NAME, 'exportable role' AS COMMENT,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.pocomparisonreport::access' as ROLE_NAME,'pocomparisonreport::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.pocomparisonreport::exportable' as ROLE_NAME,'pocomparisonreport::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+UNION SELECT  'cdp.mxebgvmi.roles.saformexicovmi::access' as ROLE_NAME,'saformexicovmi::access' AS DISPLAY_ROLE_NAME ,'access role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.mxebgvmi.roles.saformexicovmi::exportable' as ROLE_NAME,'saformexicovmi::exportable' AS DISPLAY_ROLE_NAME ,'exportable role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+/*
+end PM Report
+*/
+
+
+UNION SELECT  'cdp.ds.roles.configuration::access' as ROLE_NAME,'configuration::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsjob::access' as ROLE_NAME,'dsjob::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsmonitor::access' as ROLE_NAME,'dsmonitor::access' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsmonitor::admin' as ROLE_NAME,'dsmonitor::admin' AS DISPLAY_ROLE_NAME ,'view role ' AS COMMENT ,'' AS IS_SYSROLE FROM DUMMY
+
+;
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="ROLE_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="DISPLAY_ROLE_NAME" order="2">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="DISPLAY_ROLE_NAME"/>
+      </attribute>
+      <attribute id="COMMENT" order="3">
+        <descriptions defaultDescription="COMMENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="COMMENT"/>
+      </attribute>
+      <attribute id="IS_SYSROLE" order="4">
+        <descriptions defaultDescription="IS_SYS_ROLE"/>
+        <keyMapping columnObjectName="Script_View" columnName="IS_SYSROLE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

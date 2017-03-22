@@ -1,0 +1,84 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.mobom_location::updateMobomLocation" (
+		--IN newInfo "MXEBGVMI"."UI_MOBOM_LOCATION",
+			IN newInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_MOBOM_LOCATION_T",
+		--IN IN oldInfo  "MXEBGVMI"."UI_MOBOM_LOCATION",
+			IN oldInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.UI_MOBOM_LOCATION_T",
+		OUT errorInfo "MXEBGVMI"."cdp.mxebgvmi.data::MXEBGVMI_T.HttpError"
+
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+/************************************************************************
+*name      : updateMobomLocation              --函数名
+*function  : 在表 UI_MOBOM_LOCATION 中更新数据            --函数功能
+*input     ：    	  --输入参数
+*output    :      --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-07-27       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+		ITEM NVARCHAR(40);
+		LOGICAL_PLANT NVARCHAR(40);
+		STORAGE_LOCATION NVARCHAR(40);
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :='';
+		privilegeExists  NVARCHAR(300)  ;	
+		n int;
+BEGIN
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.mxebgvmi.procedures.pkg_ui.mobom_location::createMobomLocation error: '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+ -----LOGIC START-------
+   call "SECURITY"."cdp.security.procedures::checkPrivilege" (	      
+    'mobomlocation::editable'		,privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : 0' error_message, 
+     		privilegeExists detail from dummy;
+    	RETURN ;
+    END IF;
+    --update数据
+  	select ITEM,LOGICAL_PLANT,STORAGE_LOCATION
+  	into ITEM,LOGICAL_PLANT,STORAGE_LOCATION
+  	from :newInfo;
+ 	--validation
+ 	select COUNT(1) INTO n from ITEMSITEMASTER
+ 	where ITEM = :ITEM AND LOGICAL_PLANT=:LOGICAL_PLANT;
+ 	
+ 	if n=0 then
+ 	 		errorInfo = select 400 as http_status_code, 
+     		'"ITEM","LOGICAL_PLANT" is illegal!' error_message, 
+     		'"ITEM","LOGICAL_PLANT" is illegal!' detail from dummy;
+     		return;
+ 	end if;
+ 	
+ 	select COUNT(1) INTO n from CONF_WAHREHOUSE_INFO
+ 	where STORAGE_LOCATION = :STORAGE_LOCATION AND LOGICAL_PLANT=:LOGICAL_PLANT;
+ 	
+ 	if n=0 then
+ 	 		errorInfo = select 400 as http_status_code, 
+     		'"STORAGE_LOCATION" is illegal!' error_message, 
+     		'"STORAGE_LOCATION" is illegal!' detail from dummy;
+     		return;
+ 	end if;
+ 	
+    update UI_MOBOM_LOCATION
+    set STORAGE_LOCATION = :STORAGE_LOCATION,
+    	SYS_LAST_MODIFIED_DATE = CURRENT_TIMESTAMP,
+    	SYS_LAST_MODIFIED_BY = SESSION_USER
+    WHERE ITEM = :ITEM AND LOGICAL_PLANT  = :LOGICAL_PLANT;
+	--记录log
+	INSERT INTO UI_MOBOM_LOCATION_LOG
+	(ITEM,LOGICAL_PLANT,STORAGE_LOCATION,
+		SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,
+	 		AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME)
+	VALUES (:ITEM,:LOGICAL_PLANT,:STORAGE_LOCATION,
+    	CURRENT_TIMESTAMP,SESSION_USER,
+    		SESSION_USER,'update',CURRENT_TIMESTAMP);
+END;

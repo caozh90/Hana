@@ -1,0 +1,821 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_option_pull::PRC_P_OPTION_PULL" (
+    IN iv_id VARCHAR(10)
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "MXEBGVMI"
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_P_OPTION_PULL              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     :                --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2014/12/08                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/ 	
+	AS
+	  v_matnr         VARCHAR(18);
+      v_werks         VARCHAR(18);
+      n_qty           DECIMAL(13,3);
+      v_src_sloc      VARCHAR(40);
+      v_dest_sloc     VARCHAR(40);
+      v_item_type     NVARCHAR(30);
+      n_qty_left      DECIMAL(13,3);
+      n_qty_c2        DECIMAL(13,3);
+      n_count_rows    NUMBER;
+      v_lifnr         VARCHAR(10);
+      v_owner         VARCHAR(40);
+      n_qty_a         DECIMAL(13,3);
+      n_qty_c         DECIMAL(13,3);
+      v_stype         VARCHAR(40);
+      v_sbin          VARCHAR(40);
+      v_whs_no        VARCHAR(40);
+      v_inv_type      VARCHAR(40);
+      v_hld_type      CHAR(1);
+      v_pull_type     VARCHAR(20);
+      v_is_cqe        VARCHAR(5);
+      v_dest_stype    NVARCHAR(40);
+      v_dest_sbin     NVARCHAR(40);
+      v_dly_time      TIMESTAMP;
+      v_sys_source    VARCHAR(25);
+      v_dept          VARCHAR(40);
+      v_msg           VARCHAR2 (255);
+      v_status        VARCHAR2 (40);
+      v_pull_header   VARCHAR(10);
+      v_sa_num       VARCHAR2(45);  --2013.07.17 MEX CSE Project baiying Added
+      v_sa_line_id   VARCHAR2(5);
+      v_itemdesc     VARCHAR2(255); --2013.07.17 MEX  CSE Project baiying Added
+      v_logidi INTEGER := 0;
+      v_logidj INTEGER := 0;	
+	  v_pkg_name          VARCHAR (40)            := 'PKG_OPTION_PULL';
+	  v_logic_proc_name   VARCHAR (40)            := 'PRC_P_OPTION_PULL';
+	  v_full_name         VARCHAR (100)            := v_pkg_name||'.'||v_logic_proc_name;
+	  v_request_id        VARCHAR(40);
+	  v_error_line    VARCHAR(5) := '-1';
+
+      gv_dept             VARCHAR(40) := 'MEXEBG';   -- add by xwu 2016/1/18
+	  
+BEGIN
+DECLARE CURSOR CUR_SO FOR (SELECT   itm.ud_storage_condition item_type, so.werks werks,
+                   so.matnr matnr, so.qty qty,
+                   so.src_storage_loc src_storage_location,
+                   so.dest_storage_loc dest_storage_location,
+                   so.delivery_time delivery_time, so.sys_source sys_source,
+                   so.dept dept, so.request_id request_id
+              FROM Z_PCDW_OPTION_PULL so, ITEMSITEMASTER itm
+             WHERE so.matnr = itm.item
+               AND so.werks = itm.siteid                   --added @2007-11-27
+               AND so.status IS NULL
+               AND so.sys_source = 'DF'                     --added @2008-5-19
+               AND so.werks IN (SELECT siteid
+                                  FROM CONF_SITE_SCHEDULE
+                                 WHERE ID = :iv_id)         --added @2007-11-27
+               AND itm.ud_storage_condition IN (
+                          SELECT DISTINCT material_code
+                                     FROM CONF_MATERIAL_MAP
+                                    WHERE material_type = 'NORMAL'
+                                      AND status = 'ACTIVE')
+               AND ifnull (itm.mmsta, ' ') NOT IN ('99', '98', '97', '04')
+          ORDER BY matnr, werks);
+DECLARE CURSOR CUR_INV(src_sloc VARCHAR(40),werks VARCHAR(18)) FOR (SELECT   sp.storage_location, sp.storage_type,
+                                     sp.owner, sp.inventory_type,
+                                     sp.logical_plant
+                                FROM UI_SOURCING_PRIORITY sp
+                               WHERE sp.storage_location = :src_sloc
+                                 AND sp.mo_type = 'SO'
+                                 AND sp.logical_plant = :werks
+                            ORDER BY sp.priority);   
+DECLARE CURSOR CUR_HEADER FOR (SELECT DISTINCT mid.werks, mid.dest_storage_type,
+                                            mid.dest_storage_loc,
+                                            mid.dest_storage_bin,
+                                            mid.delivery_date,
+                                            mid.inventory_type,
+                                            mid.header_supplierid,
+                                            mid.pull_type,
+                                            mid.ref_request_id 
+                                       FROM mid_option_line mid
+                                      WHERE mid.status IS NULL
+                                   ORDER BY mid.delivery_date);  
+DECLARE CURSOR CUR_FULL_BOX_QTY FOR (SELECT item, vendorid, box_size
+                  FROM ui_item_full_box);                                                                                                                                                                              
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 --exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure'||':'||v_error_line);                                                  
+		 
+         --COMMIT;                        --comment by Eric Zhou
+        
+	END;
+
+	  CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Start'); 
+	n_qty_left := 0;
+      n_count_rows := 0;
+	
+	FOR cur_so AS CUR_SO
+    DO
+         BEGIN
+         DECLARE GOTOCOND CONDITION FOR SQL_ERROR_CODE 10001;
+         DECLARE EXIT HANDLER FOR GOTOCOND
+         BEGIN
+         	--select 1 from dummy;
+         END;
+         DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+         BEGIN
+         --select 1 from dummy;
+         END;
+         DECLARE EXIT HANDLER FOR SQLEXCEPTION
+         BEGIN
+         v_logidj := 0;
+         CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'WARN',I_LOGSID=>:v_logidj,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>'MID_INVENTORY'||':'||'Cur_MO:'|| cur_so.werks|| '_'|| cur_so.matnr||':'||'mlog_poninv'||':'||'Failure');                                                  
+         END;
+          /*  UPDATE of_option_so so
+               SET so.status = 'IN_PROCESS'  
+             WHERE so.request_id = cur_so.request_id
+               AND werks IN (SELECT siteid
+                               FROM CONF_SITE_SCHEDULE
+                              WHERE ID = :iv_id);           --added @2007-11-27
+*/
+UPDATE Z_PCDW_OPTION_PULL so
+               SET so.status = 'IN_PROCESS'  
+             WHERE so.request_id = cur_so.request_id
+               AND werks IN (SELECT siteid
+                               FROM CONF_SITE_SCHEDULE
+                              WHERE ID = :iv_id);
+
+
+            v_matnr := cur_so.matnr;
+            v_werks := cur_so.werks;
+            n_qty := cur_so.qty;
+            v_src_sloc := cur_so.src_storage_location;
+            v_dest_sloc := cur_so.dest_storage_location;
+            v_item_type := cur_so.item_type;
+            v_dly_time := cur_so.delivery_time;
+            v_sys_source := cur_so.sys_source;
+            v_dept := cur_so.dept;
+            n_qty_left := :n_qty;
+            n_qty_c2 := 0;
+            v_request_id := cur_so.request_id;
+
+            FOR cur_inv AS CUR_INV(:v_src_sloc,:v_werks) 
+            --Here we change the logic for inventory consumption. Not as last release by 'LOI' or 'SOI', it based on sourcing_priority this time.
+            DO
+               DECLARE v_cur_inv_storage_type VARCHAR(40) := cur_inv.storage_type;
+               DECLARE v_cur_inv_storage_location VARCHAR(40) := cur_inv.storage_location;
+               DECLARE v_cur_inv_logical_plant VARCHAR(40) := cur_inv.logical_plant;
+               v_owner := cur_inv.owner;
+               v_inv_type := cur_inv.inventory_type;
+               v_dest_stype := NULL;                         --initialization
+               v_dest_sbin := NULL;
+       
+               IF cur_inv.inventory_type = 'LOI'
+               THEN
+                  
+               	  BEGIN
+               	  DECLARE CURSOR CUR_LOI FOR (SELECT matnr, werks, lifnr, qty_available,
+                                         qty_consumed,
+                                         inv.storage_type storage_type,
+                                         storage_bin, whs_no, hold_type
+                                    FROM inventory inv
+                                   WHERE inv.storage_type = :v_cur_inv_storage_type
+                                     AND inv.storage_location = :v_cur_inv_storage_location
+                                     AND inv.werks = :v_cur_inv_logical_plant
+                                     AND inv.matnr = :v_matnr
+                                     AND inv.hold_type = 'A'
+                                     AND inv.qty_available > 0);
+                  FOR cur_loi AS CUR_LOI
+                  DO
+                     v_lifnr := '3PL';
+                     n_qty_a := cur_loi.qty_available;
+                     n_qty_c := cur_loi.qty_consumed;
+                     v_stype := cur_loi.storage_type;
+                     v_sbin := cur_loi.storage_bin;
+                     v_whs_no := cur_loi.whs_no;
+                     v_hld_type := cur_loi.hold_type;
+                     BEGIN
+                        DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+                        BEGIN
+                        v_logidj := 0;
+                        CALL "EX_LOG"."cdp.log.procedures::logProc"
+							(I_TYPE=>'WARN',I_LOGSID=>:v_logidj,
+								 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 					I_MESSAGE=>'ERROR',
+			 					I_DETAIL=>'Failed to get Destination Info!'||':'||'SOURCE_LOC: '
+                                           || v_src_sloc
+                                           || ' DEST_LOC: '
+                                           || v_dest_sloc
+                                           || '  SOURCE_BIN: '
+                                           || v_sbin
+                                           || '  SOURCE_TYPE: '
+                                           || v_stype);                                                  
+                        
+                        END;
+                        --this time we get destination from OPTION DESTINATION MAPPING table.
+                        v_error_line := '215';
+                        SELECT od.destination_location, od.destination_type,
+                               od.destination_bin
+                          INTO v_dest_sloc, v_dest_stype,
+                               v_dest_sbin
+                          FROM ui_option_dest_mapping od
+                         WHERE od.source_location = v_src_sloc
+                           AND od.destination_location = v_dest_sloc
+                           AND od.source_type = v_stype
+                           AND od.source_bin = v_sbin
+                           AND od.logical_plant = cur_inv.logical_plant;
+                    
+                     END;
+
+                     IF (v_owner = 'MFGLS')
+                     THEN
+                        v_pull_type := 'EXCESS';
+                     ELSEIF (v_owner = '1000045410' AND v_stype = 'HFU'
+                           )                       --replaced 'MMI' @2008-3-14
+                     THEN
+                        v_pull_type := 'SHIPPING';
+                     ELSE
+                        v_pull_type := 'NORMAL';
+                     END IF;
+					
+                     
+
+                     IF (n_qty_left > 0)
+                     THEN
+                        IF (n_qty_left > n_qty_a)
+                        THEN
+                           n_qty_c2 := :n_qty_a;
+                           n_qty_left := :n_qty_left - :n_qty_a;
+                        ELSE
+                           n_qty_c2 := :n_qty_left;
+                           n_qty_left := 0;
+                        END IF;
+                        
+                        v_msg :=
+                              'Vendor '
+                           || :v_lifnr
+                           || ' has '
+                           || :n_qty_a
+                           || ' '
+                           || :v_matnr;
+                        v_msg := :v_msg || ', SO consumed ' || :n_qty_c2 || '! ';
+                        v_msg :=
+                              :v_msg
+                           || 'from TYPE ['
+                           || :v_stype
+                           || '], BIN ['
+                           || :v_sbin
+                           || ']';
+
+                        INSERT INTO mid_option_line
+                                    (matnr, werks, src_storage_type,
+                                     src_storage_loc, src_storage_bin,
+                                     dest_storage_type, dest_storage_loc,
+                                     dest_storage_bin, pull_type,
+                                     inventory_type, line_supplierid,
+                                     header_supplierid, pull_qty,
+                                     unreserved_qty, is_cqe, is_active_line,
+                                     delivery_date, sys_source,
+                                     dept, whs_no,ref_request_id
+                                    )
+                             VALUES (:v_matnr, :v_werks, :v_stype,
+                                     :v_src_sloc, :v_sbin,
+                                     :v_dest_stype, :v_dest_sloc,
+                                     :v_dest_sbin, :v_pull_type,
+                                     :v_inv_type, '3PL',
+                                     --here we still keep hard coding????
+                                     :v_owner,
+                                             --'ISH', replaced by owner in sourcing_priority
+                                             :n_qty_c2,
+                                     :n_qty_c2, 'N', 'Y',
+                                     ADD_DAYS(:v_dly_time , 1.5 / 24), :v_sys_source,
+                                     :v_dept, :v_whs_no,:v_request_id   
+                                    );
+
+                        UPDATE inventory inv
+                           SET inv.qty_available =
+                                                  inv.qty_available - :n_qty_c2,
+                               inv.qty_consumed = :n_qty_c2
+                         WHERE inv.matnr = :v_matnr
+                           AND inv.werks = :v_werks
+                           AND inv.lifnr = 'NONE'
+                           AND inv.hold_type = 'A'
+                           AND inv.storage_location = :v_src_sloc
+                           AND inv.storage_type = :v_stype
+                           AND inv.storage_bin = :v_sbin;
+
+                        --COMMIT;                      --COMMENT BY Eric Zhou
+
+                        IF (n_qty_left = 0)
+                        THEN
+                           --GOTO next_so;
+                           SIGNAL GOTOCOND;
+                        END IF;
+                     ELSE
+                        --GOTO next_so;
+                        SIGNAL GOTOCOND;
+                     END IF;
+                  END FOR;
+                  END;
+               ELSEIF cur_inv.inventory_type = 'SOI'
+               THEN
+                  
+                  BEGIN
+                  DECLARE CURSOR CUR_SOI FOR (SELECT   inv.matnr matnr, inv.werks werks,
+                                           inv.lifnr lifnr, qty_available,
+                                           qty_consumed,
+                                           inv.storage_type storage_type,
+                                           storage_bin, whs_no, hold_type
+                                      FROM inventory inv, mid_supplier_priority ud
+                                     WHERE inv.matnr = ud.matnr
+                                       AND inv.werks = ud.werks
+                                       AND inv.lifnr = ud.lifnr
+                                       AND inv.hold_type = 'A'
+                                       AND inv.storage_type = :v_cur_inv_storage_type
+                                       AND inv.storage_location = :v_cur_inv_storage_location
+                                       AND inv.werks = :v_cur_inv_logical_plant
+                                       AND inv.matnr = :v_matnr
+                                       AND inv.qty_available > 0
+                                  ORDER BY ud.priority);
+                  FOR cur_soi AS CUR_SOI
+                  DO
+                     v_lifnr := cur_soi.lifnr;
+                     --V_OWNER := Cur_SOI.OWNER;
+                     n_qty_a := cur_soi.qty_available;
+                     n_qty_c := cur_soi.qty_consumed;
+                     v_stype := cur_soi.storage_type;
+                     v_sbin := cur_soi.storage_bin;
+                     v_whs_no := cur_soi.whs_no;
+                     --V_INV_TYPE := Cur_SOI.INVENTORY_TYPE;
+                     v_hld_type := cur_soi.hold_type;
+
+                     BEGIN
+                     	DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+                        BEGIN
+                        v_logidj := 0;
+                        v_dest_stype := '921';
+                        v_dest_sbin := 'TRANS-ZONE';
+                        CALL "EX_LOG"."cdp.log.procedures::logProc"
+							(I_TYPE=>'WARN',I_LOGSID=>:v_logidj,
+								 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 					I_MESSAGE=>'ERROR',
+			 					I_DETAIL=>'Failed to get Destination Info!'||':'||'SOURCE_LOC: '
+                                           || v_src_sloc
+                                           || ' DEST_LOC: '
+                                           || v_dest_sloc
+                                           || '  SOURCE_BIN: '
+                                           || v_sbin
+                                           || '  SOURCE_TYPE: '
+                                           || v_stype);                                                  
+                        
+                        END;
+                        v_error_line := '371';
+                       SELECT od.destination_location, od.destination_type,
+                               od.destination_bin
+                          INTO v_dest_sloc, v_dest_stype,
+                               v_dest_sbin
+                          FROM ui_option_dest_mapping od
+                         WHERE od.source_location = v_src_sloc
+                           AND od.destination_location = v_dest_sloc
+                           AND od.source_type = v_stype
+                           AND od.source_bin = v_sbin
+                           AND od.logical_plant = cur_inv.logical_plant;
+                     
+                     END;
+
+                     IF (:v_owner = '1000045410' AND :v_stype = 'HFU'
+                        )                          --replaced 'MMI' @2008-3-14
+                     THEN
+                        v_pull_type := 'SHIPPING';
+                     ELSE
+                        v_pull_type := 'NORMAL';
+                     END IF;                    
+
+                     IF (:n_qty_left > 0)
+                     THEN
+                        v_is_cqe := 'N';
+
+                        IF (:n_qty_left > :n_qty_a)
+                        THEN
+                           n_qty_c2 := :n_qty_a;
+                           n_qty_left := :n_qty_left - :n_qty_a;
+                        ELSE
+                           n_qty_c2 := :n_qty_left;
+                           n_qty_left := 0;
+                        END IF;
+
+                        v_msg :=
+                              'SOI: Vendor '
+                           || :v_lifnr
+                           || ' has '
+                           || :n_qty_a
+                           || ' '
+                           || :v_matnr;
+                        v_msg := :v_msg || ', SO consumed ' || :n_qty_c2 || '! ';
+                        v_msg :=
+                              :v_msg
+                           || 'from TYPE ['
+                           || :v_stype
+                           || '], BIN ['
+                           || :v_sbin
+                           || ']';
+
+                        IF v_pull_type = 'SHIPPING'         --ADDED @2007-7-31
+                        THEN
+                           INSERT INTO mid_option_line
+                                       (matnr, werks, src_storage_type,
+                                        src_storage_loc, src_storage_bin,
+                                        dest_storage_type, dest_storage_loc,
+                                        dest_storage_bin, pull_type,
+                                        inventory_type, line_supplierid,
+                                        header_supplierid, pull_qty,
+                                        unreserved_qty, is_cqe,
+                                        is_active_line, delivery_date,
+                                        sys_source, dept, whs_no,ref_request_id
+                                       )
+                                VALUES (:v_matnr, :v_werks, :v_stype,
+                                        :v_src_sloc, :v_sbin,
+                                        :v_dest_stype, :v_dest_sloc,
+                                        :v_dest_sbin, :v_pull_type,
+                                        :v_inv_type, :v_lifnr,
+                                        :v_lifnr, :n_qty_c2,
+                                        :n_qty_c2, 'N',
+                                        'Y', ADD_DAYS(:v_dly_time , 1.5 / 24),
+                                        :v_sys_source, :v_dept, :v_whs_no,:v_request_id
+                                       );
+                        ELSE
+                           INSERT INTO mid_option_line
+                                       (matnr, werks, src_storage_type,
+                                        src_storage_loc, src_storage_bin,
+                                        dest_storage_type, dest_storage_loc,
+                                        dest_storage_bin, pull_type,
+                                        inventory_type, line_supplierid,
+                                        header_supplierid, pull_qty,
+                                        unreserved_qty, is_cqe,
+                                        is_active_line, delivery_date,
+                                        sys_source, dept, whs_no,ref_request_id
+                                       )
+                                VALUES (:v_matnr, :v_werks, :v_stype,
+                                        :v_src_sloc, :v_sbin,
+                                        :v_dest_stype, :v_dest_sloc,
+                                        :v_dest_sbin, :v_pull_type,
+                                        :v_inv_type, :v_lifnr,
+                                        :v_owner, :n_qty_c2,
+                                        :n_qty_c2, 'N',
+                                        'Y', ADD_DAYS(:v_dly_time , 1.5 / 24),
+                                        :v_sys_source, :v_dept, :v_whs_no,:v_request_id
+                                       );
+                        END IF;
+
+                        UPDATE inventory inv
+                           SET inv.qty_available =
+                                                  inv.qty_available - :n_qty_c2,
+                               inv.qty_consumed = :n_qty_c2
+                         WHERE inv.matnr = :v_matnr
+                           AND inv.werks = :v_werks
+                           AND inv.lifnr = :v_lifnr
+                           AND inv.hold_type = 'A'
+                           AND inv.storage_location = :v_src_sloc
+                           AND inv.storage_type = :v_stype
+                           AND inv.storage_bin = :v_sbin;
+
+                        --COMMIT;                                       --comment by Eric Zhou
+
+                        IF (n_qty_left = 0)
+                        THEN
+                           --GOTO next_so;
+                           SIGNAL GOTOCOND;
+                        END IF;
+                     ELSE
+                        --GOTO next_so;
+                        SIGNAL GOTOCOND;
+                     END IF;
+                  END FOR;
+                  END;
+               END IF;
+              
+            END FOR;         -- all the inventory avaliable have been checked
+
+            IF (:n_qty_left > 0)
+            THEN
+               
+               IF :n_qty_left = :n_qty
+               --there's no any inventory available for current SO
+               THEN
+                  
+                  INSERT INTO dispatch_list
+                              (pull_line_id, pull_header_id, werks,
+                               src_storage_loc, src_storage_type,
+                               src_storage_bin, dispatch_qty, unreserved_qty,
+                               line_qty, loi_qty, difference_qty, sys_source,
+                               dept, matnr, status,
+                                                   --add one new dest storage location on 14th. Nov by dengrl
+                                                   dest_storage_loc)
+                     SELECT "cdp.mxebgvmi.sequences::SEQ_PULL_LINE_ID".nextval,
+                            "cdp.mxebgvmi.sequences::SEQ_PULL_HEADER_ID".nextval, :v_werks, :v_src_sloc,
+                            wh.default_storage_type, wh.default_storage_bin,
+                            0, n_qty, 0, 0, 0, 'DF', :v_dept, :v_matnr,
+                            'COMPLETED',
+                                        --add one new dest storage location on 14th. Nov by dengrl
+                                        :v_dest_sloc
+                       FROM CONF_WAHREHOUSE_INFO wh
+                      WHERE wh.storage_location = :v_src_sloc
+                        AND wh.werks = :v_werks
+                        limit 1;
+
+                  --COMMIT;                                       --comment by Eric Zhou
+               END IF;
+
+               UPDATE mid_option_line
+                  SET unreserved_qty = pull_qty + n_qty_left
+                WHERE matnr = :v_matnr
+                  AND werks = :v_werks
+                  AND line_supplierid = :v_lifnr
+                  AND src_storage_type = :v_stype
+                  AND src_storage_loc = :v_src_sloc
+                  AND src_storage_bin = :v_sbin
+                  AND delivery_date = ADD_DAYS(:v_dly_time , 1.5 / 24);                 
+
+               --COMMIT;                                                --comment by Eric Zhou
+            
+            END IF;
+        END;
+--         <<next_so>>
+--         NULL;
+      END FOR;                                           --END OF LOOP Cur_SO
+      
+      
+      BEGIN
+         FOR cur_header AS CUR_HEADER
+         DO
+            DECLARE v_dest_storage_type VARCHAR(40) := cur_header.dest_storage_type;
+            DECLARE v_dest_storage_bin VARCHAR(40) := cur_header.dest_storage_bin;
+            DECLARE v_dest_storage_loc VARCHAR(40) := cur_header.dest_storage_loc;
+            DECLARE v_delivery_date TIMESTAMP := cur_header.delivery_date;
+            DECLARE v_inventory_type VARCHAR(20) := cur_header.inventory_type;
+            DECLARE v_header_supplierid VARCHAR(40) := cur_header.header_supplierid;
+            DECLARE v_cur_header_pull_type VARCHAR(20) := cur_header.pull_type;
+            DECLARE v_cur_header_werks VARCHAR(4) := cur_header.werks;
+         	BEGIN
+         	DECLARE CURSOR CUR_PULL FOR (SELECT   werks, matnr, line_supplierid,
+                                      src_storage_type, src_storage_bin,
+                                      src_storage_loc, dest_storage_type,
+                                      dest_storage_bin, dest_storage_loc,
+                                      inventory_type, header_supplierid,
+                                      pull_type, delivery_date, dept, whs_no,
+                                      SUM (pull_qty) sum_qty,
+                                      SUM (unreserved_qty) sum_unres_qty
+                                 FROM mid_option_line
+                                WHERE dest_storage_type = :v_dest_storage_type
+                                  AND dest_storage_bin = :v_dest_storage_bin
+                                  AND dest_storage_loc = :v_dest_storage_loc
+                                  AND delivery_date = :v_delivery_date
+                                  AND inventory_type = :v_inventory_type
+                                  AND header_supplierid = :v_header_supplierid
+                                  AND pull_type = :v_cur_header_pull_type
+                                  AND status IS NULL       --added @2007-10-17
+                                  AND werks = :v_cur_header_werks
+                             GROUP BY werks,
+                                      matnr,
+                                      line_supplierid,
+                                      src_storage_type,
+                                      src_storage_bin,
+                                      dest_storage_type,
+                                      dest_storage_bin,
+                                      dest_storage_loc,
+                                      src_storage_loc,
+                                      inventory_type,
+                                      header_supplierid,
+                                      pull_type,
+                                      delivery_date,
+                                      dept,
+                                      whs_no);
+            SELECT "cdp.mxebgvmi.sequences::SEQ_PULL_HEADER_ID".nextval
+              INTO v_pull_header
+              FROM dummy;
+
+            FOR cur_pull AS CUR_PULL
+            DO
+            	
+               v_werks := cur_pull.werks;
+               v_src_sloc := cur_pull.src_storage_loc;
+               v_dest_sbin := cur_pull.dest_storage_bin;
+               v_dest_stype := cur_pull.dest_storage_type;
+               v_dest_sloc := cur_pull.dest_storage_loc;
+               v_matnr := cur_pull.matnr;
+               v_dept := cur_pull.dept;
+               n_qty := cur_pull.sum_unres_qty;
+               v_whs_no := cur_pull.whs_no;
+               
+               v_status := 'IN_PROCESS';
+               
+               --2013.07.17 MEX CSE Project baiying AS
+               v_itemdesc := '';
+                
+               BEGIN
+               	   DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+               	   BEGIN
+               	       v_itemdesc:='';
+               	   END;
+               	   v_error_line := '619';
+                   SELECT DISTINCT ITEMDESC
+                    INTO v_itemdesc
+                    FROM ITEMSITEMASTER itm
+                    Where ITEM = cur_pull.Matnr
+                    AND SITEID = cur_pull.Werks
+                    AND SYS_ENT_STATE = 'ACTIVE'
+                    LIMIT 1;               
+               END;
+             
+               IF (cur_pull.inventory_type = 'SOI' AND cur_pull.pull_type <> 'CANDYMAN' AND  cur_pull.pull_type <> 'PACKAGING' AND  cur_pull.pull_type <> 'KANBANREPORT')
+                THEN
+                   v_sa_num := '';
+                   v_sa_line_id := '';
+                   Begin
+                       DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 1299
+               	   	   BEGIN
+							v_sa_num := ''; 
+                            v_sa_line_id := '';               	       
+                       END;
+                       v_error_line := '639';
+                       SELECT  SA_NUMBER, SA_LINE_ID 
+                          INTO   v_sa_num, v_sa_line_id
+                         FROM(
+                           SELECT  SA_NUMBER, SA_LINE_ID
+                            FROM   SA
+                           WHERE       MATNR = cur_pull.matnr AND LIFNR = cur_pull.line_supplierid and Werks = cur_pull.werks
+                                   AND STATUS = 'ACTIVE' AND start_date <= CURRENT_TIMESTAMP and end_date >= CURRENT_TIMESTAMP
+                                   ORDER BY OPEN_QTY DESC,CREATE_DATE ASC
+                          ) A 
+                         LIMIT 1;
+                   END;
+               END IF;
+               
+               INSERT INTO pull_line
+                           (werks, matnr,
+                            line_supplierid, production_line,
+                            physical_plant, src_storage_loc,
+                            dest_storage_loc,
+                            src_storage_type,
+                            src_storage_bin,
+                            dest_storage_type,
+                            dest_storage_bin,
+                            inventory_type, mo_type,
+                            header_supplierid, pull_type,
+                            pull_qty, unreserved_qty,
+                            pull_line_id, pull_header_id,
+                            delivery_date, sys_source, dept,
+                            status, whs_no,
+                            matnr_descr,sa_number,sa_line_id,sys_created_date,sys_created_by,SYS_AUTH_ID   --2013.07.17 MEX CSE Project baiying Added
+                           )
+                    VALUES (cur_pull.werks, cur_pull.matnr,
+                            cur_pull.line_supplierid, 'NONE',
+                            'NONE', cur_pull.src_storage_loc,
+                            cur_pull.dest_storage_loc,
+                            cur_pull.src_storage_type,
+                            cur_pull.src_storage_bin,
+                            cur_pull.dest_storage_type,
+                            cur_pull.dest_storage_bin,
+                            cur_pull.inventory_type, 'SO',
+                            cur_pull.header_supplierid, cur_pull.pull_type,
+                            cur_pull.sum_qty, null,
+                            "cdp.mxebgvmi.sequences::SEQ_PULL_LINE_ID".nextval, v_pull_header,
+                            cur_pull.delivery_date, 'DF', :gv_dept,   -- modify by xwu106/1/18 change detp from MEX TO MEXEBG.
+                            v_status, v_whs_no,
+                            v_itemdesc,v_sa_num,v_sa_line_id,CURRENT_TIMESTAMP,v_logic_proc_name,cur_pull.werks   --2013.07.17 MEX CSE Project baiying Added
+                           );
+            
+            END FOR;
+             END;
+         END FOR;
+
+         --COMMIT;                                            --comment by Eric Zhou
+      END;
+
+	  ----2015.2.10  baiying Modified
+	  /*
+Update mid_option_line mo
+Set (pull_header_id,pull_line_id)
+= (SELECT   DISTINCT pl.pull_header_id, pl.pull_line_id
+                        FROM   pull_line pl, of_option_so so
+                       WHERE   pl.werks = mo.werks
+                               AND pl.matnr = mo.matnr
+                               AND pl.header_supplierid =
+                                     mo.header_supplierid
+                               AND pl.dest_storage_loc = mo.dest_storage_loc
+                               AND pl.dest_storage_type = mo.dest_storage_type
+                               AND pl.dest_storage_bin = mo.dest_storage_bin
+                               AND pl.inventory_type = mo.inventory_type
+                               AND pl.pull_type = mo.pull_type
+                               AND pl.delivery_date = mo.delivery_date
+                                                                 AND pl.line_supplierid = mo.line_supplierid
+                               AND pl.src_storage_loc = mo.src_storage_loc
+                               AND pl.src_storage_type = mo.src_storage_type
+                               AND pl.src_storage_bin = mo.src_storage_bin
+                               AND pl.status = :v_status 
+                               AND mo.ref_request_id = so.request_id
+                               AND so.status = :v_status)
+          WHERE   ref_request_id IN (SELECT   request_id
+                                        FROM   of_option_so
+                                       WHERE   status = :v_status);
+	  */
+	  Update mid_option_line mo
+Set (pull_header_id,pull_line_id)
+= (SELECT   DISTINCT pl.pull_header_id, pl.pull_line_id
+                        FROM   pull_line pl, Z_PCDW_OPTION_PULL so
+                       WHERE   pl.werks = mo.werks
+                               AND pl.matnr = mo.matnr
+                               AND pl.header_supplierid =
+                                     mo.header_supplierid
+                               AND pl.dest_storage_loc = mo.dest_storage_loc
+                               AND pl.dest_storage_type = mo.dest_storage_type
+                               AND pl.dest_storage_bin = mo.dest_storage_bin
+                               AND pl.inventory_type = mo.inventory_type
+                               AND pl.pull_type = mo.pull_type
+                               AND pl.delivery_date = mo.delivery_date
+                                                                 AND pl.line_supplierid = mo.line_supplierid
+                               AND pl.src_storage_loc = mo.src_storage_loc
+                               AND pl.src_storage_type = mo.src_storage_type
+                               AND pl.src_storage_bin = mo.src_storage_bin
+                               AND pl.status = :v_status 
+                               AND mo.ref_request_id = so.request_id
+                               AND so.status = :v_status)
+          WHERE   ref_request_id IN (SELECT   request_id
+                                        FROM   Z_PCDW_OPTION_PULL
+                                       WHERE   status = :v_status);
+	  
+	  
+
+      UPDATE mid_option_line
+         SET status = 'OLD'
+       WHERE status IS NULL AND werks IN (SELECT siteid
+                                            FROM CONF_SITE_SCHEDULE
+                                           WHERE ID = :iv_id);
+                                           
+    /* UPDATE of_option_so so
+               SET so.status = 'COMPLETED'  
+             WHERE status = 'IN_PROCESS'
+               AND werks IN (SELECT siteid
+                               FROM CONF_SITE_SCHEDULE
+                              WHERE ID = :iv_id);
+                                                
+*/
+UPDATE Z_PCDW_OPTION_PULL so
+               SET so.status = 'COMPLETED',
+                   so.sys_timestamp = current_date  
+             WHERE status = 'IN_PROCESS'
+               AND werks IN (SELECT siteid
+                               FROM CONF_SITE_SCHEDULE
+                              WHERE ID = :iv_id);
+
+
+      --added @2007-11-27;
+      --COMMIT;                                                --comment by Eric Zhou
+
+      
+
+      FOR i AS CUR_FULL_BOX_QTY 
+      DO
+         IF i.box_size IS NOT NULL
+         THEN
+            UPDATE pull_line
+               SET full_box_qty =
+                        pull_qty
+                      + (  i.box_size
+                         - CASE
+                              WHEN MOD (pull_qty, i.box_size) = 0
+                                 THEN i.box_size
+                              ELSE MOD (pull_qty, i.box_size)
+                           END
+                        )
+             WHERE matnr = i.item
+               AND line_supplierid = i.vendorid
+               AND mo_type = 'SO';
+         END IF;
+      END FOR;
+
+      UPDATE pull_line
+         SET full_box_qty = pull_qty
+       WHERE full_box_qty IS NULL
+         AND mo_type = 'SO'
+         AND werks IN (SELECT siteid
+                         FROM CONF_SITE_SCHEDULE
+                        WHERE ID = :iv_id);                --added @2007-11-27;
+
+      --COMMIT;	                                          --comment by Eric Zhou
+			
+		
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success'); 
+END;

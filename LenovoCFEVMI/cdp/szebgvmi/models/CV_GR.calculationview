@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_GR" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_GR"/>
+  <defaultSchema schemaName="SZEBGVMI"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="RECEIPT_ID" length="15"/>
+        <viewAttribute datatype="VARCHAR" id="INVENTORY_TYPE" length="3"/>
+        <viewAttribute datatype="VARCHAR" id="HAWB" length="32"/>
+        <viewAttribute datatype="VARCHAR" id="TPL_RECEIPT_ID" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="TPL_RECEIPT_LINE_ID" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="MATNR" length="18"/>
+        <viewAttribute datatype="DECIMAL" id="QTY" length="13" scale="3"/>
+        <viewAttribute datatype="VARCHAR" id="LIFNR" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="WERKS" length="4"/>
+        <viewAttribute datatype="VARCHAR" id="RECEIPT_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_TIMESTAMP" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="HOLD_TYPE" length="1"/>
+        <viewAttribute datatype="DECIMAL" id="HOLD_QTY" length="13" scale="3"/>
+        <viewAttribute datatype="VARCHAR" id="DEST_STORAGE_LOCATION" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="DEST_TYPE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="DEST_BIN" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="TPL_ID" length="60"/>
+        <viewAttribute datatype="VARCHAR" id="PO_LINE_ID" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="PO_NUMBER" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="INVOICE_NUMBER" length="16"/>
+        <viewAttribute datatype="VARCHAR" id="MATERIAL_DOCUMENT_YEAR" length="4"/>
+        <viewAttribute datatype="VARCHAR" id="MATERIAL_DOCUMENT" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="STATUS" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_CREATED_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_CREATED_BY" length="70"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_BY" length="70"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_AUTH_ID" length="25"/>
+        <viewAttribute datatype="VARCHAR" id="MATNR_DESCR" length="255"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out =
+
+
+SELECT   RECEIPT_ID,
+            'LOI' AS INVENTORY_TYPE,
+            HAWB,
+            TPL_RECEIPT_ID,
+            TPL_RECEIPT_LINE_ID,
+            MATNR,
+            QTY,
+            LIFNR,
+            WERKS,
+            to_seconddate(RECEIPT_DATE) as RECEIPT_DATE,
+            to_seconddate(SYS_TIMESTAMP) as SYS_TIMESTAMP,
+            HOLD_TYPE,
+            HOLD_QTY,
+            DEST_STORAGE_LOCATION,
+            DEST_TYPE,
+            DEST_BIN,
+            TPL_ID,
+            PO_LINE_ID,
+            PO_Number,
+            Invoice_Number,
+            MATERIAL_DOCUMENT_YEAR,
+            MATERIAL_DOCUMENT,
+            STATUS,
+            to_seconddate(SYS_CREATED_DATE) as SYS_CREATED_DATE,
+            SYS_CREATED_BY,
+            to_seconddate(SYS_LAST_MODIFIED_DATE) as SYS_LAST_MODIFIED_DATE,
+            SYS_LAST_MODIFIED_BY,
+            SYS_AUTH_ID,
+            MATNR_DESCR
+     FROM   LOI_GR
+    WHERE   STATUS &lt;> 'MANUAL_HIDDEN'
+   UNION ALL
+   SELECT   RECEIPT_ID,
+            'SOI' AS INVENTORY_TYPE,
+            HAWB,
+            TPL_RECEIPT_ID,
+            TPL_RECEIPT_LINE_ID,
+            MATNR,
+            QTY,
+            LIFNR,
+            WERKS,
+            to_seconddate(RECEIPT_DATE) as RECEIPT_DATE,
+            to_seconddate(SYS_TIMESTAMP) as SYS_TIMESTAMP,
+            HOLD_TYPE,
+            HOLD_QTY,
+            DEST_STORAGE_LOCATION,
+            DEST_TYPE,
+            DEST_BIN,
+            TPL_ID,
+            '',
+            '',
+            '',
+            MATERIAL_DOCUMENT_YEAR,
+            MATERIAL_DOCUMENT,
+            STATUS,
+            to_seconddate(SYS_CREATED_DATE) as SYS_CREATED_DATE,
+            SYS_CREATED_BY,
+            to_seconddate(SYS_LAST_MODIFIED_DATE) as SYS_LAST_MODIFIED_DATE,
+            SYS_LAST_MODIFIED_BY,
+            SYS_AUTH_ID,
+            MATNR_DESCR
+     FROM   SOI_GR
+    WHERE   STATUS &lt;> 'MANUAL_HIDDEN' ;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="RECEIPT_ID" hidden="false" order="1">
+        <descriptions defaultDescription="RECEIPT_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="RECEIPT_ID"/>
+      </attribute>
+      <attribute id="INVENTORY_TYPE" hidden="false" order="2">
+        <descriptions defaultDescription="INVENTORY_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="INVENTORY_TYPE"/>
+      </attribute>
+      <attribute id="HAWB" hidden="false" order="3">
+        <descriptions defaultDescription="HAWB"/>
+        <keyMapping columnObjectName="Script_View" columnName="HAWB"/>
+      </attribute>
+      <attribute id="TPL_RECEIPT_ID" hidden="false" order="4">
+        <descriptions defaultDescription="TPL_RECEIPT_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_RECEIPT_ID"/>
+      </attribute>
+      <attribute id="TPL_RECEIPT_LINE_ID" hidden="false" order="5">
+        <descriptions defaultDescription="TPL_RECEIPT_LINE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_RECEIPT_LINE_ID"/>
+      </attribute>
+      <attribute id="MATNR" hidden="false" order="6">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR"/>
+      </attribute>
+      <attribute id="QTY" hidden="false" order="7">
+        <descriptions defaultDescription="QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="QTY"/>
+      </attribute>
+      <attribute id="LIFNR" hidden="false" order="8">
+        <descriptions defaultDescription="LIFNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="LIFNR"/>
+      </attribute>
+      <attribute id="WERKS" hidden="false" order="9">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping columnObjectName="Script_View" columnName="WERKS"/>
+      </attribute>
+      <attribute id="RECEIPT_DATE" hidden="false" order="10">
+        <descriptions defaultDescription="RECEIPT_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="RECEIPT_DATE"/>
+      </attribute>
+      <attribute id="SYS_TIMESTAMP" hidden="false" order="11">
+        <descriptions defaultDescription="SYS_TIMESTAMP"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_TIMESTAMP"/>
+      </attribute>
+      <attribute id="HOLD_TYPE" hidden="false" order="12">
+        <descriptions defaultDescription="HOLD_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="HOLD_TYPE"/>
+      </attribute>
+      <attribute id="HOLD_QTY" hidden="false" order="13">
+        <descriptions defaultDescription="HOLD_QTY"/>
+        <keyMapping columnObjectName="Script_View" columnName="HOLD_QTY"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_LOCATION" hidden="false" order="14">
+        <descriptions defaultDescription="DEST_STORAGE_LOCATION"/>
+        <keyMapping columnObjectName="Script_View" columnName="DEST_STORAGE_LOCATION"/>
+      </attribute>
+      <attribute id="DEST_TYPE" hidden="false" order="15">
+        <descriptions defaultDescription="DEST_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="DEST_TYPE"/>
+      </attribute>
+      <attribute id="DEST_BIN" hidden="false" order="16">
+        <descriptions defaultDescription="DEST_BIN"/>
+        <keyMapping columnObjectName="Script_View" columnName="DEST_BIN"/>
+      </attribute>
+      <attribute id="TPL_ID" hidden="false" order="17">
+        <descriptions defaultDescription="TPL_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_ID"/>
+      </attribute>
+      <attribute id="PO_LINE_ID" hidden="false" order="18">
+        <descriptions defaultDescription="PO_LINE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="PO_LINE_ID"/>
+      </attribute>
+      <attribute id="PO_NUMBER" hidden="false" order="19">
+        <descriptions defaultDescription="PO_NUMBER"/>
+        <keyMapping columnObjectName="Script_View" columnName="PO_NUMBER"/>
+      </attribute>
+      <attribute id="INVOICE_NUMBER" hidden="false" order="20">
+        <descriptions defaultDescription="INVOICE_NUMBER"/>
+        <keyMapping columnObjectName="Script_View" columnName="INVOICE_NUMBER"/>
+      </attribute>
+      <attribute id="MATERIAL_DOCUMENT_YEAR" hidden="false" order="21">
+        <descriptions defaultDescription="MATERIAL_DOCUMENT_YEAR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATERIAL_DOCUMENT_YEAR"/>
+      </attribute>
+      <attribute id="MATERIAL_DOCUMENT" hidden="false" order="22">
+        <descriptions defaultDescription="MATERIAL_DOCUMENT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATERIAL_DOCUMENT"/>
+      </attribute>
+      <attribute id="STATUS" hidden="false" order="23">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping columnObjectName="Script_View" columnName="STATUS"/>
+      </attribute>
+      <attribute id="SYS_CREATED_DATE" hidden="false" order="24">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_CREATED_DATE"/>
+      </attribute>
+      <attribute id="SYS_CREATED_BY" hidden="false" order="25">
+        <descriptions defaultDescription="SYS_CREATED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_CREATED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE" hidden="false" order="26">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" hidden="false" order="27">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="SYS_AUTH_ID" hidden="false" order="28">
+        <descriptions defaultDescription="SYS_AUTH_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_AUTH_ID"/>
+      </attribute>
+      <attribute id="MATNR_DESCR" hidden="false" order="29">
+        <descriptions defaultDescription="MATNR_DESCR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR_DESCR"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

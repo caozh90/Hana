@@ -1,0 +1,119 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_monthly::updateUiStdCostMonthly" ( 
+        IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_STDCOST_MONTHLY_T"
+        ,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_STDCOST_MONTHLY_T"
+        ,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+    AS
+	/************************************************************************
+	*name      :                     updateuistdcostmonthly
+	*function    :               
+	*input     ：               
+	*output     :                
+	*author     :                     justin
+	*CreateDate    :                  2015.8.31
+	*UpdateDate  :        
+	*************************************************************************/  
+        v_full_name NVARCHAR(100):= 'cdp.ebgcfe.procedures.pkg_ui.ui_stdcost_monthly::updateuistdcostmonthly';
+        v_ui_name NVARCHAR(100):= 'ui_stdcost_monthly';
+        
+        aI_DETAIL NVARCHAR(300) :='';   
+        alogide INTEGER :=0; 
+        resourceExists integer;     
+        privilegeExists  NVARCHAR(300)  ;       
+        V_STDCOST DECIMAL(15,4);
+BEGIN
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000; 
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+        aI_DETAIL := :v_full_name ||' error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+        
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+             I_TYPE=>'PROC_ERROR'   
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>:v_full_name
+            ,I_MODULE=>'EBGCFE'
+            ,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+            ,I_DETAIL=>:aI_DETAIL
+        );  
+ 
+        errorInfo = select 400 as http_status_code, 
+            'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+            aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    :v_ui_name||'::editable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+    
+
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+        I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>:v_full_name
+       ,I_MODULE=>'EBGCFE'
+    ); 
+
+    SELECT COUNT(*) into resourceExists FROM :oldInfo a,:newInfo b 
+    where A.CYCLE=B.CYCLE 
+    AND A.PRODUCT_GROUP=B.PRODUCT_GROUP 
+    AND A.ITEM=B.ITEM 
+    AND A.PLANT=B.PLANT
+    AND A.STDCOST=B.STDCOST;
+    
+    
+if resourceExists > 0
+then
+
+   -- errorInfo = select 400 as http_status_code, 
+	--     		'the record is same as before' error_message, 
+	 --    		'the record is same as before' DETAIL from dummy;
+	    --SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record is same as before'; 
+	    
+	    return;
+end if; 
+
+   UPDATE UI_STDCOST_MONTHLY a SET(a.STDCOST,a.SYS_LAST_MODIFIED_DATE,a.SYS_LAST_MODIFIED_BY,a.ACTION)=
+   (b.STDCOST,CURRENT_TIMESTAMP,SESSION_USER,'update')
+    from :newInfo b 
+    where A.CYCLE=B.CYCLE 
+    AND A.PRODUCT_GROUP=B.PRODUCT_GROUP 
+    AND A.ITEM=B.ITEM 
+    AND A.PLANT=B.PLANT;
+	
+   SELECT STDCOST 
+   INTO V_STDCOST
+   FROM :newInfo;
+   
+   insert into UI_STDCOST_MONTHLY_LOG(CYCLE,PRODUCT_GROUP,ITEM,PLANT,STDCOST,STATUS,CHANGE_ID,CHANGE_ACTION,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS)
+   select 'CURRENT',PRODUCT_GROUP,ITEM,PLANT,:V_STDCOST,STATUS,CHANGE_ID,CHANGE_ACTION,SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,
+     SESSION_USER,
+     'update',
+     CURRENT_TIMESTAMP,
+     TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')
+     )    
+    FROM  UI_STDCOST_MONTHLY a
+    WHERE EXISTS
+    (SELECT 1 FROM :oldInfo b
+    where A.CYCLE=B."CYCLE" 
+    AND A.PRODUCT_GROUP=B.PRODUCT_GROUP 
+    AND A.ITEM=B.ITEM 
+    AND A.PLANT=B.PLANT
+    );  
+
+    aI_DETAIL := :v_full_name ||' successfully updated . ';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+            I_TYPE=>'PROC_END'  
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>:v_full_name
+            ,I_MODULE=>'EBGCFE'
+            ,I_DETAIL=>:aI_DETAIL
+        );    
+END;

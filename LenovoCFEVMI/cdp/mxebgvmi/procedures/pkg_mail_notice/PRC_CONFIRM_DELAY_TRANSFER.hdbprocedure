@@ -1,0 +1,125 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_mail_notice::PRC_CONFIRM_DELAY_TRANSFER" (
+     IN iv_id VARCHAR(10), 
+     OUT exitcode NUMBER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	--READS SQL DATA 
+/************************************************************************
+*name      : PRC_CONFIRM_DELAY_TRANSFER              --函数名
+*function    :               --函数功能
+*input     ：  iv_id              --输入参数
+*output     : exitcode               --输出参数
+*author     : Leonard Ling              --作者
+*CreateDate    : 2014/12/05                 --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS 
+	gv_logic_name       VARCHAR(40)  := 'PKG_MAIL_NOTICE';	
+    v_logic_proc_name   VARCHAR(30) := 'PRC_CONFIRM_DELAY_TRANSFER';
+    v_inv_type          VARCHAR(5);
+    v_sa_num            VARCHAR(45);
+    v_sa_line_id        VARCHAR(5);
+    n_box_size          NUMBER;
+    v_whs_no            VARCHAR(5);
+    n_count             NUMBER;	
+	v_full_name         VARCHAR(100) := gv_logic_name||'.'||v_logic_proc_name;
+	v_logidi            INTEGER := 0;
+BEGIN
+  -- exception
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+	BEGIN
+		 exitcode := ::SQL_ERROR_CODE;
+		 CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_MESSAGE=>'ERROR',
+			 I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||substr(::SQL_ERROR_MESSAGE, 1, 512)||':'||iv_id||':'||'Failure');                                                 
+		 		 
+         --commit;   --commented by Leonard
+	END;
+
+  -- process logic
+    exitcode := -1;
+
+	CALL "EX_LOG"."cdp.log.procedures::logProc"
+				(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+				 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+	             I_DETAIL=>iv_id||':'||'Start');
+             
+
+      INSERT INTO PULL_CONFIRM_DELAY (PULL_ID,
+                                        LINE_ID,
+                                        PN_NUMBER,
+                                        PN_DESCRIPTION,
+                                        PLANT,
+                                        PULL_TYPE,
+                                        REQUESTED_QTY,
+                                        FULL_BOX_QTY,
+                                        INVENTORY_TYPE,
+                                        DELIVERY_DATE,
+                                        PHYSICAL_PLANT,
+                                        WAREHOUSE_NO,
+                                        PRODUCTION_LINE,
+                                        VENDOR,
+                                        SOURCE_LOCATION,
+                                        SOURCE_TYPE,
+                                        SOURCE_BIN,
+                                        DESTINATION_LOCATION,
+                                        DESTINATION_TYPE,
+                                        DESTINATION_BIN,
+                                        STATUS,
+                                        CREATED_BY,
+                                        CREATION_DATE,
+                                        LAST_MODIFIED_BY,
+                                        LAST_MODIFIED_DATE)
+         SELECT   PULL_HEADER_ID AS Pull_Id,
+                  PULL_LINE_ID AS Line_Id,
+                  MATNR AS PN_Number,
+                  MATNR_DESCR AS PN_Description,
+                  WERKS AS Plant,
+                  a.PULL_TYPE AS Pull_Type,
+                  PULL_QTY AS Requested_qty,
+                  FULL_BOX_QTY AS Full_Box_Qty,
+                  INVENTORY_TYPE AS Inventory_Type,
+                  DELIVERY_DATE AS Delivery_Date,
+                  PHYSICAL_PLANT AS Physical_Plant,
+                  WHS_NO AS Warehouse_NO,
+                  PRODUCTION_LINE AS Production_Line,
+                  LINE_SUPPLIERID AS Vendor,
+                  SRC_STORAGE_LOC AS Source_Location,
+                  SRC_STORAGE_TYPE AS Source_Type,
+                  SRC_STORAGE_BIN AS Source_Bin,
+                  DEST_STORAGE_LOC AS Destination_Location,
+                  DEST_STORAGE_TYPE AS Destination_Type,
+                  DEST_STORAGE_BIN AS Destination_Bin,
+                  'IN_PROCESS' AS STAUS,
+                  a.SYS_CREATED_BY AS Created_By,
+                  a.SYS_CREATED_DATE AS Creation_Date,
+                  a.SYS_LAST_MODIFIED_BY AS Last_Modified_By,
+                  a.SYS_LAST_MODIFIED_DATE AS LAST_MODIFIED_DATE
+           --sysdate as event_date,
+           --event_created_by
+           FROM   PULL_LINE a, UI_CREATE_CYCLETIME b
+          WHERE       a.PULL_TYPE = b.PULL_TYPE
+                  AND a.HEADER_SUPPLIERID = B.TPL_ID
+                  AND b.EVENT_TYPE = 'Pull Confirmation Delay by 3PL'
+                  AND a.SYS_TIMESTAMP <= add_seconds(CURRENT_TIMESTAMP,  b.CYCLE_TIME / (24 * 60) * (-1) )
+                  AND a.SYS_CREATED_DATE > add_days(CURRENT_DATE, -7)
+                  AND CONFIRM_QTY IS NULL
+                  AND NOT EXISTS
+                        (SELECT   1
+                           FROM   PULL_CONFIRM_DELAY C
+                          WHERE   A.PULL_HEADER_ID = C.PULL_ID
+                                  AND A.PULL_LINE_ID = C.LINE_ID);
+
+      --COMMIT;  --commented by Leonard
+
+      exitcode := 0;
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+			(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+			 I_EVENT_NAME=>:v_full_name,I_MODULE=>'MXEBGVMI',
+			 I_DETAIL=>iv_id||':'||'Success');
+
+END;

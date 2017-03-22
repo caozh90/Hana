@@ -1,0 +1,167 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::pm_ui_gr_mtm_err" 
+( 
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.PM_UI_GR_MTM_E"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/***************************** 
+*name        :    pm_ui_gr_mtm_err
+*function    :               
+*input       :    
+*output      :              
+*author      :    zhaodan1
+*UpdateDate  :             
+*DeleteDate  : 
+*CreateDate:      2016.03.08
+ *****************************/
+	AS
+	business_code varchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'PM_UI_GR_MTM';
+	currentUser varchar(100);
+	create_DATE LONGDATE;
+	privilegeExists  NVARCHAR(300)  ;
+	wrongnums INT := 0;
+
+
+BEGIN
+    --添加business信息
+    select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	--business_code := :SEQ;
+		
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_DATE INTO create_DATE FROM DUMMY;
+	newInfo_xsjs = SELECT *  from :newInfo where source = 'xsjs';
+	newInfo_pro = SELECT *   from :newInfo where source = 'procedure';
+
+	-- 	MTM_NO------------------------	 	
+	newInfo_pro_mtm = SELECT PRODUCT_GROUP, OEM_NAME, TIME_FENCE ,FUNCTION_TYPE, PROFIT_CENTER ,
+	                         MTM_NO, /*MTM_DESC,*/ GR_DATE, GR_QTY, SOURCE,
+	                         'MTM No not exist or it`s status is EOL'  error_message,
+	                         BUSINESS_NAME, SEQ, POSITION  
+					 	FROM :newInfo_pro as a 
+					 	WHERE NOT EXISTS( 	
+					 	 			SELECT 1 FROM "EBGCFE"."UI_ITEM"
+									WHERE A.PRODUCT_GROUP = PRODUCT_GROUP
+					                  AND (EOL_STATUS = 'OL' AND 
+							 	         ( (LENGTH(a.MTM_NO)<16 AND a.MTM_NO = ITEM ) OR
+							 	           (LENGTH(a.MTM_NO)>=16 AND LEFT(a.MTM_NO,LENGTH(a.MTM_NO)-16) = ITEM ) 
+							 	         ) 
+							 	         )
+										 )  ;	 	
+		 	
+
+				 	
+    -- 	OEM_NAME------------------------	 	
+	newInfo_pro_oem = SELECT PRODUCT_GROUP, OEM_NAME, TIME_FENCE ,FUNCTION_TYPE, PROFIT_CENTER ,
+	                         MTM_NO, /*MTM_DESC,*/  GR_DATE, GR_QTY, SOURCE,
+	                         'OEM not exist' error_message,
+	                         BUSINESS_NAME, SEQ, POSITION
+					 	FROM :newInfo_pro as a
+					 	WHERE a.OEM_NAME NOT IN(  	
+					 	                           SELECT ITEM_VALUE
+													 FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_pm_gr_mtm/CV_PAR_OEM_FUNC_PRO" 
+													     ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'OEM_NAME'))
+										 	    )  ;	 	
+		 	
+
+			
+	-- 	FUNCTION_TYPE------------------------	
+	newInfo_pro_function = SELECT PRODUCT_GROUP, OEM_NAME, TIME_FENCE ,FUNCTION_TYPE, PROFIT_CENTER ,
+		                          MTM_NO, /*MTM_DESC,*/  GR_DATE, GR_QTY, SOURCE,
+		                          'Function type should be FORECAST or ACTUAL' error_message,
+		                          BUSINESS_NAME, SEQ, POSITION
+						 	FROM :newInfo_pro as a
+						 	WHERE a.FUNCTION_TYPE NOT IN(  	
+						 	                           SELECT ITEM_VALUE
+														 FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_pm_gr_mtm/CV_PAR_OEM_FUNC_PRO" 
+														     ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'FUNCTION_TYPE'))
+											 	    ) ;	 		
+		
+			
+
+	-- 	TIME_FENCE------------------------	
+	newInfo_pro_time = SELECT PRODUCT_GROUP, OEM_NAME, TIME_FENCE ,FUNCTION_TYPE, PROFIT_CENTER ,
+	                          MTM_NO, /*MTM_DESC,*/  GR_DATE, GR_QTY, SOURCE,
+	                          'TIME_FENCE not exist or it not belong to CURRENT' error_message,
+	                          BUSINESS_NAME, SEQ, POSITION 
+					 	FROM :newInfo_pro as a
+					 	WHERE  a.TIME_FENCE NOT IN(  	
+	 	                           SELECT TIME_FENCE
+									 FROM "EBGCFE"."PM_UI_TIME_FENCE"
+									WHERE A.PRODUCT_GROUP = PRODUCT_GROUP
+					                  AND A.TIME_FENCE    = TIME_FENCE
+					                  AND A.OEM_NAME      = OEM_NAME
+					                  AND A.PROFIT_CENTER = PROFIT_CENTER
+					                  AND TIME_FENCE_TYPE = 'CURRENT'								
+							 	    )	 ;	
+	
+			
+				
+	-- 	PROFIT_CENTER------------------------
+	newInfo_pro_profit = SELECT PRODUCT_GROUP, OEM_NAME, TIME_FENCE ,FUNCTION_TYPE, PROFIT_CENTER ,
+	                            MTM_NO, /*MTM_DESC,*/  GR_DATE, GR_QTY, SOURCE,
+	                            'Profit Center not exist' error_message,
+	                            BUSINESS_NAME, SEQ, POSITION
+						 	FROM :newInfo_pro as a
+						 	WHERE a.PROFIT_CENTER NOT IN (  	
+						 	                             SELECT ITEM_VALUE
+														   FROM "_SYS_BIC"."cdp.ebgcfe.models.ui_pm_gr_mtm/CV_PAR_OEM_FUNC_PRO" 
+														        ('PLACEHOLDER' = ('$$INPUT_TYPE$$', 'PROFIT_CENTER'))
+											 			 )	 ;	
+	
+
+			
+	---------------------------------记录upload的错误----------------------------------------
+	error_table = 
+		SELECT * FROM :newInfo_xsjs UNION
+		SELECT * FROM :newInfo_pro_mtm UNION
+		SELECT * FROM :newInfo_pro_oem UNION
+		SELECT * FROM :newInfo_pro_time UNION
+		SELECT * FROM :newInfo_pro_function UNION
+		SELECT * FROM :newInfo_pro_profit;
+		
+	
+	error_info = 
+		SELECT 
+           :table_name || SEQ CODE,
+           position,
+           error_message,
+           :table_name table_name,
+           business_name
+    FROM :error_table;
+           
+	
+	INSERT INTO "EBGCFE"."UPLOAD_ERR_INFO"(ID,CODE,POSITION,ERROR_MESSAGE,table_name,business_name)
+	SELECT "EBGCFE"."cdp.ebgcfe.sequences::upload_error_info_id".NEXTVAL,
+	        CODE,POSITION,STRING_AGG(ERROR_MESSAGE,','),table_name,business_name
+	FROM  :error_info
+	GROUP BY CODE,POSITION,table_name,business_name;
+	
+	wrongnums := ::ROWCOUNT;
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+		:table_name || :business_code,:business_name,0,:wrongnums,:table_name);
+	
+    -----------------------------------------------------------------------------------------
+    
+     	
+    --详细记录upload的数据信息
+    INSERT INTO  "EBGCFE"."PM_UI_GR_MTM_ERR_DETAIL"( CODE , 
+												 POSITION , 
+												 PRODUCT_GROUP ,OEM_NAME, TIME_FENCE,FUNCTION_TYPE,PROFIT_CENTER,
+												 MTM_NO,/*MTM_DESC,*/GR_DATE,GR_QTY,TIME_FENCE_TYPE,												 
+												 SYS_CREATED_DATE ,
+												 SYS_CREATED_BY )
+	SELECT :table_name || business_code,
+			  position,
+			  PRODUCT_GROUP ,OEM_NAME, TIME_FENCE,FUNCTION_TYPE,PROFIT_CENTER,
+			  MTM_NO,/*MTM_DESC,*/GR_DATE,GR_QTY,'CURRENT',	
+			  :create_DATE,
+			  :currentUser
+	FROM :error_table;											 
+
+
+END;

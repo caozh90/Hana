@@ -1,0 +1,163 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_excess_pull::PRC_CALCULATE_MISMATCH" (
+IN iv_id VARCHAR(10), OUT on_exitcode DECIMAL
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "MXEBGVMI"
+    --READS SQL DATA 
+
+    /************************************************************************
+    *name      : PRC_CALCULATE_MISMATCH              --函数名
+    *function  :               --函数功能
+    *input     ：  iv_id  --输入参数
+    *output     :on_exitcode --输出参数
+    *author     : Fangyuan               --作者
+    *CreateDate : 20141203                  --创建时间
+    *UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+    
+    *************************************************************************/  
+
+    AS
+	
+      v_sum_pull          NUMBER (20, 3);
+      v_sum_dispatch      NUMBER (20, 3);
+      v_count             INT;
+      v_logic_proc_name   VARCHAR2 (40)          := 'PRC_CALCULATE_MISMATCH';
+      gv_logic_name    VARCHAR2 (40)  := 'PKG_EXCESS_PULL';    
+      logidi integer:=0;
+            
+      v_matnr   varchar(18):= ' ';
+      v_werks   varchar(4):= ' ';
+
+BEGIN
+		--added this part only for demonstrate the result more clearly,it gonna be removed soon.
+		/*update material_mismatch set mismatch_qty=0;
+		commit;*/
+
+          DECLARE CURSOR cur FOR
+         (SELECT DISTINCT matnr, werks, pull_header_id, pull_line_id
+                     FROM pull_line pl
+                    WHERE EXISTS (
+                             SELECT 'x'
+                               FROM dispatch_list dl
+                              WHERE dl.pull_line_id = pl.pull_line_id
+                                AND dl.pull_header_id = pl.pull_header_id
+                                AND dl.werks = pl.werks
+                                AND dl.mismatch_cal_status IS NULL
+                                AND dl.status = 'OLD'
+                                AND dl.sys_source =
+                                              'FP'
+                                                  --added by wenfei 2007-12-18
+                                AND dl.sys_timestamp >
+                                       TO_DATE
+                                          ('2008-6-16', 'yyyy-mm-dd')
+                                           -- will be removed after testing!!!
+                                                                     )
+                      AND werks IN (SELECT siteid
+                                      FROM conf_site_schedule
+                                     WHERE ID = :iv_id)
+                 ORDER BY matnr, werks);
+
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN
+         
+          on_exitcode:=::SQL_ERROR_CODE;
+                     
+          CALL "EX_LOG"."cdp.log.procedures::logProc"
+            (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+            I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name, I_MODULE=>'MXEBGVMI',
+            I_MESSAGE=>'ERROR', I_DETAIL=>iv_id||'Failure!'||to_char(::SQL_ERROR_CODE) || ':' ||::SQL_ERROR_MESSAGE);  
+            
+         --COMMIT;
+           
+    END;
+    
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Start!'); 
+
+
+      FOR i as cur
+      DO
+
+         -- in this procedure we considered werks/logical_plant for each statement. so we can support multiple logical plant
+         SELECT COUNT (*)
+           INTO v_count
+           FROM material_mismatch
+          WHERE matnr = i.matnr AND werks = i.werks;
+
+         IF i.matnr <> v_matnr AND v_count = 0
+         THEN
+            v_matnr := i.matnr;
+            v_werks := i.werks;
+            v_sum_pull := 0;
+
+            SELECT ifnull (SUM (dispatch_qty), 0)
+              INTO v_sum_dispatch
+              FROM dispatch_list
+             WHERE matnr = i.matnr
+               AND werks = i.werks
+               AND pull_line_id = i.pull_line_id
+               AND pull_header_id = i.pull_header_id
+               AND sys_source = 'FP';
+    -- added by wenfei 2007-12-18 here we only consider those dispatchs for FP
+
+            SELECT full_box_qty
+              INTO v_sum_pull
+              FROM pull_line
+             WHERE matnr = i.matnr
+               AND werks = i.werks
+               AND pull_line_id = i.pull_line_id
+               AND pull_header_id = i.pull_header_id;
+
+            INSERT INTO material_mismatch
+                        (matnr, werks, pull_qty, dispatch_qty,
+                         mismatch_qty
+                        )
+                 VALUES (i.matnr, i.werks, v_sum_pull, v_sum_dispatch,
+                         v_sum_pull - v_sum_dispatch
+                        );
+
+            --COMMIT;
+         ELSE
+            SELECT full_box_qty
+              INTO v_sum_pull
+              FROM pull_line
+             WHERE matnr = i.matnr
+               AND werks = i.werks
+               AND pull_line_id = i.pull_line_id
+               AND pull_header_id = i.pull_header_id;
+
+            SELECT ifnull (SUM (dispatch_qty), 0)
+              INTO v_sum_dispatch
+              FROM dispatch_list
+             WHERE matnr = i.matnr
+               AND werks = i.werks
+               AND pull_line_id = i.pull_line_id
+               AND pull_header_id = i.pull_header_id;
+
+            UPDATE material_mismatch
+               SET mismatch_qty = mismatch_qty + v_sum_pull - v_sum_dispatch
+             WHERE matnr = i.matnr AND werks = i.werks;
+
+           -- COMMIT;
+         END IF;
+
+         UPDATE dispatch_list dl
+            SET dl.mismatch_cal_status = 'COMPLETED'
+          WHERE dl.pull_line_id = i.pull_line_id
+            AND dl.pull_header_id = i.pull_header_id
+            AND dl.werks = i.werks;
+
+         --COMMIT;
+      END FOR;
+
+
+     on_exitcode := 0;
+
+     CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+                                                I_EVENT_NAME=>:gv_logic_name||'.'||:v_logic_proc_name,I_MODULE=>'MXEBGVMI',
+                                                I_DETAIL=>iv_id||'Success!'); 
+     
+END;

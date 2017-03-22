@@ -1,0 +1,115 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::deleteUiManualBom" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MANUAL_BOM_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		aBom_level NVARCHAR(10);
+	    aFather NVARCHAR(18);
+	    aChildren NVARCHAR(100);
+	    aPlant NVARCHAR(40);
+	    aFlag NVARCHAR(20);
+		alogide INTEGER :=0;
+		aI_DETAIL NVARCHAR(300) :=''; 
+		
+		privilegeExists  NVARCHAR(300)  ;  
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::deleteUiManualBom error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::deleteUiManualBom'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+    
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_manual_bom::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+    
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::deleteUiManualBom'
+       ,I_MODULE=>'EBGCFE'
+   	);
+
+
+select
+    BOM_LEVEL,
+    FATHER,
+    CHILDREN,
+    PLANT,
+    FLAG
+  into  	
+ 	aBom_level,
+	aFather,
+	aChildren,
+	aPlant,
+	aFlag
+  from :newInfo;
+  
+  
+  delete from "EBGCFE"."UI_MANUAL_BOM"
+  	WHERE BOM_LEVEL = :aBom_level          
+          AND FATHER = :aFather
+          AND CHILDREN = :aChildren
+          AND PLANT = :aPlant;
+/*put operation to log table*/     	
+ insert into "EBGCFE"."UI_MANUAL_BOM_LOG"
+    (
+    	PRODUCT_GROUP,	
+	    BOM_LEVEL,
+	    FATHER,
+	    CHILDREN,
+	    PLANT,
+	    QUANTITY,    	
+    	SYS_LAST_MODIFIED_DATE,   	
+    	ACTION,
+    	SYS_LAST_MODIFIED_BY,
+    	AT_MODIFIED_ON,
+    	AT_MILLIS,
+    	FLAG    	
+    )
+    select 
+        a.PRODUCT_GROUP,	
+	    a.BOM_LEVEL,
+	    a.FATHER,
+	    a.CHILDREN,
+	    a.PLANT,
+	    a.QUANTITY,
+    	current_date,    	
+    	'delete',
+    	session_user,
+    	current_date,
+    	TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+    	a.FLAG
+    FROM :newInfo a;  	  
+                 	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::deleteUiManualBom successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::deleteUiManualBom'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);    	   	
+END;

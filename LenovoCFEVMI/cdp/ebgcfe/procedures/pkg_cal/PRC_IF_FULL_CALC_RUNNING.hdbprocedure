@@ -1,0 +1,19 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cal::PRC_IF_FULL_CALC_RUNNING" 
+( 
+	OUT   v_ful_is_running     INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA DS_INFO
+	READS SQL DATA AS
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+ select count(1) into v_ful_is_running 
+  from "DS_INFO"."DS_JOB_RUN_INFO" 
+ where jobname = 'JOB_X86_CALL_HANA_SP_PRD_FULL_CALCULATION'
+   and jobstatus='RUNNING';
+ 
+ 
+END;

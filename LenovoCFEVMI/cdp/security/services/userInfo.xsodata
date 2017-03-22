@@ -1,0 +1,165 @@
+service namespace "cdp.security.services"
+{	
+//user --user group
+//map 
+//role --role group
+//
+
+	//左边目录树展示，根节点 为 group ,叶子节点为 user info
+	"cdp.security.models::AT_GETINFOGROUP" as "INFO_GROUP" key ("ID") navigates ("GROUP_USER" as "UsersInfo")
+			create using "cdp.security.procedures::createInfoGroupForOData"
+			update using "cdp.security.procedures::updateInfoGroupForOData"
+			delete using "cdp.security.procedures::deleteInfoGroupForOData"
+	;
+		 
+	"cdp.security.models::AT_GETINFOUSER" as "INFO_USER" key ("GROUP_ID","ID")
+		create using "cdp.security.services:USERINFO.xsjslib::createInfoUser"
+		//create using "cdp.security.procedures::createInfoUserForOData"
+		update using "cdp.security.procedures::updateInfoUserForOData"
+		delete using "cdp.security.procedures::deleteInfoUserForOData"		
+	;		
+	association "GROUP_USER" principal "INFO_GROUP"("ID") multiplicity "1" dependent "INFO_USER"("GROUP_ID") multiplicity "*";
+	
+	"cdp.security.models::AT_GETINFOUSER" as "INFO_USER_PASSWD" key ("ID","GROUP_ID")
+		create forbidden 
+		update using "cdp.security.procedures::updateInfoUserPassword"
+		delete forbidden		
+	;		 
+	
+	//MAP GROUP USER
+	//对应create 和  delete 的操作  update 操作被禁止。
+	"cdp.security.models::AT_GETMAPGROUPUSER" as "MAP_GROUPUSER" key ("ID") 
+		create using "cdp.security.procedures::createMapGroupUserForOData"
+		update forbidden
+		delete using "cdp.security.procedures::deleteMapGroupUserForOData"
+		;
+	
+	"cdp.security.models::CV_GETMAPGROUPUSER_NOTIN" as "MAP_GROUPUSER_NOTIN" 
+	keys generate local "ID"
+      parameters via entity "InputParams"
+	create forbidden
+	update forbidden
+	delete forbidden
+	;
+	
+	 
+	//显示所有的role group and role
+	"cdp.security.models::AT_GETINFOROLEGROUP" as "INFO_ROLEGROUP" key ("ID") navigates ("MAP_ROLEGROUP_ROLE" as "MAP_ROLEGROUP")
+			create using "cdp.security.procedures::createInfoRoleGroupForOData"
+			update using "cdp.security.procedures::updateInfoRoleGroupForOData"
+			delete using "cdp.security.procedures::deleteInfoRoleGroupForOData"
+	
+	;
+	"cdp.security.models::AT_GETMAPROLEGROUP" as "INFO_ROLE" key ("ID")
+			create using "cdp.security.procedures::createMapRoleGroupForOData"
+			update forbidden
+			//update using "cdp.security.procedures::updateInfoRoleGroupForOData"
+			delete using "cdp.security.procedures::deleteMapRoleGroupForOData"
+	
+	;
+	
+	association "MAP_ROLEGROUP_ROLE" principal "INFO_ROLEGROUP"("ID") multiplicity "1" dependent "INFO_ROLE"("ROLEGROUP_ID") multiplicity "*";
+	
+"cdp.security.models::CV_GETMAPROLEGROUPROLE_NOTIN" as "MAP_ROLEGROUP_NOTIN" 
+	keys generate local "ID"
+      parameters via entity "InputParamsMAPROLEGROUP"
+	create forbidden
+	update forbidden
+	delete forbidden
+	;
+	
+	
+
+	//右边对应的目录树展示， 根节点为 role group ,叶子节点为 role
+	//显示,增加或者删除某用户的一个role_group 
+	
+
+	
+	
+	"cdp.security.models::CV_GETMAPALL_ROLEGROUP" as "MAP_ALL_ROLEGROUP" 		
+	key ("MODULE_ID" ,"GROUP_ID","USER_ID","ROLEGROUP_ID","ROLE_ID")	
+	navigates ("MAP_ALL" as "MAP_ALL_ROLEINFO")
+			create forbidden
+			update forbidden
+			delete using "cdp.security.procedures::deleteMapAllForOData"
+	;
+	
+	//显示,增加或者删除某用户的一个role
+	"cdp.security.models::AT_GETMAPALL_ROLE" as "MAP_ALL_ROLE" key (
+	"MODULE_ID" ,"GROUP_ID","USER_ID","ROLEGROUP_ID","ROLE_ID" )	
+			create using "cdp.security.procedures::createMapAllForOData"
+			update forbidden
+			delete using "cdp.security.procedures::deleteMapAllForOData"
+	;
+	
+	association "MAP_ALL" 
+	principal "MAP_ALL_ROLEGROUP"("MODULE_ID" ,"GROUP_ID","USER_ID","ROLEGROUP_ID") multiplicity "1" 
+	dependent "MAP_ALL_ROLE"("MODULE_ID" ,"GROUP_ID","USER_ID","ROLEGROUP_ID") multiplicity "*"
+	;
+
+	//用户的资源
+	"cdp.security.models::CV_GETMAP_RESOURCE_USER" as "USER_RESOURCE" 
+	//key ("MODULE_ID" ,"GROUP_ID","USER_ID")
+	key ("RESOURCE_ID")
+	//keys generate local "RESOURCE_ID_KEY"	
+	parameters via key and entity "InputParamsMAPRESOURCE"
+	//parameters via entity "InputParamsMAPRESOURCE"
+	        create using "cdp.security.procedures::createMapResourceUserForOData"
+			update using "cdp.security.procedures::updateMapResourceUserForOData"
+			delete using "cdp.security.procedures::deleteMapResourceUserForOData";
+	
+
+			
+	"cdp.security.models::AT_GETINFORESOURCETYPE" as "INFO_RESOURCE_TYPE"
+	key ("RESOURCE_TYPE_ID")	
+	        create forbidden
+			update forbidden
+			delete forbidden
+	;
+	
+	
+	"cdp.security.models::CV_GETMAPVIEWROLE" as "MAP_VIEWROLE"
+			key ("ID")			
+	        create forbidden
+			update forbidden
+			delete forbidden
+	;
+	
+	"cdp.security.models::AT_GETMAPMODULEUSER" as "MAP_MODULEUSER"
+			key ( "MODULE_ID")	
+			
+	        create using "cdp.security.procedures::setSessionModuleUserForOData"
+			update forbidden
+			delete using "cdp.security.procedures::deleteSessionModuleUserForOData"
+			 
+	;
+	"cdp.security.models::AT_GETDATASESSIONCONTEXT" as "DATA_SESSIONCONTEXT"
+			key ( "ID")	
+			create forbidden
+			update forbidden
+			delete forbidden
+	;
+/**************************************added by Eric*********************************************/	
+	"cdp.security.models::CV_GET_ALL_FUNCTION_ROLE" as "GET_ALL_FUNCTION_ROLE"
+	        keys generate local "ID"
+	        create forbidden
+			update forbidden
+			delete forbidden;
+    "cdp.security.models::CV_GET_ALL_USER" as "GET_ALL_USER"
+	        keys generate local "ID"
+	        create forbidden
+			update forbidden
+			delete forbidden;
+	"cdp.security.models::CV_GROUP_USER_FUNCTION_ROLE" as "GET_MAP_USER_FUNCTION_ROLE"
+	        keys generate local "ID"
+	        create forbidden
+			update forbidden
+			delete forbidden;	
+	"cdp.security.models::CV_GET_USER_RESOURCE" as "GET_MAP_USER_RESOURCE"
+	        keys generate local "ID"
+	        create forbidden
+			update forbidden
+			delete forbidden;							
+/************************************************************************************************/	
+}
+

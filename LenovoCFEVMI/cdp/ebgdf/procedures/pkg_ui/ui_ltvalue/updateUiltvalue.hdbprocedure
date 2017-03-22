@@ -1,0 +1,150 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_ltvalue::updateUiltvalue"
+( 
+         IN newInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_LTVALUE_T",
+		 IN oldInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_LTVALUE_T",
+		 OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGDF
+	--READS SQL DATA 
+	
+/************************************************************************
+*name        :      updateUiltvalue
+*function    :               
+*input       ：              newInfo&oldInfo
+*output      :      errorInfo
+*author      :      bianzh1
+*CreateDate  :      2016.2.14
+*UpdateDate  :      2016.2.14
+*************************************************************************/
+	
+	AS
+	
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	v_resourceExists BIGINT;
+	privilegeExists  NVARCHAR(300)  ; 
+	
+	V_ABCD NVARCHAR(1);
+	V_LEADTIME NVARCHAR(3);
+BEGIN
+--Exception Defination
+	DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+--Exception Handler Defination
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+			aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_ltvalue::updateUiltvalue error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+			
+	    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    	 I_TYPE=>'PROC_ERROR'	
+		     	,I_LOGSID=>:alogide
+		     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_ltvalue::updateUiltvalue'
+		     	,I_MODULE=>'EBGDF'
+		     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+		     	,I_DETAIL=>:aI_DETAIL
+	     	);	
+	 
+	 		errorInfo = select 400 as http_status_code, 
+	     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+	     		aI_DETAIL detail from dummy;
+			
+		END;
+
+--Check Privilege
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_ltvalue::editable',privilegeExists);
+    
+    IF  privilegeExists != 'OK' THEN
+    	errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+       	RETURN ;
+    END IF;
+
+--Log Start
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    I_TYPE=>'PROC_START',
+	        I_LOGSID=>:alogide,
+	        I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_ltvalue::updateUiltvalue',
+	        I_MODULE=>'EBGDF'
+	   	); 
+
+--Get data from records(newInfo) to be updated
+	select
+		ABCD,
+		LEADTIME
+	into
+		V_ABCD,
+		V_LEADTIME
+	from
+		:newInfo
+	;--end select;		
+
+
+
+--Data validation, record exists in DB
+	select
+		count(*)
+	into
+		v_resourceExists
+	from
+		"EBGDF"."UI_LTVALUE"
+	where
+		ABCD = :V_ABCD
+	;--end select;
+	
+	if v_resourceExists < 1 then
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record does not exist';
+	end if;
+
+--Update DB
+	update
+		"EBGDF"."UI_LTVALUE"
+	set
+		LEADTIME 			= V_LEADTIME,
+		LAST_UPDATE_TS 		= CURRENT_UTCTIMESTAMP,
+		LAST_UPDATE_USERID	= SESSION_USER
+	where
+		ABCD = :V_ABCD
+	;--end update;
+
+--Insert log table
+	insert into
+		"EBGDF"."UI_LTVALUE_LOG"(
+			ABCD,
+			LEADTIME,
+			CREATE_TS,
+			CREATE_USERID,
+			LAST_UPDATE_TS,
+			LAST_UPDATE_USERID,
+			AT_MODIFIED_BY,
+			AT_ACTION,
+			AT_MODIFIED_ON,
+			AT_MILLIS
+		)values(
+			:V_ABCD,
+			:V_LEADTIME,
+			CURRENT_UTCTIMESTAMP,		--CREATE_TS
+			SESSION_USER,			--CREATE_USERID
+			CURRENT_UTCTIMESTAMP,		--LAST_UPDATE_TS
+			SESSION_USER,			--LAST_UPDATE_USERI
+			SESSION_USER,			--AT_MODIFIED_BY
+			'update',				--AT_ACTION
+			CURRENT_UTCTIMESTAMP,		--AT_MODIFIED_ON
+			TO_DECIMAL( TO_VARCHAR( CURRENT_UTCTIMESTAMP, 'HH24MISSFF3' ) )	--AT_MILLIS
+		)
+	;--end insert
+
+--Log End
+	aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_ltvalue::updateUiltvalue successfully updated . ';
+	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		I_TYPE=>'PROC_END',
+		I_LOGSID=>:alogide,
+		I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_ltvalue::updateUiltvalue',
+		I_MODULE=>'EBGDF',
+		I_DETAIL=>:aI_DETAIL
+	);
+END;

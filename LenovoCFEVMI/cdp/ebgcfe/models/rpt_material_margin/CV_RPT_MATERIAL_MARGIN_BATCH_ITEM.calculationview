@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_RPT_MATERIAL_MARGIN_BATCH_ITEM" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_RPT_MATERIAL_MARGIN_BATCH_ITEM"/>
+  <localVariables>
+    <variable id="IN_REPORT_NAME" parameter="true">
+      <descriptions defaultDescription="IN_REPORT_NAME"/>
+      <variableProperties datatype="VARCHAR" length="300" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+        <defaultRange/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="ITEM" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="MT" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="FAMILY" length="100"/>
+        <viewAttribute datatype="VARCHAR" id="REPORT_NAME" length="300"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#IN_REPORT_NAME</localVariable>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 
+ 	 var_out = SELECT ITEM,MT,FAMILY,REPORT_NAME 
+ 	 FROM EBGCFE.UI_RPT_MODELLIST 
+ 	 WHERE REPORT_NAME = :IN_REPORT_NAME
+ 	 ; 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="ITEM" order="1">
+        <descriptions defaultDescription="ITEM"/>
+        <keyMapping columnObjectName="Script_View" columnName="ITEM"/>
+      </attribute>
+      <attribute id="MT" order="2">
+        <descriptions defaultDescription="MT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MT"/>
+      </attribute>
+      <attribute id="FAMILY" order="3">
+        <descriptions defaultDescription="FAMILY"/>
+        <keyMapping columnObjectName="Script_View" columnName="FAMILY"/>
+      </attribute>
+      <attribute id="REPORT_NAME" order="4">
+        <descriptions defaultDescription="REPORT_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="REPORT_NAME"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

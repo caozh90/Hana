@@ -1,0 +1,41 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::BeforeUpdateUiAdderConf" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_ADDER_CONF_T"
+        ,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_ADDER_CONF_T"
+        ,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+		v_adder_name NVARCHAR(40);
+		v_family NVARCHAR(100);
+		v_wfname NVARCHAR(40);
+		validate integer;
+BEGIN
+/***************************** 
+	Write your procedure logic 
+ *****************************/
+         select ADDER_NAME, ASP_PROD_FAMILY into v_adder_name, v_family from :newInfo;
+         
+         /*ADDER_NAME*/
+		SELECT RIGHT(:v_adder_name,1) INTO v_wfname FROM DUMMY;
+
+		select count(1) into validate from "EBGCFE"."CONF_PARAMETERS" 
+		where PDOMAIN='UI_ADDER_CONF' AND PNAME = 'TBA_TYPE' AND Z_WFNAME = :v_wfname;
+		IF validate<=0 then
+			errorinfo = select 400 as http_status_code, 
+	            'ADDER_NAME: VALIDATION FAILED, FROMAT IS WRONG' error_message, 
+	            '' detail from dummy;
+			return;
+		END IF;
+         
+         /*ASP_PROD_FAMILY*/
+         select count(1) into validate from "EBGCFE"."CONF_PARAMETERS" 
+			where pdomain='UI_ADDER_CONF' and pname='ASP_PROD_FAMILY' and PVALUE=:v_family;
+			IF validate=0 then
+				errorinfo = select 400 as http_status_code, 
+	            'ASP_PROD_FAMILY: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+	            '' detail from dummy;
+        	    return;
+			END IF;
+END;

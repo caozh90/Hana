@@ -1,0 +1,135 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::deleteUiAdderConf" ( 
+        IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_ADDER_CONF_T"
+        ,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT 
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+    AS
+    /************************************************************************
+    *name      :                     deleteUiAdderConf
+    *function    :               
+    *input     ：               
+    *output     :                
+    *author     :                     Fangyuan
+    *CreateDate    :                  2014.12.22
+    *UpdateDate  :        
+    *************************************************************************/  
+
+        aI_DETAIL NVARCHAR(300) :='';   
+        alogide INTEGER :=0; 
+        aFlexible NVARCHAR(10) :='';
+        aAdder_name NVARCHAR(40) :='';
+        
+        privilegeExists  NVARCHAR(300)  ; 
+BEGIN
+
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+        aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::deleteUiAdderConf error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+        
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+             I_TYPE=>'PROC_ERROR'   
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::deleteUiAdderConf'
+            ,I_MODULE=>'EBGCFE'
+            ,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+            ,I_DETAIL=>:aI_DETAIL
+        );  
+ 
+        errorInfo = select 400 as http_status_code, 
+            'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+            aI_DETAIL detail from dummy;
+    END;  
+
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_adder_conf::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+  
+ --START
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(
+        I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::deleteUiAdderConf'
+       ,I_MODULE=>'EBGCFE'
+    ); 
+
+
+    INSERT INTO UI_ADDER_CONF_LOG
+    (
+	"PRODUCT_GROUP",
+	"ADDER_NAME",
+	"TBA_TYPE",
+	"ADDER_DESC",
+	"ASP_PROD_FAMILY",
+	"FLEXIBLE",
+	"SYS_CREATED_DATE",
+	"SYS_CREATED_BY",
+	"SYS_LAST_MODIFIED_DATE",
+	"SYS_LAST_MODIFIED_BY",
+	"ACTION",
+	"STATUS",
+	"CHANGE_ID",
+	"CHANGE_ACTION",
+	"AT_MODIFIED_BY",
+	"AT_ACTION",
+	"AT_MODIFIED_ON",
+	"AT_MILLIS"
+    )
+    SELECT
+    "PRODUCT_GROUP",
+    "ADDER_NAME",
+    "TBA_TYPE",
+    "ADDER_DESC",
+    "ASP_PROD_FAMILY",
+    "FLEXIBLE",
+    "SYS_CREATED_DATE",
+    "SYS_CREATED_BY",
+    "SYS_LAST_MODIFIED_DATE",
+    "SYS_LAST_MODIFIED_BY",
+    "ACTION",
+    "STATUS",
+    "CHANGE_ID",
+    "CHANGE_ACTION",
+     SESSION_USER,
+     'DELETE',
+     CURRENT_DATE,
+     TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))    
+    FROM  UI_ADDER_CONF a
+    WHERE EXISTS
+    (SELECT 1 FROM :newInfo b
+    where A.ADDER_NAME=B.ADDER_NAME
+    );  
+    
+    /*2015-02-16 add FLEXIBLE according to Lenovo*/
+    select ADDER_NAME into aAdder_name from :newInfo;
+    select FLEXIBLE into aFlexible from UI_ADDER_CONF where ADDER_NAME = :aAdder_name;
+    
+    if(:aFlexible = 'N')
+    then
+    	errorInfo = select 400 as http_status_code, 
+	            'can not delete this record when FLEXIBLE = N' error_message, 
+	            '' detail from dummy;
+        return;
+    end if; 
+    
+    delete from UI_ADDER_CONF a
+    where exists(
+    select 1 from :newInfo b
+    where A.ADDER_NAME=B.ADDER_NAME);
+    
+        /*END*/
+        aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::deleteUiAdderConf successfully created . ';
+        CALL "EX_LOG"."cdp.log.procedures::logProc"(
+            I_TYPE=>'PROC_END'  
+            ,I_LOGSID=>:alogide
+            ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_adder_conf::deleteUiAdderConf'
+            ,I_MODULE=>'EBGCFE'
+            ,I_DETAIL=>:aI_DETAIL
+        );    
+END;

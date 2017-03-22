@@ -1,0 +1,690 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_MAP_ROLEGROUP_ROLE" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_INFO_ROLES"/>
+  <localVariables/>
+  <variableMappings/>
+  <informationModelLayout relativeWidthScenario="27"/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="ROLE_NAME" length="256"/>
+        <viewAttribute datatype="NVARCHAR" id="ROLEGROUP_NAME" length="256"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Proryedure Script ************/ 
+BEGIN 
+   /* view name
+--0.1 managementCenter
+--0.2 costBake
+--0.3 newCycle
+--
+
+--1.1 itemMaster
+--1.2 productFamily
+--1.3 sbbCategory
+--1.4 manualBom
+--1.5 mtProdFamily
+--1.7 forceItemType
+--1.8 dummyPart
+--1.8 CTO-FC EOL
+--1.9 MT-EOL
+
+--2.1 costModelList
+--2.2 plantMaintenance
+--2.3 sourceOfSupply
+--2.4 formula
+--2.5 fcsbbMapping
+--2.6 region
+--2.7 exchangeRate
+--2.8 countrySalesorgMapping
+
+--3.1 costElem
+--3.2 compCostUpload
+--3.3 compCostTape
+--3.4 groupCost
+--3.5 realDummyMapping
+--3.6 Cost Tape - CTO-CV VK Cost
+
+--4.1 xmva
+--4.2 xifrt
+--4.3 xoutfr
+--4.4 wwvar
+--4.5 xatt
+--4.6 xattc
+--4.7 adderConfiguration
+--4.8 flexibleAdder
+--4.9 costFlag
+
+--5.1 seoCostBom
+--5.2 ctoCostBom
+--5.2.X86 SBB Cost BOM
+
+--6.1 whereUseReport
+--6.2 outlookReport
+--6.3 missingTotalReport
+--6.4 materialMarginReport
+--6.5 ctcReport
+--6.6 assemblyCostTypeComparisonReport
+--6.1.X86 Where Used
+--6.12.CTC New Material Reports
+--6.13.X86 Cost Flag Report
+--6.3.X86 Daily Stdcost Report 
+--6.4.X86 Monthly Stdcost Report 
+--8.2.X86 Daily Stdcost Publish 
+--6.2.X86 Newly Parts Reports
+--8.3.X86 Monthly Stdcost Publish 
+
+
+--9.2 B/S Part List
+--9.3 PM BOM
+--10.1 Service Cost
+
+--9.8 buy &amp; sell part no
+*/
+ 
+ 	 var_out = 
+SELECT  'cdp.security.roles::Base' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.security.roles::Access' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.security.roles::userAdmin' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleSetup' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.security.roles::roleAdmin' as ROLE_NAME,'User Managerment' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAccess' as ROLE_NAME,'LOG' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.log.roles::logAdmin' as ROLE_NAME,'LOG' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ds.roles.configuration::access' as ROLE_NAME,'DS Workflow Configuration' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsjob::access' as ROLE_NAME,'DS Job Configuration' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsmonitor::access' as ROLE_NAME,'DS Job Monitor&amp;Resubmission' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ds.roles.dsmonitor::admin' as ROLE_NAME,'DS Job Monitor&amp;Resubmission' AS ROLEGROUP_NAME  FROM DUMMY
+
+
+--0.1 managementCenter
+--0.2 costBake
+--0.3 newCycle
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_management_center::access' as ROLE_NAME,'ui_management_center' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_management_center::executable' as ROLE_NAME,'ui_management_center' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_management_center::exportable' as ROLE_NAME,'ui_management_center' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_management_center::refreshable' as ROLE_NAME,'ui_management_center' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_management_center::datarefreshable' as ROLE_NAME,'ui_management_center' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_management_center::fullcalculationable' as ROLE_NAME,'ui_management_center' AS ROLEGROUP_NAME  FROM DUMMY
+
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_bake::access' as ROLE_NAME,'ui_cost_bake' AS ROLEGROUP_NAME  FROM DUMMY
+--UNION SELECT  'cdp.ebgcfe.roles.ui_cost_bake::exportable' as ROLE_NAME,'ui_cost_bake' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_bake::executable' as ROLE_NAME,'ui_cost_bake' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cycle::access' as ROLE_NAME,'ui_cycle' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cycle::exportable' as ROLE_NAME,'ui_cycle' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cycle::executable' as ROLE_NAME,'ui_cycle' AS ROLEGROUP_NAME  FROM DUMMY
+
+
+--1.1 itemMaster
+--1.2 productFamily
+--1.3 sbbCategory
+--1.4 manualBom
+--1.5 mtProdFamily
+--1.7 forceItemType
+--1.8 dummyPart
+--1.8 CTO-FC EOL
+--1.9 MT-EOL
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_item::access' as ROLE_NAME,'ui_item' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_item::editable' as ROLE_NAME,'ui_item' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_item::exportable' as ROLE_NAME,'ui_item' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_item::uploadable' as ROLE_NAME,'ui_item' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_prodfamily::access' as ROLE_NAME,'ui_prodfamily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_prodfamily::createable' as ROLE_NAME,'ui_prodfamily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_prodfamily::deleteable' as ROLE_NAME,'ui_prodfamily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_prodfamily::editable' as ROLE_NAME,'ui_prodfamily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_prodfamily::exportable' as ROLE_NAME,'ui_prodfamily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_prodfamily::uploadable' as ROLE_NAME,'ui_prodfamily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sbbcategory::access' as ROLE_NAME,'ui_sbbcategory' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sbbcategory::editable' as ROLE_NAME,'ui_sbbcategory' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sbbcategory::exportable' as ROLE_NAME,'ui_sbbcategory' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sbbcategory::uploadable' as ROLE_NAME,'ui_sbbcategory' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_manual_bom::access' as ROLE_NAME,'ui_manual_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_manual_bom::createable' as ROLE_NAME,'ui_manual_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_manual_bom::deleteable' as ROLE_NAME,'ui_manual_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_manual_bom::editable' as ROLE_NAME,'ui_manual_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_manual_bom::exportable' as ROLE_NAME,'ui_manual_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_manual_bom::uploadable' as ROLE_NAME,'ui_manual_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_machine_type::access' as ROLE_NAME,'ui_machine_type' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_machine_type::editable' as ROLE_NAME,'ui_machine_type' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_machine_type::exportable' as ROLE_NAME,'ui_machine_type' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_machine_type::uploadable' as ROLE_NAME,'ui_machine_type' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_force_item_type::access' as ROLE_NAME,'ui_force_item_type' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_force_item_type::createable' as ROLE_NAME,'ui_force_item_type' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_force_item_type::deleteable' as ROLE_NAME,'ui_force_item_type' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_force_item_type::editable' as ROLE_NAME,'ui_force_item_type' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_force_item_type::exportable' as ROLE_NAME,'ui_force_item_type' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_force_item_type::uploadable' as ROLE_NAME,'ui_force_item_type' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_dummy_part::access' as ROLE_NAME,'ui_dummy_part' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_dummy_part::createable' as ROLE_NAME,'ui_dummy_part' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_dummy_part::deleteable' as ROLE_NAME,'ui_dummy_part' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_dummy_part::editable' as ROLE_NAME,'ui_dummy_part' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_dummy_part::exportable' as ROLE_NAME,'ui_dummy_part' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_dummy_part::uploadable' as ROLE_NAME,'ui_dummy_part' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_flag::access' as ROLE_NAME,'ui_ctofc_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_flag::createable' as ROLE_NAME,'ui_ctofc_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_flag::deleteable' as ROLE_NAME,'ui_ctofc_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_flag::editable' as ROLE_NAME,'ui_ctofc_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_flag::exportable' as ROLE_NAME,'ui_ctofc_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_flag::uploadable' as ROLE_NAME,'ui_ctofc_flag' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_mt_eol::access' as ROLE_NAME,'ui_mt_eol' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_mt_eol::createable' as ROLE_NAME,'ui_mt_eol' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_mt_eol::deleteable' as ROLE_NAME,'ui_mt_eol' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_mt_eol::editable' as ROLE_NAME,'ui_mt_eol' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_mt_eol::exportable' as ROLE_NAME,'ui_mt_eol' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_mt_eol::uploadable' as ROLE_NAME,'ui_mt_eol' AS ROLEGROUP_NAME  FROM DUMMY
+
+--2.1 costModelList
+--2.2 plantMaintenance
+--2.3 sourceOfSupply
+--2.4 formula
+--2.5 fcsbbMapping
+--2.6 region
+--2.7 exchangeRate
+--2.8 countrySalesorgMapping
+UNION SELECT  'cdp.ebgcfe.roles.biz_cost_model_list::access' as ROLE_NAME,'biz_cost_model_list' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.biz_cost_model_list::editable' as ROLE_NAME,'biz_cost_model_list' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.biz_cost_model_list::exportable' as ROLE_NAME,'biz_cost_model_list' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.biz_cost_model_list::uploadable' as ROLE_NAME,'biz_cost_model_list' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_plant::access' as ROLE_NAME,'ui_plant' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_plant::createable' as ROLE_NAME,'ui_plant' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_plant::deleteable' as ROLE_NAME,'ui_plant' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_plant::editable' as ROLE_NAME,'ui_plant' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_plant::exportable' as ROLE_NAME,'ui_plant' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sos::access' as ROLE_NAME,'ui_sos' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sos::createable' as ROLE_NAME,'ui_sos' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sos::deleteable' as ROLE_NAME,'ui_sos' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sos::editable' as ROLE_NAME,'ui_sos' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sos::exportable' as ROLE_NAME,'ui_sos' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sos::uploadable' as ROLE_NAME,'ui_sos' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_calcu_formu::access' as ROLE_NAME,'ui_cost_calcu_formu' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_calcu_formu::createable' as ROLE_NAME,'ui_cost_calcu_formu' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_calcu_formu::deleteable' as ROLE_NAME,'ui_cost_calcu_formu' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_calcu_formu::editable' as ROLE_NAME,'ui_cost_calcu_formu' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_calcu_formu::exportable' as ROLE_NAME,'ui_cost_calcu_formu' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_calcu_formu::uploadable' as ROLE_NAME,'ui_cost_calcu_formu' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.biz_fcsbbmap::access' as ROLE_NAME,'biz_fcsbbmap' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.biz_fcsbbmap::exportable' as ROLE_NAME,'biz_fcsbbmap' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_region::access' as ROLE_NAME,'ui_region' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_region::createable' as ROLE_NAME,'ui_region' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_region::deleteable' as ROLE_NAME,'ui_region' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_region::editable' as ROLE_NAME,'ui_region' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_region::exportable' as ROLE_NAME,'ui_region' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_region::uploadable' as ROLE_NAME,'ui_region' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_exchange_rate::access' as ROLE_NAME,'ui_exchange_rate' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_exchange_rate::deleteable' as ROLE_NAME,'ui_exchange_rate' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_exchange_rate::editable' as ROLE_NAME,'ui_exchange_rate' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_exchange_rate::exportable' as ROLE_NAME,'ui_exchange_rate' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_exchange_rate::uploadable' as ROLE_NAME,'ui_exchange_rate' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_country_salesorg_mapping::access' as ROLE_NAME,'ui_country_salesorg_mapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_country_salesorg_mapping::deleteable' as ROLE_NAME,'ui_country_salesorg_mapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_country_salesorg_mapping::exportable' as ROLE_NAME,'ui_country_salesorg_mapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_country_salesorg_mapping::uploadable' as ROLE_NAME,'ui_country_salesorg_mapping' AS ROLEGROUP_NAME  FROM DUMMY
+
+
+--3.1 costElem
+--3.2 compCostUpload
+--3.3 compCostTape
+--3.4 groupCost
+--3.5 realDummyMapping
+--3.6 Cost Tape - CTO-CV VK Cost
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_elem::access' as ROLE_NAME,'ui_cost_elem' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_elem::createable' as ROLE_NAME,'ui_cost_elem' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_elem::deleteable' as ROLE_NAME,'ui_cost_elem' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_elem::editable' as ROLE_NAME,'ui_cost_elem' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_elem::exportable' as ROLE_NAME,'ui_cost_elem' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_elem::uploadable' as ROLE_NAME,'ui_cost_elem' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape_ori::access' as ROLE_NAME,'ui_cost_tape_ori' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape_ori::createable' as ROLE_NAME,'ui_cost_tape_ori' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape_ori::deleteable' as ROLE_NAME,'ui_cost_tape_ori' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape_ori::editable' as ROLE_NAME,'ui_cost_tape_ori' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape_ori::exportable' as ROLE_NAME,'ui_cost_tape_ori' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape_ori::uploadable' as ROLE_NAME,'ui_cost_tape_ori' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape_ori::activatable' as ROLE_NAME,'ui_cost_tape_ori' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape_ori::activateall' as ROLE_NAME,'ui_cost_tape_ori' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape::access' as ROLE_NAME,'ui_cost_tape' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape::editable' as ROLE_NAME,'ui_cost_tape' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape::deleteable' as ROLE_NAME,'ui_cost_tape' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_tape::exportable' as ROLE_NAME,'ui_cost_tape' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_group_cost::access' as ROLE_NAME,'ui_group_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_group_cost::createable' as ROLE_NAME,'ui_group_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_group_cost::deleteable' as ROLE_NAME,'ui_group_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_group_cost::editable' as ROLE_NAME,'ui_group_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_group_cost::exportable' as ROLE_NAME,'ui_group_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_group_cost::uploadable' as ROLE_NAME,'ui_group_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_real_dummy_mapping::access' as ROLE_NAME,'ui_real_dummy_mapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_real_dummy_mapping::createable' as ROLE_NAME,'ui_real_dummy_mapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_real_dummy_mapping::deleteable' as ROLE_NAME,'ui_real_dummy_mapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_real_dummy_mapping::exportable' as ROLE_NAME,'ui_real_dummy_mapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_real_dummy_mapping::uploadable' as ROLE_NAME,'ui_real_dummy_mapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cto_cv_vk_cost::access' as ROLE_NAME,'ui_cto_cv_vk_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cto_cv_vk_cost::createable' as ROLE_NAME,'ui_cto_cv_vk_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cto_cv_vk_cost::deleteable' as ROLE_NAME,'ui_cto_cv_vk_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cto_cv_vk_cost::editable' as ROLE_NAME,'ui_cto_cv_vk_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cto_cv_vk_cost::exportable' as ROLE_NAME,'ui_cto_cv_vk_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cto_cv_vk_cost::uploadable' as ROLE_NAME,'ui_cto_cv_vk_cost' AS ROLEGROUP_NAME  FROM DUMMY
+
+
+--4.1 xmva
+--4.2 xifrt
+--4.3 xoutfr
+--4.4 wwvar
+--4.5 xatt
+--4.6 xattc
+--4.7 adderConfiguration
+--4.8 flexibleAdder
+--4.9 costFlag
+UNION SELECT  'cdp.ebgcfe.roles.ui_xmva::access' as ROLE_NAME,'ui_xmva' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xmva::createable' as ROLE_NAME,'ui_xmva' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xmva::deleteable' as ROLE_NAME,'ui_xmva' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xmva::editable' as ROLE_NAME,'ui_xmva' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xmva::exportable' as ROLE_NAME,'ui_xmva' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xmva::uploadable' as ROLE_NAME,'ui_xmva' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xifrt::access' as ROLE_NAME,'ui_xifrt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xifrt::createable' as ROLE_NAME,'ui_xifrt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xifrt::deleteable' as ROLE_NAME,'ui_xifrt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xifrt::editable' as ROLE_NAME,'ui_xifrt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xifrt::exportable' as ROLE_NAME,'ui_xifrt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xifrt::uploadable' as ROLE_NAME,'ui_xifrt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr::access' as ROLE_NAME,'ui_xoutfr' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr::createable' as ROLE_NAME,'ui_xoutfr' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr::deleteable' as ROLE_NAME,'ui_xoutfr' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr::editable' as ROLE_NAME,'ui_xoutfr' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr::exportable' as ROLE_NAME,'ui_xoutfr' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr::uploadable' as ROLE_NAME,'ui_xoutfr' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_wwvar::access' as ROLE_NAME,'ui_wwvar' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_wwvar::createable' as ROLE_NAME,'ui_wwvar' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_wwvar::deleteable' as ROLE_NAME,'ui_wwvar' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_wwvar::editable' as ROLE_NAME,'ui_wwvar' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_wwvar::exportable' as ROLE_NAME,'ui_wwvar' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_wwvar::uploadable' as ROLE_NAME,'ui_wwvar' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xatt::access' as ROLE_NAME,'ui_xatt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xatt::createable' as ROLE_NAME,'ui_xatt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xatt::deleteable' as ROLE_NAME,'ui_xatt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xatt::editable' as ROLE_NAME,'ui_xatt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xatt::exportable' as ROLE_NAME,'ui_xatt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xatt::uploadable' as ROLE_NAME,'ui_xatt' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xattc::access' as ROLE_NAME,'ui_xattc' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xattc::createable' as ROLE_NAME,'ui_xattc' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xattc::deleteable' as ROLE_NAME,'ui_xattc' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xattc::editable' as ROLE_NAME,'ui_xattc' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xattc::exportable' as ROLE_NAME,'ui_xattc' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xattc::uploadable' as ROLE_NAME,'ui_xattc' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_adder_conf::access' as ROLE_NAME,'ui_adder_conf' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_adder_conf::createable' as ROLE_NAME,'ui_adder_conf' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_adder_conf::deleteable' as ROLE_NAME,'ui_adder_conf' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_adder_conf::editable' as ROLE_NAME,'ui_adder_conf' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_adder_conf::exportable' as ROLE_NAME,'ui_adder_conf' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_adder_conf::uploadable' as ROLE_NAME,'ui_adder_conf' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_flexible_adder::access' as ROLE_NAME,'ui_flexible_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_flexible_adder::createable' as ROLE_NAME,'ui_flexible_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_flexible_adder::deleteable' as ROLE_NAME,'ui_flexible_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_flexible_adder::editable' as ROLE_NAME,'ui_flexible_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_flexible_adder::exportable' as ROLE_NAME,'ui_flexible_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_flexible_adder::uploadable' as ROLE_NAME,'ui_flexible_adder' AS ROLEGROUP_NAME  FROM DUMMY
+
+--*******************Modify by Justin 20150805 start***************
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_flag::access' as ROLE_NAME,'ui_cost_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_flag::createable' as ROLE_NAME,'ui_cost_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_flag::deleteable' as ROLE_NAME,'ui_cost_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_flag::editable' as ROLE_NAME,'ui_cost_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_flag::exportable' as ROLE_NAME,'ui_cost_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cost_flag::uploadable' as ROLE_NAME,'ui_cost_flag' AS ROLEGROUP_NAME  FROM DUMMY
+
+--*******************Modify by Justin 20150805 end***************
+
+
+
+--5.1 seoCostBom
+--5.2 ctoCostBom
+--5.2.X86 SBB Cost BOM
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_seocostbom::access' as ROLE_NAME,'ui_seocostbom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_seocostbom::exportable' as ROLE_NAME,'ui_seocostbom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctocostbom::access' as ROLE_NAME,'ui_ctocostbom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctocostbom::exportable' as ROLE_NAME,'ui_ctocostbom' AS ROLEGROUP_NAME  FROM DUMMY
+
+--X86 SBB Cost BOM added by Justin 20150814 start
+UNION SELECT  'cdp.ebgcfe.roles.ui_sbb_cost_bom::access' as ROLE_NAME,'ui_sbbcostbom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sbb_cost_bom::exportable' as ROLE_NAME,'ui_sbbcostbom' AS ROLEGROUP_NAME  FROM DUMMY
+--X86 SBB Cost BOM added by Justin 20150814 end
+
+
+--6.1 whereUseReport
+--6.2 outlookReport
+--6.3 missingTotalReport
+--6.4 materialMarginReport
+--6.5 ctcReport
+--6.6 assemblyCostTypeComparisonReport
+--6.1.X86 Where Used
+--6.13.X86 Cost Flag Report
+--6.3.X86 Daily Stdcost Report 
+--6.4.X86 Monthly Stdcost Report 
+--6.2.X86 Newly Parts Reports
+UNION SELECT  'cdp.ebgcfe.roles.rpt_where_used::access' as ROLE_NAME,'rpt_where_used' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_where_used::exportable' as ROLE_NAME,'rpt_where_used' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.rpt_outlook::access' as ROLE_NAME,'rpt_outlook' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_outlook::exportable' as ROLE_NAME,'rpt_outlook' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.rpt_bom_missing_total::access' as ROLE_NAME,'rpt_bom_missing_total' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_bom_missing_total::exportable' as ROLE_NAME,'rpt_bom_missing_total' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.rpt_material_margin::access' as ROLE_NAME,'rpt_material_margin' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_material_margin::exportable' as ROLE_NAME,'rpt_material_margin' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.rpt_ctc::access' as ROLE_NAME,'rpt_ctc' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_ctc::exportable' as ROLE_NAME,'rpt_ctc' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.rpt_ctc_new_material::access' as ROLE_NAME,'rpt_ctc_new_material' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_ctc_new_material::exportable' as ROLE_NAME,'rpt_ctc_new_material' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_ctc_new_material::executeable' as ROLE_NAME,'rpt_ctc_new_material' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.rpt_key_sbb_error::access' as ROLE_NAME,'rpt_key_sbb_error' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_key_sbb_error::exportable' as ROLE_NAME,'rpt_key_sbb_error' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_key_sbb_error::executeable' as ROLE_NAME,'rpt_key_sbb_error' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.rpt_cost_type_comparison::access' as ROLE_NAME,'rpt_cost_type_comparison' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_cost_type_comparison::exportable' as ROLE_NAME,'rpt_cost_type_comparison' AS ROLEGROUP_NAME  FROM DUMMY
+
+UNION SELECT  'cdp.ebgcfe.roles.rpt_cost_flag::access' as ROLE_NAME,'rpt_cost_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_cost_flag::exportable' as ROLE_NAME,'rpt_cost_flag' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_cost_flag::executeable' as ROLE_NAME,'rpt_cost_flag' AS ROLEGROUP_NAME  FROM DUMMY
+
+--*******************Add by Justin 20150824 start***************
+UNION SELECT  'cdp.ebgcfe.roles.rpt_stdcost_daily::access' as ROLE_NAME,'rpt_stdcost_daily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_stdcost_daily::exportable' as ROLE_NAME,'rpt_stdcost_daily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_stdcost_daily::executeable' as ROLE_NAME,'rpt_stdcost_daily' AS ROLEGROUP_NAME  FROM DUMMY
+--*******************Add by Justin 20150824 end*****************
+
+--*******************Add by Leon 20150828 start***************
+UNION SELECT  'cdp.ebgcfe.roles.rpt_stdcost_monthly::access' as ROLE_NAME,'rpt_stdcost_monthly' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_stdcost_monthly::exportable' as ROLE_NAME,'rpt_stdcost_monthly' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_stdcost_monthly::executeable' as ROLE_NAME,'rpt_stdcost_monthly' AS ROLEGROUP_NAME  FROM DUMMY
+--*******************Add by Leon 20150828 start***************
+
+--*******************Add by Justin 20150828 start***************
+UNION SELECT  'cdp.ebgcfe.roles.rpt_newly_parts::access' as ROLE_NAME,'rpt_newly_parts' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_newly_parts::exportable' as ROLE_NAME,'rpt_newly_parts' AS ROLEGROUP_NAME  FROM DUMMY
+--*******************Add by Justin 20150828 end*****************
+
+
+--*******************Add by Justin 20150807 start***************
+--7.1 ratioCode
+UNION SELECT  'cdp.ebgcfe.roles.ui_ratio_code::access' as ROLE_NAME,'ui_ratio_code' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ratio_code::createable' as ROLE_NAME,'ui_ratio_code' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ratio_code::deleteable' as ROLE_NAME,'ui_ratio_code' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ratio_code::editable' as ROLE_NAME,'ui_ratio_code' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ratio_code::exportable' as ROLE_NAME,'ui_ratio_code' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ratio_code::uploadable' as ROLE_NAME,'ui_ratio_code' AS ROLEGROUP_NAME  FROM DUMMY
+
+--*******************Add by Justin 20150807 end***************
+
+--*******************Add by Justin 20150811 start***************
+--7.2 baseWarrPcaUplift
+UNION SELECT  'cdp.ebgcfe.roles.ui_warr_pca_uplift::access' as ROLE_NAME,'ui_warr_pca_uplift' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_warr_pca_uplift::createable' as ROLE_NAME,'ui_warr_pca_uplift' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_warr_pca_uplift::deleteable' as ROLE_NAME,'ui_warr_pca_uplift' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_warr_pca_uplift::editable' as ROLE_NAME,'ui_warr_pca_uplift' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_warr_pca_uplift::exportable' as ROLE_NAME,'ui_warr_pca_uplift' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_warr_pca_uplift::uploadable' as ROLE_NAME,'ui_warr_pca_uplift' AS ROLEGROUP_NAME  FROM DUMMY
+
+--*******************Add by Justin 20150811 end***************
+
+--7.3 additional cost added by chenwh3 20150810 start
+UNION SELECT  'cdp.ebgcfe.roles.ui_additional_cost::access' as ROLE_NAME,'ui_additional_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_additional_cost::createable' as ROLE_NAME,'ui_additional_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_additional_cost::deleteable' as ROLE_NAME,'ui_additional_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_additional_cost::editable' as ROLE_NAME,'ui_additional_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_additional_cost::exportable' as ROLE_NAME,'ui_additional_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_additional_cost::uploadable' as ROLE_NAME,'ui_additional_cost' AS ROLEGROUP_NAME  FROM DUMMY
+
+--added by chenwh3 20150810 start
+
+
+
+--*******************Add by Justin 20150818 start***************
+--8.2.X86 Daily Stdcost Publish 
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_daily::access' as ROLE_NAME,'ui_stdcost_daily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_daily::deleteable' as ROLE_NAME,'ui_stdcost_daily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_daily::editable' as ROLE_NAME,'ui_stdcost_daily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_daily::exportable' as ROLE_NAME,'ui_stdcost_daily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_daily::uploadable' as ROLE_NAME,'ui_stdcost_daily' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_daily::publishable' as ROLE_NAME,'ui_stdcost_daily' AS ROLEGROUP_NAME  FROM DUMMY
+--*******************Add by Justin 20150818 end***************
+
+
+--*******************Add by Justin 20150901 start***************
+--8.3.X86 Monthly Stdcost Publish 
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_monthly::access' as ROLE_NAME,'ui_stdcost_monthly' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_monthly::deleteable' as ROLE_NAME,'ui_stdcost_monthly' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_monthly::editable' as ROLE_NAME,'ui_stdcost_monthly' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_monthly::exportable' as ROLE_NAME,'ui_stdcost_monthly' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_monthly::uploadable' as ROLE_NAME,'ui_stdcost_monthly' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_stdcost_monthly::publishable' as ROLE_NAME,'ui_stdcost_monthly' AS ROLEGROUP_NAME  FROM DUMMY
+--*******************Add by Justin 20150901 end***************
+
+--*******************Add by Fanfangxing 20150901 start***************
+--8.1.X86 CFE&amp;ECC Plant Mapping 
+UNION SELECT  'cdp.ebgcfe.roles.ui_cfe_ecc_plantmapping::access' as ROLE_NAME,'ui_cfe_ecc_plantmapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cfe_ecc_plantmapping::deleteable' as ROLE_NAME,'ui_cfe_ecc_plantmapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cfe_ecc_plantmapping::exportable' as ROLE_NAME,'ui_cfe_ecc_plantmapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cfe_ecc_plantmapping::uploadable' as ROLE_NAME,'ui_cfe_ecc_plantmapping' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cfe_ecc_plantmapping::publishable' as ROLE_NAME,'ui_cfe_ecc_plantmapping' AS ROLEGROUP_NAME  FROM DUMMY
+--*******************Add by Fanfangxing 20150901 end***************
+
+--0.4 Forecast_Cost_Publish add by chenwh3 20150901 start
+UNION SELECT  'cdp.ebgcfe.roles.ui_Forecast_Cost_Publish::access' as ROLE_NAME,'ui_Forecast_Cost_Publish' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_Forecast_Cost_Publish::exportable' as ROLE_NAME,'ui_Forecast_Cost_Publish' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_Forecast_Cost_Publish::executable' as ROLE_NAME,'ui_Forecast_Cost_Publish' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_Forecast_Cost_Publish::publishable' as ROLE_NAME,'ui_Forecast_Cost_Publish' AS ROLEGROUP_NAME  FROM DUMMY
+--add by chenwh3 20150901 end
+
+--9.2 B/S Part List added by Justin 20151010 start
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bs_part::access' as ROLE_NAME,'ui_pm_bs_part' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bs_part::createable' as ROLE_NAME,'ui_pm_bs_part' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bs_part::deleteable' as ROLE_NAME,'ui_pm_bs_part' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bs_part::exportable' as ROLE_NAME,'ui_pm_bs_part' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bs_part::uploadable' as ROLE_NAME,'ui_pm_bs_part' AS ROLEGROUP_NAME  FROM DUMMY
+--9.2 B/S Part List added by Justin 20151010 end
+
+--9.3 PM BOM added by bianzh1 20151012 start
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bom::access' as ROLE_NAME,'ui_pm_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bom::createable' as ROLE_NAME,'ui_pm_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bom::deleteable' as ROLE_NAME,'ui_pm_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bom::editable' as ROLE_NAME,'ui_pm_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bom::exportable' as ROLE_NAME,'ui_pm_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bom::uploadable' as ROLE_NAME,'ui_pm_bom' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bom::executable' as ROLE_NAME,'ui_pm_bom' AS ROLEGROUP_NAME  FROM DUMMY
+--9.3 PM BOM added by bianzh1 20151012 end
+
+--10.1 Service Cost Add by Billy Qiao 20150906 start
+UNION SELECT  'cdp.ebgcfe.roles.ui_service_cost::access' as ROLE_NAME,'ui_service_cost' AS ROLEGROUP_NAME  FROM DUMMY
+--UNION SELECT  'cdp.ebgcfe.roles.ui_service_cost::createable' as ROLE_NAME,'ui_service_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_service_cost::deleteable' as ROLE_NAME,'ui_service_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_service_cost::editable' as ROLE_NAME,'ui_service_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_service_cost::exportable' as ROLE_NAME,'ui_service_cost' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_service_cost::uploadable' as ROLE_NAME,'ui_service_cost' AS ROLEGROUP_NAME  FROM DUMMY
+--10.1 Service Cost Add by Billy Qiao 20150906 end
+
+--6.14 X86 Sales Office  Add by Liss 20151021 start
+UNION SELECT  'cdp.ebgcfe.roles.rpt_sales_office::access' as ROLE_NAME,'rpt_sales_office' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_sales_office::exportable' as ROLE_NAME,'rpt_sales_office' AS ROLEGROUP_NAME  FROM DUMMY
+--6.14 X86 Sales Office  Add by Liss 20151021  end
+--9.1 X86 Time Fence add by chenwh3 20160307 start
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_time_fence::access' as ROLE_NAME,'ui_time_fence' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_time_fence::createable' as ROLE_NAME,'ui_time_fence' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_time_fence::deleteable' as ROLE_NAME,'ui_time_fence' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_time_fence::exportable' as ROLE_NAME,'ui_time_fence' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_time_fence::uploadable' as ROLE_NAME,'ui_time_fence' AS ROLEGROUP_NAME  FROM DUMMY
+
+--9.1 X86 Time Fence add by chenwh3 20160307 end
+
+--9.2 X86 Sales Report add by bianzh1 20160307 start
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_sales_report::access' as ROLE_NAME,'ui_pm_sales_report' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_sales_report::editable' as ROLE_NAME,'ui_pm_sales_report' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_sales_report::deleteable' as ROLE_NAME,'ui_pm_sales_report' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_sales_report::exportable' as ROLE_NAME,'ui_pm_sales_report' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_sales_report::uploadable' as ROLE_NAME,'ui_pm_sales_report' AS ROLEGROUP_NAME  FROM DUMMY
+
+--9.2 X86 Sales Report add by bianzh1 20160307 end
+
+--9.3 X86 MTM GR add by zhaodan1 20160309 start
+
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_gr_mtm::access' as ROLE_NAME,'ui_pm_gr_mtm' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_gr_mtm::editable' as ROLE_NAME,'ui_pm_gr_mtm' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_gr_mtm::deleteable' as ROLE_NAME,'ui_pm_gr_mtm' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_gr_mtm::exportable' as ROLE_NAME,'ui_pm_gr_mtm' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_gr_mtm::uploadable' as ROLE_NAME,'ui_pm_gr_mtm' AS ROLEGROUP_NAME  FROM DUMMY
+
+--9.3 X86 MTM GR add by zhaodan1 20160309  end
+---9.7 start
+UNION SELECT  'cdp.ebgcfe.roles.ui_inventory_report::access' as ROLE_NAME,'ui_pm_inventory_report' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_inventory_report::exportable' as ROLE_NAME,'ui_pm_inventory_report' AS ROLEGROUP_NAME  FROM DUMMY
+---9.7 end
+
+---9.6 X86 price Consumption Report Design add by zhengyq7 20160322 start
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_consumption_report::access' as ROLE_NAME,'ui_pm_consumption_report' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_consumption_report::exportable' as ROLE_NAME,'ui_pm_consumption_report' AS ROLEGROUP_NAME  FROM DUMMY
+---9.6 X86 price Consumption Report Design add by zhengyq7 20160322 end
+
+--9.5 ui_pm_forecast report
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_forecast::access' as ROLE_NAME,'ui_pm_forecast' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_forecast::exportable' as ROLE_NAME,'ui_pm_forecast' AS ROLEGROUP_NAME  FROM DUMMY
+
+--- 4.9 XOUTFR Weight
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_weight::access' as ROLE_NAME,'ui_xoutfr_weight' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_weight::createable' as ROLE_NAME,'ui_xoutfr_weight' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_weight::editable' as ROLE_NAME,'ui_xoutfr_weight' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_weight::deleteable' as ROLE_NAME,'ui_xoutfr_weight' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_weight::exportable' as ROLE_NAME,'ui_xoutfr_weight' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_weight::uploadable' as ROLE_NAME,'ui_xoutfr_weight' AS ROLEGROUP_NAME  FROM DUMMY
+--- 4.9 end
+
+--- 4.10 XOUTFR Rate
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_rate::access' as ROLE_NAME,'ui_xoutfr_rate' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_rate::editable' as ROLE_NAME,'ui_xoutfr_rate' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_rate::deleteable' as ROLE_NAME,'ui_xoutfr_rate' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_rate::exportable' as ROLE_NAME,'ui_xoutfr_rate' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_xoutfr_rate::uploadable' as ROLE_NAME,'ui_xoutfr_rate' AS ROLEGROUP_NAME  FROM DUMMY
+--- 4.10 end
+
+--- 2.10 sellable country
+UNION SELECT  'cdp.ebgcfe.roles.ui_sellable_country::access' as ROLE_NAME,'ui_sellable_country' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sellable_country::exportable' as ROLE_NAME,'ui_sellable_country' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sellable_country::deleteable' as ROLE_NAME,'ui_sellable_country' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_sellable_country::editable' as ROLE_NAME,'ui_sellable_country' AS ROLEGROUP_NAME  FROM DUMMY--add zhaodan1 20161104
+--- 2.10 end
+
+--- 0.5 Partial CAL UI
+UNION SELECT  'cdp.ebgcfe.roles.ui_partial_cal::access' as ROLE_NAME,'ui_partial_cal' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_partial_cal::exportable' as ROLE_NAME,'ui_partial_cal' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_partial_cal::uploadable' as ROLE_NAME,'ui_partial_cal' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_partial_cal::deleteallable' as ROLE_NAME,'ui_partial_cal' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_partial_cal::deleteable' as ROLE_NAME,'ui_partial_cal' AS ROLEGROUP_NAME  FROM DUMMY
+--- 0.5 end
+
+--- 6.15 MTM Reports
+UNION SELECT  'cdp.ebgcfe.roles.rpt_mtm::access' as ROLE_NAME,'rpt_mtm' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_mtm::exportable' as ROLE_NAME,'rpt_mtm' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_mtm::executeable' as ROLE_NAME,'rpt_mtm' AS ROLEGROUP_NAME  FROM DUMMY
+--- 6.15 end
+
+--- 7.4 Country Duty this required from AP Project by zhaodan1 16/10/27
+--UNION SELECT  'cdp.ebgcfe.roles.ui_country_duty::access' as ROLE_NAME,'ui_country_duty' AS ROLEGROUP_NAME  FROM DUMMY
+--UNION SELECT  'cdp.ebgcfe.roles.ui_country_duty::createable' as ROLE_NAME,'ui_country_duty' AS ROLEGROUP_NAME  FROM DUMMY
+--UNION SELECT  'cdp.ebgcfe.roles.ui_country_duty::editable' as ROLE_NAME,'ui_country_duty' AS ROLEGROUP_NAME  FROM DUMMY
+--UNION SELECT  'cdp.ebgcfe.roles.ui_country_duty::deleteable' as ROLE_NAME,'ui_country_duty' AS ROLEGROUP_NAME  FROM DUMMY
+--UNION SELECT  'cdp.ebgcfe.roles.ui_country_duty::exportable' as ROLE_NAME,'ui_country_duty' AS ROLEGROUP_NAME  FROM DUMMY
+--UNION SELECT  'cdp.ebgcfe.roles.ui_country_duty::uploadable' as ROLE_NAME,'ui_country_duty' AS ROLEGROUP_NAME  FROM DUMMY
+--- 7.4 end
+
+--- 11.1 CTO-FC Adder
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_adder::access' as ROLE_NAME,'ui_ctofc_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_adder::createable' as ROLE_NAME,'ui_ctofc_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_adder::editable' as ROLE_NAME,'ui_ctofc_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_adder::deleteable' as ROLE_NAME,'ui_ctofc_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_adder::exportable' as ROLE_NAME,'ui_ctofc_adder' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_ctofc_adder::uploadable' as ROLE_NAME,'ui_ctofc_adder' AS ROLEGROUP_NAME  FROM DUMMY
+--- 11.1 end
+
+--- 11.2 Volume Reports  add by zhangzj6 20160722
+UNION SELECT  'cdp.ebgcfe.roles.rpt_volume_report::access' as ROLE_NAME,'rpt_volume_report' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.rpt_volume_report::exportable' as ROLE_NAME,'rpt_volume_report' AS ROLEGROUP_NAME  FROM DUMMY
+--UNION SELECT  'cdp.ebgcfe.roles.rpt_volume_report::executeable' as ROLE_NAME,'rpt_volume_report' AS ROLEGROUP_NAME  FROM DUMMY
+--- 11.2 Volume Reports end
+
+--- 9.8 buy &amp; sell part no zhaodan1 2016/8/25
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bs_part_no::access' as ROLE_NAME,'ui_pm_bs_part_no' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bs_part_no::deleteable' as ROLE_NAME,'ui_pm_bs_part_no' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bs_part_no::exportable' as ROLE_NAME,'ui_pm_bs_part_no' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_pm_bs_part_no::uploadable' as ROLE_NAME,'ui_pm_bs_part_no' AS ROLEGROUP_NAME  FROM DUMMY
+--- 9.8 end
+
+--- 7.4 cryad_ph zhaodan1 2017/2/7
+UNION SELECT  'cdp.ebgcfe.roles.ui_cryad_ph::access' as ROLE_NAME,'ui_cryad_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cryad_ph::deleteable' as ROLE_NAME,'ui_cryad_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cryad_ph::exportable' as ROLE_NAME,'ui_cryad_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cryad_ph::uploadable' as ROLE_NAME,'ui_cryad_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cryad_ph::createable' as ROLE_NAME,'ui_cryad_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_cryad_ph::editable' as ROLE_NAME,'ui_cryad_ph' AS ROLEGROUP_NAME  FROM DUMMY
+---7.4 end
+
+--- 7.4 Frt ph bianzh1 2017/2/8
+UNION SELECT  'cdp.ebgcfe.roles.ui_frt_ph::access' as ROLE_NAME,'ui_frt_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_frt_ph::deleteable' as ROLE_NAME,'ui_frt_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_frt_ph::exportable' as ROLE_NAME,'ui_frt_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_frt_ph::uploadable' as ROLE_NAME,'ui_frt_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_frt_ph::createable' as ROLE_NAME,'ui_frt_ph' AS ROLEGROUP_NAME  FROM DUMMY
+UNION SELECT  'cdp.ebgcfe.roles.ui_frt_ph::editable' as ROLE_NAME,'ui_frt_ph' AS ROLEGROUP_NAME  FROM DUMMY
+---7.4 end
+;
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="ROLE_NAME" order="1">
+        <descriptions defaultDescription="ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLE_NAME"/>
+      </attribute>
+      <attribute id="ROLEGROUP_NAME" order="2">
+        <descriptions defaultDescription="DISPLAY_ROLE_NAME"/>
+        <keyMapping columnObjectName="Script_View" columnName="ROLEGROUP_NAME"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

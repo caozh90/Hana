@@ -1,0 +1,143 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRateBatch" ( 
+    IN delInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_DEL",
+    OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+    
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	--READS SQL DATA 
+/************************************************************************
+*name        :      deleteUiXoutfrRateBatch
+*function    :               
+*input       ：              delInfo
+*output      :      errorInfo            
+*author      :      zhaodan1
+*CreateDate  :      2016.07.04
+*UpdateDate  :        
+*************************************************************************/
+	AS
+	aI_DETAIL NVARCHAR(300) :='';
+	alogide INTEGER :=0;
+	privilegeExists  NVARCHAR(300)  ; 
+	
+BEGIN
+
+DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN              
+    	aI_DETAIL :='cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRateBatch error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+    	
+    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    	 I_TYPE=>'PROC_ERROR'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRateBatch'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+	     	,I_DETAIL=>:aI_DETAIL
+     	);	
+ 
+ 		errorInfo = select 400 as http_status_code, 
+     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+     		aI_DETAIL detail from dummy;
+    END;  
+
+   call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_xoutfr_rate::deleteable',privilegeExists);
+    IF  privilegeExists != 'OK' THEN
+    errorInfo = select 400 as http_status_code, 
+              'SQL ERROR CODE : 0' error_message, 
+              privilegeExists detail from dummy;
+       RETURN ;
+    END IF;
+
+      
+CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	    I_TYPE=>'PROC_START'
+       ,I_LOGSID=>:alogide
+       ,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRateBatch'
+       ,I_MODULE=>'EBGCFE'
+   	); 
+ 
+
+deleted_rec = 
+   select distinct A.* from  "EBGCFE"."UI_XOUTFR_RATE" AS A , :delInfo AS B 
+          WHERE B.CYCLE = A.CYCLE AND
+                B.PRODUCT_GROUP = A.PRODUCT_GROUP AND
+                B.BRAND = A.BRAND AND
+                B.PLANT = A.PLANT AND
+                B.GEO = A.GEO AND
+                B.FAMILY = A.FAMILY AND
+                B.MACHINETYPE = A.MACHINETYPE;
+                
+-- delete record from table	  	
+DELETE FROM "EBGCFE"."UI_XOUTFR_RATE" AS A
+  WHERE EXISTS ( SELECT 1 FROM :deleted_rec 
+                  WHERE CYCLE = A.CYCLE AND
+                        PRODUCT_GROUP = A.PRODUCT_GROUP AND
+                        BRAND = A.BRAND AND
+                        PLANT = A.PLANT AND
+                        --GEO_TYPE = A.GEO_TYPE AND
+                        GEO = A.GEO AND
+                        FAMILY = A.FAMILY AND
+                        MACHINETYPE = A.MACHINETYPE
+                      ); 
+  
+if ::rowcount <= 0
+then
+	/*errorInfo = select 400 as http_status_code, 
+	     		'the record do not exists' error_message, 
+	     		'the record do not exists' DETAIL from dummy;	     		
+	     	return;
+	 SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record do not exists';*/
+	 
+	 RETURN;
+	 
+end if;	
+
+
+
+--insert log table
+
+INSERT INTO "EBGCFE"."UI_XOUTFR_RATE_LOG"(
+		  CYCLE,      BRAND,
+	      GEO_TYPE, GEO,PLANT,	      
+	      FAMILY,       MACHINETYPE,
+	      GL_PERCENTAGE,FREIGHT_TYPE,
+	      m1, m2, m3, m4,
+	      m5, m6, m7, m8,
+	      m9, m10, m11, m12,
+	      m13, m14, m15, m16,
+	      m17, m18,
+		SYS_CREATED_BY,SYS_CREATED_DATE,
+		SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,
+		AT_ACTION,AT_MODIFIED_ON,AT_MILLIS
+	 )SELECT 
+		 a.CYCLE,      a.BRAND,
+	      a.GEO_TYPE, a.GEO,a.PLANT,	      
+	      a.FAMILY,       a.MACHINETYPE,
+	      a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1, a.m1, a.m1,
+	      a.m1, a.m1,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		'delete',	CURRENT_TIMESTAMP ,TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+	  FROM :deleted_rec a;
+   	
+aI_DETAIL := 'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRate successfully deleted . ';
+ 		CALL "EX_LOG"."cdp.log.procedures::logProc"(
+	 		I_TYPE=>'PROC_END'	
+	     	,I_LOGSID=>:alogide
+	     	,I_EVENT_NAME=>'cdp.ebgcfe.procedures.pkg_ui.ui_xoutfr_rate::deleteUiXoutfrRate'
+	     	,I_MODULE=>'EBGCFE'
+	     	,I_DETAIL=>:aI_DETAIL
+     	);   
+     errorInfo = select 200 as http_status_code, 
+     		'SUCCESS' ERROR_MESSAGE, 
+     		'' DETAIL from dummy;	
+     	
+END;

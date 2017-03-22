@@ -1,0 +1,149 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_pcdw_to_cfe::PRC_PCDW_MVKE_NETCHG" ( 
+  IN p_in_lastrundate TIMESTAMP,
+  OUT p_out_exitcode INTEGER
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+    DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA  
+/************************************************************************
+*name       : PRC_PCDW_MVKE_NETCHG            
+*function   : Sales Data Net Change
+*input      ：p_in_lastrundate : last run date
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2015-01-14
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+  -- data
+  DECLARE    v_g_pkg_name    VARCHAR(30) := 'PKG_PCDW_TO_CFE';   
+  DECLARE    v_prc_name      VARCHAR(30) := 'PRC_PCDW_MVKE_NETCHG';
+  --DECLARE    v_lastrundate   TIMESTAMP;
+  DECLARE    v_count         INTEGER;
+  DECLARE    v_found         INTEGER;
+  DECLARE    v_init_date     TIMESTAMP; 
+  DECLARE    v_full_name     VARCHAR(60)  := :v_g_pkg_name ||'.'|| :v_prc_name;
+  DECLARE    v_logidi        INTEGER := 0;  
+  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+  BEGIN
+    --   ROLLBACK;
+    UPDATE   conf_sync_lastrun
+            SET   ENDDATE = CURRENT_TIMESTAMP, returncode = -1
+          WHERE   pkgname = :v_g_pkg_name AND progname = :v_prc_name;
+    --     COMMIT; 
+    p_out_exitcode := ::SQL_ERROR_CODE; 
+ 	CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:v_logidi,
+				I_EVENT_NAME=>:v_full_name, I_MODULE=>'EBGCFE',
+				I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' || substr(::SQL_ERROR_MESSAGE, 1, 500) );         
+       --  COMMIT;  
+  END;  
+  
+  -- process logic
+  p_out_exitcode := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:v_logidi,
+		                                          I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');       
+  --COMMIT;
+
+  -- update run time info
+  SELECT count(*) INTO v_found FROM conf_sync_lastrun WHERE pkgname = :v_g_pkg_name AND progname = :v_prc_name; 
+  IF :v_found = 0 
+  THEN 
+    SELECT "cdp.ebgcfe.functions::FUNC_PKG_CONS"().c_f_init_date INTO v_init_date FROM DUMMY;
+    INSERT INTO conf_sync_lastrun (pkgname, progname, lastrundate, startdate, returncode) 
+         VALUES (:v_g_pkg_name, :v_prc_name, :v_init_date, CURRENT_TIMESTAMP, -1); 
+  ELSE UPDATE conf_sync_lastrun SET startdate = CURRENT_TIMESTAMP, returncode = -1
+                              WHERE pkgname = :v_g_pkg_name AND progname = :v_prc_name; 
+  END IF;      
+  
+
+--1.ADD VMSTA COLUMN
+--2.ADD BUNDLE ITEMTYPE
+--3.EOL STATUS NOT EQUAL EOL
+--4.SALES ORG MUST IN UI_COUNTRY_SALESORG_MAPPING TAB
+--5.VMSTA NOT EQUAL  17
+--6.NOT EXITS VMSTA = '18' AND MATNR IN ECC_MVKE_CFE.VMSTA = '17'
+
+
+  --EXECUTE IMMEDIATE 'TRUNCATE TABLE Z_MID_MVKE';
+  DELETE FROM MID_MVKE;
+  INSERT INTO MID_MVKE
+            (MATNR, VKORG, VMSTA, SYS_CREATED_DATE, SYS_CREATED_BY, KTGRM)
+   SELECT MAP (LENGTH (A.MATNR),
+                  18, RIGHT(A.MATNR, 10),  --SUBSTR (A.MATNR, -10),
+                  A.MATNR
+                 ) AS MATNR,
+          --A.VKORG, A.VMSTA, A.SYS_CREATED_DATE, A.SYS_CREATED_BY, A.KTGRM
+          A.VKORG, A.VMSTA, A.SYS_CREATED_DATE, A.SYS_CREATED_BY, NULL
+     --FROM ECC_MVKE_CFE A
+     FROM PCDW.ECC_MVKE A
+    WHERE IFNULL(A.VMSTA,'NULL') <> '17'
+      AND NOT EXISTS (
+             SELECT 1
+               --FROM ECC_MVKE_CFE ECC
+               FROM PCDW.ECC_MVKE ECC
+              WHERE ECC.VMSTA = '18'
+                AND A.MATNR = ECC.MATNR
+                AND A.VKORG = ECC.VKORG
+                AND IFNULL(A.VMSTA,'NULL')  = ECC.VMSTA
+                AND EXISTS (
+                       SELECT 1
+                         --FROM ECC_MVKE_CFE E
+                         FROM PCDW.ECC_MVKE E
+                        WHERE E.VMSTA = '17'
+                          AND ECC.MATNR = E.MATNR
+                         -- AND ECC.VKORG = E.VKORG
+                          ));
+
+  --COMMIT ;
+
+  --Added by Harris for PBI000000013311
+  DELETE FROM   biz_mvke t1
+        WHERE   EXISTS
+                   (SELECT   1
+                      --FROM   ecc_mvke_cfe t2
+                      FROM   pcdw.ecc_mvke t2
+                     WHERE       t2.matnr = t1.matnr
+                             AND t2.vkorg = t1.vkorg
+                             AND t2.vmsta <> t1.vmsta);
+
+  --Added by Harris for PBI000000013311
+  --Do not commit here.
+
+  INSERT INTO BIZ_MVKE
+            (MATNR, VKORG, VMSTA, SYS_CREATED_DATE, SYS_CREATED_BY, KTGRM)
+   SELECT A.MATNR, A.VKORG, A.VMSTA, A.SYS_CREATED_DATE, A.SYS_CREATED_BY, A.KTGRM
+     FROM MID_MVKE A,
+          UI_ITEM B,
+          (SELECT DISTINCT SALES_ORG
+                      FROM UI_COUNTRY_SALESORG_MAPPING) C
+    WHERE NOT EXISTS (SELECT NULL
+                        FROM BIZ_MVKE D
+                       WHERE A.MATNR = D.MATNR AND A.VKORG = D.VKORG)
+      AND A.VKORG = C.SALES_ORG
+      AND A.MATNR = B.ITEM
+      AND B.ITEM_TYPE IN
+             ('MTM',
+              'CTO',
+              'OPTION',
+              'VISUAL',
+              'VLH',  --PKG_CONS.OUTPUT_TYPE_3PO,
+              'BUNDLE'
+             )
+      AND B.EOL_STATUS <> 'EOL';
+  --COMMIT ;
+
+
+   UPDATE   conf_sync_lastrun c1
+       SET   lastrundate = startdate, enddate = CURRENT_TIMESTAMP, returncode = 0
+     WHERE   pkgname = :v_g_pkg_name AND progname = :v_prc_name;
+        
+   p_out_exitcode := 0;
+   --p_out_exitmess := 'SUCCESSFUL';
+   CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:v_logidi,
+											   I_EVENT_NAME=>:v_full_name,I_MODULE=>'EBGCFE');   
+  --    COMMIT;
+END;

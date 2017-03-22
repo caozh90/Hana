@@ -1,0 +1,40 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.ui_manual_pull::generate_pull_header_id" (
+OUT PULL_HEADER_ID NVARCHAR(20)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	AS
+/************************************************************************
+*name      : generate_pull_header_id              --函数名
+*function  : create和upload时调用sequence生成新的header_id值           --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-23       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+	n integer;
+	temp nvarchar(20);
+		privilegeExists1  NVARCHAR(30);
+		privilegeExists2  NVARCHAR(30);
+		privilegeExists3  NVARCHAR(30);	
+BEGIN
+  
+  select 'P'||"MXEBGVMI"."cdp.mxebgvmi.sequences::SEQ_PULL_HEADER_ID".NEXTVAL 
+  into temp
+  from dummy;
+  
+  select count(1) into n from "MXEBGVMI"."UI_MANUAL_PULL"
+  where PULL_HEADER_ID = :temp;
+  --避免主键冲突，sequence为HEADER_ID迭代
+  while n>0 do
+    select 'P'||"MXEBGVMI"."cdp.mxebgvmi.sequences::SEQ_PULL_HEADER_ID".NEXTVAL 
+	  	into temp  from dummy;	
+	select count(1) into n from "MXEBGVMI"."UI_MANUAL_PULL"
+  	 	where PULL_HEADER_ID = :temp;
+  end while;
+  
+  PULL_HEADER_ID := :temp;
+  
+END;

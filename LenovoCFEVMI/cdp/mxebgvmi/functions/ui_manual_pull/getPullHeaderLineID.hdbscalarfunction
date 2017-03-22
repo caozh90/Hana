@@ -1,0 +1,45 @@
+FUNCTION "MXEBGVMI"."cdp.mxebgvmi.functions.ui_manual_pull::getPullHeaderLineID" (
+    MANUALPULLTYPE VARCHAR(200) ) 
+	RETURNS PRE_HEADER_LINE_ID VARCHAR(6)
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER
+    DEFAULT SCHEMA MXEBGVMI AS
+BEGIN
+
+     DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+     
+     DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	 PRE_HEADER_LINE_ID := 'NO' ;
+     END;         
+    
+    select string_agg(pid,':' order by seq asc) into PRE_HEADER_LINE_ID 
+    from (
+	    select b.pid as pid,
+	           case upper(b.ptype)
+	           when 'MANUAL_PULL_HEADER' then 0
+	           when 'MANUAL_PULL_LINE' then 1
+	           end as seq	            
+	    from CONF_PARAMETER a
+	    inner JOIN CONF_PARAMETER b
+	    on a.pid = b.pvalue
+	    where a.pvalue = :MANUALPULLTYPE
+    )
+    ;
+    
+    
+/*
+	IF MANUALPULLTYPE = 'Material for WIP Reposition' THEN
+		PRE_HEADER_LINE_ID := 'PR' || ':' || 'PLR';
+	ELSEIF  MANUALPULLTYPE = 'Material to fulfill OLD/Reject/Alternates/3PL Rebalancing' THEN
+		PRE_HEADER_LINE_ID := 'PC' || ':' || 'PLC';
+	ELSEIF  MANUALPULLTYPE = 'Material for SWAP Room' THEN
+		PRE_HEADER_LINE_ID := 'PS' || ':' || 'PLS';
+	ELSEIF  MANUALPULLTYPE = 'Material for Interplant Rebalancing' THEN
+		PRE_HEADER_LINE_ID := 'PE' || ':' || 'PLE';	   
+	ELSE
+	    PRE_HEADER_LINE_ID := 'NO' || ':' || 'NO';	
+	END IF;
+	*/
+
+END;

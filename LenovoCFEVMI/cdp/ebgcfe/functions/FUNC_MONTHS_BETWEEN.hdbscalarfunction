@@ -1,0 +1,55 @@
+FUNCTION "EBGCFE"."cdp.ebgcfe.functions::FUNC_MONTHS_BETWEEN" ( 
+IN p_in_date1 DATE,
+IN p_in_date2 DATE
+)  
+	RETURNS mon_num DECIMAL
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY INVOKER 
+/************************************************************************
+
+-- Author:      Zhangxj
+-- Create date: 2015-11-18
+-- Description: MONTHS_BETWEEN returns number of months between dates date1 and date2.
+-- If date1 is later than date2, then the result is negative. If date1 is earlier than date2, then the result is positive.
+-- Modify [1]:  
+
+*************************************************************************/
+AS
+	v_date_1 DATE;
+	v_date_2 DATE;
+	v_months INTEGER := 0;
+	v_days DECIMAL := 0;
+	--mon_num	DECIMAL;
+	
+BEGIN
+
+	v_date_1:=TO_DATE(TO_CHAR(p_in_date1,'YYYYMM'),'YYYYMM');
+	v_date_2:=TO_DATE(TO_CHAR(p_in_date2,'YYYYMM'),'YYYYMM');
+	
+	IF p_in_date1 <= p_in_date2 THEN
+		
+		WHILE (v_date_1 <> v_date_2) DO
+			v_date_1:= ADD_MONTHS(v_date_1,1);
+			v_months := v_months + 1;
+		END WHILE;
+		
+		v_days:=DAYS_BETWEEN(p_in_date2,ADD_MONTHS(p_in_date1,v_months))/31;
+		
+		mon_num:=v_months+v_days;
+		
+		--RETURN mon_num;
+	ELSE
+		
+		WHILE (v_date_1 <> v_date_2) DO
+			v_date_2:= ADD_MONTHS(v_date_2,1);
+			v_months := v_months + 1;
+		END WHILE;
+		
+		v_days:=DAYS_BETWEEN(p_in_date1,ADD_MONTHS(p_in_date2,v_months))/31;
+		
+		mon_num:= -(v_months+v_days);
+	
+		--RETURN mon_num;
+	END IF;
+
+END;

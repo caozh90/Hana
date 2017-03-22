@@ -1,0 +1,105 @@
+PROCEDURE "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_mobom_location" (
+IN	 	ITEM  NVARCHAR(40),
+IN 		LOGICAL_PLANT NVARCHAR(40),
+IN 	 	STORAGE_LOCATION NVARCHAR(40),
+IN	 	table_name varchar(200),
+IN	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA MXEBGVMI
+	AS
+		n int;
+		i int;
+		total int;
+		errors int;
+		errorMsg nvarchar(1024);
+/************************************************************************
+*name      : ui_mobom_location_raw              --函数名
+*function  : 先将数据全部插入中间表中，然后对中间表进行验证             --函数功能
+*input     ：    			--输入参数9
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2015-07-23       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_mobom_location_err"(
+     	:ITEM,:LOGICAL_PLANT,:STORAGE_LOCATION,
+		:table_name,:business_name,:business_code,:position,
+		::SQL_ERROR_MESSAGE);
+    	
+    END; 
+    --exception 
+    --首先，检测主键冲突
+    errorMsg := 'Primary key constraint violated.';
+    select count(1) into n 
+    from UI_MOBOM_LOCATION
+    where ITEM = :ITEM
+          AND LOGICAL_PLANT = :LOGICAL_PLANT 
+          AND STORAGE_LOCATION = :STORAGE_LOCATION;
+    if :n>0 then
+    	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_mobom_location_err"(
+     	:ITEM,:LOGICAL_PLANT,:STORAGE_LOCATION,
+		:table_name,:business_name,:business_code,:position,
+		:errorMsg);
+		return;
+    end if;
+    
+    /**
+	* 1.校验ITEM,LOGICAL_PLANT
+	**/
+	errorMsg :='"ITEM","LOGICAL_PLANT" is illegal!';
+	select count(1) into n from ITEMSITEMASTER
+	WHERE (ITEM,LOGICAL_PLANT) not in
+	(
+		select ITEM,LOGICAL_PLANT from ITEMSITEMASTER
+	);
+    if :n>0 then
+    	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_mobom_location_err"(
+     	:ITEM,:LOGICAL_PLANT,:STORAGE_LOCATION,
+		:table_name,:business_name,:business_code,:position,
+		:errorMsg);
+		return;
+    end if;
+    
+    /**
+	* 2.校验LOGICAL_PLANT,STORAGE_LOCATION
+	**/
+	errorMsg :='"LOGICAL_PLANT","STORAGE_LOCATION" is illegal!';
+	select count(1) into n from CONF_WAHREHOUSE_INFO
+	WHERE (LOGICAL_PLANT,STORAGE_LOCATION) not in
+	(
+		select LOGICAL_PLANT,STORAGE_LOCATION from CONF_WAHREHOUSE_INFO
+	);
+    if :n>0 then
+    	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::ui_mobom_location_err"(
+     	:ITEM,:LOGICAL_PLANT,:STORAGE_LOCATION,
+		:table_name,:business_name,:business_code,:position,
+		:errorMsg);
+		return;
+    end if;
+    
+	--验证结束，插入数据
+	--INSERT正确的数据
+	insert into UI_MOBOM_LOCATION(ITEM,LOGICAL_PLANT,STORAGE_LOCATION,SYS_SOURCE,
+		SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY)
+	values 
+	(:ITEM,:LOGICAL_PLANT,:STORAGE_LOCATION,'UI',current_timestamp,session_user,
+	current_timestamp,session_user);
+	--记录log
+	INSERT INTO UI_MOBOM_LOCATION_LOG(ITEM,LOGICAL_PLANT,STORAGE_LOCATION,SYS_SOURCE,
+		SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY,
+	 		AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME)
+	values
+	(:ITEM,:LOGICAL_PLANT,:STORAGE_LOCATION,'UI',current_timestamp,session_user,
+	current_timestamp,session_user,SESSION_USER,'create',current_timestamp);
+	
+	call "MXEBGVMI"."cdp.mxebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+END

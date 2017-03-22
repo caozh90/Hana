@@ -1,0 +1,97 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.ui_manual_bom::beforeUpdateUiManualBom" ( 
+		IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MANUAL_BOM_T"
+		,IN oldInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_MANUAL_BOM_T"
+		,OUT errorInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.HttpError"
+) 
+	LANGUAGE SQLSCRIPT
+	DEFAULT SCHEMA EBGCFE
+	AS
+		aProduct_group NVARCHAR(10);
+	    aBom_level NVARCHAR(10);
+	    aFather NVARCHAR(18);
+	    aChildren NVARCHAR(100);
+	    aPlant NVARCHAR(40);
+	    aQuantity NVARCHAR(100);
+	    aFlag NVARCHAR(20);
+
+		validate INTEGER;
+BEGIN
+    DECLARE invalid_number CONDITION FOR SQL_ERROR_CODE 339; --invalid number
+
+    select 
+        PRODUCT_GROUP,  
+        BOM_LEVEL,
+        FATHER,
+        CHILDREN,
+        PLANT,
+        QUANTITY,
+        FLAG
+      into 
+        aProduct_group,
+        aBom_level,
+        aFather,
+        aChildren,
+        aPlant,
+        aQuantity,
+        aFlag
+      from :newInfo;
+  
+    --BOM_LEVEL
+    select count(1) into validate from CONF_PARAMETERS where PVALUE = :aBom_level and PDOMAIN='UI_MANUAL_BOM' and PNAME='BOM_LEVEL'; 
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'BOM_LEVEL: VALIDATION FAILED, NOT EXIST IN CONF_PARAMETERS' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --FATHER
+    if aBom_level = 'L1' 
+    then
+        select count(1) into validate from UI_ITEM where item_type in ('OPTION','MTM','CTO','BUNDLE') and item = :aFather;
+    elseif aBom_level = 'L2'
+    then
+        select count(1) into validate from UI_ITEM where item_type ='SBB' and item = :aFather;
+    END IF; 
+    if validate = 0  then
+         errorinfo = select 400 as http_status_code, 
+            'FATHER: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;
+        return;
+    end if;     
+            
+    --CHILDRERN
+    if aBom_level = 'L1' 
+    then
+        select count(1) into validate from UI_ITEM where item_type in ('SBB','DUMMY','COMPONENT','OPTION', 'SWR') and item = :aChildren;
+    elseif aBom_level = 'L2'
+    then
+        select count(1) into validate from UI_ITEM where  item_type in('DUMMY','COMPONENT','OPTION', 'SWR') and item = :aChildren;
+    END IF; 
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'CHILDREN: VALIDATION FAILED, NOT EXIST IN UI_ITEM' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+    --PLANT
+    select count(1) into validate from UI_plant where PLANT = :aPlant;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'PLANT: VALIDATION FAILED, NOT EXIST IN UI_PLANT' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    
+   /*     --FLAG
+    select count(1) into validate from CONF_PARAMETERS where PDOMAIN='UI_MANUAL_BOM' and PNAME='FLAG' and pvalue = :aFlag;
+    if validate = 0  then
+        errorinfo = select 400 as http_status_code, 
+            'FLAG: VALIDATION FAILED, NOT EXIST IN UI_PLANT' error_message, 
+            '' detail from dummy;
+        return;
+    end if;
+    */
+
+END;

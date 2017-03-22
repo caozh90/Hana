@@ -1,0 +1,69 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_report::PRC_LEADTIME" (
+  OUT P_OUT_EXITCODE INTEGER
+) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER 
+  DEFAULT SCHEMA EBGDF
+
+  AS
+BEGIN
+
+  -- data
+  DECLARE   V_PKG_NAME        VARCHAR(100) := 'PKG_REPORT';    
+  DECLARE   V_PRC_NAME        VARCHAR(100) := 'PRC_LEADTIME';
+  DECLARE   V_FUNC_FULL_NAME  VARCHAR(100) := :V_PKG_NAME || '.' || :V_PRC_NAME;  
+  DECLARE   logidi            INTEGER := 0;
+  
+  -- exception
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN              
+            P_OUT_EXITCODE := -1;  
+      CALL "EX_LOG"."cdp.log.procedures::logProc"
+          (I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+          I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'EBGDF',
+          I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+                                        substr(::SQL_ERROR_MESSAGE, 1, 1000) );    
+        RESIGNAL;     
+    END;  
+    
+  -- process logic
+  P_OUT_EXITCODE := -1;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF'); 
+  
+  
+  --EXECUTE IMMEDIATE 'truncate table RPT_LEADTIME';
+  DELETE FROM RPT_LEADTIME;
+  
+  
+  INSERT INTO RPT_LEADTIME (CYCLE_ID,
+                            MFI_FFI_FC_IND,
+                            MFI_FFI_FC,
+                            PPN,
+                            ABCD_T,
+                            ABCD,
+                            LEADTIME)
+            select  t.CYCLE_ID,
+					t.mfi_ffi_fc_ind , 
+		            t.mfi_ffi_fc , 
+		            t.PPN,
+		            t.ABCD_T,
+		            t.ABCD,
+		            t1.leadtime  LEADTIME
+		       from (select CYCLE_ID,
+							mfi_ffi_fc_ind , 
+				            mfi_ffi_fc , 
+				            PPN,
+				            ABCD_T,
+				            ABCD ,
+				            max(abcd)over(partition by mfi_ffi_fc) max_abcd
+				       from "EBGDF".rpt_pn_class) t,
+				     EBGDF.UI_LTVALUE t1
+			   where t.max_abcd = t1.abcd;
+			 
+  P_OUT_EXITCODE := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"
+    (I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+    I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGDF');  
+end ;

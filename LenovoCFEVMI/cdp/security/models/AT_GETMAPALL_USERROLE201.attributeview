@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_GETMAPALL_USERROLE201" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_GETMAPALL_USERROLE001 ,用户所在用户组合所对应的权限组合所包含的权限"/>
+  <attributes>
+    <attribute id="MODULE_ID" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MODULE_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" columnName="MODULE_ID"/>
+    </attribute>
+    <attribute id="USER_ID" key="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="USER_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" columnName="USER_ID"/>
+    </attribute>
+    <attribute id="ROLEGROUP_ID" key="true" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ROLEGROUP_ID"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" columnName="ROLEGROUP_ID"/>
+    </attribute>
+    <attribute id="ROLE_ID_1" hidden="true" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ROLE_ID_1"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" columnName="ROLE_ID"/>
+    </attribute>
+    <attribute id="ROLE_ID_2" hidden="true" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ROLE_ID_2"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" columnName="ROLE_ID"/>
+    </attribute>
+    <attribute id="ROLE_ID_3" hidden="true" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ROLE_ID_3"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" alias="cdp_1" columnName="ROLE_ID"/>
+    </attribute>
+    <attribute id="ROLE_ID_4" hidden="true" order="8" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ROLE_ID_4"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" alias="cdp_2" columnName="ROLE_ID"/>
+    </attribute>
+    <attribute id="USER_NAME" order="9" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="USER_NAME"/>
+      <keyMapping schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER" columnName="USER_NAME"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes>
+    <calculatedAttribute id="CDP_PRIVILEGE_NAME" hidden="false" key="true" order="1" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CDP_PRIVILEGE_NAME"/>
+      <keyCalculation datatype="NVARCHAR" length="300">
+        <formula>'securityBase'</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+    <calculatedAttribute id="ROLE_ID" hidden="false" key="true" order="10" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="ROLE_ID"/>
+      <keyCalculation datatype="BIGINT">
+        <formula>if(Not(isnull(&quot;ROLE_ID_1&quot;)) ,&quot;ROLE_ID_1&quot;,if(Not(isnull(&quot;ROLE_ID_2&quot;)) ,&quot;ROLE_ID_2&quot;,if(Not(isnull(&quot;ROLE_ID_3&quot;)) ,&quot;ROLE_ID_3&quot;,if(Not(isnull(&quot;ROLE_ID_4&quot;)) ,&quot;ROLE_ID_4&quot;,0))))</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+  </calculatedAttributes>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" alias="cdp_1"/>
+        <columnFilter columnName="USER_ID">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="0"/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" alias="cdp_2"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_GROUP_USER"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+        <leftColumns>
+          <columnName>MODULE_ID</columnName>
+          <columnName>ROLEGROUP_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MODULE_ID</columnName>
+          <columnName>ROLEGROUP_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="rightOuter"/>
+      </join>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" alias="cdp_1"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" alias="cdp_2"/>
+        <leftColumns>
+          <columnName>MODULE_ID</columnName>
+          <columnName>ROLEGROUP_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MODULE_ID</columnName>
+          <columnName>ROLEGROUP_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="leftOuter"/>
+      </join>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.INFO_USER"/>
+        <leftColumns>
+          <columnName>USER_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>USER_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_GROUP_USER"/>
+        <leftColumns>
+          <columnName>MODULE_ID</columnName>
+          <columnName>USER_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MODULE_ID</columnName>
+          <columnName>USER_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="leftOuter"/>
+      </join>
+      <join>
+        <leftTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_ALL" alias="cdp_1"/>
+        <rightTable schemaName="SECURITY" columnObjectName="cdp.security.data::userManagement.MAP_GROUP_USER"/>
+        <leftColumns>
+          <columnName>MODULE_ID</columnName>
+          <columnName>GROUP_ID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MODULE_ID</columnName>
+          <columnName>GROUP_ID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="cdp.security.data::userManagement.MAP_ALL" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="532" y="16"/>
+        </shape>
+        <shape modelObjectName="cdp_1" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="963" y="16"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.MAP_ROLEGROUP_ROLE" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="31" y="47"/>
+        </shape>
+        <shape modelObjectName="cdp_2" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="1420" y="30"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.INFO_USER" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="529" y="231"/>
+        </shape>
+        <shape modelObjectName="cdp.security.data::userManagement.MAP_GROUP_USER" modelObjectNameSpace="SECURITY" modelObjectType="catalog">
+          <upperLeftCorner x="963" y="207"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

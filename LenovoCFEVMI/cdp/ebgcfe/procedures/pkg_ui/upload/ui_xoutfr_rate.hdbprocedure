@@ -1,0 +1,455 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xoutfr_rate" 
+(
+	IN newInfo "EBGCFE"."cdp.ebgcfe.data::EBGCFE_T.UI_XOUTFR_RATE_S"
+) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA EBGCFE
+	
+/************************************************************************
+*name        :      ui_xoutfr_rate
+*function    :      upload data ui_xoutfr_rate          
+*input       ：              business_name etc
+*output      :                
+*author      :      zhaodan1
+*CreateDate  :      2016.5.20
+*UpdateDate  :        
+*************************************************************************/ 
+
+	AS
+	path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+	proc_name varchar(100) :='ui_xoutfr_rate';
+ 	sys_last_modified_date TIMESTAMP;
+	log_detail NVARCHAR(300) :='';
+	error_count int;
+	percent_err int;
+	currentUser varchar(100);
+	create_time TIMESTAMP;
+	business_code nvarchar(20);
+	business_name nvarchar(100);
+	table_name varchar(1000) := 'UI_XOUTFR_RATE';
+	success_count int := 0;
+	rec_insert int := 0;
+	rec_update int :=0;
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	--call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xoutfr_rate_err"(:newInfo_e);
+     END;     
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	--call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xoutfr_rate_err"(:newInfo_e);
+    END; 
+       
+	--procedure begin
+	
+	select top 1 SEQ,BUSINESS_NAME into business_code,business_name  from :newInfo;
+	
+	--赋值时间戳和用户名
+	SELECT SESSION_USER INTO currentUser FROM DUMMY;
+	SELECT CURRENT_UTCTIMESTAMP INTO create_time FROM DUMMY;
+	
+	org_newInfo = select * from :newInfo;  
+	
+	
+	newInfo = SELECT   CYCLE,PRODUCT_GROUP,
+		               'N/A' BRAND, 
+		               PLANT, GEO_TYPE,GEO,
+					   'N/A' FAMILY, 
+					   MACHINETYPE,
+					   FREIGHT_TYPE,GL_PERCENTAGE, 
+					   UNIT_COST,BUSINESS_NAME,SEQ,POSITION
+		      from :newInfo
+		      where MACHINETYPE <> 'N/A'
+		      UNION ALL
+		      SELECT   A.CYCLE,A.PRODUCT_GROUP,
+		               B.BRAND BRAND, 
+		               A.PLANT, A.GEO_TYPE,A.GEO,
+					   FAMILY, 
+					   A.MACHINETYPE,
+					   A.FREIGHT_TYPE,A.GL_PERCENTAGE, 
+					   A.UNIT_COST,A.BUSINESS_NAME,A.SEQ,A.POSITION
+		      from :newInfo  A
+              inner join  "EBGCFE"."UI_PRODFAMILY" B
+              on a.FAMILY = b.PROD_FAMILY
+		      where A.MACHINETYPE = 'N/A' and
+		            a.FAMILY <> 'N/A'
+		      UNION ALL
+		      SELECT   CYCLE,PRODUCT_GROUP,
+		               BRAND, 
+		               PLANT, GEO_TYPE,GEO,
+					   'N/A' FAMILY, 
+					   MACHINETYPE,
+					   FREIGHT_TYPE,GL_PERCENTAGE, 
+					   UNIT_COST,BUSINESS_NAME,SEQ,POSITION
+		      from :newInfo      
+		       where MACHINETYPE = 'N/A' and
+		             FAMILY = 'N/A';
+
+	
+	percentCheck = 
+	    SELECT CYCLE ,PRODUCT_GROUP,BRAND,PLANT,FAMILY,MACHINETYPE,GEO
+	    FROM :newInfo
+	    GROUP BY CYCLE ,PRODUCT_GROUP,BRAND,PLANT,FAMILY,MACHINETYPE,GEO
+	    HAVING SUM(CAST(GL_PERCENTAGE AS DECIMAL(15,4))) <> 100;
+	    
+	newInfo = 
+	   SELECT * FROM :newInfo a
+	   WHERE  NOT EXISTS (SELECT 1 FROM :percentCheck WHERE CYCLE = a.CYCLE and
+	                                                       PRODUCT_GROUP = a.PRODUCT_GROUP and
+	                                                       BRAND = a.BRAND and
+	                                                       PLANT = a.PLANT and
+	                                                       FAMILY =a.FAMILY and
+	                                                       MACHINETYPE = a.MACHINETYPE and
+	                                                       GEO = a.GEO
+ )    ;
+   duplicateCheck = 
+   	  SELECT CYCLE ,PRODUCT_GROUP,BRAND,PLANT,FAMILY,MACHINETYPE,GEO
+	    FROM :newInfo 
+	    GROUP BY CYCLE ,PRODUCT_GROUP,BRAND,PLANT,FAMILY,MACHINETYPE,GEO
+	    HAVING COUNT(1) > 1;
+	    
+  newInfo = 
+	   SELECT * FROM :newInfo a
+	   WHERE  NOT EXISTS (SELECT 1 FROM :duplicateCheck WHERE CYCLE = a.CYCLE and
+	                                                       PRODUCT_GROUP = a.PRODUCT_GROUP and
+	                                                       BRAND = a.BRAND and
+	                                                       PLANT = a.PLANT and
+	                                                       FAMILY =a.FAMILY and
+	                                                       MACHINETYPE = a.MACHINETYPE and
+	                                                       GEO = a.GEO);	    
+ 							
+--Deaal with SUCCESS data
+       newInfo_success = 
+          SELECT   CYCLE,  CASE  WHEN MACHINETYPE <> 'N/A' THEN 'N/A' ELSE BRAND  END AS BRAND,  PRODUCT_GROUP, GEO_TYPE,
+				   GEO,   PLANT,  CASE  WHEN MACHINETYPE <> 'N/A' THEN 'N/A' ELSE FAMILY  END AS FAMILY, 
+				   CASE WHEN MACHINETYPE = 'N/A' THEN 'N/A' ELSE MACHINETYPE END AS MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+				   UNIT_COST,
+               :create_time AS SYS_CREATED_DATE,:currentUser AS SYS_CREATED_BY,
+	 	       :create_time AS SYS_LAST_MODIFIED_DATE,:currentUser AS SYS_LAST_MODIFIED_BY
+            FROM :newInfo as a
+           WHERE a.BRAND IN (
+           						SELECT DISTINCT BRAND FROM "EBGCFE"."UI_PRODFAMILY"
+           					) AND
+           		 (a.FAMILY IN(
+           						SELECT DISTINCT PROD_FAMILY FROM "EBGCFE"."UI_PRODFAMILY"
+           					) OR a.FAMILY = 'ALL')AND	
+           		 (a.MACHINETYPE IN(
+           						SELECT DISTINCT MACHINETYPE FROM "EBGCFE"."UI_MACHINETYPE"
+           					)  OR (a.MACHINETYPE = '' OR a.MACHINETYPE = 'N/A')
+           					)AND
+           		 a.PLANT IN(
+           						SELECT DISTINCT PLANT FROM "EBGCFE"."UI_PLANT"
+           					) AND
+           		 a.GEO_TYPE	IN(
+           						SELECT PVALUE FROM "EBGCFE"."CONF_PARAMETERS" 
+           						 WHERE PDOMAIN ='XOUTFR_RATE' AND PNAME='GEO_TYPE'
+           					) AND
+           					
+           		( ( a.GEO_TYPE = 'SUBGEO' AND
+				    a.GEO  IN (SELECT DISTINCT SUBGEO FROM  "EBGCFE"."UI_REGION")	) OR
+				  ( a.GEO_TYPE = 'COUNTRY' AND
+				    a.GEO  IN (SELECT DISTINCT COUNTRY FROM  "EBGCFE"."UI_REGION")	)		 	      	
+						 	      )	AND
+           		
+		         a.FREIGHT_TYPE IN(
+           					 SELECT PVALUE FROM "EBGCFE"."CONF_PARAMETERS" 
+           					  WHERE PDOMAIN ='XOUTFR_RATE' AND PNAME='FREIGHT_TYPE'
+           					       )           ;
+           					       
+        select count(1) into success_count   from :newInfo_success;
+        
+        if (success_count > 0)then        
+           
+            newInfo_success_update = 
+            SELECT b.CYCLE ,  b.BRAND ,  b.PRODUCT_GROUP, b.GEO_TYPE,  b.GEO,
+                   b.PLANT,   b.FAMILY,b.MACHINETYPE,   b.GL_PERCENTAGE, b.FREIGHT_TYPE,b.UNIT_COST,
+				   b.SYS_CREATED_DATE, b.SYS_CREATED_BY,
+				   b.SYS_LAST_MODIFIED_DATE, b.SYS_LAST_MODIFIED_BY
+            FROM "EBGCFE"."UI_XOUTFR_RATE" a , :newInfo_success b
+            WHERE   a.CYCLE = b.CYCLE AND   
+		            a.BRAND = b.BRAND AND   
+		            a.PRODUCT_GROUP=b.PRODUCT_GROUP AND
+		            a.GEO=b.GEO AND 
+					a.PLANT=b.PLANT AND
+					-- a.GEO_TYPE = b.GEO_TYPE AND     
+					a.FAMILY=b.FAMILY AND
+					a.MACHINETYPE=b.MACHINETYPE AND
+					a.FREIGHT_TYPE=b.FREIGHT_TYPE;
+					
+			newInfo_success_insert = select * from :newInfo_success
+			                         EXCEPT
+			                         select * from 	:newInfo_success_update;	
+			                         
+			                         
+			select count(1) into rec_update   from :newInfo_success_update;
+			select count(1) into rec_insert   from :newInfo_success_insert;
+			
+			IF 	:rec_update > 0 THEN				
+				
+									  
+				UPDATE "EBGCFE"."UI_XOUTFR_RATE" a 
+				   SET (  a.CYCLE,      a.BRAND, a.PRODUCT_GROUP,
+					      a.GEO_TYPE, a.GEO,	 a.PLANT,     
+					      a.FAMILY,       a.MACHINETYPE,
+					      a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+					      a.m1, a.m2, a.m3, a.m4,
+					      a.m5, a.m6, a.m7, a.m8,
+					      a.m9, a.m10, a.m11, a.m12,
+					      a.m13, a.m14, a.m15, a.m16,
+		      			  a.m17, a.m18,	  	     
+					      a.SYS_LAST_MODIFIED_DATE, a.SYS_LAST_MODIFIED_BY )
+					 = 
+						( b.CYCLE,      b.BRAND, b.PRODUCT_GROUP,
+					      b.GEO_TYPE, b.GEO, b.PLANT,	      
+					      b.FAMILY,       b.MACHINETYPE,
+					      b.GL_PERCENTAGE,b.FREIGHT_TYPE,	  
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST,
+						  CURRENT_TIMESTAMP,SESSION_USER)
+				FROM "EBGCFE"."UI_XOUTFR_RATE" a,:newInfo_success_update b 
+				WHERE a.CYCLE = b.CYCLE AND
+				      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+				      a.BRAND = b.BRAND AND
+				      a.PLANT = b.PLANT AND
+				      --a.GEO_TYPE = b.GEO_TYPE AND     
+				      a.GEO = b.GEO AND
+				      a.FAMILY = b.FAMILY AND
+				      a.MACHINETYPE = b.MACHINETYPE AND
+				      a.FREIGHT_TYPE = b.FREIGHT_TYPE  AND
+					  a.FREIGHT_TYPE <> 'GEO_MIX'; 
+					  
+				prepare_update = 	  
+				    SELECT DISTINCT a.CYCLE,      a.BRAND, a.PRODUCT_GROUP,
+					       a.GEO_TYPE, a.GEO, a.PLANT,	      
+					       a.FAMILY,       a.MACHINETYPE,
+					       a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+					       a.m1, a.m2, a.m3, a.m4,
+					       a.m5, a.m6, a.m7, a.m8,
+					       a.m9, a.m10, a.m11, a.m12,
+					       a.m13, a.m14, a.m15, a.m16,
+		      			   a.m17, a.m18
+					  FROM "EBGCFE"."UI_XOUTFR_RATE" a,:newInfo_success_update b 
+					WHERE a.CYCLE = b.CYCLE AND
+					      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+					      a.BRAND = b.BRAND AND
+					      a.PLANT = b.PLANT AND
+					      --a.GEO_TYPE = b.GEO_TYPE AND     
+					      a.GEO = b.GEO AND
+					      a.FAMILY = b.FAMILY AND
+					      a.MACHINETYPE = b.MACHINETYPE AND
+						  a.FREIGHT_TYPE <> 'GEO_MIX';      	  
+				      
+				geo_mix_new = 
+				   SELECT a.CYCLE, a.PRODUCT_GROUP, a.BRAND,a.PLANT, a.GEO_TYPE,
+			              a.GEO,   a.FAMILY,        a.MACHINETYPE,   'GEO_MIX' AS FREIGHT_TYPE,
+			              NULL AS GL_PERCENTAGE,    SUM(a.M1*a.GL_PERCENTAGE/100) AS UNIT_COST
+					 FROM :prepare_update a
+					 GROUP BY
+					      a.CYCLE, a.PRODUCT_GROUP, a.BRAND,a.PLANT, a.GEO_TYPE,
+			              a.GEO,   a.FAMILY,        a.MACHINETYPE;    
+			              
+			    UPDATE "EBGCFE"."UI_XOUTFR_RATE" a 
+				   SET (  a.CYCLE,      a.BRAND, a.PRODUCT_GROUP,
+					      a.GEO_TYPE, a.GEO,	      
+					      a.FAMILY,       a.MACHINETYPE,
+					      a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+					      a.m1, a.m2, a.m3, a.m4,
+					      a.m5, a.m6, a.m7, a.m8,
+					      a.m9, a.m10, a.m11, a.m12,
+					      a.m13, a.m14, a.m15, a.m16,
+		      			  a.m17, a.m18,		     
+					      a.SYS_LAST_MODIFIED_DATE, a.SYS_LAST_MODIFIED_BY )
+					 = 
+						( b.CYCLE,      b.BRAND, b.PRODUCT_GROUP,
+					      b.GEO_TYPE, b.GEO,	      
+					      b.FAMILY,       b.MACHINETYPE,
+					      b.GL_PERCENTAGE,b.FREIGHT_TYPE,	  
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					       b.UNIT_COST, b.UNIT_COST, b.UNIT_COST, b.UNIT_COST,
+					      b.UNIT_COST, b.UNIT_COST, 
+						  CURRENT_TIMESTAMP,SESSION_USER)
+				FROM "EBGCFE"."UI_XOUTFR_RATE" a,:geo_mix_new b 
+				WHERE a.CYCLE = b.CYCLE AND
+				      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+				      a.BRAND = b.BRAND AND
+				      a.PLANT = b.PLANT AND
+				      --a.GEO_TYPE = b.GEO_TYPE AND     
+				      a.GEO = b.GEO AND
+				      a.FAMILY = b.FAMILY AND
+				      a.MACHINETYPE = b.MACHINETYPE AND
+				      a.FREIGHT_TYPE = b.FREIGHT_TYPE  AND
+					  a.FREIGHT_TYPE = 'GEO_MIX'; 
+					                  
+			END	IF;
+			                         
+			IF 	:rec_insert > 0 THEN
+			
+			
+			
+				INSERT INTO "EBGCFE"."UI_XOUTFR_RATE"
+					      (   CYCLE,  BRAND,  PRODUCT_GROUP, GEO_TYPE,
+						      GEO,   PLANT, FAMILY, MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+						      m1, m2, m3, m4,
+						      m5, m6, m7, m8,
+						      m9, m10, m11, m12,
+						      m13, m14, m15, m16,
+		  					 m17, m18, action,
+					          SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY )
+				 	SELECT   CYCLE,  BRAND,  PRODUCT_GROUP, GEO_TYPE,
+						      GEO,   PLANT, FAMILY, MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+						      UNIT_COST, UNIT_COST, UNIT_COST, UNIT_COST,
+						      UNIT_COST, UNIT_COST, UNIT_COST, UNIT_COST,
+						      UNIT_COST, UNIT_COST, UNIT_COST, UNIT_COST,
+						      UNIT_COST, UNIT_COST, UNIT_COST, UNIT_COST,
+						      UNIT_COST, UNIT_COST, 'create',
+					        SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY 
+				 	FROM :newInfo_success_insert 	;	
+				 	
+				prepare_update = 	  
+				    SELECT DISTINCT a.CYCLE,      a.BRAND, a.PRODUCT_GROUP,
+					       a.GEO_TYPE, a.GEO, a.PLANT,	      
+					       a.FAMILY,       a.MACHINETYPE,
+					       a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+					       a.m1, a.m2, a.m3, a.m4,
+					       a.m5, a.m6, a.m7, a.m8,
+					       a.m9, a.m10, a.m11, a.m12,
+					       a.m13, a.m14, a.m15, a.m16,
+		 	               a.m17, a.m18
+					  FROM "EBGCFE"."UI_XOUTFR_RATE" a,:newInfo_success_insert b 
+					WHERE a.CYCLE = b.CYCLE AND
+					      a.PRODUCT_GROUP = b.PRODUCT_GROUP AND
+					      a.BRAND = b.BRAND AND
+					      a.PLANT = b.PLANT AND
+					      --a.GEO_TYPE = b.GEO_TYPE AND     
+					      a.GEO = b.GEO AND
+					      a.FAMILY = b.FAMILY AND
+					      a.MACHINETYPE = b.MACHINETYPE AND
+						  a.FREIGHT_TYPE <> 'GEO_MIX';  
+						  
+			     		       	
+						
+				geo_mix_new = 
+				   SELECT a.CYCLE, a.PRODUCT_GROUP, a.BRAND,a.PLANT, a.GEO_TYPE,
+			              a.GEO,   a.FAMILY,        a.MACHINETYPE,   'GEO_MIX' AS FREIGHT_TYPE,
+			              NULL AS GL_PERCENTAGE,    SUM(a.M1*a.GL_PERCENTAGE/100) AS UNIT_COST
+					 FROM :prepare_update a
+					 GROUP BY
+					      a.CYCLE, a.PRODUCT_GROUP, a.BRAND,a.PLANT, a.GEO_TYPE,
+			              a.GEO,   a.FAMILY,        a.MACHINETYPE; 
+			              
+			   	DELETE FROM "EBGCFE"."UI_XOUTFR_RATE" AS A
+	 			WHERE EXISTS ( SELECT 1 FROM :geo_mix_new 
+	                  WHERE CYCLE = A.CYCLE AND
+	                        PRODUCT_GROUP = A.PRODUCT_GROUP AND
+	                        BRAND = A.BRAND AND
+	                        PLANT = A.PLANT AND
+	                        --GEO_TYPE = A.GEO_TYPE AND
+	                        GEO = A.GEO AND
+	                        FAMILY = A.FAMILY AND
+	                        MACHINETYPE = A.MACHINETYPE AND
+	                        FREIGHT_TYPE = A.FREIGHT_TYPE );          
+				 	
+			              
+				     INSERT INTO "EBGCFE"."UI_XOUTFR_RATE"
+					      (   CYCLE,  BRAND,  PRODUCT_GROUP, GEO_TYPE,
+						      GEO,   PLANT, FAMILY, MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+						      m1, m2, m3, m4,
+						      m5, m6, m7, m8,
+						      m9, m10, m11, m12, 
+						      m13, m14, m15, m16,
+		  					  m17, m18,	action,
+					          SYS_CREATED_DATE,SYS_CREATED_BY,SYS_LAST_MODIFIED_DATE,SYS_LAST_MODIFIED_BY )
+				 	SELECT   CYCLE,  BRAND,  PRODUCT_GROUP, GEO_TYPE,
+						      GEO,   PLANT, FAMILY, MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+						      UNIT_COST, UNIT_COST, UNIT_COST, UNIT_COST,
+						      UNIT_COST, UNIT_COST, UNIT_COST, UNIT_COST,
+						      UNIT_COST, UNIT_COST, UNIT_COST, UNIT_COST,
+						      UNIT_COST, UNIT_COST, UNIT_COST, UNIT_COST,
+						      UNIT_COST, UNIT_COST,  'create',
+					        CURRENT_TIMESTAMP,SESSION_USER,CURRENT_TIMESTAMP,SESSION_USER 
+				 	FROM :geo_mix_new 	;         
+	 	
+			END IF;
+           
+	        
+       END IF;
+	 	
+	 	
+	 	newInfo_error = 	 	  
+	        SELECT CYCLE,  BRAND,  PRODUCT_GROUP, GEO_TYPE,
+			      GEO,   PLANT, FAMILY, MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+			      UNIT_COST FROM :newInfo
+	        EXCEPT
+	        SELECT CYCLE,  BRAND,  PRODUCT_GROUP, GEO_TYPE,
+			      GEO,   PLANT, FAMILY, MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+			      UNIT_COST  FROM :newInfo_success;
+	        
+	    SELECT COUNT(1) INTO error_count
+        FROM :newInfo_error as a   ;  	
+        
+        SELECT COUNT(1) INTO percent_err
+        from :percentCheck;
+
+        error_count = :error_count + :percent_err;
+							 			
+		IF error_count > 0 THEN
+		    
+	    newInfo_e = 
+		    select 	       
+			      CYCLE,  BRAND,  PRODUCT_GROUP, GEO_TYPE,
+			      GEO,   PLANT, FAMILY, MACHINETYPE,   GL_PERCENTAGE, FREIGHT_TYPE,
+			      UNIT_COST,		
+				  'procedure'  SOURCE,
+				  '' ERROR_MESSAGE,          BUSINESS_NAME,
+				  SEQ ,    				POSITION
+            from :org_newInfo;
+		    
+			CALL "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_xoutfr_rate_err"(:newInfo_e);
+		END IF;   
+							 			 
+	 	
+	 	--insert操作需要写入日志
+
+	 	INSERT INTO "EBGCFE"."UI_XOUTFR_RATE_LOG"(
+		  CYCLE,      BRAND,
+	      GEO_TYPE, GEO,PLANT,	      
+	      FAMILY,       MACHINETYPE,
+	      GL_PERCENTAGE,FREIGHT_TYPE,
+	      m1, m2, m3, m4,
+	      m5, m6, m7, m8,
+	      m9, m10, m11, m12,
+	      m13, m14, m15, m16,
+		  m17, m18,
+		SYS_CREATED_BY,SYS_CREATED_DATE,
+		SYS_LAST_MODIFIED_BY,SYS_LAST_MODIFIED_DATE,
+		AT_ACTION,AT_MODIFIED_ON,AT_MILLIS
+	 )SELECT 
+		 a.CYCLE,      a.BRAND,
+	      a.GEO_TYPE, a.GEO,a.PLANT,	      
+	      a.FAMILY,       a.MACHINETYPE,
+	      a.GL_PERCENTAGE,a.FREIGHT_TYPE,
+	      a.UNIT_COST, a.UNIT_COST, a.UNIT_COST, a.UNIT_COST,
+	      a.UNIT_COST, a.UNIT_COST, a.UNIT_COST, a.UNIT_COST,
+	      a.UNIT_COST, a.UNIT_COST, a.UNIT_COST, a.UNIT_COST,
+	      a.UNIT_COST, a.UNIT_COST, a.UNIT_COST, a.UNIT_COST,
+	      a.UNIT_COST, a.UNIT_COST,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		SESSION_USER,CURRENT_TIMESTAMP,
+		'create',	CURRENT_TIMESTAMP ,TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3'))
+	  FROM :newInfo_success a;
+	
+		-- passing successful total numbers
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,:success_count,0,:table_name);
+
+END;
+

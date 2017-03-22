@@ -1,0 +1,186 @@
+PROCEDURE "PCDW"."cdp.dpsw.procedures.pkg_create_data_sw::PRC_GET_BACKLOG_TOTAL" (OUT PO_RETURNCODE INTEGER) 
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER  
+  DEFAULT SCHEMA PCDW
+  --READS SQL DATA 
+  AS
+/************************************************************************
+*name       : PRC_GET_BACKLOG_TOTAL        
+*function   : Prepare BACKLOG Data for SW
+*input      ：   
+*output     : P_OUT_EXITCODE : error code 
+*author     : Xie Chao
+*CreateDate : 2015-07-31
+*UpdateDate :   
+*************************************************************************/    
+   vMsg           VARCHAR2(1024) := '';
+   vCode          DECIMAL := 0;
+   v_gen_rsd_sql      VARCHAR2(100);
+   v_rsd_startdate    DATE; 
+BEGIN
+  --exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+   BEGIN
+        vMsg :=   substr(::SQL_ERROR_MESSAGE, 1, 500);
+        vCode := ::SQL_ERROR_CODE;
+        PO_RETURNCODE := :vCode;
+     INSERT INTO pcdw_proc_log(eventtime, eventname, subevent, msgcode, eventmsg, eventtype, datasource,datadest, eventdescr)
+       VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_BACKLOG_TOTAL', 'OTHERS ERROR', :vcode, :vmsg, '','', '', 'END');
+     EXEC 'COMMIT';    
+   END;
+   -- log process start
+   INSERT INTO pcdw_proc_log
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_BACKLOG_TOTAL', '', NULL, '', '', '', '', 'START');
+   EXEC 'COMMIT';
+
+     DELETE FROM z_mid_pcdw_backlog_so_sw;
+     
+     INSERT INTO z_mid_pcdw_backlog_so_sw
+       (order_id, line_item_id, planning_item_id, geo_id, rsd, order_qty,customer_name,
+        source_id, region, country, planning_material, item_type)
+       SELECT t1.order_id,
+              lpad(t1.line_item_id, 6, '0') asline_item_id,
+              t1.planning_item_id,
+              t1.geo_id,
+              (SELECT mfg_wk  FROM conf_weekly_calendar WHERE t1.rsd BETWEEN start_dt AND end_dt) rsd,
+              t1.order_qty,
+              case when ascii(t1.customer_name) <> unicode(t1.customer_name) then to_char(HASH_SHA256(to_binary(t1.customer_name)))
+              else t1.customer_name
+              end as customer_name,
+              t1.source_id,
+              t1.region,
+              t1.country,
+              t2.variant_planning_material AS planning_material,
+              MAP(t2.product_type_2, 'OPT', 'OPTION', 'LFO', 'MTM', 'CTO', 'CTO') AS item_type
+      FROM pcdw_so_basic_all t1, 
+           pcdw_product_master_all_sw t2
+     WHERE t1.planning_item_id = t2.planning_item_id
+           AND t1.status = 'ACTIVE'
+           AND t1.order_qty <>'0';
+
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_BACKLOG_TOTAL', 'Get So', NULL, '', '', '', '', 'step 2');
+    EXEC 'COMMIT';    
+    
+    DELETE FROM z_mid_pcdw_backlog_ship_sw;
+
+     INSERT INTO z_mid_pcdw_backlog_ship_sw
+      (order_id, line_item_id, shipped_qty)
+      SELECT distinct t1.vbeln as order_id, lpad(t1.posnr, 6, '0') as line_item_id, SUM(t1.shipqty) AS shipped_qty
+        FROM pcdw_ship_so t1,z_mid_pcdw_backlog_so_sw t2
+       WHERE t1.vbeln = t2.order_id
+          AND lpad(t1.posnr, 6, '0') = lpad(t2.line_item_id, 6, '0')
+          AND t2.order_qty <>'0'    ----Add distinct and t2.order_qty<>0, fix shipment double issue----
+                                    ----changed by yangyue6, 2016-9-5----
+          AND t1.werks in (select name1 from conf_parameters_sw  where domain='PLANT_FILTER')                          
+       GROUP BY t1.vbeln, lpad(t1.posnr, 6, '0');
+         
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_BACKLOG_TOTAL', 'Get Ship', NULL, '', '', '', '', 'step 3');
+    EXEC 'COMMIT';  
+
+    DELETE FROM z_mid_pcdw_backlog_sw;
+    
+    INSERT INTO z_mid_pcdw_backlog_sw
+      (order_id, line_item_id, planning_item_id, geo_id, rsd, backlog,customer_name,
+       source_id, region, country, planning_material, item_type)
+      SELECT t1.order_id, 
+             t1.line_item_id, 
+             t1.planning_item_id, 
+             t1.geo_id,
+             t1.rsd,
+             CASE
+               WHEN (t1.order_qty - ifnull(t2.shipped_qty, 0)) < 0 THEN 0
+               ELSE t1.order_qty - ifnull(t2.shipped_qty, 0)
+             END AS backlog,
+             t1.customer_name, 
+             t1.source_id,
+             t1.region, 
+             t1.country,
+             t1.planning_material, 
+             t1.item_type
+        FROM z_mid_pcdw_backlog_so_sw t1
+        LEFT JOIN z_mid_pcdw_backlog_ship_sw t2
+          ON t1.order_id = t2.order_id
+             AND t1.line_item_id = t2.line_item_id;
+ 
+    INSERT INTO pcdw_proc_log VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_BACKLOG_TOTAL', 'So-Ship', NULL, '', '', '', '', 'step 4');
+    EXEC 'COMMIT';  
+       
+    DELETE FROM pcdw_backlog_sw;
+    
+    INSERT INTO pcdw_backlog_sw
+      (assembly_pk, planning_item_id, cto, mtm, geo_id, rsd, customer_name,source_id,
+       region, country, backlog, sys_created_by, sys_created_date,
+       sys_last_modified_by, sys_last_modified_date)
+      SELECT assembly_pk, planning_item_id, cto, mtm, geo_id, rsd,customer_name, source_id,
+             region, country, SUM(backlog) AS backlog,
+             'pkg_create_data_sw.PRC_GET_BACKLOG_TOTAL', current_timestamp,
+             'pkg_create_data_sw.PRC_GET_BACKLOG_TOTAL', current_timestamp
+        FROM ( --Scenario-I - CTO -> SBB (dependant data)
+               SELECT t1.planning_item_id AS assembly_pk,
+                       t2.idnrk AS planning_item_id, t1.planning_item_id AS cto,
+                       NULL AS mtm, t1.geo_id, t1.rsd,
+                       t1.backlog * t2.menge AS backlog,t1.customer_name, t1.source_id, t1.region,
+                       t1.country
+                 FROM z_mid_pcdw_backlog_sw t1, PCDW_ORDBOM_X86 t2
+                WHERE t1.order_id = t2.vbeln
+                      AND t1.line_item_id = t2.posnr
+                      AND t1.planning_item_id = t2.matnr
+                      AND t1.item_type = 'CTO'
+                      AND EXISTS 
+                         (SELECT 1 FROM PCDW_ITEMSITEMASTER T3
+                                  WHERE T2.IDNRK=T3.ITEM
+                                    AND T2.WERKS=T3.SITEID
+                                    AND (t3.STRGR = 'ZS' or SUBSTR(t3.ZUCOD,1,4)='HCSB')
+                                    AND t3.zucod LIKE 'H%')                  
+               UNION ALL
+               --Scenario-II - MTM -> SBB (dependant data)
+               SELECT t1.planning_item_id AS assembly_pk,
+                      t2.idnrk AS planning_item_id, t1.planning_material AS cto,
+                      t1.planning_item_id AS mtm, t1.geo_id, t1.rsd,
+                      t1.backlog * t2.menge AS backlog, t1.customer_name,t1.source_id, t1.region,
+                      t1.country
+                 FROM z_mid_pcdw_backlog_sw t1, PCDW_ORDBOM_X86 t2
+                WHERE t1.order_id = t2.vbeln
+                      AND t1.line_item_id = t2.posnr
+                      AND t1.planning_item_id = t2.matnr
+                      AND t1.item_type = 'MTM'
+                      AND EXISTS 
+                         (SELECT 1 FROM PCDW_ITEMSITEMASTER T3
+                                  WHERE T2.IDNRK=T3.ITEM
+                                    AND T2.WERKS=T3.SITEID
+                                    AND (t3.STRGR = 'ZS' or SUBSTR(t3.ZUCOD,1,4)='HCSB')
+                                    AND t3.zucod LIKE 'H%')                    
+               UNION ALL
+               --Scenario-III - CTO (Independent)
+               SELECT NULL AS assembly_pk, planning_item_id,
+                      planning_item_id AS cto, NULL AS mtm, geo_id, rsd,
+                      backlog,customer_name,source_id, region, country
+                 FROM z_mid_pcdw_backlog_sw
+                WHERE item_type = 'CTO'
+               UNION ALL
+               --Scenario-IV - MTM (Independent)
+               SELECT NULL AS assembly_pk,
+                      planning_item_id,
+                      planning_material AS cto, 
+                      planning_item_id AS mtm, 
+                      geo_id,
+                      rsd, backlog,customer_name,source_id, region, country
+                 FROM z_mid_pcdw_backlog_sw
+                WHERE item_type = 'MTM'
+               UNION ALL
+               --Scenario-V -Option
+               SELECT NULL AS assembly_pk, planning_item_id, NULL AS cto,
+                      NULL AS mtm, geo_id, rsd, backlog,customer_name, source_id, region,
+                      country
+                 FROM z_mid_pcdw_backlog_sw
+                WHERE item_type = 'OPTION')
+       GROUP BY assembly_pk, planning_item_id, cto, mtm, geo_id, rsd,customer_name,
+                source_id, region, country HAVING  SUM(backlog)>0 ;
+
+   PO_RETURNCODE := 0;
+   -- log process end
+    INSERT INTO pcdw_proc_log
+          (eventtime, eventname, subevent, msgcode, eventmsg, eventtype,datasource, datadest, eventdescr)
+      VALUES (current_timestamp, 'pkg_create_data_sw.PRC_GET_BACKLOG_TOTAL', 'SUCCESS', :vcode, :vmsg, '', '','', 'END'); 
+   exec 'COMMIT';    
+END;

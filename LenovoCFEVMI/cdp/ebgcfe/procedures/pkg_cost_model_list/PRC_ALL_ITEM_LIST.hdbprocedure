@@ -1,0 +1,73 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_cost_model_list::PRC_ALL_ITEM_LIST" (
+  OUT P_OUT_EXITCODE INTEGER
+ )  
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA 
+/************************************************************************
+*name       : PRC_ALL_ITEM_LIST     
+*function   : Cost Model All Items List 
+*input      ：-
+*output     : p_out_exitcode : error code 
+*author     : Leonard Ling
+*CreateDate : 2014-12-29
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/		
+	AS
+BEGIN
+  -- data
+  DECLARE   V_PKG_NAME        VARCHAR(100) := 'PKG_COST_MODEL_LIST';    
+  DECLARE   V_PRC_NAME        VARCHAR(100) := 'prc_all_item_list';
+  DECLARE   V_FUNC_FULL_NAME  VARCHAR(100) := :V_PKG_NAME || '.' || :V_PRC_NAME;  
+  DECLARE   logidi            INTEGER;
+             
+  -- exception
+   DECLARE EXIT HANDLER FOR SQLEXCEPTION  
+    BEGIN              
+            P_OUT_EXITCODE := -1;  
+			CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_ERROR',I_LOGSID=>:logidi,
+								I_EVENT_NAME=>:V_FUNC_FULL_NAME, I_MODULE=>'EBGCFE',
+								I_MESSAGE=>'ERROR', I_DETAIL=>to_char(::SQL_ERROR_CODE) || ':' ||
+					                                    substr(::SQL_ERROR_MESSAGE, 1, 1000) );         
+            RESIGNAL;
+    END; 
+      
+  -- process logic
+  P_OUT_EXITCODE := -1;
+  logidi := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_START',I_LOGSID=>:logidi,
+		                                      I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGCFE');  
+		  
+  --    EXECUTE IMMEDIATE 'truncate table MID_item_ol';
+  DELETE FROM MID_ITEM_OL;
+
+  INSERT INTO MID_ITEM_OL (PRODUCT_GROUP,
+                                 ITEM,
+                                 PROD_FAMILY,
+                                 BRAND,
+                                 ITEM_TYPE,
+                                 ACTION,
+                                 EOL_STATUS,
+                                 PROD_H,
+                                 CUSTOMMODELFLAG)
+         SELECT PRODUCT_GROUP,
+                ITEM,
+                ASP_PRD_FAMILY,
+                BRAND,
+                ITEM_TYPE,
+                ACTION,
+                EOL_STATUS,
+                PROD_H,
+                CUSTOMMODELFLAG
+           FROM UI_ITEM
+          WHERE     EOL_STATUS IN ('OL', 'TEMP')
+                AND PRODUCT_GROUP = 'EBG'
+                AND ITEM_TYPE IN ('MTM', 'CTO', 'OPTION', 'BUNDLE');
+
+  --COMMIT;
+
+  P_OUT_EXITCODE := 0;
+  CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE=>'PROC_END',I_LOGSID=>:logidi,
+			                                  I_EVENT_NAME=>:V_FUNC_FULL_NAME,I_MODULE=>'EBGCFE'); 
+END;

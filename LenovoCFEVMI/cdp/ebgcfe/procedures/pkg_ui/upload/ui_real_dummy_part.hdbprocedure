@@ -1,0 +1,135 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_real_dummy_part" (
+IN PRODUCT_GROUP NVARCHAR(4096),
+IN	cycle NVARCHAR(4096),
+IN   REAL_PART NVARCHAR(4096),
+IN   DUMMY_PART NVARCHAR(4096),
+IN   COMMODITY NVARCHAR(4096),
+IN   OWNER NVARCHAR(4096),
+IN 	 	table_name varchar(100),
+IN 	 	business_name varchar(200),
+IN		business_code	INTEGER,
+IN 	 	position INTEGER
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	default schema EBGCFE
+	AS
+/************************************************************************
+*name      : ui_real_dummy_part              --函数名
+*function  : upload数据至表ui_real_dummy_mapping并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Eric Zhou               --作者
+*CreateDate    : 2015-03-24       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.ebgcfe.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_real_dummy_part';
+		logid0 INTEGER :=0;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		validate1 int;
+		privilegeExists  NVARCHAR(300)  ;
+		var_oper VARCHAR(10);
+BEGIN
+	--exception        
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_real_dummy_part_err"(
+			:PRODUCT_GROUP,:CYCLE,:REAL_PART,:DUMMY_PART,:COMMODITY,:OWNER,
+			:table_name,:business_name,:business_code,:position,::SQL_ERROR_MESSAGE);
+     	
+    END; 
+    --exception 
+	
+
+	--procedure begin
+	
+	
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     	
+	select  count(1) into validate1 from ebgcfe.ui_item where item=:REAL_PART and product_group='EBG'; 
+	
+	if validate1 = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_real_dummy_part_err"(
+			:PRODUCT_GROUP,:CYCLE,:REAL_PART,:DUMMY_PART,:COMMODITY,:OWNER,
+			:table_name,:business_name,:business_code,:position,'"REAL_PART"::'||:REAL_PART||' is illegal');		
+		return;
+	end if;
+	
+	
+	select  count(1) into validate1 from ebgcfe.UI_DUMMYPART where DUMMY_PART=:DUMMY_PART and product_group='EBG'; 
+	
+	if validate1 = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_real_dummy_part_err"(
+			:PRODUCT_GROUP,:CYCLE,:REAL_PART,:DUMMY_PART,:COMMODITY,:OWNER,
+			:table_name,:business_name,:business_code,:position,'"DUMMY_PART"::'||:DUMMY_PART||' is illegal');		
+		return;
+	end if;
+	
+	select  count(1) into validate1 from ebgcfe.conf_parameters where pname='COMMODITY' and pdomain='UI_COST_TAPE_ORI' and pvalue = :COMMODITY;
+	
+	if validate1 = 0  then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_real_dummy_part_err"(
+			:PRODUCT_GROUP,:CYCLE,:REAL_PART,:DUMMY_PART,:COMMODITY,:OWNER,
+			:table_name,:business_name,:business_code,:position,'"COMMODITY"::'||:COMMODITY||' is illegal');		
+		return;
+	end if;
+	
+	
+	if currentUser != :OWNER
+	then
+		call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::ui_real_dummy_part_err"(
+			:PRODUCT_GROUP,:CYCLE,:REAL_PART,:DUMMY_PART,:COMMODITY,:OWNER,
+			:table_name,:business_name,:business_code,:position,'"OWNER"::'||:OWNER||' is illegal');		
+		return;
+	end if;	
+		
+    	
+	SELECT top 1 count(1) into validate1 FROM "EBGCFE"."UI_REAL_DUMMY_MAPPING"     
+     WHERE --DUMMY_PART = :DUMMY_PART and 
+     REAL_PART = :REAL_PART and PRODUCT_GROUP = :PRODUCT_GROUP and CYCLE = :cycle;
+				
+	if validate1 = 0
+	then
+		    insert into "EBGCFE"."UI_REAL_DUMMY_MAPPING"
+  	(PRODUCT_GROUP,DUMMY_PART,REAL_PART, CYCLE,COMMODITY,OWNER, 
+					SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE)
+  	values(:PRODUCT_GROUP,:DUMMY_PART,:REAL_PART, 'CURRENT', :COMMODITY,:OWNER,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);			
+  		var_oper := 'create';
+  	else
+  		update "EBGCFE"."UI_REAL_DUMMY_MAPPING" set
+    	COMMODITY = :COMMODITY,OWNER = :OWNER
+    	where
+    	DUMMY_PART = :DUMMY_PART and REAL_PART = :REAL_PART
+    	and PRODUCT_GROUP = :PRODUCT_GROUP and CYCLE = :cycle;    	
+        var_oper := 'update';
+  	end if;
+	--update操作需要写入日志
+	insert into "EBGCFE"."UI_REAL_DUMMY_MAPPING_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_ON,AT_MILLIS,
+				DUMMY_PART,REAL_PART,PRODUCT_GROUP,COMMODITY,OWNER,
+		 	SYS_LAST_MODIFIED_BY,
+		 	SYS_LAST_MODIFIED_DATE
+			)
+			VALUES
+				(:currentUser,
+				:var_oper,
+				:create_time,
+				TO_DECIMAL(TO_VARCHAR(CURRENT_TIMESTAMP,'HH24MISSFF3')),
+				:DUMMY_PART,:REAL_PART,:PRODUCT_GROUP,:COMMODITY,:OWNER,
+				:currentUser,
+				:create_time);
+	
+	call "EBGCFE"."cdp.ebgcfe.procedures.pkg_ui.upload::business_info"(
+			:table_name || TO_VARCHAR(:business_code),:business_name,1,0,:table_name);
+	
+
+END;

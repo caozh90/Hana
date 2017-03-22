@@ -1,0 +1,231 @@
+PROCEDURE "EBGDF"."cdp.ebgdf.procedures.pkg_ui.ui_pegging::createUipegging" 
+	( 
+		IN newInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.UI_PEGGING_T",
+		OUT errorInfo "EBGDF"."cdp.ebgdf.data::EBGDF_T.HttpError"
+	) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	--DEFAULT SCHEMA <default_schema_name>
+	--READS SQL DATA 
+	
+/************************************************************************
+*name        :      createUipegging
+*function    :               
+*input       ：                 newInfo
+*output      :      errorInfo
+*author      :      billy Qiao
+*CreateDate  :      2015.8.20
+*UpdateDate  :      2015.8.20  
+*************************************************************************/
+	
+	AS
+	
+	aI_DETAIL NVARCHAR(300) := '';
+	alogide INTEGER := 0;
+	privilegeExists NVARCHAR(300);
+	
+	V_ABCD_T NVARCHAR(15);
+	V_MTM NVARCHAR(18);
+	V_MTM_ABCD NVARCHAR(1);
+	V_SBB NVARCHAR(12);
+	V_SBB_DES NVARCHAR(200);
+	V_SBB_ABCD NVARCHAR(1);
+	V_SBB_ABCD_1 NVARCHAR(1);
+	V_SBB_ABCD_2 NVARCHAR(1);
+	V_SBB_ABCD_3 NVARCHAR(1);
+	V_SBB_ABCD_4 NVARCHAR(1);
+	V_SBB_ABCD_5 NVARCHAR(1);
+	
+	v_resourceExists BIGINT;
+	
+BEGIN
+--Exception Defination
+	DECLARE DATA_CONFLICT CONDITION FOR SQL_ERROR_CODE 11000;
+
+--Exception Handler Defination
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		BEGIN
+			aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_pegging::createUipegging error : '||::SQL_ERROR_CODE||::SQL_ERROR_MESSAGE;
+			
+	    	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    	 I_TYPE=>'PROC_ERROR'	
+		     	,I_LOGSID=>:alogide
+		     	,I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_pegging::createUipegging'
+		     	,I_MODULE=>'EBGDF'
+		     	,I_MESSAGE=>'E'||::SQL_ERROR_CODE
+		     	,I_DETAIL=>:aI_DETAIL
+	     	);	
+	 
+	 		errorInfo = select 400 as http_status_code, 
+	     		'SQL ERROR CODE : '||::SQL_ERROR_CODE error_message, 
+	     		aI_DETAIL detail from dummy;
+			
+		END;
+
+--Check Privilege
+    call "SECURITY"."cdp.security.procedures::checkPrivilege" (         
+    'ui_pegging::createable',privilegeExists);
+    
+    IF  privilegeExists != 'OK' THEN
+    	errorInfo = select 400 as http_status_code, 
+              'NO AUTHORITY' error_message, 
+              privilegeExists detail from dummy;
+       	RETURN ;
+    END IF;
+
+--Log Start
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		    I_TYPE=>'PROC_START',
+	        I_LOGSID=>:alogide,
+	        I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_pegging::createUipegging',
+	        I_MODULE=>'EBGDF'
+	   	); 
+
+--Get data of records to be inserted
+	select
+		ABCD_T,
+		MTM,
+		MTM_ABCD,
+		SBB,
+		SBB_DES,
+		SBB_ABCD,
+		SBB_ABCD_1,
+		SBB_ABCD_2,
+		SBB_ABCD_3,
+		SBB_ABCD_4,
+		SBB_ABCD_5
+	into
+		V_ABCD_T,
+		V_MTM,
+		V_MTM_ABCD,
+		V_SBB,
+		V_SBB_DES,
+		V_SBB_ABCD,
+		V_SBB_ABCD_1,
+		V_SBB_ABCD_2,
+		V_SBB_ABCD_3,
+		V_SBB_ABCD_4,
+		V_SBB_ABCD_5
+	from
+		:newInfo
+	;--end select;
+	
+--Data value validation, key must not be null
+	if V_MTM = '' or V_MTM is NULL then
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'MTM should not be null';
+	end if;
+
+	if V_SBB = '' or V_SBB is NULL then	
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'SBB should not be null';
+	end if;
+	
+--Data value validation, duplicate check
+	select 
+		count(*)
+	into
+		v_resourceExists
+	from
+		"EBGDF"."RPT_PEGGING"
+	where
+		MTM = :V_MTM
+		and SBB = :V_SBB
+	;--end select;
+	
+	if :v_resourceExists > 0 then	
+		SIGNAL DATA_CONFLICT SET MESSAGE_TEXT = 'the record already exists';
+	end if;
+	
+--Insert into DB
+	insert into
+		"EBGDF"."RPT_PEGGING"(
+			ABCD_T,
+			MTM,
+			MTM_ABCD,
+			SBB,
+			SBB_DES,
+			SBB_ABCD,
+			SBB_ABCD_1,
+			SBB_ABCD_2,
+			SBB_ABCD_3,
+			SBB_ABCD_4,
+			SBB_ABCD_5,
+			CREATE_TS,
+			CREATE_USERID,
+			LAST_UPDATE_TS,
+			LAST_UPDATE_USERID
+		)values(
+			:V_ABCD_T,
+			:V_MTM,
+			:V_MTM_ABCD,
+			:V_SBB,
+			:V_SBB_DES,
+			:V_SBB_ABCD,
+			:V_SBB_ABCD_1,
+			:V_SBB_ABCD_2,
+			:V_SBB_ABCD_3,
+			:V_SBB_ABCD_4,
+			:V_SBB_ABCD_5,
+			CURRENT_UTCTIMESTAMP,		--CREATE_TS,
+			SESSION_USER,			--CREATE_USERID,
+			CURRENT_UTCTIMESTAMP,		--LAST_UPDATE_TS,
+			SESSION_USER			--LAST_UPDATE_USERID
+		)
+	;--end insert;
+	
+--Insert log table
+	insert into
+		"EBGDF"."RPT_PEGGING_LOG"(
+			ABCD_T,
+			MTM,
+			MTM_ABCD,
+			SBB,
+			SBB_DES,
+			SBB_ABCD,
+			SBB_ABCD_1,
+			SBB_ABCD_2,
+			SBB_ABCD_3,
+			SBB_ABCD_4,
+			SBB_ABCD_5,
+			CREATE_TS,
+			CREATE_USERID,
+			LAST_UPDATE_TS,
+			LAST_UPDATE_USERID,
+			AT_MODIFIED_BY,
+			AT_ACTION,
+			AT_MODIFIED_ON,
+			AT_MILLIS
+		)values(
+			:V_ABCD_T,
+			:V_MTM,
+			:V_MTM_ABCD,
+			:V_SBB,
+			:V_SBB_DES,
+			:V_SBB_ABCD,
+			:V_SBB_ABCD_1,
+			:V_SBB_ABCD_2,
+			:V_SBB_ABCD_3,
+			:V_SBB_ABCD_4,
+			:V_SBB_ABCD_5,
+			CURRENT_UTCTIMESTAMP,		--CREATE_TS,
+			SESSION_USER,			--CREATE_USERID,
+			CURRENT_UTCTIMESTAMP,		--LAST_UPDATE_TS,
+			SESSION_USER,			--LAST_UPDATE_USERID
+			SESSION_USER,			--AT_MODIFIED_BY,
+			'create',				--AT_ACTION,
+			CURRENT_UTCTIMESTAMP,		--AT_MODIFIED_ON,
+			TO_DECIMAL( TO_VARCHAR ( CURRENT_UTCTIMESTAMP, 'HH24MISSFF3' ) )	--AT_MILLIS
+		)
+	;--end insert;
+	
+--Log End
+	aI_DETAIL := 'cdp.ebgdf.procedures.pkg_ui.ui_pegging::createUipegging successfully created . ';
+	
+	CALL "EX_LOG"."cdp.log.procedures::logProc"(
+		I_TYPE=>'PROC_END',
+		I_LOGSID=>:alogide,
+		I_EVENT_NAME=>'cdp.ebgdf.procedures.pkg_ui.ui_pegging::createUipegging',
+		I_MODULE=>'EBGDF',
+		I_DETAIL=>:aI_DETAIL
+	);
+	
+END;

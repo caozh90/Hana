@@ -1,0 +1,183 @@
+PROCEDURE "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority" (
+IN  LOGICAL_PLANT NVARCHAR(40),
+IN   MO_TYPE NVARCHAR(40),
+IN   WAREHOUSE_NUMBER NVARCHAR(40),
+IN   STORAGE_LOCATION NVARCHAR(40),
+IN   STORAGE_TYPE NVARCHAR(40),
+IN   PRIORITY INTEGER,
+IN   OWNER NVARCHAR(40),
+IN   INVENTORY_TYPE NVARCHAR(40),
+IN	 	business_name varchar(200),
+IN		seq	 nvarchar(20),
+IN 	 	position int
+ ) 
+ 	
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA SZEBGVMI
+	AS
+/************************************************************************
+*name      : ui_sourcing_priority              --函数名
+*function  : upload数据至表ui_sourcing_priority并记录信息              --函数功能
+*input     ：    			--输入参数
+*output    :                --输出参数
+*author     : Gavin               --作者
+*CreateDate    : 2014-12-17       --创建时间
+*UpdateDate  :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/
+		path varchar(100):='cdp.szebgvmi.procedures.pkg_ui.upload';
+		proc_name varchar(100) :='ui_sourcing_priority';
+	 	sys_last_modified_date TIMESTAMP;
+		log_detail NVARCHAR(300) :='';
+		logid0 INTEGER :=0;
+		n int;
+		currentUser varchar(100);
+		create_time TIMESTAMP;
+		business_code nvarchar(20);
+		SYS_SOURCE varchar(25);
+		validate1 int;
+		validate2 int;
+		validate3 int;
+		validate4 int;
+		validate5 int;
+		validate6 int;
+		validate7 int;
+		table_name nvarchar(20):='UI_SOURCING_PRIORITY';
+BEGIN
+	--exception     
+    DECLARE no_data_found CONDITION FOR SQL_ERROR_CODE 1299; 
+    DECLARE EXIT HANDLER FOR no_data_found   
+     BEGIN      
+     	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,:seq,:position);
+     END;     
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN  
+     	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"(::SQL_ERROR_MESSAGE,:business_name,
+			:LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,:seq,:position);
+    END; 
+    --exception 
+	
+	--procedure begin
+	SYS_SOURCE := 'UI';
+	select session_user into currentUser from dummy;
+	select CURRENT_TIMESTAMP into create_time from dummy;
+     	
+	--设置businesscode:: table_name+business_code	
+	business_code := :seq;
+
+	/***
+	验证条件
+	***/
+	SELECT COUNT(1) into n FROM UI_SOURCING_PRIORITY WHERE LOGICAL_PLANT=:LOGICAL_PLANT AND 
+	 	MO_TYPE=:MO_TYPE AND WAREHOUSE_NUMBER= :WAREHOUSE_NUMBER 
+	 	AND STORAGE_LOCATION= :STORAGE_LOCATION	AND STORAGE_TYPE= :STORAGE_TYPE;
+	
+	select count(1) into validate1 from CONF_SITEMASTER where SITEID = :LOGICAL_PLANT ;
+	
+	select count(1) into validate2 FROM CONF_PARAMETER WHERE PTYPE='MO_TYPE' and PVALUE = :MO_TYPE;
+
+	select count(1) into validate3  from CONF_WAHREHOUSE_INFO where whs_no = :WAREHOUSE_NUMBER;
+	
+	select count(1) into validate4 from CONF_WAHREHOUSE_INFO where STORAGE_LOCATION = :STORAGE_LOCATION;
+	
+	select count(1) into validate5  from  CONF_WAHREHOUSE_INFO WHERE STORAGE_TYPE = :STORAGE_TYPE;
+	
+	SELECT count(1) into validate6 FROM CONF_PARAMETER WHERE PTYPE='TPL_ID' and PVALUE = :OWNER;
+	
+	SELECT count(1) into validate7 FROM CONF_PARAMETER WHERE PTYPE='INVENTORY_TYPE' and PVALUE = :INVENTORY_TYPE;
+
+ 	IF n>0 then
+	 		call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"('Duplicate primary key',:business_name,
+			 	:LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;
+		
+	ELSEIF :PRIORITY < 0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"('"PRIORITY" should be positive',:business_name,
+			 	 :LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				:seq,:position);
+		 	--error log
+ 		 	RETURN;
+	ELSEIF validate1<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"('"LOGICAL_PLANT"::'||:LOGICAL_PLANT||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;	
+	ELSEIF validate2<=0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"('"MO_TYPE"::'||:MO_TYPE||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;	
+	ELSEIF validate3 <= 0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"('"WAREHOUSE_NUMBER"::'||:WAREHOUSE_NUMBER||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;
+	ELSEIF validate4 <= 0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"('"STORAGE_LOCATION"::'||:STORAGE_LOCATION||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;
+	ELSEIF validate5 <= 0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"('"STORAGE_TYPE"::'||:STORAGE_TYPE||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				:seq,:position);
+		 	--error log
+ 		 	RETURN;
+	ELSEIF validate6 <= 0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"('"OWNER"::'||:OWNER||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				:seq,:position);
+			--error log
+ 		 	RETURN;
+	ELSEIF validate7 <= 0 then
+			call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::ui_sourcing_priority_err"('"INVENTORY_TYPE"::'||:INVENTORY_TYPE||' is illegal',:business_name,
+			 	 :LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				:seq,:position);
+		 	--error log
+ 		 	RETURN;
+	
+	END IF;
+
+	--插入数据
+	INSERT INTO "SZEBGVMI"."UI_SOURCING_PRIORITY"(
+				LOGICAL_PLANT,MO_TYPE,WAREHOUSE_NUMBER,STORAGE_LOCATION,STORAGE_TYPE,PRIORITY,OWNER,INVENTORY_TYPE,
+				SYS_CREATED_BY,
+		 		SYS_CREATED_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+		 	)
+	VALUES(
+			 	 :LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);
+		 	
+	--insert操作需要写入日志
+ 	insert into "SZEBGVMI"."UI_SOURCING_PRIORITY_LOG"(AT_MODIFIED_BY,AT_ACTION,AT_MODIFIED_TIME,
+				LOGICAL_PLANT,MO_TYPE,WAREHOUSE_NUMBER,STORAGE_LOCATION,STORAGE_TYPE,PRIORITY,OWNER,INVENTORY_TYPE,
+				SYS_CREATED_BY,
+		 		SYS_CREATION_DATE,
+		 		SYS_LAST_MODIFIED_BY,
+				SYS_LAST_MODIFIED_DATE
+	 	)
+	VALUES
+	(:currentUser,
+			 	'create',
+			 	:create_time,
+				:LOGICAL_PLANT,:MO_TYPE,:WAREHOUSE_NUMBER,:STORAGE_LOCATION,:STORAGE_TYPE,:PRIORITY,:OWNER,:INVENTORY_TYPE,
+				 :currentUser,
+			 	 :create_time,
+			 	 :currentUser,
+			 	 :create_time);	 			 	
+	call "SZEBGVMI"."cdp.szebgvmi.procedures.pkg_ui.upload::business_info"(
+			:table_name || :business_code,:business_name,1,0,:table_name);
+	
+END;

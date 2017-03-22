@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_DISPATCH_ARCHIVED" applyPrivilegeType="ANALYTIC_PRIVILEGE" checkAnalyticPrivileges="true" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_DISPATHC_ARCHIVED_VIEW"/>
+  <defaultSchema schemaName="MXEBGVMI"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="PULL_HEADER_ID" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="PULL_LINE_ID" length="14"/>
+        <viewAttribute datatype="VARCHAR" id="MATNR" length="18"/>
+        <viewAttribute datatype="VARCHAR" id="WERKS" length="4"/>
+        <viewAttribute datatype="VARCHAR" id="SRC_STORAGE_LOC" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="SRC_STORAGE_TYPE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="SRC_STORAGE_BIN" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="PULL_TYPE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="DEST_STORAGE_LOC" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="DEST_STORAGE_TYPE" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="DEST_STORAGE_BIN" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="INVENTORY_TYPE" length="15"/>
+        <viewAttribute datatype="VARCHAR" id="LIFNR" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="TPL_ID" length="60"/>
+        <viewAttribute datatype="VARCHAR" id="DEST_WERKS" length="25"/>
+        <viewAttribute datatype="VARCHAR" id="SHIPPED_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="DELIVERY_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_CREATED_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_CREATED_BY" length="70"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_BY" length="70"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_LAST_MODIFIED_DATE" length="20"/>
+        <viewAttribute datatype="VARCHAR" id="STATUS" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="SYS_AUTH_ID" length="25"/>
+        <viewAttribute datatype="VARCHAR" id="MATNR_DESCR" length="255"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = 
+ 	 	select * from(
+ 	   SELECT DISTINCT PULL_HEADER_ID,
+                   PULL_LINE_ID,
+                   MATNR,
+                   WERKS,
+                   SRC_STORAGE_LOC,
+                   SRC_STORAGE_TYPE,
+                   SRC_STORAGE_BIN,
+                   PULL_TYPE,
+                   DEST_STORAGE_LOC,
+                   DEST_STORAGE_TYPE,
+                   DEST_STORAGE_BIN,
+                   INVENTORY_TYPE,
+                   LIFNR,
+                   TPL_ID,
+                   DEST_WERKS,
+                   to_seconddate(SHIPPED_DATE) as SHIPPED_DATE,
+                   to_seconddate(DELIVERY_DATE) as DELIVERY_DATE,
+                   to_seconddate(SYS_CREATED_DATE) as SYS_CREATED_DATE,
+                   SYS_CREATED_BY,
+                   SYS_LAST_MODIFIED_BY,
+                   to_seconddate(SYS_LAST_MODIFIED_DATE) as SYS_LAST_MODIFIED_DATE,
+                   STATUS,
+                   SYS_AUTH_ID,
+                   MATNR_DESCR
+     FROM   BAK_dispatch_list dl
+   UNION
+   SELECT DISTINCT PULL_HEADER_ID,
+                   PULL_LINE_ID,
+                   MATNR,
+                   WERKS,
+                   SRC_STORAGE_LOC,
+                   SRC_STORAGE_TYPE,
+                   SRC_STORAGE_BIN,
+                   'LINE_TO_EXCESS' AS PULL_TYPE,
+                   DEST_STORAGE_LOC,
+                   DEST_STORAGE_TYPE,
+                   DEST_STORAGE_BIN,
+                   INVENTORY_TYPE,
+                   LIFNR,
+                   '' AS TPL_ID,
+                   WERKS AS DEST_WERKS,
+                   to_seconddate(DELIVERY_DATE) AS SHIPPED_DATE,
+                   to_seconddate(DELIVERY_DATE),
+                   to_seconddate(SYS_CREATED_DATE) as SYS_CREATED_DATE,
+                   SYS_CREATED_BY,
+                   SYS_LAST_MODIFIED_BY,
+                   to_seconddate(SYS_LAST_MODIFIED_DATE) as SYS_LAST_MODIFIED_DATE,
+                   STATUS,
+                   SYS_AUTH_ID,
+                   MATNR_DESCR
+     FROM   BAK_SPECIAL_DISPATCH sd
+   UNION
+   SELECT DISTINCT PULL_HEADER_ID,
+                   PULL_LINE_ID,
+                   MATNR,
+                   WERKS,
+                   SRC_STORAGE_LOC,
+                   SRC_STORAGE_TYPE,
+                   SRC_STORAGE_BIN,
+                   'BALANCE' AS PULL_TYPE,
+                   DEST_STORAGE_LOC,
+                   DEST_STORAGE_TYPE,
+                   DEST_STORAGE_BIN,
+                   INVENTORY_TYPE,
+                   LIFNR,
+                   TPL_ID,
+                   WERKS AS DEST_WERKS,
+                   to_seconddate(DELIVERY_DATE) AS SHIPPED_DATE,
+                   to_seconddate(DELIVERY_DATE),
+                   to_seconddate(SYS_CREATED_DATE) as SYS_CREATED_DATE,
+                   SYS_CREATED_BY,
+                   SYS_LAST_MODIFIED_BY,
+                   to_seconddate(SYS_LAST_MODIFIED_DATE) as SYS_LAST_MODIFIED_DATE,
+                   STATUS,
+                   SYS_AUTH_ID,
+                   MATNR_DESCR
+     FROM   BAK_BALANCE_DISPATCH bd )
+     where SYS_CREATED_DATE >= ADD_DAYS(CURRENT_TIMESTAMP,-90)
+     	and SYS_CREATED_DATE &lt;=CURRENT_TIMESTAMP;
+ 	 
+ 	 
+ 	 
+ 	  
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="PULL_HEADER_ID" order="1">
+        <descriptions defaultDescription="PULL_HEADER_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="PULL_HEADER_ID"/>
+      </attribute>
+      <attribute id="PULL_LINE_ID" order="2">
+        <descriptions defaultDescription="PULL_LINE_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="PULL_LINE_ID"/>
+      </attribute>
+      <attribute id="MATNR" order="3">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR"/>
+      </attribute>
+      <attribute id="WERKS" order="4">
+        <descriptions defaultDescription="WERKS"/>
+        <keyMapping columnObjectName="Script_View" columnName="WERKS"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_LOC" order="5">
+        <descriptions defaultDescription="SRC_STORAGE_LOC"/>
+        <keyMapping columnObjectName="Script_View" columnName="SRC_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_TYPE" order="6">
+        <descriptions defaultDescription="SRC_STORAGE_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SRC_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="SRC_STORAGE_BIN" order="7">
+        <descriptions defaultDescription="SRC_STORAGE_BIN"/>
+        <keyMapping columnObjectName="Script_View" columnName="SRC_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="PULL_TYPE" order="8">
+        <descriptions defaultDescription="PULL_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="PULL_TYPE"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_LOC" order="9">
+        <descriptions defaultDescription="DEST_STORAGE_LOC"/>
+        <keyMapping columnObjectName="Script_View" columnName="DEST_STORAGE_LOC"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_TYPE" order="10">
+        <descriptions defaultDescription="DEST_STORAGE_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="DEST_STORAGE_TYPE"/>
+      </attribute>
+      <attribute id="DEST_STORAGE_BIN" order="11">
+        <descriptions defaultDescription="DEST_STORAGE_BIN"/>
+        <keyMapping columnObjectName="Script_View" columnName="DEST_STORAGE_BIN"/>
+      </attribute>
+      <attribute id="INVENTORY_TYPE" order="12">
+        <descriptions defaultDescription="INVENTORY_TYPE"/>
+        <keyMapping columnObjectName="Script_View" columnName="INVENTORY_TYPE"/>
+      </attribute>
+      <attribute id="LIFNR" order="13">
+        <descriptions defaultDescription="LINFNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="LIFNR"/>
+      </attribute>
+      <attribute id="TPL_ID" order="14">
+        <descriptions defaultDescription="TPL_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="TPL_ID"/>
+      </attribute>
+      <attribute id="DEST_WERKS" order="15">
+        <descriptions defaultDescription="DEST_WERKS"/>
+        <keyMapping columnObjectName="Script_View" columnName="DEST_WERKS"/>
+      </attribute>
+      <attribute id="SHIPPED_DATE" order="16">
+        <descriptions defaultDescription="SHIPPER_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SHIPPED_DATE"/>
+      </attribute>
+      <attribute id="DELIVERY_DATE" order="17">
+        <descriptions defaultDescription="DELIVERY_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="DELIVERY_DATE"/>
+      </attribute>
+      <attribute id="SYS_CREATED_DATE" order="18">
+        <descriptions defaultDescription="SYS_CREATED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_CREATED_DATE"/>
+      </attribute>
+      <attribute id="SYS_CREATED_BY" order="19">
+        <descriptions defaultDescription="SYS_CREATED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_CREATED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_BY" order="20">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_BY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_BY"/>
+      </attribute>
+      <attribute id="SYS_LAST_MODIFIED_DATE" order="21">
+        <descriptions defaultDescription="SYS_LAST_MODIFIED_DATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_LAST_MODIFIED_DATE"/>
+      </attribute>
+      <attribute id="STATUS" order="22">
+        <descriptions defaultDescription="STATUS"/>
+        <keyMapping columnObjectName="Script_View" columnName="STATUS"/>
+      </attribute>
+      <attribute id="SYS_AUTH_ID" order="23">
+        <descriptions defaultDescription="SYS_AUTH_ID"/>
+        <keyMapping columnObjectName="Script_View" columnName="SYS_AUTH_ID"/>
+      </attribute>
+      <attribute id="MATNR_DESCR" order="24">
+        <descriptions defaultDescription="MATNR_DESCR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR_DESCR"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

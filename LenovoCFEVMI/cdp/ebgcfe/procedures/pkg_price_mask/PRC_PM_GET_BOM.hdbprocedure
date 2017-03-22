@@ -1,0 +1,239 @@
+PROCEDURE "EBGCFE"."cdp.ebgcfe.procedures.pkg_price_mask::PRC_PM_GET_BOM"(
+  IN  P_IN_PRODUCT_GROUP   VARCHAR(20),
+  IN  P_IN_TIME_FENCE      VARCHAR(40),
+  IN  P_IN_PROFIT_CENTER   VARCHAR(40),
+  IN  P_IN_OEM_NAME        VARCHAR(40),
+  OUT P_OUT_EXIT_CODE      INTEGER,
+  OUT P_OUT_EXIT_MESSAGE   VARCHAR(500)
+ ) 
+	LANGUAGE SQLSCRIPT
+	SQL SECURITY DEFINER 
+	DEFAULT SCHEMA "EBGCFE"
+	--READS SQL DATA  
+/************************************************************************
+*name       : PRC_PM_GET_BOM      
+*function   : Get price mask's BOM from Z_PCDW_BOM table
+*input      ：   p_product_group : product group
+*output     : p_exit_code : error code / p_exit_message : error message
+*author     : Binbin Zhou
+*CreateDate : 2015-10-28
+*UpdateDate :        --函数更改信息（包括作者、时间、更改内容等）
+*************************************************************************/	
+	AS
+BEGIN
+    -- data
+    DECLARE v_pkg_name          VARCHAR(30) := 'PKG_PRICE_MASK';
+    DECLARE v_prc_name          VARCHAR(30) := 'PRC_PM_GET_BOM';
+    DECLARE v_full_name         VARCHAR(60) := :v_pkg_name ||'.'|| :v_prc_name;
+    DECLARE logidi              INTEGER     := 0;
+    DECLARE v_row_count         INTEGER     := 0;
+    DECLARE v_node_lvl          INTEGER     := 0;
+    
+    DECLARE v_bom_pri           INTEGER;
+    DECLARE i                   INTEGER;
+    
+
+    -- exception 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION   
+    BEGIN
+        p_out_exit_code    := ::SQL_ERROR_CODE;
+        p_out_exit_message := ::SQL_ERROR_MESSAGE;
+                          
+	    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_ERROR',
+	                                                I_LOGSID     => :logidi,
+		                                            I_EVENT_NAME => :v_full_name, 
+		                                            I_MODULE     => 'EBGCFE',
+		                                            I_MESSAGE    => 'ERROR', 
+		                                            I_DETAIL     => to_char(::SQL_ERROR_CODE) || ':' || 
+		                                                            substr(::SQL_ERROR_MESSAGE, 1, 500) );    
+    END;   
+    
+    -- process logic
+    P_OUT_EXIT_CODE    := -1;
+    P_OUT_EXIT_MESSAGE := 'FAILED';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_START',
+                                                I_LOGSID     => :logidi,
+		                                        I_EVENT_NAME => :v_full_name,
+		                                        I_MODULE     => 'EBGCFE');
+		                                        
+    v_node_lvl := 1;
+    
+    DELETE FROM mid_buysell_bom
+    WHERE product_group = :p_in_product_group;
+    
+    DELETE FROM pm_ui_bs_bom 
+    WHERE product_group  = :p_in_product_group
+      AND sys_created_by = :v_full_name;
+      
+    INSERT INTO mid_buysell_bom
+      (product_group, mtm, ori_mtm, bom_plant, sys_created_date)
+    SELECT DISTINCT
+           t1.product_group, t1.item, t1.item, NULL, CURRENT_TIMESTAMP
+      FROM ui_item t1
+     WHERE t1.product_group = :p_in_product_group
+       AND t1.item_type     IN('MTM', 'BUNDLE','OPTION');--added by cuixh4 for OPTION price mask
+    
+    INSERT INTO mid_buysell_bom
+        (product_group, mtm, ori_mtm, sys_created_date)
+    SELECT DISTINCT 
+           product_group, 
+           CASE WHEN LENGTH(mtm_no) < 16 THEN mtm_no
+                ELSE SUBSTR(mtm_no, 1, LENGTH(mtm_no)-16) END mtm,
+           mtm_no, current_timestamp 
+      FROM pm_ui_gr_mtm t1
+     WHERE t1.product_group = :p_in_product_group
+       AND NOT EXISTS(SELECT 1 FROM mid_buysell_bom t2
+                       WHERE t2.product_group = t1.product_group
+                         AND t2.mtm           = t1.mtm_no)
+       AND EXISTS(SELECT 1 FROM pm_ui_time_fence t3
+                   WHERE t3.product_group = t1.product_group
+                     AND t3.time_fence    = t1.time_fence
+                     AND t3.time_fence_type = 'CURRENT');
+       
+    SELECT MAX(ptype) INTO v_bom_pri
+      FROM conf_parameters
+     WHERE pdomain = 'PRICE_MASK'
+       AND pname   = 'BOM_PLANT';
+       
+    FOR i in 1..:v_bom_pri
+    DO
+        UPDATE mid_buysell_bom t1
+           SET t1.bom_plant = t2.werks
+          FROM z_pcdw_bom t2
+         WHERE t1.product_group = t2.product_group
+           AND t1.mtm           = t2.name
+           AND t1.product_group = :p_in_product_group
+           AND t1.bom_plant IS NULL
+           AND EXISTS(SELECT 1 FROM conf_parameters t3
+                       WHERE t3.pvalue  = t2.werks
+                         AND t3.pdomain = 'PRICE_MASK'
+                         AND t3.pname   = 'BOM_PLANT'
+                         AND t3.ptype   = :i);
+    END FOR;
+      
+	INSERT INTO mid_buysell_bom
+	    (product_group, mtm, ori_mtm, component, path, bom_plant, quantity, 
+	     altpercent, node_lvl, sys_created_date)	                                        
+    SELECT t1.product_group, t1.mtm, t1.mtm, t2.idnrk AS component, 
+           '/'||t2.name AS path, t1.bom_plant, ifnull(t2.menge, 1) AS quantity, 
+           case when t2.alpgr is null or length(t2.alpgr) = 0 
+                    then 100 
+                when t2.alpgr is not null and (t2.ewahr is null or length(trim(t2.ewahr)) = 0)
+                    then 100
+                else to_number(trim(t2.ewahr)) end as altpercent,           
+           :v_node_lvl AS node_lvl, current_timestamp
+      FROM mid_buysell_bom t1,
+           z_pcdw_bom      t2
+     WHERE t1.product_group = t2.product_group
+       AND t1.ori_mtm       = t2.name
+       AND t1.bom_plant     = t2.werks
+       AND t1.product_group = :p_in_product_group
+       AND LENGTH(IFNULL(t1.ori_mtm, '')) < 16;
+       
+	INSERT INTO mid_buysell_bom
+	    (product_group, mtm, ori_mtm, component, path, bom_plant, quantity, 
+	     altpercent, node_lvl, sys_created_date) 
+    SELECT t1.product_group, t1.mtm, t1.ori_mtm, t2.idnrk, '/'||t1.ori_mtm, 
+           t1.bom_plant, t2.menge AS quantity, 100 AS altpercent, 1 AS node_lvl,
+           CURRENT_TIMESTAMP AS sys_created_date
+      FROM mid_buysell_bom t1, pcdw.pcdw_ordbom_x86 t2
+     WHERE SUBSTR(t1.ori_mtm, length(t1.ori_mtm)-15, 10) = t2.vbeln 
+       AND RIGHT(t1.ori_mtm,  6)       = t2.posnr
+       AND LENGTH(t1.ori_mtm)          > 16
+       AND t1.product_group            = :p_in_product_group;    
+       
+    SELECT COUNT(0) INTO v_row_count
+      FROM mid_buysell_bom
+     WHERE product_group = :p_in_product_group
+       AND component is not null;
+    
+    WHILE :v_row_count > 0
+    DO
+        v_node_lvl := :v_node_lvl + 1;
+        
+	    INSERT INTO mid_buysell_bom
+	        (product_group, mtm, ori_mtm, component, path, bom_plant, quantity, 
+	         altpercent, node_lvl, sys_created_date)	                                        
+        SELECT t1.product_group, t1.mtm, t1.ori_mtm, t2.idnrk AS component, 
+               t1.path||'/'||t2.name, t1.bom_plant, t1.quantity*ifnull(t2.menge, 1) AS quantity, 
+               t1.altpercent*
+               (case when t2.alpgr is null or length(t2.alpgr) = 0 
+                         then 100 
+                     when t2.alpgr is not null and (t2.ewahr is null or length(trim(t2.ewahr)) = 0)
+                         then 100
+                     else to_number(trim(t2.ewahr)) end)/100 as altpercent,           
+              :v_node_lvl AS node_lvl, current_timestamp
+         FROM mid_buysell_bom t1,
+              z_pcdw_bom      t2
+        WHERE t1.product_group = t2.product_group
+          AND t1.component     = t2.name
+          AND t1.bom_plant     = t2.werks
+          AND t1.node_lvl      = :v_node_lvl - 1
+          AND locate(t1.path, t2.idnrk) = 0
+          AND t1.product_group = :p_in_product_group;
+                            
+        SELECT COUNT(0) INTO v_row_count
+          FROM mid_buysell_bom
+         WHERE product_group = :p_in_product_group
+           AND node_lvl      = :v_node_lvl;
+                            
+    END WHILE;
+    
+    UPDATE mid_buysell_bom t1
+       SET t1.is_buysell = 'Y'
+     WHERE t1.product_group = :p_in_product_group
+              --Modified by Zhoubinbin 20160825
+       /*AND EXISTS(SELECT 1 FROM pcdw.pcdw_itemsitemaster t2
+                   WHERE t2.item   = t1.component
+                     AND t2.siteid = 'H070')*/
+       AND EXISTS(SELECT 1 FROM pm_ui_bs_part t2
+                   WHERE t2.part_no = t1.component);
+    
+    --Delete non-buysell parts from BOM
+    UPDATE mid_buysell_bom t1
+       SET t1.status = 'INACTIVE'
+     WHERE t1.product_group = :p_in_product_group
+       AND t1.component  IS NOT NULL
+       AND t1.is_buysell IS NULL;
+      
+    UPDATE mid_buysell_bom t1
+       SET t1.status = 'INACTIVE'
+     WHERE t1.product_group = :p_in_product_group
+       AND t1.is_buysell    = 'Y'
+       AND EXISTS(SELECT 1 FROM mid_buysell_bom t2
+                   WHERE t2.product_group = t1.product_group
+                     AND t2.mtm           = t1.mtm
+                     AND t2.bom_plant     = t1.bom_plant
+                     AND t2.is_buysell    = 'Y'
+                     AND locate(t2.path, t1.component) > 1);
+      
+    INSERT INTO pm_ui_bs_bom
+        (product_group, item, item_desc, item_type, bs_part, commodity, 
+         part_desc, part_qty, action, status, sys_created_date, sys_created_by, 
+         sys_last_modified_date, sys_last_modified_by)
+    SELECT t1.product_group, t1.ori_mtm AS item, t2.item_desc, t2.item_type, 
+           t1.component AS bs_part, NULL, t3.item_desc AS part_desc, 
+           SUM(t1.quantity) AS part_qty, 'INSERT' AS action, 'ACTIVE' AS status, 
+           current_timestamp, v_full_name, current_timestamp, 
+           v_full_name
+      FROM mid_buysell_bom t1, ui_item t2, ui_item t3
+     WHERE t1.product_group = t2.product_group
+       AND t1.mtm           = t2.item
+       AND t1.product_group = t3.product_group
+       AND t1.component     = t3.item
+       AND t1.is_buysell    = 'Y'
+       AND t1.product_group = :p_in_product_group
+       AND t1.status        = 'ACTIVE'
+       AND NOT EXISTS(SELECT 1 FROM pm_ui_bs_bom t4
+                       WHERE t4.product_group = t1.product_group
+                         AND t4.item          = t1.mtm)
+    GROUP BY t1.product_group, t1.ori_mtm, t2.item_desc, t2.item_type, 
+             t1.component, t3.item_desc;         
+      
+    p_out_exit_code    := 0;
+    p_out_exit_message := 'SUCCESSFUL';
+    CALL "EX_LOG"."cdp.log.procedures::logProc"(I_TYPE       => 'PROC_END',
+                                                I_LOGSID     => :logidi,
+	                                            I_EVENT_NAME => :v_full_name,
+	                                            I_MODULE     => 'EBGCFE');  	
+END;
