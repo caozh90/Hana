@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2009-2014 SAP SE, All Rights Reserved -->
+<html class="sapUShellFullHeight">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+        <!-- switch off caching -->
+        <meta http-equiv="cache-control" content="max-age=0" />
+        <meta http-equiv="cache-control" content="no-cache" />
+        <meta http-equiv="expires" content="0" />
+        <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT" />
+        <meta http-equiv="pragma" content="no-cache" />
+
+        <!-- iPhone splash screens -->
+        <link href="../../resources/sap/ushell/themes/base/img/splashscreen/320_x_460.png"  media="(device-width: 320px) and (device-height: 480px) and (-webkit-device-pixel-ratio: 1)" rel="apple-touch-startup-image">
+        <link href="../../resources/sap/ushell/themes/base/img/splashscreen/640_x_920.png"  media="(device-width: 320px) and (device-height: 480px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image">
+        <link href="../../resources/sap/ushell/themes/base/img/splashscreen/640_x_1096.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image">
+
+        <!-- iPad splash screens -->
+        <link href="../../resources/sap/ushell/themes/base/img/splashscreen/768_x_1004.png"  media="(device-width: 768px) and (device-height: 1024px) and (orientation: portrait) and (-webkit-device-pixel-ratio: 1)"  rel="apple-touch-startup-image">
+        <link href="../../resources/sap/ushell/themes/base/img/splashscreen/1024_x_748.png"  media="(device-width: 768px) and (device-height: 1024px) and (orientation: landscape) and (-webkit-device-pixel-ratio: 1)" rel="apple-touch-startup-image">
+        <link href="../../resources/sap/ushell/themes/base/img/splashscreen/1536_x_2008.png" media="(device-width: 768px) and (device-height: 1024px) and (orientation: portrait) and (-webkit-device-pixel-ratio: 2)"  rel="apple-touch-startup-image">
+        <link href="../../resources/sap/ushell/themes/base/img/splashscreen/2048_x_1496.png" media="(device-width: 768px) and (device-height: 1024px) and (orientation: landscape) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image">
+
+        <style id="SAP-antiClickjackStyle" type="text/css">
+            body {
+                display : none !important;
+            }
+        </style>
+
+        <script type="text/javascript">
+        (function () {
+            "use strict";
+            /*global window, console, navigator, jQuery*/
+
+            var i,
+                bDebugSources,
+                sScriptTags,
+                isIE = navigator.userAgent.toLowerCase().indexOf('msie') !== -1,
+                sUI5LibraryRootPath,
+                sServerSideConfig,
+                oServerSideConfig = {},
+                oUi5ResourceRoots,
+                aMessages,
+                fnError,
+                fnWarning;
+
+            // no JQuery or UI5 available yet, so log directly to console (if available)
+            if (window.console && typeof window.console.error === "function") {
+                // note: fnError = console.error does not work in chrome, ie9
+                fnError = function (sMessage) {
+                    console.error(sMessage);
+                };
+            } else {
+                fnError = function () {};
+            }
+            if (window.console && typeof window.console.warn === "function") {
+                // note: fnWarning = console.warn does not work in chrome, ie9
+                fnWarning = function (sMessage) {
+                    console.warn(sMessage);
+                };
+            } else {
+                fnWarning = function () {};
+            }
+
+            // If this page is loaded via the dedicated FLP HTTP handler (and template processing
+            // has not been deactivated via ?sap-ushell-nocb=true) the handler will replace the
+            // ${...} placeholder in the string value assigned to sServerSideConfig by a JSON
+            // string containing the server side configurations.
+            sServerSideConfig = "${SERVER-SIDE-CONFIG}";
+            if (sServerSideConfig.charAt(0) !== "$") {
+                try {
+                    oServerSideConfig = JSON.parse(sServerSideConfig);
+                } catch (e) {
+                    fnError("Failed to parse server-side config: " + e.message);
+                }
+            }
+
+            // Write any warnings and errors related to server-side config to console.
+            // Skip loop if console is not available.
+            aMessages = oServerSideConfig.messages;
+            if (aMessages && aMessages.length > 0 && window.console) {
+                for (i = 0; i < aMessages.length; i += 1) {
+                    if (aMessages[i].severity === "error") {
+                        fnError(aMessages[i].text);
+                    } else if (aMessages[i].severity === "warning") {
+                        fnWarning(aMessages[i].text);
+                    }
+                }
+            }
+
+            window["sap-ushell-config"] = {
+                "renderers": {
+                    "fiori2" : {
+                        "componentData": {
+                            "config": {
+                                "enablePersonalization": true,
+                                "enableTagFiltering": false,
+                                "enableSearch": true,
+                                "enableTilesOpacity": false,
+                                "enableHideGroups": false,
+                                "enableSetTheme": true,
+                                "enableAccessibility": true,
+                                "enableHelp" : false,
+                                "enableActionModeMenuButton": true,
+                                "enableActionModeFloatingButton": true
+                            }
+                        }
+                    }
+                },
+                "services": {
+                    "NavTargetResolution" : {
+                        "config" : {
+                            "runStandaloneAppFolderWhitelist": {
+                                "*" : false,
+                                "/sap/bc/ui5_ui5/" : true,
+                                "/sap/bc/ui5_demokit/test-resources/sap/ushell/demoapps/" : true
+                            }
+                        }
+                    },
+                    "ShellNavigation" : {
+                        "config" : {
+                            "reload" : false
+                        }
+                    },
+                    EndUserFeedback: {
+                        config: {
+                            enabled: true
+                        }
+                    }
+                },
+                // platform specific (ABAP) launchpad configuration
+                "launchpadConfiguration" :  {
+                    "configurationFile" : {
+                        "sap-ushell-config-url" : undefined, // optionally define a hard coded absolute or relative path here (prevents using url filename!)
+                        "configurationFileFolderWhitelist": {
+                            "" : true,
+                            "cfg/" : true,
+                            "cfg/sap/" : true,
+                            "/sap/bc/ui5_ui5/ui2/ushell/shells/abap/" : true,
+                            "/sap/bc/ui5_ui5/ui2/ushell/shells/abap/cfg/" : true,
+                            "/sap/bc/ui5_ui5/ui2/ushell/shells/abap/cfg/sap/" : true,
+                            "/sap/ushell_config/" : true,
+                            "/sap/bc/ui5_demokit/test-resources/sap/ushell/demoapps/LaunchpadConfigFileExamples/" : true,
+                            "/resources/sap/dfa/help/sap/cfg/" : true,
+                            "/sap/bc/ui5_ui5/ui2/ushell_me/sap/ushell/me/" : true
+                        }
+                    }
+                },
+                "xhrLogon": {
+                    // configuration for XHR-Logon mode - possible values: "frame", "window"
+                    // default is "frame" which performs the XHR-Logon
+                    // in an iframe; this can be set to "window" for performing the XHR-Logon&nbsp;
+                    // in a new browser window. See SAP Note 2193513 for details.
+                    "mode": "frame"
+                }
+            };
+
+            // add ushell cache-busting configuration if provided by server
+            if (oServerSideConfig.cacheBusting) {
+                window["sap-ushell-config"].cacheBusting = oServerSideConfig.cacheBusting;
+            } else if (oServerSideConfig.ui2CacheBusterToken) {
+                // TODO:  remove fallback for single token once back-end is completed
+                window["sap-ushell-config"].cacheBusting = {
+                    "cacheBusterToken": oServerSideConfig.ui2CacheBusterToken, // default token
+                    "patterns": {
+                        "^/sap/bc/ui5_ui5/": {
+                            "replacement": "/sap/bc/ui5_ui5/[CacheBusterToken]/",
+                            "order" : 100
+                        }
+                    }
+                };
+            }
+
+            // we use an absolute path, but still resolve to the same resource path (under our own UI5 app)
+            // as before SP11; this allows other entry point URLs (URL for our own FLP http handler) or
+            // just external aliases, but is not as incompatible as using /sap/public/ui5_ui5 (in case this
+            // path is not exposed by the reverse proxy)
+            sUI5LibraryRootPath = "/sap/bc/ui5_ui5/ui2/ushell/resources";
+
+            // only add UI5 cache-busting token if provided via server-side configuration
+            if (oServerSideConfig.ui5CacheBusterToken) {
+                sUI5LibraryRootPath += "/" + oServerSideConfig.ui5CacheBusterToken;
+            }
+
+            // we expect that the server provides the complete list of mappings, including the default path mapping for UI5
+            // only if the server does not set this at all, we construct the default path mapping for UI5 here
+            oUi5ResourceRoots = oServerSideConfig.ui5ResourceRoots || {"": sUI5LibraryRootPath };
+
+            // since the core of UI5 isn't loaded yet we must read the debug flags here to
+            // determine if we should load core-min-1 - 3 files the same is done in jquery.sap.global.js file
+            bDebugSources = /sap-ui-debug=(true|x|X)/.test(window.location.search);
+
+            // Check local storage
+            try {
+                bDebugSources = bDebugSources || (window.localStorage.getItem("sap-ui-debug") === "X");
+            } catch (e) {
+                fnWarning('failed to read debug mode from local storage');
+            }
+
+            //set the debug sources flag
+            window["sap-ui-debug"] = bDebugSources;
+            sScriptTags =   "<script id='sap-ushell-bootstrap' src='" + sUI5LibraryRootPath + "/sap/ushell_abap/bootstrap/abap.js' " + (isIE ? "defer" : "") + "><\/script>" +
+                            "<script id='sap-ui-bootstrap' src='" + sUI5LibraryRootPath + "/sap/fiori/core-min-0.js' " +
+                            "data-sap-ui-evt-oninit='main();' " +
+                            "data-sap-ui-xx-bindingSyntax='complex' " +
+                            "data-sap-ui-libs='sap.fiori, sap.m, sap.ushell' " +
+                            "data-sap-ui-theme='sap_bluecrystal' " +
+                            "data-sap-ui-compatVersion='1.16' " +
+                            "data-sap-ui-resourceroots='" + JSON.stringify(oUi5ResourceRoots) + "' " +
+                            (isIE ? "defer" : "") +
+                            "><\/script>";
+
+            if (!window["sap-ui-debug"]) {
+                sScriptTags +=  "<script src='" + sUI5LibraryRootPath + "/sap/fiori/core-min-1.js' " + (isIE ? "defer" : "") + "><\/script>" +
+                                "<script src='" + sUI5LibraryRootPath + "/sap/fiori/core-min-2.js' " + (isIE ? "defer" : "") + "><\/script>" +
+                                "<script src='" + sUI5LibraryRootPath + "/sap/fiori/core-min-3.js' " + (isIE ? "defer" : "") + "><\/script>";
+            }
+
+            window.document.write(sScriptTags);
+        }());
+        </script>
+
+        <script type="text/javascript">
+            function loadIcons() {
+                "use strict";
+                /*global document, window, f2p, jQuery, setTimeout */
+                if (sap.ui.Device.os.ios) {
+                    jQuery.sap.setIcons({
+                        'phone': '../../resources/sap/ushell/themes/base/img/launchicons/57_iPhone_Desktop_Launch.png',
+                        'phone@2': '../../resources/sap/ushell/themes/base/img/launchicons/114_iPhone-Retina_Web_Clip.png',
+                        'tablet': '../../resources/sap/ushell/themes/base/img/launchicons/72_iPad_Desktop_Launch.png',
+                        'tablet@2': '../../resources/sap/ushell/themes/base/img/launchicons/144_iPad_Retina_Web_Clip.png',
+                        'favicon': '../../resources/sap/ushell/themes/base/img/launchpad_favicon.ico',
+                        'precomposed': true
+                    });
+                } else {
+                    jQuery.sap.setIcons({
+                        'phone': '',
+                        'phone@2': '',
+                        'tablet': '',
+                        'tablet@2': '',
+                        'favicon': '../../resources/sap/ushell/themes/base/img/launchpad_favicon.ico',
+                        'precomposed': true
+                    });
+                }
+
+                jQuery.sap.require("sap.ui.thirdparty.signals");
+                jQuery.sap.require("sap.ui.thirdparty.crossroads");
+
+                // The viewport meta tag must be inserted to the DOM before the "DOMContentLoaded" event is published.
+                // The initMobile function is responsible to insert the correct viewport according to the current device.
+                // For iPhone running ios 7.1 and above a "minimal-ui" property is added to the viewport meta tag which allows minimizing the top and bottom bars of the browser.
+                jQuery.sap.initMobile({preventScroll: false, mobileWebAppCapable: false});
+            };
+            /**
+             * Main method to be executed once SAPUI5 has been initialized.
+             */
+            function main() {
+                "use strict";
+                /*global jQuery, sap, window */
+
+                // check if framing control of ui5 should be active (meta tag set)
+                var oFramingControl = window["sap-ushell-framing-control"],
+                    oUI5Configuration,
+                    sUi5FrameOptions;
+
+                if (oFramingControl && oFramingControl.verifyUi5ProtectionActive) {
+                    oUI5Configuration = sap.ui.getCore().getConfiguration();
+                    sUi5FrameOptions = (typeof oUI5Configuration.getFrameOptions === "function") && oUI5Configuration.getFrameOptions();
+                    if (sUi5FrameOptions === "trusted" || sUi5FrameOptions === "deny") {
+                        // ui5 protection active, so we can unlock
+                        oFramingControl.unlock();
+                        jQuery.sap.log.debug("UI5 framing protection active, unlocking FLP protection");
+                    } else {
+                        // ui5 protection not active although meta tag set; this is an illegal state that can only
+                        // happen if UI2 version is newer than UI5, but UI5 ABAP code is already active
+                        throw new Error("UI5 framing protection is NOT active, although sap.whitelist meta tag set."
+                            + " Ensure consistent deployment of UI5 and UI2 resources.");
+                    }
+                }
+
+                loadIcons();
+
+                if (!window.console) {
+                    window.console = {};
+                    window.console.error = function () {};
+                    window.console.log = function () {};
+                    window.console.debug = function () {};
+                    window.console.info = function () {};
+                    window.console.warn = function () {};
+                }
+
+                // Safari: avoid attachements without close button (Customer ticket 725279 2014)
+                if ($('meta[name=apple-mobile-web-app-capable]').length < 0) {
+                    $('meta[name=apple-mobile-web-app-capable]').remove();
+                }
+
+                jQuery.sap.require("sap.ushell.functionBindPrototype");
+
+                // check if this is a DSM terminate session (which comes from EP)
+                var terminationKey = jQuery.sap.getUriParameters().get("SAPSessionCmd") ||
+                        jQuery.sap.getUriParameters().get("sap-sessioncmd");
+
+                if (terminationKey === 'USR_LOGOFF') {
+                    // DSM notification for user log off - call the Container logoff API
+                    sap.ushell.Container.logout();
+                    return;
+                } else if (terminationKey === 'USR_ABORT') {
+                    // DSM notification for user aborted
+                    return;
+                }
+                // standard FLP scenario
+                jQuery.sap.require("sap.ui2.srvc.contracts.bag");
+                jQuery.sap.require("sap.ui2.srvc.contracts.configuration");
+                jQuery.sap.require("sap.ui2.srvc.contracts.configurationUi");
+                jQuery.sap.require("sap.ui2.srvc.contracts.fullscreen");
+                jQuery.sap.require("sap.ui2.srvc.contracts.preview");
+                jQuery.sap.require("sap.ui2.srvc.contracts.visible");
+                jQuery.sap.require("sap.ui2.srvc.contracts.refresh");
+                jQuery.sap.require("sap.ui2.srvc.contracts.searchProvider");
+                jQuery.sap.require("sap.ui2.srvc.contracts.search");
+                jQuery.sap.require("sap.ui2.srvc.contracts.url");
+                jQuery.sap.require("sap.ui2.srvc.contracts.actions");
+
+                //TODO inserted to support chips requesting this contract unecessarily
+                sap.ui2.srvc.Chip.addContract("navigation", function (oChipInstance) {
+                    this.navigateToUrl = function (sUrl, oSettings) {
+                        jQuery.sap.require("sap.ui2.srvc.error");
+                        throw new sap.ui2.srvc.Error("'navigation' contract not implemented!",
+                            "sap.ushell.adapters.abap.LaunchPageAdapter");
+                    };
+                });
+
+                // clean fiori loading screen markup before placing main content
+                var oContent = sap.ushell.Container.createRenderer("fiori2");
+                jQuery("#canvas").empty();
+                setTimeout(function () {
+                    // load and register Fiori2 icon font
+                    jQuery.sap.require("sap.ushell.iconfonts");
+                    sap.ushell.iconfonts.registerFiori2IconFont();
+                    oContent.placeAt("canvas");
+                }, 1);
+            }
+        </script>
+        <script type="text/javascript">
+        (function () {
+            "use strict";
+            /*global window, document, parent, top, self */
+            var loc, antiClickjack;
+
+            // anti-clickjacking / framebusting code
+            function unlock() {
+                antiClickjack = document.getElementById("SAP-antiClickjackStyle");
+                antiClickjack.parentNode.removeChild(antiClickjack);
+
+                // remove the event listener for message
+                window.removeEventListener("message", messageCB);
+            }
+
+            // callback function for message event
+            function messageCB(event){
+                if (event.source===parent) {
+                    // fixing IE issue of which location.origin is undefined
+                    var locationOrigin = location.origin;
+                    if (typeof locationOrigin == 'undefined') {
+                        locationOrigin = location.protocol + "//" + location.hostname + (location.port ? ':' + location.port: '');
+                    }
+                    // only in case the message origin matches our origin we allow unlocking the page
+                    if (event.origin === locationOrigin) {
+                        unlock();
+                    }
+                }
+            }
+
+            function messageParent() {
+                // adding the event listener for message
+                window.addEventListener("message", messageCB);
+                // invoke parent to post message
+                parent.postMessage("","*");
+
+                setTimeout(function(){
+                    if(document.getElementById("SAP-antiClickjackStyle")) {
+                        // fail and stay hidden
+                        var err = new Error();
+                        err.name = "ClickjackingProtectionError";
+                        err.message = "Clickjacking protection prevented the Fiori Launchpad to load in a frame";
+                        throw(err);
+                    }
+                }, 1000);
+            }
+
+            function checkFramingViaPostMessageUnlessUI5ProtectionActive() {
+                // evaluate the meta tag which is set dynamically from the ui5 app http handler
+                // if whitelist service is active; in this case, we use the ui5 frame options
+                // but before unlocking, it is ensured that ui5 framing protection is active
+                // (later when ui5 is loaded)
+                var oMetaTag = document.querySelector("META[name='sap.whitelistService']");
+                if (oMetaTag) {
+                    window["sap-ushell-framing-control"] = {
+                        verifyUi5ProtectionActive: true,
+                        unlock: unlock
+                    }
+                } else {
+                    // normal FLP protection (same origin w/o whitelisting)
+                    messageParent();
+                }
+            }
+
+            // framing control
+            if (top === self) {
+                // page is not embedded
+                unlock();
+             } else {
+                // page embedded, check for same domain
+                try {
+                    // try to access a property of parent to check same domain
+                    loc = parent.location.href;
+                    if (loc !== undefined) {
+                        unlock();
+                    }
+                    else {
+                        // in Safari there is no exception when accessing parent.location.href but still it is undefined
+                        checkFramingViaPostMessageUnlessUI5ProtectionActive();
+                    }
+                } catch (e) {
+                    // in IE and Chrome access to parent.location.href throws an exception
+                    checkFramingViaPostMessageUnlessUI5ProtectionActive();
+                }
+            }
+        }());
+        </script>
+    </head>
+
+    <body class="sapUiBody sapUShellFullHeight" role="application">
+        <div id="canvas" class="sapUShellFullHeight">
+            <!--  the Fiori2 loading screen for different browsers (as SAPUI5 is not loaded yet, will be replaced by Launchpad):
+                * in pure HTML with CSS animation for modern browsers
+                * animated gif image for <=IE9 (IE10+ doesn't support conditional comments)
+            -->
+            <!--[if IE]>
+                <div id="fiori2-startup-flower" class="abap">
+                    <img src="../../resources/sap/ushell/themes/base/img/flower_anim.gif"></img>
+                </div>
+            <![endif]-->
+            <!--[if !IE]> -->
+            <div id="fiori2-startup-flower" class="abap">
+                <script type="text/javascript">
+                // the following browsers has issues with the fiori launchpad animation (due to browser bugs)
+                var aUserAgentRegexes = [
+                    /Android\s4\.2.+GT-I9505.+Chrome\/18/ // Chrome 18 on Android 4.2.x / Samsung Galaxy S4
+                    ],
+                    bReplaceFlower = false;
+                if (navigator.userAgent) {
+                    for (i = 0; i < aUserAgentRegexes.length; i = i + 1) {
+                        // if one of the user agent matches, the replacement is drawn
+                        if (aUserAgentRegexes[i].test(navigator.userAgent)) {
+                            bReplaceFlower = true;
+                            // exit loop
+                            break;
+                        }
+                    }
+                }
+                if (bReplaceFlower === true) {
+                    document.write('<img src="../../resources/sap/ushell/themes/base/img/flower_anim.gif"></img>');
+                } else {
+                    document.write("<div class='fiori2-blossom'>");
+                    for (var i = 1; i < 6; i = i + 1) {
+                        document.write("<div class='fiori2-leafContainer fiori2-leafContainer" + i + "'>");
+                        document.write("<div class='fiori2-leaf fiori2-leaf" + i + "'></div>");
+                        // end leafContainer
+                        document.write("</div>");
+                    }
+                    // end blossom
+                    document.write("</div>");
+                }
+                </script>
+            </div>
+            <!-- <![endif] -->
+        </div>
+    </body>
+</html>
