@@ -1,0 +1,41 @@
+<mvc:view
+	controllerName="demo.controller.OrderList"
+	xmlns="sap.m"
+	xmlns:mvc="sap.ui.core.mvc"
+	displayBlock="true"
+	xmlns:smartFilterBar="sap.ui.comp.smartfilterbar"
+	xmlns:smartTable="sap.ui.comp.smarttable">
+	<VBox>
+		<smartFilterBar:SmartFilterBar 
+			id="smartFilterBar"
+			entityType="Meetup"
+			enableBasicSearch="true"
+			basicSearchFieldName="MeetupID"
+			persistencyKey="SmartFilter_Explored">
+			<smartFilterBar:controlConfiguration>
+				<smartFilterBar:ControlConfiguration
+					key="MeetupID" visibleInAdvancedArea="true"
+					preventInitialDataFetchInValueHelpDialog="true">
+					<smartFilterBar:defaultFilterValues>
+							<smartFilterBar:SelectOption low="0001">
+							</smartFilterBar:SelectOption>
+					</smartFilterBar:defaultFilterValues>
+			</smartFilterBar:ControlConfiguration>
+			</smartFilterBar:controlConfiguration>
+		</smartFilterBar:SmartFilterBar>
+		<smartTable:SmartTable 
+			id="smartTable_ResponsiveTable"
+			smartFilterId="smartFilterBar" 
+			tableType="ResponsiveTable" 
+			editable="false"
+			entitySet="Meetups" 
+			useVariantManagement="false"
+			useTablePersonalisation="true" 
+			header="Products" 
+			showRowCount="true"
+			useExportToExcel="true" 
+			enableAutoBinding="true"
+			initiallyVisibleFields="MeetupID,Title,EventDate,Description">	
+		</smartTable:SmartTable>
+	</VBox>
+</mvc:view>

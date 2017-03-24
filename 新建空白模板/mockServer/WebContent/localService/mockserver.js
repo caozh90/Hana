@@ -13,7 +13,7 @@ sap.ui.define([
 		init: function() {
 			// create
 			var oMockServer = new MockServer({
-				rootUri: "/odata/"
+				rootUri: "/"
 			});
 
 			// simulate against the metadata and mock data
