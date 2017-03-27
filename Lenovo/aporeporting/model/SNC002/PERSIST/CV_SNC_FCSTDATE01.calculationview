@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_SNC_FCSTDATE01" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_SNC_FCSTDATE01"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="AT_SNC_MAXFCST" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC002.PERSIST/attributeviews/AT_SNC_MAXFCST</resourceUri>
+    </DataSource>
+    <DataSource id="AT_SNC_TIMEDIM" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC002.PERSIST/attributeviews/AT_SNC_TIMEDIM</resourceUri>
+    </DataSource>
+    <DataSource id="AT_SNC_ENDDATE01" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC002.PERSIST/attributeviews/AT_SNC_ENDDATE01</resourceUri>
+    </DataSource>
+    <DataSource id="Join_3$$$$AT_SNC_ENDDATE01$$" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC002.PERSIST/attributeviews/AT_SNC_ENDDATE01</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="CC_LOCDT"/>
+        <viewAttribute id="CALMONTH"/>
+        <viewAttribute id="CALDAY"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="NVARCHAR" id="CC_ENDDT" length="2" expressionLanguage="COLUMN_ENGINE">
+          <formula>IF(&quot;CALDAY&quot; &lt; 27, '0', '1') </formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#AT_SNC_MAXFCST">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALDAY" source="CALDAY"/>
+      </input>
+      <input node="#AT_SNC_TIMEDIM">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="DATE_SAP"/>
+      </input>
+      <joinAttribute name="CC_LOCDT"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="PJ_0">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="CALMONTH"/>
+        <viewAttribute id="CC_ENDDT">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="0"/>
+        </viewAttribute>
+        <viewAttribute id="CC_LOCDT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_ENDDT" source="CC_ENDDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="PJ_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="CALMONTH"/>
+        <viewAttribute id="CC_ENDDT">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="1"/>
+        </viewAttribute>
+        <viewAttribute id="CC_LOCDT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_ENDDT" source="CC_ENDDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="EM"/>
+        <viewAttribute id="EQ"/>
+        <viewAttribute id="EY"/>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="CALMONTH"/>
+        <viewAttribute id="CC_LOCDT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#PJ_0">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+      </input>
+      <input node="#AT_SNC_ENDDATE01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="EM" source="CEND_M"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EQ" source="CEND_Q"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EY" source="CEND_Y"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="RPT_MONTH"/>
+      </input>
+      <joinAttribute name="CALMONTH"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_3" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="EM"/>
+        <viewAttribute id="EQ"/>
+        <viewAttribute id="EY"/>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="CALMONTH"/>
+        <viewAttribute id="CC_LOCDT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#PJ_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+      </input>
+      <input node="#Join_3$$$$AT_SNC_ENDDATE01$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="EM" source="NEND_M"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EQ" source="NEND_Q"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EY" source="NEND_Y"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="RPT_MONTH"/>
+      </input>
+      <joinAttribute name="CALMONTH"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="CC_LOCDT"/>
+        <viewAttribute id="EM"/>
+        <viewAttribute id="EQ"/>
+        <viewAttribute id="EY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EM" source="EM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EQ" source="EQ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EY" source="EY"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Join_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EM" source="EM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EQ" source="EQ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EY" source="EY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="CC_LOCDT"/>
+        <viewAttribute id="EM"/>
+        <viewAttribute id="EQ"/>
+        <viewAttribute id="EY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Union_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EM" source="EM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EQ" source="EQ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EY" source="EY"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_2">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_2" columnName="MANDT"/>
+      </attribute>
+      <attribute id="LOCNO" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Projection_2" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MATNR" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Projection_2" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO_FROM" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_FROM"/>
+        <keyMapping columnObjectName="Projection_2" columnName="LOCNO_FROM"/>
+      </attribute>
+      <attribute id="CC_UTCDATE" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CC_UTCDATE"/>
+        <keyMapping columnObjectName="Projection_2" columnName="CC_UTCDATE"/>
+      </attribute>
+      <attribute id="CC_LOCDT" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CC_LOCDT"/>
+        <keyMapping columnObjectName="Projection_2" columnName="CC_LOCDT"/>
+      </attribute>
+      <attribute id="EM" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EM"/>
+        <keyMapping columnObjectName="Projection_2" columnName="EM"/>
+      </attribute>
+      <attribute id="EQ" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EQ"/>
+        <keyMapping columnObjectName="Projection_2" columnName="EQ"/>
+      </attribute>
+      <attribute id="EY" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EY"/>
+        <keyMapping columnObjectName="Projection_2" columnName="EY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="99" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="533"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="PJ_0" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="455"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="PJ_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="455"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="359"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="359"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="243"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

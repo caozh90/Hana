@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CA_SNP012_SNPT_MONTHLY" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CA_SNP012_SNPT_WEEKLY"/>
+  <metadata changedAt="2015-07-20 14:09:52.934"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="MANDT" length="3"/>
+        <viewAttribute datatype="VARCHAR" id="VERSIOD" length="22"/>
+        <viewAttribute datatype="NVARCHAR" id="VRSIOEX" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="SNAPSHOT" length="22"/>
+        <viewAttribute datatype="VARCHAR" id="MATID" length="22"/>
+        <viewAttribute datatype="VARCHAR" id="LOCID" length="22"/>
+        <viewAttribute datatype="VARCHAR" id="MAKTX" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="MATNR" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="LOCNO" length="20"/>
+        <viewAttribute datatype="DECIMAL" id="SNPT_REAL_QUANTITY" length="15" scale="3"/>
+        <viewAttribute datatype="VARCHAR" id="CALMONTH" length="6"/>
+        <viewAttribute datatype="VARCHAR" id="CALMONTH_SNPT" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="SNAP_DAY" length="8"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+        
+ 	 var_out = 
+ 	 /*
+	  select MANDT, SNAPSHOT, MATID, LOCID, MAKTX, MATNR, LOCNO, 
+ 	   case when &quot;SNPT_REAL_QUANTITY&quot; &lt; 0 then &quot;SNPT_REAL_QUANTITY&quot;*-1 else &quot;SNPT_REAL_QUANTITY&quot; end as &quot;SNPT_REAL_QUANTITY&quot;
+ 	   , CALMONTH
+ 	 from ( 
+ 	 SELECT MANDT, SNAPSHOT, MATID, LOCID, MAKTX, MATNR, LOCNO, SUM(REAL_QUANTITY) AS SNPT_REAL_QUANTITY, CALMONTH  
+ 	           FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012/CA_SNP012_SNAPSHOT_ORD_WITH_MATLOC&quot;
+ 	           WHERE TYPE = 'M'
+               GROUP BY MANDT, SNAPSHOT, MATID, LOCID, MAKTX, MATNR, LOCNO, CALMONTH ORDER BY CALMONTH ) ;  
+	*/
+	
+ 	 		  SELECT A.MANDT,A.VERSIOD,B.VRSIOEX, SNAPSHOT, MATID, LOCID, MAKTX, MATNR, LOCNO, 
+ 	 		  --SUM(REAL_QUANTITY) AS SNPT_REAL_QUANTITY
+				case 
+				  when category_type = '2' or category_type = '3'
+				  	then
+				  	   REAL_QUANTITY * (-1) 
+				  else	   
+				  	   REAL_QUANTITY 
+				end as 	SNPT_REAL_QUANTITY   	
+				, CALMONTH , left(snap_day,6) as CALMONTH_SNPT, SNAP_DAY 
+ 	           FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012/CA_SNP012_SNAPSHOT_ORD_WITH_MATLOC&quot; 
+ 	           A LEFT OUTER JOIN &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012.SNP012_MONTHLY/AT_SNC_APO01&quot; 
+ 	           B ON A.MANDT = B.MANDT AND A.VERSIOD = B.VRSIOID 
+ 	           WHERE 
+ 	           TYPE = 'M' 
+ 	           and calweek >= to_char(add_days(now(),-35),'YYYYWW' )
+               --GROUP BY MANDT, SNAPSHOT, MATID, LOCID, MAKTX, MATNR, LOCNO, CALMONTH 
+               ORDER BY CALMONTH  ; 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="MANDT" order="1">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Script_View" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="3">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Script_View" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="SNAPSHOT" order="4">
+        <descriptions defaultDescription="SNAPSHOT"/>
+        <keyMapping columnObjectName="Script_View" columnName="SNAPSHOT"/>
+      </attribute>
+      <attribute id="MATID" order="5">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="6">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MAKTX" order="7">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Script_View" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="MATNR" order="8">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="9">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="SNPT_REAL_QUANTITY" order="10">
+        <descriptions defaultDescription="REAL_QUANTITY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SNPT_REAL_QUANTITY"/>
+      </attribute>
+      <attribute id="CALMONTH" order="11">
+        <descriptions defaultDescription="CALMONTH"/>
+        <keyMapping columnObjectName="Script_View" columnName="CALMONTH"/>
+      </attribute>
+      <attribute id="CALMONTH_SNPT" order="12">
+        <descriptions defaultDescription="CALMONTH_SNPT"/>
+        <keyMapping columnObjectName="Script_View" columnName="CALMONTH_SNPT"/>
+      </attribute>
+      <attribute id="SNAP_DAY" order="13">
+        <descriptions defaultDescription="SNAP_DAY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SNAP_DAY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

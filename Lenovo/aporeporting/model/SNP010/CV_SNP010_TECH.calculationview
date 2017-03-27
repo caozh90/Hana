@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_SNP010_TECH" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="false">
+  <descriptions defaultDescription="CV_SNP010_TECH"/>
+  <metadata changedAt="2015-06-08 12:09:51.655"/>
+  <defaultSchema schemaName="SAP_SCM"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="MANDT" length="3"/>
+        <viewAttribute datatype="NVARCHAR" id="MATID" length="22"/>
+        <viewAttribute datatype="NVARCHAR" id="LOCID" length="22"/>
+        <viewAttribute datatype="NVARCHAR" id="GRPID" length="10"/>
+        <viewAttribute datatype="DATE" id="CURRENTDATE"/>
+        <viewAttribute datatype="NVARCHAR" id="BEGDA" length="8"/>
+        <viewAttribute datatype="NVARCHAR" id="ENDDA" length="8"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = select mandt, matid, locid, grpid, (current_date) as CURRENTDATE, begda,endda 
+ 	 from &quot;ZTCTM_PROCGRP_I&quot; 
+ 	 where to_date(begda)&lt;current_date and current_date&lt;to_date(endda);
+ 	 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="MANDT" order="1">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATID" order="2">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="3">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCID"/>
+      </attribute>
+      <attribute id="GRPID" order="4">
+        <descriptions defaultDescription="GRPID"/>
+        <keyMapping columnObjectName="Script_View" columnName="GRPID"/>
+      </attribute>
+      <attribute id="CURRENTDATE" order="5">
+        <descriptions defaultDescription="CURRENTDATE"/>
+        <keyMapping columnObjectName="Script_View" columnName="CURRENTDATE"/>
+      </attribute>
+      <attribute id="BEGDA" order="6">
+        <descriptions defaultDescription="BEGDA"/>
+        <keyMapping columnObjectName="Script_View" columnName="BEGDA"/>
+      </attribute>
+      <attribute id="ENDDA" order="7">
+        <descriptions defaultDescription="ENDDA"/>
+        <keyMapping columnObjectName="Script_View" columnName="ENDDA"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

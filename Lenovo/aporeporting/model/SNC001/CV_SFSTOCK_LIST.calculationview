@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_SFSTOCK_LIST" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection" hierarchiesSQLEnabled="false" translationRelevant="true">
+  <origin/>
+  <descriptions defaultDescription="CV_SFSTOCK_LIST "/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="AT_SFSTOCK_LIST" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC001/attributeviews/AT_SFSTOCK_LIST</resourceUri>
+    </DataSource>
+    <DataSource id="AT_MAT_CONSU" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC001/attributeviews/AT_MAT_CONSU</resourceUri>
+    </DataSource>
+    <DataSource id="AT_MATLOC_SFSTOCK" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC001/attributeviews/AT_MATLOC_SFSTOCK</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO_TO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="SSDATE"/>
+        <viewAttribute id="SSTIMEZONE"/>
+        <viewAttribute id="SAFESTOCK"/>
+        <viewAttribute id="SSUOM"/>
+        <viewAttribute id="SAFEDAYS"/>
+        <viewAttribute id="QUOTA"/>
+        <viewAttribute id="REPLTYPE"/>
+        <viewAttribute id="DGR"/>
+        <viewAttribute id="FINALINS"/>
+        <viewAttribute id="FINALREM"/>
+        <viewAttribute id="UPDATEDATE"/>
+        <viewAttribute id="UPDATETIME"/>
+        <viewAttribute id="UPDATETZ"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="LOCTO22"/>
+        <viewAttribute id="MATID22"/>
+        <viewAttribute id="LOCFR22"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="DESCR40_FR"/>
+        <viewAttribute id="DESCR40_TO"/>
+        <viewAttribute id="MRPCYCL"/>
+        <viewAttribute id="PLANT"/>
+        <viewAttribute id="MATNR_1"/>
+        <viewAttribute id="CONSU_QTY"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="INTEGER" id="ABS_CONSU_QTY">
+          <formula>abs(&quot;CONSU_QTY&quot;)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#AT_SFSTOCK_LIST">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_TO" source="LOCNO_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SSDATE" source="SSDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SSTIMEZONE" source="SSTIMEZONE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAFESTOCK" source="SAFESTOCK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SSUOM" source="SSUOM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAFEDAYS" source="SAFEDAYS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QUOTA" source="QUOTA"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REPLTYPE" source="REPLTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DGR" source="DGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FINALINS" source="FINALINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FINALREM" source="FINALREM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UPDATEDATE" source="UPDATEDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UPDATETIME" source="UPDATETIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UPDATETZ" source="UPDATETZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCTO22" source="LOCTO22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID22" source="MATID22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR22" source="LOCFR22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_FR" source="DESCR40_FR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_TO" source="DESCR40_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MRPCYCL" source="MRPCYCL"/>
+      </input>
+      <input node="#AT_MAT_CONSU">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR_1" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONSU_QTY" source="CONSU_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_TO" source="PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+      </input>
+      <joinAttribute name="LOCNO_TO"/>
+      <joinAttribute name="MATNR"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO_TO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="SSDATE"/>
+        <viewAttribute id="SSTIMEZONE"/>
+        <viewAttribute id="SAFESTOCK"/>
+        <viewAttribute id="SSUOM"/>
+        <viewAttribute id="SAFEDAYS"/>
+        <viewAttribute id="QUOTA"/>
+        <viewAttribute id="REPLTYPE"/>
+        <viewAttribute id="DGR"/>
+        <viewAttribute id="FINALINS"/>
+        <viewAttribute id="FINALREM"/>
+        <viewAttribute id="UPDATEDATE"/>
+        <viewAttribute id="UPDATETIME"/>
+        <viewAttribute id="UPDATETZ"/>
+        <viewAttribute id="LSZID"/>
+        <viewAttribute id="SVTTY"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="EKGRP"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="LOCTO22"/>
+        <viewAttribute id="MATID22"/>
+        <viewAttribute id="LOCFR22"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="DESCR40_FR"/>
+        <viewAttribute id="DESCR40_TO"/>
+        <viewAttribute id="MRPCYCL"/>
+        <viewAttribute id="SVTTY1"/>
+        <viewAttribute id="CONSU_QTY"/>
+        <viewAttribute id="ABS_CONSU_QTY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_TO" source="LOCNO_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SSDATE" source="SSDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SSTIMEZONE" source="SSTIMEZONE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAFESTOCK" source="SAFESTOCK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SSUOM" source="SSUOM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAFEDAYS" source="SAFEDAYS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QUOTA" source="QUOTA"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REPLTYPE" source="REPLTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DGR" source="DGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FINALINS" source="FINALINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FINALREM" source="FINALREM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UPDATEDATE" source="UPDATEDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UPDATETIME" source="UPDATETIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UPDATETZ" source="UPDATETZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCTO22" source="LOCTO22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID22" source="MATID22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR22" source="LOCFR22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_FR" source="DESCR40_FR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_TO" source="DESCR40_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MRPCYCL" source="MRPCYCL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONSU_QTY" source="CONSU_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ABS_CONSU_QTY" source="ABS_CONSU_QTY"/>
+      </input>
+      <input node="#AT_MATLOC_SFSTOCK">
+        <mapping xsi:type="Calculation:AttributeMapping" target="LSZID" source="LSZID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SVTTY" source="SVTTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EKGRP" source="EKGRP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SVTTY1" source="SVTTY1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID22" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCTO22" source="LOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID22"/>
+      <joinAttribute name="LOCTO22"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO_TO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="SSDATE"/>
+        <viewAttribute id="SSTIMEZONE"/>
+        <viewAttribute id="SAFESTOCK"/>
+        <viewAttribute id="SSUOM"/>
+        <viewAttribute id="SAFEDAYS"/>
+        <viewAttribute id="QUOTA"/>
+        <viewAttribute id="REPLTYPE"/>
+        <viewAttribute id="DGR"/>
+        <viewAttribute id="FINALINS"/>
+        <viewAttribute id="FINALREM"/>
+        <viewAttribute id="UPDATEDATE"/>
+        <viewAttribute id="UPDATETIME"/>
+        <viewAttribute id="UPDATETZ"/>
+        <viewAttribute id="LSZID"/>
+        <viewAttribute id="SVTTY"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="EKGRP"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="DESCR40_FR"/>
+        <viewAttribute id="DESCR40_TO"/>
+        <viewAttribute id="MRPCYCL"/>
+        <viewAttribute id="SVTTY1"/>
+        <viewAttribute id="CONSU_QTY"/>
+        <viewAttribute id="ABS_CONSU_QTY"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="NVARCHAR" id="DOS_FLAG" length="1">
+          <formula>IF( if(isnull(&quot;SAFEDAYS&quot;),0,&quot;SAFEDAYS&quot;) = if(isnull(&quot;SVTTY1&quot;),0,&quot;SVTTY1&quot;) ,'','X' )</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_TO" source="LOCNO_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SSDATE" source="SSDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SSTIMEZONE" source="SSTIMEZONE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAFESTOCK" source="SAFESTOCK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SSUOM" source="SSUOM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAFEDAYS" source="SAFEDAYS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QUOTA" source="QUOTA"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REPLTYPE" source="REPLTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DGR" source="DGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FINALINS" source="FINALINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="FINALREM" source="FINALREM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UPDATEDATE" source="UPDATEDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UPDATETIME" source="UPDATETIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UPDATETZ" source="UPDATETZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LSZID" source="LSZID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SVTTY" source="SVTTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EKGRP" source="EKGRP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_FR" source="DESCR40_FR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_TO" source="DESCR40_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MRPCYCL" source="MRPCYCL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SVTTY1" source="SVTTY1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CONSU_QTY" source="CONSU_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ABS_CONSU_QTY" source="ABS_CONSU_QTY"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="LOCNO_TO" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCNO_TO"/>
+      </attribute>
+      <attribute id="MATNR" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO_FROM" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCNO_FROM"/>
+      </attribute>
+      <attribute id="SSDATE" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SSDATE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SSDATE"/>
+      </attribute>
+      <attribute id="SSTIMEZONE" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SSTIMEZONE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SSTIMEZONE"/>
+      </attribute>
+      <attribute id="SAFESTOCK" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SAFESTOCK"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SAFESTOCK"/>
+      </attribute>
+      <attribute id="SSUOM" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SSUOM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SSUOM"/>
+      </attribute>
+      <attribute id="SAFEDAYS" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SAFEDAYS"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SAFEDAYS"/>
+      </attribute>
+      <attribute id="REPLTYPE" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="REPLTYPE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="REPLTYPE"/>
+      </attribute>
+      <attribute id="DGR" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DGR"/>
+        <keyMapping columnObjectName="Projection_1" columnName="DGR"/>
+      </attribute>
+      <attribute id="FINALINS" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FINALINS"/>
+        <keyMapping columnObjectName="Projection_1" columnName="FINALINS"/>
+      </attribute>
+      <attribute id="FINALREM" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FINALREM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="FINALREM"/>
+      </attribute>
+      <attribute id="DOS_FLAG" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DOS_FLAG"/>
+        <keyMapping columnObjectName="Projection_1" columnName="DOS_FLAG"/>
+      </attribute>
+      <attribute id="EKGRP" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EKGRP"/>
+        <keyMapping columnObjectName="Projection_1" columnName="EKGRP"/>
+      </attribute>
+      <attribute id="DISPO" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="DISPO"/>
+      </attribute>
+      <attribute id="STAWN" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STAWN"/>
+        <keyMapping columnObjectName="Projection_1" columnName="STAWN"/>
+      </attribute>
+      <attribute id="MAKTX" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="DESCR40_FR" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DESCR40"/>
+        <keyMapping columnObjectName="Projection_1" columnName="DESCR40_FR"/>
+      </attribute>
+      <attribute id="DESCR40_TO" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DESCR40"/>
+        <keyMapping columnObjectName="Projection_1" columnName="DESCR40_TO"/>
+      </attribute>
+      <attribute id="MRPCYCL" order="21" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MRPCYCL"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MRPCYCL"/>
+      </attribute>
+      <attribute id="CONSU_QTY" order="22" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="_BIC_ZSNP_KF99"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CONSU_QTY"/>
+      </attribute>
+      <attribute id="ABS_CONSU_QTY" order="23" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ABS_CONSU_QTY"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ABS_CONSU_QTY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="350"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="243"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

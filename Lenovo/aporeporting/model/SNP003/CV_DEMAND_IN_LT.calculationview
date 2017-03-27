@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CV_DEMAND_IN_LT" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_DEMAND_IN_LT "/>
+  <localVariables>
+    <variable id="IP_VER" parameter="true">
+      <descriptions defaultDescription="IP_VER"/>
+      <variableProperties datatype="NVARCHAR" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+        <defaultRange/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SNPSTOCK_LT">
+      <targetVariable name="IP_VER" resourceUri="/aporeporting.model.SNP003/calculationviews/CV_SNPSTOCK_LT"/>
+      <localVariable>#IP_VER</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="SupplyNetworkPlanQuery" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/sap.hba.scm-apo-go.SNP_001/calculationviews/SupplyNetworkPlanQuery</resourceUri>
+    </DataSource>
+    <DataSource id="PJ_010$$$$SupplyNetworkPlanQuery$$" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/sap.hba.scm-apo-go.SNP_010/calculationviews/SupplyNetworkPlanQuery</resourceUri>
+    </DataSource>
+    <DataSource id="PJ_020$$$$SupplyNetworkPlanQuery$$" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/sap.hba.scm-apo-go.SNP_020/calculationviews/SupplyNetworkPlanQuery</resourceUri>
+    </DataSource>
+    <DataSource id="CV_SNPSTOCK_LT" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP003/calculationviews/CV_SNPSTOCK_LT</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="PJ_001">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="SAPClient"/>
+        <viewAttribute id="PlanningVersion">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$IP_VER$$"/>
+        </viewAttribute>
+        <viewAttribute id="YearWeek"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="Product"/>
+        <viewAttribute id="TotalDemandQty"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#SupplyNetworkPlanQuery">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAPClient" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PlanningVersion" source="PlanningVersion"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="YearWeek" source="YearWeek"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Product" source="Product"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TotalDemandQty" source="TotalDemandQty"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="PJ_010">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="SAPClient"/>
+        <viewAttribute id="PlanningVersion">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$IP_VER$$"/>
+        </viewAttribute>
+        <viewAttribute id="YearWeek"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="Product"/>
+        <viewAttribute id="TotalDemandQty"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#PJ_010$$$$SupplyNetworkPlanQuery$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAPClient" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PlanningVersion" source="PlanningVersion"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="YearWeek" source="YearWeek"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Product" source="Product"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TotalDemandQty" source="TotalDemandQty"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="PJ_020">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="SAPClient"/>
+        <viewAttribute id="PlanningVersion">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$IP_VER$$"/>
+        </viewAttribute>
+        <viewAttribute id="YearWeek"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="Product"/>
+        <viewAttribute id="TotalDemandQty"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#PJ_020$$$$SupplyNetworkPlanQuery$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAPClient" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PlanningVersion" source="PlanningVersion"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="YearWeek" source="YearWeek"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Product" source="Product"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TotalDemandQty" source="TotalDemandQty"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="SAPClient"/>
+        <viewAttribute id="PlanningVersion"/>
+        <viewAttribute id="YearWeek"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="Product"/>
+        <viewAttribute id="TotalDemandQty"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#PJ_001">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAPClient" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PlanningVersion" source="PlanningVersion"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="YearWeek" source="YearWeek"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Product" source="Product"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TotalDemandQty" source="TotalDemandQty"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#PJ_010">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAPClient" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PlanningVersion" source="PlanningVersion"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="YearWeek" source="YearWeek"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Product" source="Product"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TotalDemandQty" source="TotalDemandQty"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#PJ_020">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAPClient" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PlanningVersion" source="PlanningVersion"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="YearWeek" source="YearWeek"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Product" source="Product"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TotalDemandQty" source="TotalDemandQty"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_PLT"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="PLIFZ"/>
+        <viewAttribute id="LT_CALWEEK"/>
+        <viewAttribute id="LT_WEEK"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_SNPSTOCK_LT">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="LOCNO_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LT_CALWEEK" source="LT_CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LT_WEEK" source="LT_WEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="SAPClient"/>
+        <viewAttribute id="PlanningVersion"/>
+        <viewAttribute id="YearWeek"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="Product"/>
+        <viewAttribute id="TotalDemandQty"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Union_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAPClient" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PlanningVersion" source="PlanningVersion"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="YearWeek" source="YearWeek"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Product" source="Product"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TotalDemandQty" source="TotalDemandQty"/>
+      </input>
+      <filter>&quot;YearWeek&quot;>= replace(isoweek(NOW()),'-W','')</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="YearWeek"/>
+        <viewAttribute id="LOCNO_PLT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="TotalDemandQty"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="PLIFZ"/>
+        <viewAttribute id="LT_CALWEEK"/>
+        <viewAttribute id="LT_WEEK"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="LOCNO_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LT_CALWEEK" source="LT_CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LT_WEEK" source="LT_WEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <input node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="YearWeek" source="YearWeek"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TotalDemandQty" source="TotalDemandQty"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="PlanningVersion"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="Product"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="VRSIOEX"/>
+      <joinAttribute name="LOCNO_PLT"/>
+      <joinAttribute name="MATNR"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_3">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="YearWeek"/>
+        <viewAttribute id="LOCNO_PLT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="TotalDemandQty"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="PLIFZ"/>
+        <viewAttribute id="LT_CALWEEK"/>
+        <viewAttribute id="LT_WEEK"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="DECIMAL" id="RC_DMD_LT" length="15" scale="3" expressionLanguage="COLUMN_ENGINE">
+          <formula>&quot;TotalDemandQty&quot;</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="YearWeek" source="YearWeek"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="LOCNO_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TotalDemandQty" source="TotalDemandQty"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LT_CALWEEK" source="LT_CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LT_WEEK" source="LT_WEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <filter>isNull(&quot;YearWeek&quot;) or (&quot;YearWeek&quot; &lt;= &quot;LT_CALWEEK&quot;)</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_3">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Projection_3" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Projection_3" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="YearWeek" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="YearWeek"/>
+        <keyMapping columnObjectName="Projection_3" columnName="YearWeek"/>
+      </attribute>
+      <attribute id="LOCNO_PLT" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_PLT"/>
+        <keyMapping columnObjectName="Projection_3" columnName="LOCNO_PLT"/>
+      </attribute>
+      <attribute id="MATNR" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MATNR"/>
+      </attribute>
+      <attribute id="MEINS" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MEINS"/>
+      </attribute>
+      <attribute id="STOCK_QTY" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STOCK_QTY"/>
+        <keyMapping columnObjectName="Projection_3" columnName="STOCK_QTY"/>
+      </attribute>
+      <attribute id="PLIFZ" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLIFZ"/>
+        <keyMapping columnObjectName="Projection_3" columnName="PLIFZ"/>
+      </attribute>
+      <attribute id="LT_CALWEEK" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LT_CALWEEK"/>
+        <keyMapping columnObjectName="Projection_3" columnName="LT_CALWEEK"/>
+      </attribute>
+      <attribute id="LT_WEEK" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LT_WEEK"/>
+        <keyMapping columnObjectName="Projection_3" columnName="LT_WEEK"/>
+      </attribute>
+      <attribute id="MATID" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Projection_3" columnName="LOCID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="TotalDemandQty" order="14" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="TotalDemandQty"/>
+        <measureMapping columnObjectName="Projection_3" columnName="TotalDemandQty"/>
+      </measure>
+      <measure id="RC_DMD_LT" order="15" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="RC_DMD_LT"/>
+        <measureMapping columnObjectName="Projection_3" columnName="RC_DMD_LT"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="99" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="PJ_001" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="551"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="PJ_010" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="551"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="PJ_020" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="551"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="417"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="339"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="339"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="243"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

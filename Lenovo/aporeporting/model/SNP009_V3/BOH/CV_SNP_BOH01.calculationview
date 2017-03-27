@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CV_SNP_BOH01" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <origin/>
+  <descriptions defaultDescription="CV_SNP_BOH01"/>
+  <localVariables>
+    <variable id="IP_PVER02" parameter="true">
+      <descriptions defaultDescription="IP_PVER02"/>
+      <variableProperties datatype="NVARCHAR" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+        <defaultRange/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_STOCK01_RIGHT">
+      <targetVariable name="IP_PVER02" resourceUri="/aporeporting.model.SNP009_V3/calculationviews/CV_STOCK01_RIGHT"/>
+      <localVariable>#IP_PVER02</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_STOCK01_RIGHT" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V3/calculationviews/CV_STOCK01_RIGHT</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="CATEGORY"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="STOCK_AVAILABLE"/>
+        <viewAttribute id="ADDLOCID"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="DECIMAL" id="WEEK00" length="15" scale="3" expressionLanguage="COLUMN_ENGINE">
+          <formula>&quot;STOCK_QTY&quot;</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CV_STOCK01_RIGHT">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_AVAILABLE" source="STOCK_AVAILABLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDLOCID" source="ADDLOCID"/>
+      </input>
+      <filter>&quot;STOCK_AVAILABLE&quot; = 'X' AND (&quot;ADDLOCID&quot;='' or isNull(&quot;ADDLOCID&quot;))</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="MATID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MEINS" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MEINS"/>
+      </attribute>
+      <attribute id="STOCK_AVAILABLE" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STOCK_AVAILABLE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="STOCK_AVAILABLE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="STOCK_QTY" order="7" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="STOCK_QTY"/>
+        <measureMapping columnObjectName="Projection_1" columnName="STOCK_QTY"/>
+      </measure>
+      <measure id="WEEK00" order="8" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="WEEK00"/>
+        <measureMapping columnObjectName="Projection_1" columnName="WEEK00"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="30" y="440"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CV_DEMD_OPENPO" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection" hierarchiesSQLEnabled="false" translationRelevant="true">
+  <descriptions defaultDescription="CV_STOCK_OPENPO "/>
+  <localVariables>
+    <variable id="IP_VER" parameter="true">
+      <descriptions defaultDescription="IP_VER"/>
+      <variableProperties datatype="NVARCHAR" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SNPSTO_LIST_DIST">
+      <targetVariable name="IP_VER" resourceUri="/aporeporting.model.SNP003/calculationviews/CV_SNPSTO_LIST_DIST"/>
+      <localVariable>#IP_VER</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_DEMAND_IN_LT">
+      <targetVariable name="IP_VER" resourceUri="/aporeporting.model.SNP003/calculationviews/CV_DEMAND_IN_LT"/>
+      <localVariable>#IP_VER</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_OPENPO_QTY">
+      <targetVariable name="IP_VER" resourceUri="/aporeporting.model.SNP003/calculationviews/CV_OPENPO_QTY"/>
+      <localVariable>#IP_VER</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_SNPSTO_LIST_DIST" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP003/calculationviews/CV_SNPSTO_LIST_DIST</resourceUri>
+    </DataSource>
+    <DataSource id="CV_DEMAND_IN_LT" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP003/calculationviews/CV_DEMAND_IN_LT</resourceUri>
+    </DataSource>
+    <DataSource id="CV_OPENPO_QTY" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP003/calculationviews/CV_OPENPO_QTY</resourceUri>
+    </DataSource>
+    <DataSource id="_SAPAPO_MATMAP" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATMAP" alias="_SAPAPO_MATMAP"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="KZKRI"/>
+        <viewAttribute id="PLIFZ_PLT"/>
+        <viewAttribute id="LOCNO_PLT"/>
+        <viewAttribute id="DESCR40_PLT"/>
+        <viewAttribute id="PPCAL"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="LOCNO_SPL"/>
+        <viewAttribute id="DESCR40_SPL"/>
+        <viewAttribute id="LOCID_SPL"/>
+        <viewAttribute id="DISPO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_SNPSTO_LIST_DIST">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="KZKRI" source="KZKRI"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ_PLT" source="PLIFZ_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="LOCNO_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_PLT" source="DESCR40_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PPCAL" source="PPCAL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SPL" source="LOCNO_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_SPL" source="DESCR40_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_SPL" source="LOCID_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="PLIFZ"/>
+        <viewAttribute id="RC_DMD_LT"/>
+        <viewAttribute id="VRSIOEX"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_DEMAND_IN_LT">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RC_DMD_LT" source="RC_DMD_LT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute aggregationType="sum" id="STOCK_QTY"/>
+        <viewAttribute aggregationType="max" id="PLIFZ"/>
+        <viewAttribute aggregationType="sum" id="RC_DMD_LT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RC_DMD_LT" source="RC_DMD_LT"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="KZKRI"/>
+        <viewAttribute id="PLIFZ_PLT"/>
+        <viewAttribute id="LOCNO_PLT"/>
+        <viewAttribute id="DESCR40_PLT"/>
+        <viewAttribute id="PPCAL"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="LOCNO_SPL"/>
+        <viewAttribute id="DESCR40_SPL"/>
+        <viewAttribute id="PLIFZ"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="RC_DMD_LT"/>
+        <viewAttribute id="LOCID_SPL"/>
+        <viewAttribute id="DISPO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="KZKRI" source="KZKRI"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ_PLT" source="PLIFZ_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="LOCNO_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_PLT" source="DESCR40_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PPCAL" source="PPCAL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SPL" source="LOCNO_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_SPL" source="DESCR40_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_SPL" source="LOCID_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+      </input>
+      <input node="#Aggregation_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RC_DMD_LT" source="RC_DMD_LT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+      </input>
+      <joinAttribute name="VERSIOD"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+      <joinAttribute name="MANDT"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_3">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_OPENPO_QTY">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_2">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute aggregationType="sum" id="REAL_QUANTITY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="KZKRI"/>
+        <viewAttribute id="PLIFZ_PLT"/>
+        <viewAttribute id="LOCNO_PLT"/>
+        <viewAttribute id="DESCR40_PLT"/>
+        <viewAttribute id="PPCAL"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="LOCNO_SPL"/>
+        <viewAttribute id="DESCR40_SPL"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="PLIFZ"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="RC_DMD_LT"/>
+        <viewAttribute id="LOCID_SPL"/>
+        <viewAttribute id="DISPO"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="DECIMAL" id="DELTA_QTY" length="15" scale="3" expressionLanguage="COLUMN_ENGINE">
+          <formula>&quot;RC_DMD_LT&quot;-&quot;STOCK_QTY&quot;-&quot;REAL_QUANTITY&quot;</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="KZKRI" source="KZKRI"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ_PLT" source="PLIFZ_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="LOCNO_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_PLT" source="DESCR40_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PPCAL" source="PPCAL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SPL" source="LOCNO_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_SPL" source="DESCR40_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RC_DMD_LT" source="RC_DMD_LT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_SPL" source="LOCID_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+      </input>
+      <input node="#Aggregation_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="VERSIOD"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_4">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MATID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#_SAPAPO_MATMAP">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="EXT_MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_3" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="KZKRI"/>
+        <viewAttribute id="LOCNO_PLT"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="LOCNO_SPL"/>
+        <viewAttribute id="DESCR40_SPL"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="PLIFZ"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="RC_DMD_LT"/>
+        <viewAttribute id="LOCID_SPL"/>
+        <viewAttribute id="DELTA_QTY"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="DISPO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="KZKRI" source="KZKRI"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="LOCNO_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SPL" source="LOCNO_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_SPL" source="DESCR40_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RC_DMD_LT" source="RC_DMD_LT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_SPL" source="LOCID_SPL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELTA_QTY" source="DELTA_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+      </input>
+      <input node="#Projection_4">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_3">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_3" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Join_3" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="LOCID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_3" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MATID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_3" columnName="MATID"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Join_3" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="KZKRI" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="KZKRI"/>
+        <keyMapping columnObjectName="Join_3" columnName="KZKRI"/>
+      </attribute>
+      <attribute id="LOCNO_PLT" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_PLT"/>
+        <keyMapping columnObjectName="Join_3" columnName="LOCNO_PLT"/>
+      </attribute>
+      <attribute id="MAKTX" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_3" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="LOCNO_SPL" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_SPL"/>
+        <keyMapping columnObjectName="Join_3" columnName="LOCNO_SPL"/>
+      </attribute>
+      <attribute id="DESCR40_SPL" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DESCR40_SPL"/>
+        <keyMapping columnObjectName="Join_3" columnName="DESCR40_SPL"/>
+      </attribute>
+      <attribute id="STOCK_QTY" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STOCK_QTY"/>
+        <keyMapping columnObjectName="Join_3" columnName="STOCK_QTY"/>
+      </attribute>
+      <attribute id="PLIFZ" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLIFZ"/>
+        <keyMapping columnObjectName="Join_3" columnName="PLIFZ"/>
+      </attribute>
+      <attribute id="REAL_QUANTITY" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="REAL_QUANTITY"/>
+        <keyMapping columnObjectName="Join_3" columnName="REAL_QUANTITY"/>
+      </attribute>
+      <attribute id="RC_DMD_LT" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="RC_DMD_LT"/>
+        <keyMapping columnObjectName="Join_3" columnName="RC_DMD_LT"/>
+      </attribute>
+      <attribute id="LOCID_SPL" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID_SPL"/>
+        <keyMapping columnObjectName="Join_3" columnName="LOCID_SPL"/>
+      </attribute>
+      <attribute id="DELTA_QTY" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DELTA_QTY"/>
+        <keyMapping columnObjectName="Join_3" columnName="DELTA_QTY"/>
+      </attribute>
+      <attribute id="MATNR" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EXT_MATNR"/>
+        <keyMapping columnObjectName="Join_3" columnName="MATNR"/>
+      </attribute>
+      <attribute id="DISPO" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Join_3" columnName="DISPO"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="175" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="417"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="495"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="false" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="417"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="321"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="417"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="330" y="321"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="252" y="225"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="98" y="225"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="false" modelObjectName="Join_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="175" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

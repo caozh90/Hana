@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CA_SNP012_SNPT_WEEKLY" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CA_SNP012_SNPT_WEEKLY"/>
+  <metadata changedAt="2015-07-20 14:02:33.364"/>
+  <defaultSchema schemaName="SAP_SCM"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="MANDT" length="3"/>
+        <viewAttribute datatype="VARCHAR" id="VERSIOD" length="22"/>
+        <viewAttribute datatype="VARCHAR" id="SNAPSHOT" length="22"/>
+        <viewAttribute datatype="VARCHAR" id="MATID" length="22"/>
+        <viewAttribute datatype="VARCHAR" id="LOCID" length="22"/>
+        <viewAttribute datatype="VARCHAR" id="MAKTX" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="MATNR" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="LOCNO" length="20"/>
+        <viewAttribute datatype="DECIMAL" id="SNPT_REAL_QUANTITY" length="15" scale="3"/>
+        <viewAttribute datatype="VARCHAR" id="CALWEEK" length="6"/>
+        <viewAttribute datatype="VARCHAR" id="VRSIOEX" length="10"/>
+        <viewAttribute datatype="VARCHAR" id="VRSIOTXT" length="40"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+        
+ 	 var_out = select MANDT, VERSIOD, SNAPSHOT, MATID, LOCID, MAKTX, MATNR, LOCNO, 
+ 	   case when &quot;SNPT_REAL_QUANTITY&quot; &lt; 0 then &quot;SNPT_REAL_QUANTITY&quot;*-1 else &quot;SNPT_REAL_QUANTITY&quot; end as &quot;SNPT_REAL_QUANTITY&quot;
+ 	   , CALWEEK , VRSIOEX, VRSIOTXT
+ 	 from ( SELECT MANDT, VERSIOD, SNAPSHOT, MATID, LOCID, MAKTX, MATNR, LOCNO, SUM(REAL_QUANTITY) AS SNPT_REAL_QUANTITY, CALWEEK  , VRSIOEX, VRSIOTXT
+ 	           FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012/CA_SNP012_SNAPSHOT_ORD_WITH_MATLOC&quot;
+ 	           WHERE TYPE = 'W'
+               GROUP BY MANDT, VERSIOD, SNAPSHOT, MATID, LOCID, MAKTX, MATNR, LOCNO, CALWEEK, VRSIOEX, VRSIOTXT ORDER BY CALWEEK ) ;   
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="MANDT" order="1">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Script_View" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="SNAPSHOT" order="3">
+        <descriptions defaultDescription="SNAPSHOT"/>
+        <keyMapping columnObjectName="Script_View" columnName="SNAPSHOT"/>
+      </attribute>
+      <attribute id="MATID" order="4">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="5">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MAKTX" order="6">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Script_View" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="MATNR" order="7">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="8">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="SNPT_REAL_QUANTITY" order="9">
+        <descriptions defaultDescription="REAL_QUANTITY"/>
+        <keyMapping columnObjectName="Script_View" columnName="SNPT_REAL_QUANTITY"/>
+      </attribute>
+      <attribute id="CALWEEK" order="10">
+        <descriptions defaultDescription="CALWEEK"/>
+        <keyMapping columnObjectName="Script_View" columnName="CALWEEK"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="11">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Script_View" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="VRSIOTXT" order="12">
+        <descriptions defaultDescription="VRSIOTXT"/>
+        <keyMapping columnObjectName="Script_View" columnName="VRSIOTXT"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

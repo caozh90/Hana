@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_ATT_TIMESTAMP" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="true" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_ATT_TIMESTAMP"/>
+  <metadata changedAt="2015-06-01 10:08:36.536"/>
+  <localVariables>
+    <variable id="IP_VERSION" parameter="true">
+      <descriptions defaultDescription="IP_VERSION"/>
+      <variableProperties datatype="NVARCHAR" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="_SAPAPO_APO01" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="/SAPAPO/APO01" alias="_SAPAPO_APO01"/>
+    </DataSource>
+    <DataSource id="ZTSNP_REP_COP_DA" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_COP_DA"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VRSIOID"/>
+        <viewAttribute id="VRSIOEX">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$IP_VERSION$$"/>
+        </viewAttribute>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#_SAPAPO_APO01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOID" source="VRSIOID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VRSIOID"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#ZTSNP_REP_COP_DA">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOID" source="VRSIOID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute hidden="true" id="JOIN$VRSIOID$VRSIOID"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="NVARCHAR" id="TIMESTAMP" length="19">
+          <formula>leftstr(string(longdate(&quot;CDATE&quot;+&quot;CTIME&quot;)),19)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$VRSIOID$VRSIOID" source="VRSIOID"/>
+      </input>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$VRSIOID$VRSIOID" source="VRSIOID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="JOIN$VRSIOID$VRSIOID"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_1">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Join_1" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="TIMESTAMP" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TIMESTAMP"/>
+        <keyMapping columnObjectName="Join_1" columnName="TIMESTAMP"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="99" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

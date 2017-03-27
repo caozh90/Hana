@@ -1,0 +1,747 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CA_SNP009_ORD_WITH_MATLOC" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="true" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CA_SNP009_ORD_WITH_MATLOC"/>
+  <metadata changedAt="2017-03-15 16:02:56.865"/>
+  <defaultSchema schemaName="SAP_SCM"/>
+  <localVariables>
+    <variable id="IV_PLAN_VER" parameter="true">
+      <descriptions defaultDescription="IV_PLAN_VER"/>
+      <variableProperties datatype="VARCHAR" defaultValue="000" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#AT_SNP009_ORD_TIMEDIMENSION">
+      <targetVariable name="IV_PLAN_VER" resourceUri="/aporeporting.model.SNP009_V2/attributeviews/AT_SNP009_ORD_TIMEDIMENSION"/>
+      <localVariable>#IV_PLAN_VER</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SNP010_COMP_SBB">
+      <targetVariable name="IP_ORD_VERSION" resourceUri="/aporeporting.model.SNP010/calculationviews/CV_SNP010_COMP_SBB"/>
+      <localVariable>#IV_PLAN_VER</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="AT_SNP009_MATLOC" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V2/attributeviews/AT_SNP009_MATLOC</resourceUri>
+    </DataSource>
+    <DataSource id="AT_SNP009_ORD_TIMEDIMENSION" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V2/attributeviews/AT_SNP009_ORD_TIMEDIMENSION</resourceUri>
+    </DataSource>
+    <DataSource id="CV_SNP010_COMP_SBB" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP010/calculationviews/CV_SNP010_COMP_SBB</resourceUri>
+    </DataSource>
+    <DataSource id="CV_WEEKS_DAYS" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V2/calculationviews/CV_WEEKS_DAYS</resourceUri>
+    </DataSource>
+    <DataSource id="Join_4$$$$CV_WEEKS_DAYS$$" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V2/calculationviews/CV_WEEKS_DAYS</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="RAUBE"/>
+        <viewAttribute id="LOCTYPE"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="CATEGORY"/>
+        <viewAttribute id="CATEGORY_TYPE"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="LOCAL_DATE"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="LOCID_FROM"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="ORDERID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#AT_SNP009_MATLOC">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RAUBE" source="RAUBE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCTYPE" source="LOCTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+      </input>
+      <input node="#AT_SNP009_ORD_TIMEDIMENSION">
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY_TYPE" source="CATEGORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="LOCAL_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDERID" source="ORDERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="RAUBE"/>
+        <viewAttribute id="LOCTYPE"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="CATEGORY"/>
+        <viewAttribute id="CATEGORY_TYPE"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="LOCAL_DATE"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="LOCID_FROM"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="CATEGORY_TOP"/>
+        <viewAttribute id="ORDERID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RAUBE" source="RAUBE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCTYPE" source="LOCTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY_TYPE" source="CATEGORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="LOCAL_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDERID" source="ORDERID"/>
+      </input>
+      <input node="#CV_SNP010_COMP_SBB">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY_TOP" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDERID" source="ORDERID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="ORDERID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_3" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="RAUBE"/>
+        <viewAttribute id="LOCTYPE"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="CATEGORY"/>
+        <viewAttribute id="CATEGORY_TYPE"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="LOCAL_DATE"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="LOCID_FROM"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="CATEGORY_TOP"/>
+        <viewAttribute id="OWEEK_N"/>
+        <viewAttribute id="WEEK_V"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="WEEK_N" length="10">
+          <formula>IF(isNull(&quot;OWEEK_N&quot;),IF(&quot;CALWEEK&quot; &lt; replace(isoweek(adddays(NOW(),-7*5)),'-W',''),'000000','ZZZZZZ' ) ,&quot;OWEEK_N&quot;)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RAUBE" source="RAUBE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCTYPE" source="LOCTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY_TYPE" source="CATEGORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="LOCAL_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY_TOP" source="CATEGORY_TOP"/>
+      </input>
+      <input node="#CV_WEEKS_DAYS">
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWEEK_N" source="NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_V" source="VALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="VALUE"/>
+      </input>
+      <joinAttribute name="CALWEEK"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_4" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="RAUBE"/>
+        <viewAttribute id="LOCTYPE"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="CATEGORY"/>
+        <viewAttribute id="CATEGORY_TYPE"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="LOCAL_DATE"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="LOCID_FROM"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="CATEGORY_TOP"/>
+        <viewAttribute id="WEEK_V"/>
+        <viewAttribute id="DATE_V"/>
+        <viewAttribute id="ODATE_N"/>
+        <viewAttribute id="WEEK_N"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="DATE_N" length="10">
+          <formula>IF(isNull(&quot;ODATE_N&quot;),IF(date(&quot;LOCAL_DATE&quot;) &lt; date(now()),'000000','ZZZZZZ' ) ,&quot;ODATE_N&quot;)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Join_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RAUBE" source="RAUBE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCTYPE" source="LOCTYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY_TYPE" source="CATEGORY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="LOCAL_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY_TOP" source="CATEGORY_TOP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_V" source="WEEK_V"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_N" source="WEEK_N"/>
+      </input>
+      <input node="#Join_4$$$$CV_WEEKS_DAYS$$">
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATE_V" source="VALUE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ODATE_N" source="NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="VALUE"/>
+      </input>
+      <joinAttribute name="LOCAL_DATE"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_4">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_4" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_4" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCID"/>
+      </attribute>
+      <attribute id="STAWN" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STAWN"/>
+        <keyMapping columnObjectName="Join_4" columnName="STAWN"/>
+      </attribute>
+      <attribute id="DISPO" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Join_4" columnName="DISPO"/>
+      </attribute>
+      <attribute id="MATNR" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Join_4" columnName="MATNR"/>
+      </attribute>
+      <attribute id="RAUBE" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="RAUBE"/>
+        <keyMapping columnObjectName="Join_4" columnName="RAUBE"/>
+      </attribute>
+      <attribute id="LOCTYPE" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCTYPE"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCTYPE"/>
+      </attribute>
+      <attribute id="LOCNO" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="VERSIOD" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Join_4" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="CATEGORY" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CATEGORY"/>
+        <keyMapping columnObjectName="Join_4" columnName="CATEGORY"/>
+      </attribute>
+      <attribute id="CATEGORY_TYPE" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CATEGORY_TYPE"/>
+        <keyMapping columnObjectName="Join_4" columnName="CATEGORY_TYPE"/>
+      </attribute>
+      <attribute id="LOCAL_DATE" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCAL_DATE"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCAL_DATE"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Join_4" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="VRSIOTXT" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOTXT"/>
+        <keyMapping columnObjectName="Join_4" columnName="VRSIOTXT"/>
+      </attribute>
+      <attribute id="CALWEEK" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CALWEEK"/>
+        <keyMapping columnObjectName="Join_4" columnName="CALWEEK"/>
+      </attribute>
+      <attribute id="LOCID_FROM" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID_FROM"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCID_FROM"/>
+      </attribute>
+      <attribute id="MAKTX" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_4" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="CATEGORY_TOP" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CATEGORY_TOP"/>
+        <keyMapping columnObjectName="Join_4" columnName="CATEGORY_TOP"/>
+      </attribute>
+      <attribute id="WEEK_V" order="78" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_V"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_V"/>
+      </attribute>
+      <attribute id="DATE_V" order="79" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DATE_V"/>
+        <keyMapping columnObjectName="Join_4" columnName="DATE_V"/>
+      </attribute>
+      <attribute id="WEEK_N" order="104" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_N"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_N"/>
+      </attribute>
+      <attribute id="DATE_N" order="105" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DATE_N"/>
+        <keyMapping columnObjectName="Join_4" columnName="DATE_N"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="REAL_QUANTITY" order="13" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="REAL_QUANTITY"/>
+        <measureMapping columnObjectName="Join_4" columnName="REAL_QUANTITY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures>
+      <measure id="WEEK_05_P_QTY" hidden="false" order="21" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_05_P_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = '0WEEK_05_P'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_04_P_QTY" hidden="false" order="22" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_04_P_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = '0WEEK_04_P'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_03_P_QTY" hidden="false" order="23" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_03_P_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = '0WEEK_03_P'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_02_P_QTY" hidden="false" order="24" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_02_P_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = '0WEEK_02_P'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_01_P_QTY" hidden="false" order="25" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_01_P_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = '0WEEK_01_P'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_01_QTY" hidden="false" order="26" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_01_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_01'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_02_QTY" hidden="false" order="27" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_02_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_02'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_03_QTY" hidden="false" order="28" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_03_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_03'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_04_QTY" hidden="false" order="29" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_04_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_04'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_05_QTY" hidden="false" order="30" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_05_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_05'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_06_QTY" hidden="false" order="31" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_06_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_06'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_07_QTY" hidden="false" order="32" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_07_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_07'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_08_QTY" hidden="false" order="33" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_08_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_08'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_09_QTY" hidden="false" order="34" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_09_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_09'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_10_QTY" hidden="false" order="35" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_10_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_10'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_11_QTY" hidden="false" order="36" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_11_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_11'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_12_QTY" hidden="false" order="37" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_12_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_12'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_13_QTY" hidden="false" order="38" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_13_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_13'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_14_QTY" hidden="false" order="39" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_14_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_14'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_15_QTY" hidden="false" order="40" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_15_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_15'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_16_QTY" hidden="false" order="41" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_16_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_16'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_17_QTY" hidden="false" order="42" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_17_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_17'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_18_QTY" hidden="false" order="43" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_18_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_18'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_19_QTY" hidden="false" order="44" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_19_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_19'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_20_QTY" hidden="false" order="45" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_20_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_20'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_21_QTY" hidden="false" order="46" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_21_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_21'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_22_QTY" hidden="false" order="47" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_22_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_22'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_23_QTY" hidden="false" order="48" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_23_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_23'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_24_QTY" hidden="false" order="49" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_24_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_24'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_25_QTY" hidden="false" order="50" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_25_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_25'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_26_QTY" hidden="false" order="51" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_26_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_26'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_27_QTY" hidden="false" order="52" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_27_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_27'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_28_QTY" hidden="false" order="53" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_28_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_28'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_29_QTY" hidden="false" order="54" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_29_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_29'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_30_QTY" hidden="false" order="55" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_30_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_30'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_31_QTY" hidden="false" order="56" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_31_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_31'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_32_QTY" hidden="false" order="57" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_32_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_32'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_33_QTY" hidden="false" order="58" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_33_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_33'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_34_QTY" hidden="false" order="59" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_34_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_34'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_35_QTY" hidden="false" order="60" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_35_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_35'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_36_QTY" hidden="false" order="61" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_36_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_36'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_37_QTY" hidden="false" order="62" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_37_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_37'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_38_QTY" hidden="false" order="63" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_38_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_38'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_39_QTY" hidden="false" order="64" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_39_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_39'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_40_QTY" hidden="false" order="65" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_40_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_40'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_41_QTY" hidden="false" order="66" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_41_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_41'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_42_QTY" hidden="false" order="67" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_42_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_42'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_43_QTY" hidden="false" order="68" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_43_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_43'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_44_QTY" hidden="false" order="69" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_44_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_44'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_45_QTY" hidden="false" order="70" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_45_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_45'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_46_QTY" hidden="false" order="71" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_46_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_46'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_47_QTY" hidden="false" order="72" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_47_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_47'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_48_QTY" hidden="false" order="73" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_48_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_48'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_49_QTY" hidden="false" order="74" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_49_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_49'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_50_QTY" hidden="false" order="75" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_50_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_50'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_51_QTY" hidden="false" order="76" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_51_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_51'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_52_QTY" hidden="false" order="77" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_52_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_52'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_00_QTY" hidden="false" order="80" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_00_QTY"/>
+        <restrictionExpression>&quot;WEEK_N&quot; = 'WEEK_00'</restrictionExpression>
+      </measure>
+      <measure id="WEEK_00_QTY_LESS" hidden="false" order="81" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="WEEK_00_QTY_LESS"/>
+        <restrictionExpression>&quot;WEEK_N&quot; &lt;= 'WEEK_00'</restrictionExpression>
+      </measure>
+      <measure id="DAY_00_QTY_LESS" hidden="false" order="82" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_00_QTY_LESS"/>
+        <restrictionExpression>&quot;DATE_N&quot; &lt;= 'DAY_00'</restrictionExpression>
+      </measure>
+      <measure id="DAY_00_QTY" hidden="false" order="83" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_00_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_00'</restrictionExpression>
+      </measure>
+      <measure id="DAY_01_QTY" hidden="false" order="84" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_01_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_01'</restrictionExpression>
+      </measure>
+      <measure id="DAY_02_QTY" hidden="false" order="85" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_02_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_02'</restrictionExpression>
+      </measure>
+      <measure id="DAY_03_QTY" hidden="false" order="86" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_03_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_03'</restrictionExpression>
+      </measure>
+      <measure id="DAY_04_QTY" hidden="false" order="87" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_04_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_04'</restrictionExpression>
+      </measure>
+      <measure id="DAY_05_QTY" hidden="false" order="88" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_05_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_05'</restrictionExpression>
+      </measure>
+      <measure id="DAY_06_QTY" hidden="false" order="89" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_06_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_06'</restrictionExpression>
+      </measure>
+      <measure id="DAY_07_QTY" hidden="false" order="90" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_07_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_07'</restrictionExpression>
+      </measure>
+      <measure id="DAY_08_QTY" hidden="false" order="91" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_08_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_08'</restrictionExpression>
+      </measure>
+      <measure id="DAY_09_QTY" hidden="false" order="92" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_09_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_09'</restrictionExpression>
+      </measure>
+      <measure id="DAY_10_QTY" hidden="false" order="93" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_10_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_10'</restrictionExpression>
+      </measure>
+      <measure id="DAY_11_QTY" hidden="false" order="94" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_11_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_11'</restrictionExpression>
+      </measure>
+      <measure id="DAY_12_QTY" hidden="false" order="95" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_12_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_12'</restrictionExpression>
+      </measure>
+      <measure id="DAY_13_QTY" hidden="false" order="96" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_13_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_13'</restrictionExpression>
+      </measure>
+      <measure id="DAY_14_QTY" hidden="false" order="97" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_14_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_14'</restrictionExpression>
+      </measure>
+      <measure id="DAY_15_QTY" hidden="false" order="98" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_15_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_15'</restrictionExpression>
+      </measure>
+      <measure id="DAY_16_QTY" hidden="false" order="99" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_16_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_16'</restrictionExpression>
+      </measure>
+      <measure id="DAY_17_QTY" hidden="false" order="100" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_17_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_17'</restrictionExpression>
+      </measure>
+      <measure id="DAY_18_QTY" hidden="false" order="101" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_18_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_18'</restrictionExpression>
+      </measure>
+      <measure id="DAY_19_QTY" hidden="false" order="102" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_19_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_19'</restrictionExpression>
+      </measure>
+      <measure id="DAY_20_QTY" hidden="false" order="103" baseMeasure="#REAL_QUANTITY" restrictionExpressionLanguage="COLUMN_ENGINE">
+        <descriptions defaultDescription="DAY_20_QTY"/>
+        <restrictionExpression>&quot;DATE_N&quot; = 'DAY_20'</restrictionExpression>
+      </measure>
+    </restrictedMeasures>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="138"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="30" y="548"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="30" y="452"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="30" y="356"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="30" y="270"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

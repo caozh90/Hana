@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CA_SNP012_STOCK_MONTHLY" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CA_SNP012_STOCK_MONTHLY"/>
+  <metadata changedAt="2015-03-12 14:53:42.079"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="CA_SNP012_ORDER_MONTHLY" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP012.SNP012_MONTHLY/calculationviews/CA_SNP012_ORDER_MONTHLY</resourceUri>
+    </DataSource>
+    <DataSource id="CA_SNP012_SNPT_MONTHLY" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP012.SNP012_MONTHLY/calculationviews/CA_SNP012_SNPT_MONTHLY</resourceUri>
+    </DataSource>
+    <DataSource id="CA_SNP012_STOCK" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP012/calculationviews/CA_SNP012_STOCK</resourceUri>
+    </DataSource>
+    <DataSource id="AT_SNP012_SNPT_TIMEDIMENSION" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP012/attributeviews/AT_SNP012_SNPT_TIMEDIMENSION</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CALMONTH"/>
+        <viewAttribute id="ORDER_REAL_QUANTITY"/>
+        <viewAttribute id="SNPT_REAL_QUANTITY"/>
+        <viewAttribute id="SNAPSHOT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CA_SNP012_ORDER_MONTHLY">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDER_REAL_QUANTITY" source="ORDER_REAL_QUANTITY"/>
+      </input>
+      <input node="#CA_SNP012_SNPT_MONTHLY">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SNPT_REAL_QUANTITY" source="SNPT_REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SNAPSHOT" source="SNAPSHOT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+      <joinAttribute name="CALMONTH"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="STOCK_AVAILABLE"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="CALMONTH"/>
+        <viewAttribute id="ORDER_REAL_QUANTITY"/>
+        <viewAttribute id="SNPT_REAL_QUANTITY"/>
+        <viewAttribute id="SNAPSHOT"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CA_SNP012_STOCK">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_AVAILABLE" source="STOCK_AVAILABLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+      </input>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDER_REAL_QUANTITY" source="ORDER_REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SNPT_REAL_QUANTITY" source="SNPT_REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SNAPSHOT" source="SNAPSHOT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_3" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="STOCK_AVAILABLE"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="CALMONTH"/>
+        <viewAttribute id="ORDER_REAL_QUANTITY"/>
+        <viewAttribute id="SNPT_REAL_QUANTITY"/>
+        <viewAttribute id="SNAPSHOT"/>
+        <viewAttribute id="CALMONTH_SNPT"/>
+        <viewAttribute id="SNAP_DAY"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_AVAILABLE" source="STOCK_AVAILABLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDER_REAL_QUANTITY" source="ORDER_REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SNPT_REAL_QUANTITY" source="SNPT_REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SNAPSHOT" source="SNAPSHOT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+      </input>
+      <input node="#AT_SNP012_SNPT_TIMEDIMENSION">
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH_SNPT" source="CALMONTH_SNPT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SNAP_DAY" source="SNAP_DAY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SNAPSHOT" source="SNAPSHOT"/>
+      </input>
+      <joinAttribute name="SNAPSHOT"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_3">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_3" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Join_3" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Join_3" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="VRSIOTXT" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOTXT"/>
+        <keyMapping columnObjectName="Join_3" columnName="VRSIOTXT"/>
+      </attribute>
+      <attribute id="MEINS" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="Join_3" columnName="MEINS"/>
+      </attribute>
+      <attribute id="STOCK_AVAILABLE" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STOCK_AVAILABLE"/>
+        <keyMapping columnObjectName="Join_3" columnName="STOCK_AVAILABLE"/>
+      </attribute>
+      <attribute id="MATID" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_3" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_3" columnName="LOCID"/>
+      </attribute>
+      <attribute id="CALMONTH" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CALMONTH"/>
+        <keyMapping columnObjectName="Join_3" columnName="CALMONTH"/>
+      </attribute>
+      <attribute id="SNAPSHOT" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SNAPSHOT"/>
+        <keyMapping columnObjectName="Join_3" columnName="SNAPSHOT"/>
+      </attribute>
+      <attribute id="CALMONTH_SNPT" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CALMONTH_SNPT"/>
+        <keyMapping columnObjectName="Join_3" columnName="CALMONTH_SNPT"/>
+      </attribute>
+      <attribute id="SNAP_DAY" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SNAP_DAY"/>
+        <keyMapping columnObjectName="Join_3" columnName="SNAP_DAY"/>
+      </attribute>
+      <attribute id="MAKTX" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_3" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="MATNR" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Join_3" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_3" columnName="LOCNO"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="STOCK_QTY" order="5" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="STOCK_QTY"/>
+        <measureMapping columnObjectName="Join_3" columnName="STOCK_QTY"/>
+      </measure>
+      <measure id="ORDER_REAL_QUANTITY" order="11" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="ORDER_REAL_QUANTITY"/>
+        <measureMapping columnObjectName="Join_3" columnName="ORDER_REAL_QUANTITY"/>
+      </measure>
+      <measure id="SNPT_REAL_QUANTITY" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="SNPT_REAL_QUANTITY"/>
+        <measureMapping columnObjectName="Join_3" columnName="SNPT_REAL_QUANTITY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="380"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="280"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="175"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

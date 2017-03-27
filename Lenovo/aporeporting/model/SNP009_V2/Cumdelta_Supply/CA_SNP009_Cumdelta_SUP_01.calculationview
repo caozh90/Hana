@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.2" id="CA_SNP009_Cumdelta_SUP_01" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CA_SNP009_Cumdelta_SUP_01"/>
+  <localVariables>
+    <variable id="IV_PLAN_VER" parameter="true">
+      <descriptions defaultDescription="IV_PLAN_VER"/>
+      <variableProperties datatype="VARCHAR" defaultValue="000" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CA_SNP009_Cumdelta_SUP">
+      <targetVariable name="IV_PLAN_VER" resourceUri="/aporeporting.model.SNP009_V2.Cumdelta_Supply/calculationviews/CA_SNP009_Cumdelta_SUP"/>
+      <localVariable>#IV_PLAN_VER</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CA_SNP009_Cumdelta_SUP" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V2.Cumdelta_Supply/calculationviews/CA_SNP009_Cumdelta_SUP</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID_PLANT"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="RAUBE"/>
+        <viewAttribute id="LOCNO_PLANT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="LOCID_SUPPLIER"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="LOCNO_SUPPLIER"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MAKTX"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="CURRENT_WEEK" length="6">
+          <formula>replace(ISOWEEK(NOW()),'-W','')</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CA_SNP009_Cumdelta_SUP">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_PLANT" source="LOCID_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RAUBE" source="RAUBE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLANT" source="LOCNO_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_SUPPLIER" source="LOCID_SUPPLIER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SUPPLIER" source="LOCNO_SUPPLIER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+      </input>
+      <filter>&quot;CALWEEK&quot; &lt;= &quot;CURRENT_WEEK&quot;</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID_PLANT"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="RAUBE"/>
+        <viewAttribute id="LOCNO_PLANT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="LOCID_SUPPLIER"/>
+        <viewAttribute id="LOCNO_SUPPLIER"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute aggregationType="sum" id="REAL_QUANTITY"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_PLANT" source="LOCID_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RAUBE" source="RAUBE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLANT" source="LOCNO_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_SUPPLIER" source="LOCID_SUPPLIER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SUPPLIER" source="LOCNO_SUPPLIER"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID_PLANT" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOCID_PLANT"/>
+      </attribute>
+      <attribute id="STAWN" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STAWN"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="STAWN"/>
+      </attribute>
+      <attribute id="DISPO" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="DISPO"/>
+      </attribute>
+      <attribute id="RAUBE" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="RAUBE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="RAUBE"/>
+      </attribute>
+      <attribute id="LOCNO_PLANT" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOCNO_PLANT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="LOCID_SUPPLIER" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID_FROM"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOCID_SUPPLIER"/>
+      </attribute>
+      <attribute id="LOCNO_SUPPLIER" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_1"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOCNO_SUPPLIER"/>
+      </attribute>
+      <attribute id="MATNR" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="MAKTX" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="REAL_QUANTITY" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="REAL_QUANTITY"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="REAL_QUANTITY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="310"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="230"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

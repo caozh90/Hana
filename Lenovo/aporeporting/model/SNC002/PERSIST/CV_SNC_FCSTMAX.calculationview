@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_SNC_FCSTMAX" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_SNC_FCSTDATE01"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="CV_SNC_IC_ZERO4DATE" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC002.PERSIST/calculationviews/CV_SNC_IC_ZERO4DATE</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="CC_LOCDT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_SNC_IC_ZERO4DATE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute aggregationType="max" id="CC_UTCDATE"/>
+        <viewAttribute aggregationType="max" id="CC_LOCDT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_LOCDT" source="CC_LOCDT"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Aggregation_1">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="LOCNO" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MATNR" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO_FROM" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_FROM"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="LOCNO_FROM"/>
+      </attribute>
+      <attribute id="CC_UTCDATE" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CC_UTCDATE"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="CC_UTCDATE"/>
+      </attribute>
+      <attribute id="CC_LOCDT" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CC_LOCDT"/>
+        <keyMapping columnObjectName="Aggregation_1" columnName="CC_LOCDT"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="417"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="339"/>
+        <rectangleSize height="34" width="140"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

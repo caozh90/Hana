@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_SNP_ORDER01" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" dimensionType="Standard">
+  <origin/>
+  <descriptions defaultDescription="AT_SNP_ORDER01"/>
+  <metadata changedAt="2015-11-09 17:09:24.216"/>
+  <attributes>
+    <attribute id="MANDT" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MANDT"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="MANDT"/>
+    </attribute>
+    <attribute id="VERSIOD" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="VERSIOD"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="VERSIOD"/>
+    </attribute>
+    <attribute id="MATID" key="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MATID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="MATID"/>
+    </attribute>
+    <attribute id="LOCID" key="true" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="LOCID"/>
+    </attribute>
+    <attribute id="MEINS" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MEINS"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="MEINS"/>
+    </attribute>
+    <attribute id="REAL_QUANTITY" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="REAL_QUANTITY"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="REAL_QUANTITY"/>
+    </attribute>
+    <attribute id="LOCNO_SUP" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCNO"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" columnName="LOCNO"/>
+    </attribute>
+    <attribute id="LOCAL_DATE" order="8" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCAL_DATE"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="LOCAL_DATE"/>
+    </attribute>
+    <attribute id="LOCAL_TIME" order="9" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCAL_TIME"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="LOCAL_TIME"/>
+    </attribute>
+    <attribute id="CATEGORY" order="10" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CATEGORY"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="CATEGORY"/>
+    </attribute>
+    <attribute id="CATEGORY_TYPE" order="11" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CATEGORY_TYPE"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="CATEGORY_TYPE"/>
+    </attribute>
+    <attribute id="CALWEEK" order="12" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CALWEEK"/>
+      <keyMapping schemaName="_SYS_BI" columnObjectName="M_TIME_DIMENSION" columnName="CALWEEK"/>
+    </attribute>
+    <attribute id="VRSIOEX" order="13" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="VRSIOEX"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/APO01" columnName="VRSIOEX"/>
+    </attribute>
+    <attribute id="LOCID_FROM" order="14" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCID_FROM"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD" columnName="LOCID_FROM"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="_SYS_BI" columnObjectName="M_TIME_DIMENSION"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/APO01"/>
+        <columnFilter columnName="VRSIOEX">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$IP_VER01$$"/>
+        </columnFilter>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>LOCID_FROM</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>LOCID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="leftOuter"/>
+      </join>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD"/>
+        <rightTable schemaName="_SYS_BI" columnObjectName="M_TIME_DIMENSION"/>
+        <leftColumns>
+          <columnName>LOCAL_DATE</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>DATE_SAP</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_ORD"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/APO01"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>VERSIOD</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>VRSIOID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="ZTSNP_REP_ORD" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="362" y="864"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/LOC" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="706" y="16"/>
+        </shape>
+        <shape modelObjectName="M_TIME_DIMENSION" modelObjectNameSpace="_SYS_BI" modelObjectType="catalog">
+          <upperLeftCorner x="706" y="1652"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/APO01" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="16" y="752"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

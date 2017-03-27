@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_ATT_LOC" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="true" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_ATT_LOC"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="Location_1" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/sap.hba.scm-apo/calculationviews/Location</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="SAPClient"/>
+        <viewAttribute id="LocationUUID"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="LocationName"/>
+        <viewAttribute id="CountryName"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="LocationName_FMT" length="40">
+          <formula>replace(&quot;LocationName&quot;,',',' ')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="CountryName_FMT" length="15">
+          <formula>replace(&quot;CountryName&quot;,',',' ')</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Location_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SAPClient" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LocationUUID" source="LocationUUID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LocationName" source="LocationName"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CountryName" source="CountryName"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="SAPClient" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SAP Client"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SAPClient"/>
+      </attribute>
+      <attribute id="LocationUUID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Location UUID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LocationUUID"/>
+      </attribute>
+      <attribute id="Location" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Location"/>
+        <keyMapping columnObjectName="Projection_1" columnName="Location"/>
+      </attribute>
+      <attribute id="LocationName" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LocationName"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LocationName_FMT"/>
+      </attribute>
+      <attribute id="CountryName" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CountryName"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CountryName_FMT"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="190"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

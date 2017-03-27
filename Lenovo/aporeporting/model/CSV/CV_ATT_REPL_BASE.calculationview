@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.2" id="CV_ATT_REPL_BASE" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="true" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_ATT_REPL_BASE "/>
+  <localVariables>
+    <variable id="IP_PLANT_NO" parameter="true">
+      <descriptions defaultDescription="IP_PLANT_NO"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="U400" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_ATT_REPL_MAT">
+      <targetVariable name="IP_PLANT_NO" resourceUri="/aporeporting.model.CSV/calculationviews/CV_ATT_REPL_MAT"/>
+      <localVariable>#IP_PLANT_NO</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_ATT_MAT_LOC_SUPPLIER">
+      <targetVariable name="IP_LOCNO" resourceUri="/aporeporting.model.CSV/calculationviews/CV_ATT_MAT_LOC_SUPPLIER"/>
+      <localVariable>#IP_PLANT_NO</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_ATT_MATKEYLOC">
+      <targetVariable name="IP_LOCNO" resourceUri="/aporeporting.model.CSV/calculationviews/CV_ATT_MATKEYLOC"/>
+      <localVariable>#IP_PLANT_NO</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_ATT_REPL_MAT" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_ATT_REPL_MAT</resourceUri>
+    </DataSource>
+    <DataSource id="CV_ATT_MAT_LOC_SUPPLIER" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_ATT_MAT_LOC_SUPPLIER</resourceUri>
+    </DataSource>
+    <DataSource id="CV_ATT_MATKEYLOC" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_ATT_MATKEYLOC</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="MAKTX"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_ATT_REPL_MAT">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PLANT_NO"/>
+        <viewAttribute id="SUPPLIER_NO"/>
+        <viewAttribute id="SUP_NAME"/>
+        <viewAttribute id="SUP_LOC"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="MATNR1" length="20">
+          <formula>rightstr(&quot;MATNR&quot;, 12)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CV_ATT_MAT_LOC_SUPPLIER">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANT_NO" source="PLANT_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUPPLIER_NO" source="SUPPLIER_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_NAME" source="SUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_LOC" source="SUP_LOC"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="SUPPLIER_NO"/>
+        <viewAttribute id="SUP_NAME"/>
+        <viewAttribute id="SUP_LOC"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+      </input>
+      <input node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUPPLIER_NO" source="SUPPLIER_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_NAME" source="SUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_LOC" source="SUP_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="PLANT_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR1"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="LOCNO"/>
+      <joinAttribute name="MATNR"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_3">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="KZKRI"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="MATNR1" length="20">
+          <formula>rightstr(&quot;MATNR&quot;,12)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CV_ATT_MATKEYLOC">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="KZKRI" source="KZKRI"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="SUPPLIER_NO"/>
+        <viewAttribute id="SUP_NAME"/>
+        <viewAttribute id="SUP_LOC"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="KZKRI"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUPPLIER_NO" source="SUPPLIER_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_NAME" source="SUP_NAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_LOC" source="SUP_LOC"/>
+      </input>
+      <input node="#Projection_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="KZKRI" source="KZKRI"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR1"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="LOCNO"/>
+      <joinAttribute name="MATNR"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_2">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_2" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATNR" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Join_2" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_2" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MATKL" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATKL"/>
+        <keyMapping columnObjectName="Join_2" columnName="MATKL"/>
+      </attribute>
+      <attribute id="MAKTX" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_2" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="SUPPLIER_NO" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUPPLIER_NO"/>
+        <keyMapping columnObjectName="Join_2" columnName="SUPPLIER_NO"/>
+      </attribute>
+      <attribute id="SUP_NAME" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUP_NAME"/>
+        <keyMapping columnObjectName="Join_2" columnName="SUP_NAME"/>
+      </attribute>
+      <attribute id="SUP_LOC" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUP_LOC"/>
+        <keyMapping columnObjectName="Join_2" columnName="SUP_LOC"/>
+      </attribute>
+      <attribute id="ZZ_MFRGR" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MFRGR"/>
+        <keyMapping columnObjectName="Join_2" columnName="ZZ_MFRGR"/>
+      </attribute>
+      <attribute id="KZKRI" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="KZKRI"/>
+        <keyMapping columnObjectName="Join_2" columnName="KZKRI"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="176" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="357"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="357"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="253" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

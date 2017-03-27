@@ -1,0 +1,823 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CV_FORECAST_FINAL_V2_1" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <origin/>
+  <descriptions defaultDescription="CV_FORECAST_FINAL_V2_1"/>
+  <localVariables>
+    <variable id="IP_PVER02" parameter="true">
+      <descriptions defaultDescription="IP_PVER02"/>
+      <variableProperties datatype="NVARCHAR" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+        <defaultRange/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_UNION_ALL2_V2">
+      <targetVariable name="IP_PVER02" resourceUri="/aporeporting.model.SNP009_V3.SUMALL/calculationviews/CV_UNION_ALL2_V2"/>
+      <localVariable>#IP_PVER02</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_UNION_ALL2_V2" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V3.SUMALL/calculationviews/CV_UNION_ALL2_V2</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="QTY_TYPE"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="LOCAL_DATE"/>
+        <viewAttribute id="LOCNO_SUP"/>
+        <viewAttribute id="WEEK00"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="ORDER_QTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="RAUBE"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="SORD_ID"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="EXT_MATNR"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_UNION_ALL2_V2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY_TYPE" source="QTY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="LOCAL_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SUP" source="LOCNO_SUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK00" source="WEEK00"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDER_QTY" source="ORDER_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RAUBE" source="RAUBE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SORD_ID" source="SORD_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EXT_MATNR" source="EXT_MATNR"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_3">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="QTY_TYPE"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="LOCNO_SUP"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="ORDER_QTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="RAUBE"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="SORD_ID"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="EXT_MATNR"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK00" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(ISOWEEK(NOW()),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK01" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*1)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK02" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*2)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK03" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*3)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK04" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*4)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK05" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*5)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK06" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*6)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK07" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*7)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK08" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*8)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK09" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*9)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK10" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*10)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK11" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*11)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK12" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*12)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK13" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*13)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK14" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*14)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK15" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*15)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK16" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*16)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK17" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*17)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK18" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*18)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK19" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*19)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK20" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*20)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK21" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*21)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK22" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*22)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK23" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*23)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK24" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*24)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK25" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*25)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK26" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*26)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK27" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*27)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK28" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*28)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK29" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*29)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK30" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*30)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK31" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*31)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK32" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*32)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK33" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*33)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK34" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*34)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK35" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*35)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK36" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*36)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK37" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*37)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK38" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*38)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK39" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*39)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK40" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*40)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK41" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*41)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK42" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*42)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK43" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*43)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK44" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*44)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK45" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*45)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK46" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*46)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK47" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*47)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK48" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*48)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK49" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*49)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK50" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*50)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK51" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*51)),'-W','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="WEEK52" length="6" expressionLanguage="COLUMN_ENGINE">
+          <formula>replace(isoweek(adddays(NOW(),7*52)),'-W','')</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY_TYPE" source="QTY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SUP" source="LOCNO_SUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDER_QTY" source="ORDER_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RAUBE" source="RAUBE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SORD_ID" source="SORD_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EXT_MATNR" source="EXT_MATNR"/>
+      </input>
+      <filter>&quot;QTY_TYPE&quot;  != 'BOH' and &quot;QTY_TYPE&quot; != 'VMI' and &quot;QTY_TYPE&quot; != 'Cum_Inv' and &quot;QTY_TYPE&quot; != 'PO_QTY' and &quot;QTY_TYPE&quot; != 'Cum_Sup'</filter>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_3">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Projection_3" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="MATID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Projection_3" columnName="LOCID"/>
+      </attribute>
+      <attribute id="QTY_TYPE" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QTY_TYPE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="QTY_TYPE"/>
+      </attribute>
+      <attribute id="MEINS" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MEINS"/>
+      </attribute>
+      <attribute id="LOCNO_SUP" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_SUP"/>
+        <keyMapping columnObjectName="Projection_3" columnName="LOCNO_SUP"/>
+      </attribute>
+      <attribute id="LOCNO" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Projection_3" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MATNR" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MATNR"/>
+      </attribute>
+      <attribute id="MAKTX" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Projection_3" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="STAWN" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STAWN"/>
+        <keyMapping columnObjectName="Projection_3" columnName="STAWN"/>
+      </attribute>
+      <attribute id="DISPO" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Projection_3" columnName="DISPO"/>
+      </attribute>
+      <attribute id="RAUBE" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="RAUBE"/>
+        <keyMapping columnObjectName="Projection_3" columnName="RAUBE"/>
+      </attribute>
+      <attribute id="CALWEEK" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CALWEEK"/>
+        <keyMapping columnObjectName="Projection_3" columnName="CALWEEK"/>
+      </attribute>
+      <attribute id="WEEK00" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK00"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK00"/>
+      </attribute>
+      <attribute id="WEEK01" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK01"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK01"/>
+      </attribute>
+      <attribute id="WEEK02" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK02"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK02"/>
+      </attribute>
+      <attribute id="WEEK03" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK03"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK03"/>
+      </attribute>
+      <attribute id="WEEK04" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK04"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK04"/>
+      </attribute>
+      <attribute id="WEEK05" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK05"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK05"/>
+      </attribute>
+      <attribute id="WEEK06" order="21" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK06"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK06"/>
+      </attribute>
+      <attribute id="WEEK07" order="22" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK07"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK07"/>
+      </attribute>
+      <attribute id="WEEK08" order="23" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK08"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK08"/>
+      </attribute>
+      <attribute id="WEEK09" order="24" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK09"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK09"/>
+      </attribute>
+      <attribute id="WEEK10" order="25" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK10"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK10"/>
+      </attribute>
+      <attribute id="WEEK11" order="26" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK11"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK11"/>
+      </attribute>
+      <attribute id="WEEK12" order="27" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK12"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK12"/>
+      </attribute>
+      <attribute id="WEEK13" order="28" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK13"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK13"/>
+      </attribute>
+      <attribute id="WEEK14" order="29" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK14"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK14"/>
+      </attribute>
+      <attribute id="WEEK15" order="30" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK15"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK15"/>
+      </attribute>
+      <attribute id="WEEK16" order="31" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK16"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK16"/>
+      </attribute>
+      <attribute id="WEEK17" order="32" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK17"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK17"/>
+      </attribute>
+      <attribute id="WEEK18" order="33" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK18"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK18"/>
+      </attribute>
+      <attribute id="WEEK19" order="34" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK19"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK19"/>
+      </attribute>
+      <attribute id="WEEK20" order="35" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK20"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK20"/>
+      </attribute>
+      <attribute id="WEEK21" order="36" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK21"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK21"/>
+      </attribute>
+      <attribute id="WEEK22" order="37" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK22"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK22"/>
+      </attribute>
+      <attribute id="WEEK23" order="38" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK23"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK23"/>
+      </attribute>
+      <attribute id="WEEK24" order="39" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK24"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK24"/>
+      </attribute>
+      <attribute id="WEEK25" order="40" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK25"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK25"/>
+      </attribute>
+      <attribute id="WEEK26" order="41" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK26"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK26"/>
+      </attribute>
+      <attribute id="WEEK27" order="42" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK27"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK27"/>
+      </attribute>
+      <attribute id="WEEK28" order="43" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK28"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK28"/>
+      </attribute>
+      <attribute id="WEEK29" order="44" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK29"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK29"/>
+      </attribute>
+      <attribute id="WEEK30" order="45" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK30"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK30"/>
+      </attribute>
+      <attribute id="WEEK31" order="46" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK31"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK31"/>
+      </attribute>
+      <attribute id="WEEK32" order="47" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK32"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK32"/>
+      </attribute>
+      <attribute id="WEEK33" order="48" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK33"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK33"/>
+      </attribute>
+      <attribute id="WEEK34" order="49" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK34"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK34"/>
+      </attribute>
+      <attribute id="WEEK35" order="50" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK35"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK35"/>
+      </attribute>
+      <attribute id="WEEK36" order="51" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK36"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK36"/>
+      </attribute>
+      <attribute id="WEEK37" order="52" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK37"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK37"/>
+      </attribute>
+      <attribute id="WEEK38" order="53" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK38"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK38"/>
+      </attribute>
+      <attribute id="WEEK39" order="54" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK39"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK39"/>
+      </attribute>
+      <attribute id="WEEK40" order="55" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK40"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK40"/>
+      </attribute>
+      <attribute id="WEEK41" order="56" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK41"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK41"/>
+      </attribute>
+      <attribute id="WEEK42" order="57" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK42"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK42"/>
+      </attribute>
+      <attribute id="WEEK43" order="58" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK43"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK43"/>
+      </attribute>
+      <attribute id="WEEK44" order="59" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK44"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK44"/>
+      </attribute>
+      <attribute id="WEEK45" order="60" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK45"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK45"/>
+      </attribute>
+      <attribute id="WEEK46" order="61" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK46"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK46"/>
+      </attribute>
+      <attribute id="WEEK47" order="62" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK47"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK47"/>
+      </attribute>
+      <attribute id="WEEK48" order="63" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK48"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK48"/>
+      </attribute>
+      <attribute id="WEEK49" order="64" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK49"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK49"/>
+      </attribute>
+      <attribute id="WEEK50" order="65" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK50"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK50"/>
+      </attribute>
+      <attribute id="WEEK51" order="66" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK51"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK51"/>
+      </attribute>
+      <attribute id="WEEK52" order="67" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK52"/>
+        <keyMapping columnObjectName="Projection_3" columnName="WEEK52"/>
+      </attribute>
+      <attribute id="ZZ_MFRGR" order="68" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MFRGR"/>
+        <keyMapping columnObjectName="Projection_3" columnName="ZZ_MFRGR"/>
+      </attribute>
+      <attribute id="EXT_MATNR" order="69" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EXT_MATNR"/>
+        <keyMapping columnObjectName="Projection_3" columnName="EXT_MATNR"/>
+      </attribute>
+      <attribute id="SORD_ID" order="125" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SORD_ID"/>
+        <keyMapping columnObjectName="Projection_3" columnName="SORD_ID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="REAL_QUANTITY" order="70" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="REAL_QUANTITY"/>
+        <measureMapping columnObjectName="Projection_3" columnName="REAL_QUANTITY"/>
+      </measure>
+      <measure id="ORDER_QTY" order="71" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="ORDER_QTY"/>
+        <measureMapping columnObjectName="Projection_3" columnName="ORDER_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures>
+      <measure id="WEEK_00_QTY_01" hidden="false" order="72" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK00&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_01_QTY_01" hidden="false" order="73" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK01&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_02_QTY_01" hidden="false" order="74" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK02&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_03_QTY_01" hidden="false" order="75" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK03&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_04_QTY_01" hidden="false" order="76" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK04&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_05_QTY_01" hidden="false" order="77" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK05&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_06_QTY_01" hidden="false" order="78" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK06&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_07_QTY_01" hidden="false" order="79" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK07&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_08_QTY_01" hidden="false" order="80" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK08&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_09_QTY_01" hidden="false" order="81" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK09&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_10_QTY_01" hidden="false" order="82" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK10&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_11_QTY_01" hidden="false" order="83" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK11&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_12_QTY_01" hidden="false" order="84" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK12&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_13_QTY_01" hidden="false" order="85" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK13&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_14_QTY_01" hidden="false" order="86" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK14&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_15_QTY_01" hidden="false" order="87" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK15&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_16_QTY_01" hidden="false" order="88" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK16&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_17_QTY_01" hidden="false" order="89" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK17&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_18_QTY_01" hidden="false" order="90" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK18&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_19_QTY_01" hidden="false" order="91" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK19&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_20_QTY_01" hidden="false" order="92" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK20&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_21_QTY_01" hidden="false" order="93" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK21&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_22_QTY_01" hidden="false" order="94" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK22&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_23_QTY_01" hidden="false" order="95" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK23&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_24_QTY_01" hidden="false" order="96" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK24&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_25_QTY_01" hidden="false" order="97" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK25&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_26_QTY_01" hidden="false" order="98" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK26&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_27_QTY_01" hidden="false" order="99" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK27&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_28_QTY_01" hidden="false" order="100" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK28&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_29_QTY_01" hidden="false" order="101" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK29&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_30_QTY_01" hidden="false" order="102" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK30&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_31_QTY_01" hidden="false" order="103" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK31&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_32_QTY_01" hidden="false" order="104" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK32&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_33_QTY_01" hidden="false" order="105" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK33&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_34_QTY_01" hidden="false" order="106" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK34&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_35_QTY_01" hidden="false" order="107" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK35&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_36_QTY_01" hidden="false" order="108" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK36&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_37_QTY_01" hidden="false" order="109" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK37&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_38_QTY_01" hidden="false" order="110" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK38&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_39_QTY_01" hidden="false" order="111" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK39&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_40_QTY_01" hidden="false" order="112" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK40&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_41_QTY_01" hidden="false" order="113" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK41&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_42_QTY_01" hidden="false" order="114" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK42&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_43_QTY_01" hidden="false" order="115" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK43&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_44_QTY_01" hidden="false" order="116" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK44&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_45_QTY_01" hidden="false" order="117" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK45&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_46_QTY_01" hidden="false" order="118" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK46&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_47_QTY_01" hidden="false" order="119" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK47&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_48_QTY_01" hidden="false" order="120" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK48&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_49_QTY_01" hidden="false" order="121" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK49&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_50_QTY_01" hidden="false" order="122" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK50&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_51_QTY_01" hidden="false" order="123" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK51&quot;</restrictionExpression>
+      </measure>
+      <measure id="WEEK_52_QTY_01" hidden="false" order="124" baseMeasure="#ORDER_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <restrictionExpression>&quot;CALWEEK&quot;=&quot;WEEK52&quot;</restrictionExpression>
+      </measure>
+    </restrictedMeasures>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="243"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

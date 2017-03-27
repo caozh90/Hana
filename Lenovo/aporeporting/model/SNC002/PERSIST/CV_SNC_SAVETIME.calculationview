@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_SNC_SAVETIME" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_SNC_SAVETIME"/>
+  <defaultSchema schemaName="SAP_SCM"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="MANDT" length="3"/>
+        <viewAttribute datatype="NVARCHAR" id="UPSTATUS" length="4"/>
+        <viewAttribute datatype="NVARCHAR" id="CREATEDT" length="30"/>
+        <viewAttribute datatype="NVARCHAR" id="UPDATEDT" length="30"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = 
+ 	 
+ 	 
+ 	 select top 1 mandt , upstatus, 
+ 	 to_nvarchar(to_timestamp(crtime),'YYYY-MM-DD HH24:MI:SS') as CREATEDT , 
+     to_nvarchar(to_timestamp(uptime),'YYYY-MM-DD HH24:MI:SS') as UPDATEDT 
+     from ZTSNC_UPSTAT 
+     where caseid = '01' 
+     order by uptime desc ; 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MANDT"/>
+      </attribute>
+      <attribute id="UPSTATUS" order="2">
+        <descriptions defaultDescription="UPSTATUS"/>
+        <keyMapping columnObjectName="Script_View" columnName="UPSTATUS"/>
+      </attribute>
+      <attribute id="CREATEDT" order="3">
+        <descriptions defaultDescription="CREATEDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="CREATEDT"/>
+      </attribute>
+      <attribute id="UPDATEDT" order="4">
+        <descriptions defaultDescription="UPDATEDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="UPDATEDT"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

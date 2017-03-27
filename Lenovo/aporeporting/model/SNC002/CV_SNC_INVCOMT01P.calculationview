@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_SNC_INVCOMT01P" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <origin/>
+  <descriptions defaultDescription="CV_SNC_INVCOMT01P"/>
+  <metadata changedAt="2015-03-12 14:50:51.007"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="CV_SNC_VERTICAL01" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC002/calculationviews/CV_SNC_VERTICAL01</resourceUri>
+    </DataSource>
+    <DataSource id="AT_TIMEPERID01" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC002/attributeviews/AT_TIMEPERID01</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VRSIOID"/>
+        <viewAttribute id="KPRM">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="ORDERFCST"/>
+        </viewAttribute>
+        <viewAttribute id="CHOBJ"/>
+        <viewAttribute id="CLSTID"/>
+        <viewAttribute id="UNIT"/>
+        <viewAttribute id="CLST_SEQ"/>
+        <viewAttribute id="MAT_QTY"/>
+        <viewAttribute id="CHOBJ16"/>
+        <viewAttribute id="LOCID_FROM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="DESCR40_FROM"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="BP_LOC"/>
+        <viewAttribute id="TZONE"/>
+        <viewAttribute id="BP_FROM"/>
+        <viewAttribute id="BP_SOURCE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_SNC_VERTICAL01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOID" source="VRSIOID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="KPRM" source="KPRM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHOBJ" source="CHOBJ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CLSTID" source="CLSTID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UNIT" source="UNIT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CLST_SEQ" source="CLST_SEQ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY" source="MAT_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHOBJ16" source="CHOBJ16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_FROM" source="DESCR40_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BP_LOC" source="BP_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TZONE" source="TZONE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BP_FROM" source="BP_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BP_SOURCE" source="BP_SOURCE"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="TIMEPRF"/>
+        <viewAttribute id="PERID"/>
+        <viewAttribute id="PERTSTFR"/>
+        <viewAttribute id="CLSTID"/>
+        <viewAttribute id="SEQU"/>
+        <viewAttribute id="CC_UTCDATE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#AT_TIMEPERID01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TIMEPRF" source="TIMEPRF"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PERID" source="PERID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PERTSTFR" source="PERTSTFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CLSTID" source="CLSTID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SEQU" source="SEQU"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VRSIOID"/>
+        <viewAttribute id="KPRM"/>
+        <viewAttribute id="CHOBJ"/>
+        <viewAttribute id="CLSTID"/>
+        <viewAttribute id="UNIT"/>
+        <viewAttribute id="CLST_SEQ"/>
+        <viewAttribute id="MAT_QTY"/>
+        <viewAttribute id="TIMEPRF"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="CHOBJ16"/>
+        <viewAttribute id="LOCID_FROM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="DESCR40_FROM"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="BP_LOC"/>
+        <viewAttribute id="TZONE"/>
+        <viewAttribute id="BP_FROM"/>
+        <viewAttribute id="BP_SOURCE"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOID" source="VRSIOID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="KPRM" source="KPRM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHOBJ" source="CHOBJ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CLSTID" source="CLSTID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="UNIT" source="UNIT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CLST_SEQ" source="CLST_SEQ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY" source="MAT_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHOBJ16" source="CHOBJ16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_FROM" source="DESCR40_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BP_LOC" source="BP_LOC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="TZONE" source="TZONE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BP_FROM" source="BP_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BP_SOURCE" source="BP_SOURCE"/>
+      </input>
+      <input node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="TIMEPRF" source="TIMEPRF"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CLST_SEQ" source="SEQU"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CLSTID" source="CLSTID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="CLST_SEQ"/>
+      <joinAttribute name="CLSTID"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_2">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_2" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VRSIOID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOID"/>
+        <keyMapping columnObjectName="Join_2" columnName="VRSIOID"/>
+      </attribute>
+      <attribute id="KPRM" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="KPRM"/>
+        <keyMapping columnObjectName="Join_2" columnName="KPRM"/>
+      </attribute>
+      <attribute id="CHOBJ" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CHOBJ"/>
+        <keyMapping columnObjectName="Join_2" columnName="CHOBJ"/>
+      </attribute>
+      <attribute id="UNIT" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="UNIT"/>
+        <keyMapping columnObjectName="Join_2" columnName="UNIT"/>
+      </attribute>
+      <attribute id="MAT_QTY" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAT_QTY"/>
+        <keyMapping columnObjectName="Join_2" columnName="MAT_QTY"/>
+      </attribute>
+      <attribute id="CC_UTCDATE" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CC_UTCDATE"/>
+        <keyMapping columnObjectName="Join_2" columnName="CC_UTCDATE"/>
+      </attribute>
+      <attribute id="TIMEPRF" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TIMEPRF"/>
+        <keyMapping columnObjectName="Join_2" columnName="TIMEPRF"/>
+      </attribute>
+      <attribute id="CHOBJ16" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CHOBJ16"/>
+        <keyMapping columnObjectName="Join_2" columnName="CHOBJ16"/>
+      </attribute>
+      <attribute id="LOCID_FROM" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID_FROM"/>
+        <keyMapping columnObjectName="Join_2" columnName="LOCID_FROM"/>
+      </attribute>
+      <attribute id="LOCID" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_2" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MATID" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_2" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCNO_FROM" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_2" columnName="LOCNO_FROM"/>
+      </attribute>
+      <attribute id="DESCR40_FROM" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DESCR40_FROM"/>
+        <keyMapping columnObjectName="Join_2" columnName="DESCR40_FROM"/>
+      </attribute>
+      <attribute id="LOCNO" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_2" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MATNR" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Join_2" columnName="MATNR"/>
+      </attribute>
+      <attribute id="BP_LOC" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="BP_LOC"/>
+        <keyMapping columnObjectName="Join_2" columnName="BP_LOC"/>
+      </attribute>
+      <attribute id="TZONE" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TZONE"/>
+        <keyMapping columnObjectName="Join_2" columnName="TZONE"/>
+      </attribute>
+      <attribute id="BP_FROM" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="BP_FROM"/>
+        <keyMapping columnObjectName="Join_2" columnName="BP_FROM"/>
+      </attribute>
+      <attribute id="BP_SOURCE" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="BP_SOURCE"/>
+        <keyMapping columnObjectName="Join_2" columnName="BP_SOURCE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="CC_LOCDT" hidden="false" order="21" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CC_LOCDT"/>
+        <keyCalculation datatype="SECONDDATE">
+          <formula>daydate(utctolocal(date(&quot;CC_UTCDATE&quot;),&quot;TZONE&quot;))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="99" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

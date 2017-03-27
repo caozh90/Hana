@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_PLANTINFO" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="FOR LANGUAGE, MAYBE COULD USE PARAMETER LATER, NOW USE ENGLISH"/>
+  <attributes>
+    <attribute id="MANDT" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MANDT"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" columnName="MANDT"/>
+    </attribute>
+    <attribute id="LOCID" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" columnName="LOCID"/>
+    </attribute>
+    <attribute id="LOCNO" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCNO"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" columnName="LOCNO"/>
+    </attribute>
+    <attribute id="SPRAS" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SPRAS"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOCT" columnName="SPRAS"/>
+    </attribute>
+    <attribute id="DESCR40" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="DESCR40"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOCT" columnName="DESCR40"/>
+    </attribute>
+    <attribute id="TZONE" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="TZONE"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" columnName="TZONE"/>
+    </attribute>
+    <attribute id="PARTNER_LOC" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="PARTNER_GUID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" columnName="PARTNER_GUID"/>
+    </attribute>
+    <attribute id="LOCTYPE" order="8" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCTYPE"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" columnName="LOCTYPE"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC"/>
+        <columnFilter columnName="LVORM">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="false" value="X"/>
+        </columnFilter>
+        <columnFilter columnName="LOCTYPE">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="1001"/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOCT"/>
+        <columnFilter columnName="SPRAS">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="E"/>
+        </columnFilter>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOCT"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>LOCID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>LOCID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="/SAPAPO/LOC" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="324" y="16"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/LOCT" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="634" y="27"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

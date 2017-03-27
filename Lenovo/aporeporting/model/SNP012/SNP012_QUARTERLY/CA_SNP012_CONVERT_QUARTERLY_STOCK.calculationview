@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CA_SNP012_CONVERT_QUARTERLY_STOCK" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CA_SNP012_CONVERT_QUARTERLY_STOCK"/>
+  <metadata changedAt="2015-03-31 13:52:49.115"/>
+  <defaultSchema schemaName="SAP_SCM"/>
+  <localVariables>
+    <variable id="IV_PLAN_VER" parameter="true">
+      <descriptions defaultDescription="IV_PLAN_VER"/>
+      <variableProperties datatype="VARCHAR" defaultValue="000" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CA_SNP012_STOCK_STOCK_QUARTERLY">
+      <targetVariable name="IV_PLAN_VER" resourceUri="/aporeporting.model.SNP012.SNP012_QUARTERLY/calculationviews/CA_SNP012_STOCK_STOCK_QUARTERLY"/>
+      <localVariable>#IV_PLAN_VER</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CA_SNP012_STOCK_STOCK_QUARTERLY" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP012.SNP012_QUARTERLY/calculationviews/CA_SNP012_STOCK_STOCK_QUARTERLY</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="STOCK_AVAILABLE"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="QUARTER_1_P" length="5">
+          <formula>replace( QUARTER (addmonths(NOW(),-1*3)),'-Q','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="QUARTER_0" length="5">
+          <formula>replace( QUARTER (NOW()),'-Q','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="QUARTER_1" length="5">
+          <formula>replace( QUARTER (addmonths(NOW(),1*3)),'-Q','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="QUARTER_2" length="5">
+          <formula>replace( QUARTER (addmonths(NOW(),2*3)),'-Q','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="QUARTER_3" length="5">
+          <formula>replace( QUARTER (addmonths(NOW(),3*3)),'-Q','')</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="QUARTER_4" length="5">
+          <formula>replace( QUARTER (addmonths(NOW(),4*3)),'-Q','')</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CA_SNP012_STOCK_STOCK_QUARTERLY">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_AVAILABLE" source="STOCK_AVAILABLE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="QUARTER_1_P" hidden="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QUARTER_1_P"/>
+        <keyMapping columnObjectName="Projection_1" columnName="QUARTER_1_P"/>
+      </attribute>
+      <attribute id="QUARTER_0" hidden="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QUARTER_0"/>
+        <keyMapping columnObjectName="Projection_1" columnName="QUARTER_0"/>
+      </attribute>
+      <attribute id="QUARTER_1" hidden="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QUARTER_1"/>
+        <keyMapping columnObjectName="Projection_1" columnName="QUARTER_1"/>
+      </attribute>
+      <attribute id="QUARTER_2" hidden="true" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QUARTER_2"/>
+        <keyMapping columnObjectName="Projection_1" columnName="QUARTER_2"/>
+      </attribute>
+      <attribute id="QUARTER_3" hidden="true" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QUARTER_3"/>
+        <keyMapping columnObjectName="Projection_1" columnName="QUARTER_3"/>
+      </attribute>
+      <attribute id="QUARTER_4" hidden="true" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QUARTER_4"/>
+        <keyMapping columnObjectName="Projection_1" columnName="QUARTER_4"/>
+      </attribute>
+      <attribute id="MANDT" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="VRSIOTXT" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOTXT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VRSIOTXT"/>
+      </attribute>
+      <attribute id="MEINS" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MEINS"/>
+      </attribute>
+      <attribute id="STOCK_AVAILABLE" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STOCK_AVAILABLE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="STOCK_AVAILABLE"/>
+      </attribute>
+      <attribute id="MATID" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MAKTX" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="MATNR" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCNO"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="QTY_TYPE" hidden="false" order="7" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QTY_TYPE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>'STOCK'</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="STOCK_QTY" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="STOCK_QTY"/>
+        <measureMapping columnObjectName="Projection_1" columnName="STOCK_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="220"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

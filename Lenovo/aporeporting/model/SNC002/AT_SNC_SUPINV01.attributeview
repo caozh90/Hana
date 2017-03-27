@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_SNC_SUPINV01" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_SNC_SUPINV01"/>
+  <attributes>
+    <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MANDT"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="MANDT"/>
+    </attribute>
+    <attribute id="MATID" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MATID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="MATID"/>
+    </attribute>
+    <attribute id="LOCID" key="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="LOCID"/>
+    </attribute>
+    <attribute id="LOCNO_FROM" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCNO"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" columnName="LOCNO"/>
+    </attribute>
+    <attribute id="MATNR" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MATNR"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY" columnName="MATNR"/>
+    </attribute>
+    <attribute id="DESCR40_FROM" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="DESCR40"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOCT" columnName="DESCR40"/>
+    </attribute>
+    <attribute id="LOCNO" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCNO"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" alias="/SAPAPO/LOC_1" columnName="LOCNO"/>
+    </attribute>
+    <attribute id="STOCK_QTY" order="8" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="STOCK_QTY"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="STOCK_QTY"/>
+    </attribute>
+    <attribute id="MEINS" order="9" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MEINS"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="MEINS"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO"/>
+        <columnFilter columnName="CATEGORY">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="CD"/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY"/>
+        <columnFilter columnName="LVORM">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="false" value="X"/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOCT"/>
+        <columnFilter columnName="SPRAS">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="E"/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" alias="/SAPAPO/LOC_1"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/APO01"/>
+        <columnFilter columnName="VRSIOEX">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="001"/>
+        </columnFilter>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>ADDLOCID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>LOCID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>MATID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>MATID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOCT"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>LOCID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>LOCID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/LOC" alias="/SAPAPO/LOC_1"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>LOCID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>LOCID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/APO01"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>VERSIOD</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>VRSIOID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="inner"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="ZTSNP_REP_STO" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="428" y="1360"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/LOC" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="725" y="704"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/MATKEY" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="16" y="16"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/LOCT" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="1041" y="1440"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/LOC_1" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="16" y="1402"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/APO01" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="1320" y="30"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

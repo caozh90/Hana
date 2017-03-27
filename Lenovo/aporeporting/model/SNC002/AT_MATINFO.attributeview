@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_MATINFO" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_MATINFO"/>
+  <attributes>
+    <attribute id="MANDT" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MANDT"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY" columnName="MANDT"/>
+    </attribute>
+    <attribute id="MATID" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MATID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY" columnName="MATID"/>
+    </attribute>
+    <attribute id="MATNR" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="EXT_MATNR"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATMAP" columnName="EXT_MATNR"/>
+    </attribute>
+    <attribute id="MATNR_INT" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MATNR"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY" columnName="MATNR"/>
+    </attribute>
+    <attribute id="MAKTX" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MAKTX"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATTXT" columnName="MAKTX"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY"/>
+        <columnFilter columnName="LVORM">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="false" value="X"/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATTXT"/>
+        <columnFilter columnName="LANGU">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="E"/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATMAP"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATTXT"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>MATID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>MATID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="leftOuter"/>
+      </join>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATMAP"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>MATID</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>MATID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="leftOuter"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="/SAPAPO/MATKEY" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/MATTXT" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="373" y="30"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/MATMAP" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="370" y="170"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

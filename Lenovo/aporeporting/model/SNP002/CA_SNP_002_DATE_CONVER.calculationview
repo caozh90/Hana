@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CA_SNP_002_DATE_CONVER" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CA_SNP_002_DATE_CONVER "/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="_SAPAPO_TPSRC" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="/SAPAPO/TPSRC" alias="_SAPAPO_TPSRC"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews/>
+  <logicalModel id="_SAPAPO_TPSRC">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/TPSRC" alias="_SAPAPO_TPSRC" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/TPSRC" alias="_SAPAPO_TPSRC" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCFR" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCFR"/>
+        <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/TPSRC" alias="_SAPAPO_TPSRC" columnName="LOCFR"/>
+      </attribute>
+      <attribute id="LOCTO" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCTO"/>
+        <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/TPSRC" alias="_SAPAPO_TPSRC" columnName="LOCTO"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="VALID_FROM_DATE" hidden="false" order="7" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VALID_FROM_DATE"/>
+        <keyCalculation datatype="DATE" expressionLanguage="COLUMN_ENGINE">
+          <formula>date(&quot;VALFR&quot;)</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="VALFR" order="5" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="VALFR"/>
+        <measureMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/TPSRC" alias="_SAPAPO_TPSRC" columnName="VALFR"/>
+      </measure>
+      <measure id="VALTO" order="6" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="VALTO"/>
+        <measureMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/TPSRC" alias="_SAPAPO_TPSRC" columnName="VALTO"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

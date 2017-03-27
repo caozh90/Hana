@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_SNP_STOCKQTY" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_SNP_STOCKQTY "/>
+  <attributes>
+    <attribute id="MANDT" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MANDT"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="MANDT"/>
+    </attribute>
+    <attribute id="VERSIOD" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="VERSIOD"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="VERSIOD"/>
+    </attribute>
+    <attribute id="MATID" key="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MATID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="MATID"/>
+    </attribute>
+    <attribute id="LOCID" key="true" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="LOCID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="LOCID"/>
+    </attribute>
+    <attribute id="STOCK_QTY" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="STOCK_QTY"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="STOCK_QTY"/>
+    </attribute>
+    <attribute id="MEINS" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MEINS"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO" columnName="MEINS"/>
+    </attribute>
+    <attribute id="VRSIOEX" order="7" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="VRSIOEX"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SAPAPO/APO01" columnName="VRSIOEX"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO"/>
+        <columnFilter columnName="STOCK_AVAILABLE">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="X"/>
+        </columnFilter>
+        <columnFilter columnName="ADDLOCID">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value=""/>
+        </columnFilter>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SAPAPO/APO01"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_STO"/>
+        <rightTable schemaName="SAP_SCM" columnObjectName="/SAPAPO/APO01"/>
+        <leftColumns>
+          <columnName>MANDT</columnName>
+          <columnName>VERSIOD</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>MANDT</columnName>
+          <columnName>VRSIOID</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="ZTSNP_REP_STO" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="/SAPAPO/APO01" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="394" y="30"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.2" id="CV_SNC" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="true" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_SNC"/>
+  <localVariables>
+    <variable id="IP_PLANT_NO" parameter="true">
+      <descriptions defaultDescription="IP_PLANT_NO"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="U400" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SNC_BASE">
+      <targetVariable name="IP_PLANT_NO" resourceUri="/aporeporting.model.CSV/calculationviews/CV_SNC_BASE"/>
+      <localVariable>#IP_PLANT_NO</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_ATT_MATKEYLOC">
+      <targetVariable name="IP_LOCNO" resourceUri="/aporeporting.model.CSV/calculationviews/CV_ATT_MATKEYLOC"/>
+      <localVariable>#IP_PLANT_NO</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_SNC_BASE" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_SNC_BASE</resourceUri>
+    </DataSource>
+    <DataSource id="CV_ATT_MATKEYLOC" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_ATT_MATKEYLOC</resourceUri>
+    </DataSource>
+    <DataSource id="CV_ATT_MAT" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_ATT_MAT</resourceUri>
+    </DataSource>
+    <DataSource id="CV_ATT_LOC" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_ATT_LOC</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$IP_PLANT_NO$$"/>
+        </viewAttribute>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="DT1"/>
+        <viewAttribute id="QTY1"/>
+        <viewAttribute id="QTY2"/>
+        <viewAttribute id="QTY3"/>
+        <viewAttribute id="QTY4"/>
+        <viewAttribute id="QTY5"/>
+        <viewAttribute id="QTY6"/>
+        <viewAttribute id="QTY7"/>
+        <viewAttribute id="QTY8"/>
+        <viewAttribute id="QTY9"/>
+        <viewAttribute id="QTY10"/>
+        <viewAttribute id="QTY11"/>
+        <viewAttribute id="QTY12"/>
+        <viewAttribute id="QTY13"/>
+        <viewAttribute id="QTY14"/>
+        <viewAttribute id="QTY15"/>
+        <viewAttribute id="QTY16"/>
+        <viewAttribute id="QTY17"/>
+        <viewAttribute id="QTY18"/>
+        <viewAttribute id="QTY19"/>
+        <viewAttribute id="QTY20"/>
+        <viewAttribute id="QTY21"/>
+        <viewAttribute id="QTY22"/>
+        <viewAttribute id="QTY23"/>
+        <viewAttribute id="QTY24"/>
+        <viewAttribute id="QTY25"/>
+        <viewAttribute id="QTY26"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="INTEGER" id="IS_VALID">
+          <filter xsi:type="AccessControl:SingleValueFilter" operator="GT" including="true" value="0"/>
+          <formula>&quot;QTY1&quot;+&quot;QTY2&quot;+&quot;QTY3&quot;+&quot;QTY4&quot;+&quot;QTY5&quot;+&quot;QTY6&quot;+&quot;QTY7&quot;+&quot;QTY8&quot;+&quot;QTY9&quot;+&quot;QTY10&quot;+&quot;QTY11&quot;+&quot;QTY12&quot;+&quot;QTY13&quot;+&quot;QTY14&quot;+ &quot;QTY15&quot;+&quot;QTY16&quot;+&quot;QTY17&quot;+&quot;QTY18&quot;+&quot;QTY19&quot;+&quot;QTY20&quot;+&quot;QTY21&quot;+&quot;QTY22&quot;+&quot;QTY23&quot;+&quot;QTY24&quot;+&quot;QTY25&quot;+&quot;QTY26&quot;</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CV_SNC_BASE">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DT1" source="DT1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY1" source="QTY1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY2" source="QTY2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY3" source="QTY3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY4" source="QTY4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY5" source="QTY5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY6" source="QTY6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY7" source="QTY7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY8" source="QTY8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY9" source="QTY9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY10" source="QTY10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY11" source="QTY11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY12" source="QTY12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY13" source="QTY13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY14" source="QTY14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY15" source="QTY15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY16" source="QTY16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY17" source="QTY17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY18" source="QTY18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY19" source="QTY19"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY20" source="QTY20"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY21" source="QTY21"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY22" source="QTY22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY23" source="QTY23"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY24" source="QTY24"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY25" source="QTY25"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY26" source="QTY26"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="MSDP_SB_METHOD"/>
+        <viewAttribute id="LSZID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_ATT_MATKEYLOC">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MSDP_SB_METHOD" source="MSDP_SB_METHOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LSZID" source="LSZID"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="DT1"/>
+        <viewAttribute id="QTY1"/>
+        <viewAttribute id="QTY2"/>
+        <viewAttribute id="QTY3"/>
+        <viewAttribute id="QTY4"/>
+        <viewAttribute id="QTY5"/>
+        <viewAttribute id="QTY6"/>
+        <viewAttribute id="QTY7"/>
+        <viewAttribute id="QTY8"/>
+        <viewAttribute id="QTY9"/>
+        <viewAttribute id="QTY10"/>
+        <viewAttribute id="QTY11"/>
+        <viewAttribute id="QTY12"/>
+        <viewAttribute id="QTY13"/>
+        <viewAttribute id="QTY14"/>
+        <viewAttribute id="QTY15"/>
+        <viewAttribute id="QTY16"/>
+        <viewAttribute id="QTY17"/>
+        <viewAttribute id="QTY18"/>
+        <viewAttribute id="QTY19"/>
+        <viewAttribute id="QTY20"/>
+        <viewAttribute id="QTY21"/>
+        <viewAttribute id="QTY22"/>
+        <viewAttribute id="QTY23"/>
+        <viewAttribute id="QTY24"/>
+        <viewAttribute id="QTY25"/>
+        <viewAttribute id="QTY26"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="MSDP_SB_METHOD"/>
+        <viewAttribute id="LSZID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DT1" source="DT1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY1" source="QTY1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY2" source="QTY2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY3" source="QTY3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY4" source="QTY4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY5" source="QTY5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY6" source="QTY6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY7" source="QTY7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY8" source="QTY8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY9" source="QTY9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY10" source="QTY10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY11" source="QTY11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY12" source="QTY12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY13" source="QTY13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY14" source="QTY14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY15" source="QTY15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY16" source="QTY16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY17" source="QTY17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY18" source="QTY18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY19" source="QTY19"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY20" source="QTY20"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY21" source="QTY21"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY22" source="QTY22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY23" source="QTY23"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY24" source="QTY24"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY25" source="QTY25"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY26" source="QTY26"/>
+      </input>
+      <input node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MSDP_SB_METHOD" source="MSDP_SB_METHOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LSZID" source="LSZID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATNR"/>
+      <joinAttribute name="LOCNO"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="DT1"/>
+        <viewAttribute id="QTY1"/>
+        <viewAttribute id="QTY2"/>
+        <viewAttribute id="QTY3"/>
+        <viewAttribute id="QTY4"/>
+        <viewAttribute id="QTY5"/>
+        <viewAttribute id="QTY6"/>
+        <viewAttribute id="QTY7"/>
+        <viewAttribute id="QTY8"/>
+        <viewAttribute id="QTY9"/>
+        <viewAttribute id="QTY10"/>
+        <viewAttribute id="QTY11"/>
+        <viewAttribute id="QTY12"/>
+        <viewAttribute id="QTY13"/>
+        <viewAttribute id="QTY14"/>
+        <viewAttribute id="QTY15"/>
+        <viewAttribute id="QTY16"/>
+        <viewAttribute id="QTY17"/>
+        <viewAttribute id="QTY18"/>
+        <viewAttribute id="QTY19"/>
+        <viewAttribute id="QTY20"/>
+        <viewAttribute id="QTY21"/>
+        <viewAttribute id="QTY22"/>
+        <viewAttribute id="QTY23"/>
+        <viewAttribute id="QTY24"/>
+        <viewAttribute id="QTY25"/>
+        <viewAttribute id="QTY26"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MSDP_SB_METHOD"/>
+        <viewAttribute id="LSZID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DT1" source="DT1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY1" source="QTY1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY2" source="QTY2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY3" source="QTY3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY4" source="QTY4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY5" source="QTY5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY6" source="QTY6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY7" source="QTY7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY8" source="QTY8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY9" source="QTY9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY10" source="QTY10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY11" source="QTY11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY12" source="QTY12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY13" source="QTY13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY14" source="QTY14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY15" source="QTY15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY16" source="QTY16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY17" source="QTY17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY18" source="QTY18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY19" source="QTY19"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY20" source="QTY20"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY21" source="QTY21"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY22" source="QTY22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY23" source="QTY23"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY24" source="QTY24"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY25" source="QTY25"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY26" source="QTY26"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MSDP_SB_METHOD" source="MSDP_SB_METHOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LSZID" source="LSZID"/>
+      </input>
+      <input node="#CV_ATT_MAT">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATNR"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_3" joinType="inner">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="SUPPLIER_NO"/>
+        <viewAttribute id="SUP_NAME"/>
+        <viewAttribute id="SUP_LOC"/>
+        <viewAttribute id="DT1"/>
+        <viewAttribute id="QTY1"/>
+        <viewAttribute id="QTY2"/>
+        <viewAttribute id="QTY3"/>
+        <viewAttribute id="QTY4"/>
+        <viewAttribute id="QTY5"/>
+        <viewAttribute id="QTY6"/>
+        <viewAttribute id="QTY7"/>
+        <viewAttribute id="QTY8"/>
+        <viewAttribute id="QTY9"/>
+        <viewAttribute id="QTY10"/>
+        <viewAttribute id="QTY11"/>
+        <viewAttribute id="QTY12"/>
+        <viewAttribute id="QTY13"/>
+        <viewAttribute id="QTY14"/>
+        <viewAttribute id="QTY15"/>
+        <viewAttribute id="QTY16"/>
+        <viewAttribute id="QTY17"/>
+        <viewAttribute id="QTY18"/>
+        <viewAttribute id="QTY19"/>
+        <viewAttribute id="QTY20"/>
+        <viewAttribute id="QTY21"/>
+        <viewAttribute id="QTY22"/>
+        <viewAttribute id="QTY23"/>
+        <viewAttribute id="QTY24"/>
+        <viewAttribute id="QTY25"/>
+        <viewAttribute id="QTY26"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MSDP_SB_METHOD"/>
+        <viewAttribute id="LSZID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUPPLIER_NO" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DT1" source="DT1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY1" source="QTY1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY2" source="QTY2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY3" source="QTY3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY4" source="QTY4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY5" source="QTY5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY6" source="QTY6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY7" source="QTY7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY8" source="QTY8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY9" source="QTY9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY10" source="QTY10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY11" source="QTY11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY12" source="QTY12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY13" source="QTY13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY14" source="QTY14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY15" source="QTY15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY16" source="QTY16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY17" source="QTY17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY18" source="QTY18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY19" source="QTY19"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY20" source="QTY20"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY21" source="QTY21"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY22" source="QTY22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY23" source="QTY23"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY24" source="QTY24"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY25" source="QTY25"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY26" source="QTY26"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MSDP_SB_METHOD" source="MSDP_SB_METHOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LSZID" source="LSZID"/>
+      </input>
+      <input node="#CV_ATT_LOC">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_NAME" source="LocationName"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_LOC" source="CountryName"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LocationUUID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="SAPClient"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUPPLIER_NO" source="Location"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="SUPPLIER_NO"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_3">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_3" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATNR" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Join_3" columnName="MATNR"/>
+      </attribute>
+      <attribute id="MAKTX" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_3" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="MATKL" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATKL"/>
+        <keyMapping columnObjectName="Join_3" columnName="MATKL"/>
+      </attribute>
+      <attribute id="ZZ_MFRGR" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MFRGR"/>
+        <keyMapping columnObjectName="Join_3" columnName="ZZ_MFRGR"/>
+      </attribute>
+      <attribute id="LOCNO" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_3" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="SUPPLIER_NO" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_FROM"/>
+        <keyMapping columnObjectName="Join_3" columnName="SUPPLIER_NO"/>
+      </attribute>
+      <attribute id="SUP_NAME" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Location Name"/>
+        <keyMapping columnObjectName="Join_3" columnName="SUP_NAME"/>
+      </attribute>
+      <attribute id="SUP_LOC" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Country Name"/>
+        <keyMapping columnObjectName="Join_3" columnName="SUP_LOC"/>
+      </attribute>
+      <attribute id="MATID" order="37" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_3" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="38" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUPPLIER ID"/>
+        <keyMapping columnObjectName="Join_3" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MSDP_SB_METHOD" order="39" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MSDP_SB_METHOD"/>
+        <keyMapping columnObjectName="Join_3" columnName="MSDP_SB_METHOD"/>
+      </attribute>
+      <attribute id="LSZID" order="40" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LSZID"/>
+        <keyMapping columnObjectName="Join_3" columnName="LSZID"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="DT1" order="10" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="DT1"/>
+        <measureMapping columnObjectName="Join_3" columnName="DT1"/>
+      </measure>
+      <measure id="QTY1" order="11" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY1"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY1"/>
+      </measure>
+      <measure id="QTY2" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY2"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY2"/>
+      </measure>
+      <measure id="QTY3" order="13" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY3"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY3"/>
+      </measure>
+      <measure id="QTY4" order="14" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY4"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY4"/>
+      </measure>
+      <measure id="QTY5" order="15" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY5"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY5"/>
+      </measure>
+      <measure id="QTY6" order="16" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY6"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY6"/>
+      </measure>
+      <measure id="QTY7" order="17" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY7"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY7"/>
+      </measure>
+      <measure id="QTY8" order="18" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY8"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY8"/>
+      </measure>
+      <measure id="QTY9" order="19" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY9"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY9"/>
+      </measure>
+      <measure id="QTY10" order="20" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY10"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY10"/>
+      </measure>
+      <measure id="QTY11" order="21" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY11"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY11"/>
+      </measure>
+      <measure id="QTY12" order="22" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY12"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY12"/>
+      </measure>
+      <measure id="QTY13" order="23" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY13"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY13"/>
+      </measure>
+      <measure id="QTY14" order="24" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY14"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY14"/>
+      </measure>
+      <measure id="QTY15" order="25" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY15"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY15"/>
+      </measure>
+      <measure id="QTY16" order="26" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY16"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY16"/>
+      </measure>
+      <measure id="QTY17" order="27" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY17"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY17"/>
+      </measure>
+      <measure id="QTY18" order="28" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY18"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY18"/>
+      </measure>
+      <measure id="QTY19" order="29" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY19"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY19"/>
+      </measure>
+      <measure id="QTY20" order="30" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY20"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY20"/>
+      </measure>
+      <measure id="QTY21" order="31" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY21"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY21"/>
+      </measure>
+      <measure id="QTY22" order="32" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY22"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY22"/>
+      </measure>
+      <measure id="QTY23" order="33" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY23"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY23"/>
+      </measure>
+      <measure id="QTY24" order="34" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY24"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY24"/>
+      </measure>
+      <measure id="QTY25" order="35" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY25"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY25"/>
+      </measure>
+      <measure id="QTY26" order="36" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY26"/>
+        <measureMapping columnObjectName="Join_3" columnName="QTY26"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="99" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="453"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="453"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="357"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

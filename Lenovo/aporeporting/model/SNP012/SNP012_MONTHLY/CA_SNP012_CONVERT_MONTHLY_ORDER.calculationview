@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.2" id="CA_SNP012_CONVERT_MONTHLY_ORDER" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CA_SNP012_CONVERT_MONTHLY"/>
+  <localVariables>
+    <variable id="IV_PLAN_VER" parameter="true">
+      <descriptions defaultDescription="IV_PLAN_VER"/>
+      <variableProperties datatype="NVARCHAR" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CA_SNP012_ORDER_MONTHLY">
+      <targetVariable name="IV_PLAN_VER" resourceUri="/aporeporting.model.SNP012.SNP012_MONTHLY/calculationviews/CA_SNP012_ORDER_MONTHLY"/>
+      <localVariable>#IV_PLAN_VER</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CA_SNP012_ORDER_MONTHLY" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP012.SNP012_MONTHLY/calculationviews/CA_SNP012_ORDER_MONTHLY</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="CALMONTH"/>
+        <viewAttribute id="ORDER_REAL_QUANTITY"/>
+        <viewAttribute id="CALMONTH_SNPT"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_00" length="6">
+          <formula>leftstr(dats_from_daydate(now()),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_01" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),1)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_02" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),2)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_03" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),3)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_04" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),4)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_05" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),5)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_06" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),6)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_07" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),7)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_08" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),8)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_09" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),9)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_10" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),10)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_11" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),11)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MONTH_12" length="6">
+          <formula>leftstr(dats_from_daydate(ADDMONTHS (NOW(),12)),6)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="SNAPSHOT" length="22">
+          <formula>'Current Orders'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CA_SNP012_ORDER_MONTHLY">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH" source="CALMONTH"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDER_REAL_QUANTITY" source="ORDER_REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALMONTH_SNPT" source="CALMONTH_SNPT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MONTH_00" hidden="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_00"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_00"/>
+      </attribute>
+      <attribute id="MONTH_01" hidden="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_01"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_01"/>
+      </attribute>
+      <attribute id="MONTH_02" hidden="true" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_02"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_02"/>
+      </attribute>
+      <attribute id="MATID" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCID"/>
+      </attribute>
+      <attribute id="CALMONTH" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CALMONTH"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CALMONTH"/>
+      </attribute>
+      <attribute id="CALMONTH_SNPT" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CALMONTH_SNPT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CALMONTH_SNPT"/>
+      </attribute>
+      <attribute id="MAKTX" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="MATNR" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MONTH_03" hidden="true" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_03"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_03"/>
+      </attribute>
+      <attribute id="MONTH_04" hidden="true" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_04"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_04"/>
+      </attribute>
+      <attribute id="MONTH_05" hidden="true" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_05"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_05"/>
+      </attribute>
+      <attribute id="MONTH_06" hidden="true" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_06"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_06"/>
+      </attribute>
+      <attribute id="MONTH_07" hidden="true" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_07"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_07"/>
+      </attribute>
+      <attribute id="MONTH_08" hidden="true" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_08"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_08"/>
+      </attribute>
+      <attribute id="MONTH_09" hidden="true" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_09"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_09"/>
+      </attribute>
+      <attribute id="MONTH_10" hidden="true" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_10"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_10"/>
+      </attribute>
+      <attribute id="MONTH_11" hidden="true" order="21" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_11"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_11"/>
+      </attribute>
+      <attribute id="MONTH_12" hidden="true" order="22" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MONTH_12"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MONTH_12"/>
+      </attribute>
+      <attribute id="SNAPSHOT" order="37" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SNAPSHOT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="SNAPSHOT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="40" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="41" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VRSIOEX"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="QTY_TYPE" hidden="false" order="23" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QTY_TYPE"/>
+        <keyCalculation datatype="VARCHAR" length="10">
+          <formula>'Gro Demand'</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="ORDER_REAL_QUANTITY" order="8" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="ORDER_REAL_QUANTITY"/>
+        <measureMapping columnObjectName="Projection_1" columnName="ORDER_REAL_QUANTITY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures>
+      <measure id="MONTH_01_P_QTY" hidden="false" order="38" aggregationType="sum" measureType="simple" datatype="DECIMAL" length="15" scale="0">
+        <descriptions defaultDescription="MONTH_01_P_QTY"/>
+        <formula>0</formula>
+      </measure>
+      <measure id="MONTH_02_P_QTY" hidden="false" order="39" aggregationType="sum" measureType="simple" datatype="DECIMAL" length="15" scale="0">
+        <descriptions defaultDescription="MONTH_01_P_QTY"/>
+        <formula>0</formula>
+      </measure>
+    </calculatedMeasures>
+    <restrictedMeasures>
+      <measure id="MONTH_00_QTY" hidden="false" order="24" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_00_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_00&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_01_QTY" hidden="false" order="25" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_01_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_01&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_02_QTY" hidden="false" order="26" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_02_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_02&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_03_QTY" hidden="false" order="27" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_03_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_03&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_04_QTY" hidden="false" order="28" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_04_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_04&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_05_QTY" hidden="false" order="29" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_05_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_05&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_06_QTY" hidden="false" order="30" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_06_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_06&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_07_QTY" hidden="false" order="31" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_07_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_07&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_08_QTY" hidden="false" order="32" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_08_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_08&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_09_QTY" hidden="false" order="33" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_09_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_09&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_10_QTY" hidden="false" order="34" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_10_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_10&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_11_QTY" hidden="false" order="35" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_11_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_11&quot;</restrictionExpression>
+      </measure>
+      <measure id="MONTH_12_QTY" hidden="false" order="36" baseMeasure="#ORDER_REAL_QUANTITY">
+        <descriptions defaultDescription="MONTH_12_QTY"/>
+        <restrictionExpression>&quot;CALMONTH&quot; =&quot;MONTH_12&quot;</restrictionExpression>
+      </measure>
+    </restrictedMeasures>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="40" y="200"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

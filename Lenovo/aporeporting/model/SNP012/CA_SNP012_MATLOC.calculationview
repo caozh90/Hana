@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CA_SNP012_MATLOC" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" runWithInvokerPrivileges="false" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CA_SNP012_MATLOC_SCRIPT"/>
+  <metadata changedAt="2015-03-17 12:09:59.918"/>
+  <defaultSchema schemaName="SAP_SCM"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="MANDT" length="3"/>
+        <viewAttribute datatype="VARCHAR" id="MATID" length="22"/>
+        <viewAttribute datatype="VARCHAR" id="LOCID" length="22"/>
+        <viewAttribute datatype="VARCHAR" id="MATNR" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="MAKTX" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="MAKTG" length="40"/>
+        <viewAttribute datatype="VARCHAR" id="LOCNO" length="20"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+        
+ 	 var_out = select distinct A.MANDT, A.MATID, A.LOCID, B.MATNR, B.MAKTX, B.MAKTG, C.LOCNO FROM 
+ 	           &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012/AT_SNP012_MATLOC&quot; AS A    
+               LEFT JOIN  &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012/AT_SNP012_MAT&quot; AS B
+               ON  A.MATID = B.MATID AND A.MANDT = B.MANDT        
+               LEFT JOIN  &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012/AT_SNP012_LOC&quot;  AS C
+               ON A.LOCID = C.LOCID AND  A.MANDT = C.MANDT ;
+
+END /********* End Procedure Script ************/
+
+</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="MANDT" order="1">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATID" order="2">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="3">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MATNR" order="4">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR"/>
+      </attribute>
+      <attribute id="MAKTX" order="5">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Script_View" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="MAKTG" order="6">
+        <descriptions defaultDescription="MAKTG"/>
+        <keyMapping columnObjectName="Script_View" columnName="MAKTG"/>
+      </attribute>
+      <attribute id="LOCNO" order="7">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCNO"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

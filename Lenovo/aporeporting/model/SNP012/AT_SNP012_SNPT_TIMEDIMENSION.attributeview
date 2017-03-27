@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_SNP012_SNPT_TIMEDIMENSION" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_SNP012_SNPT_TIMEDIMENSION"/>
+  <attributes>
+    <attribute id="SNAP_DAY" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SNAP_DAY"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_S" columnName="SNAP_DAY"/>
+    </attribute>
+    <attribute id="CALQUARTER_SNPT" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CALQUARTER_SNPT"/>
+      <keyMapping schemaName="_SYS_BI" columnObjectName="M_TIME_DIMENSION" columnName="CALQUARTER"/>
+    </attribute>
+    <attribute id="CALMONTH_SNPT" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CALMONTH_SNPT"/>
+      <keyMapping schemaName="_SYS_BI" columnObjectName="M_TIME_DIMENSION" columnName="CALMONTH"/>
+    </attribute>
+    <attribute id="CALWEEK_SNPT" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CALWEEK_SNPT"/>
+      <keyMapping schemaName="_SYS_BI" columnObjectName="M_TIME_DIMENSION" columnName="CALWEEK"/>
+    </attribute>
+    <attribute id="SNAPSHOT" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SNAPSHOT"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_S" columnName="SNAPSHOT"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_S"/>
+      </tableProxy>
+      <tableProxy>
+        <table schemaName="_SYS_BI" columnObjectName="M_TIME_DIMENSION"/>
+      </tableProxy>
+    </tableProxies>
+    <joins>
+      <join>
+        <leftTable schemaName="SAP_SCM" columnObjectName="ZTSNP_REP_S"/>
+        <rightTable schemaName="_SYS_BI" columnObjectName="M_TIME_DIMENSION"/>
+        <leftColumns>
+          <columnName>SNAP_DAY</columnName>
+        </leftColumns>
+        <rightColumns>
+          <columnName>DATE_SAP</columnName>
+        </rightColumns>
+        <properties joinOperator="Equal" joinType="referential"/>
+      </join>
+    </joins>
+    <layout>
+      <shapes>
+        <shape modelObjectName="ZTSNP_REP_S" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="M_TIME_DIMENSION" modelObjectNameSpace="_SYS_BI" modelObjectType="catalog">
+          <upperLeftCorner x="310" y="30"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

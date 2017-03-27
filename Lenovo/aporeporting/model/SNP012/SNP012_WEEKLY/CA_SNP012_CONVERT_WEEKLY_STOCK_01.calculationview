@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CA_SNP012_CONVERT_WEEKLY_STOCK_01" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CA_SNP012_WEEKLY_STOCK_01"/>
+  <metadata changedAt="2015-03-31 13:50:12.85"/>
+  <defaultSchema schemaName="SAP_SCM"/>
+  <localVariables>
+    <variable id="IV_PLAN_VER" parameter="true">
+      <descriptions defaultDescription="IV_PLAN_VER"/>
+      <variableProperties datatype="VARCHAR" defaultValue="000" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CA_SNP012_CONVERT_WEEKLY_STOCK">
+      <targetVariable name="IV_PLAN_VER" resourceUri="/aporeporting.model.SNP012.SNP012_WEEKLY/calculationviews/CA_SNP012_CONVERT_WEEKLY_STOCK"/>
+      <localVariable>#IV_PLAN_VER</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CA_SNP012_CONVERT_WEEKLY_STOCK" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP012.SNP012_WEEKLY/calculationviews/CA_SNP012_CONVERT_WEEKLY_STOCK</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews/>
+  <logicalModel id="CA_SNP012_CONVERT_WEEKLY_STOCK">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATNR" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="MATNR"/>
+      </attribute>
+      <attribute id="VERSIOD" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="MAKTX" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="LOCNO" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MEINS" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="MEINS"/>
+      </attribute>
+      <attribute id="MATID" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="LOCID"/>
+      </attribute>
+      <attribute id="QTY_TYPE" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QTY_TYPE"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="QTY_TYPE"/>
+      </attribute>
+      <attribute id="STOCK_AVAILABLE" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STOCK_AVAILABLE"/>
+        <keyMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="STOCK_AVAILABLE"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="STOCK_QTY" order="11" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="STOCK_QTY"/>
+        <measureMapping columnObjectName="CA_SNP012_CONVERT_WEEKLY_STOCK" columnName="STOCK_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures>
+      <measure id="WEEK_00_QTY" hidden="false" order="13" baseMeasure="#STOCK_QTY">
+        <descriptions defaultDescription="WEEK_00_QTY"/>
+        <restrictionExpression>&quot;STOCK_AVAILABLE&quot; = 'X'</restrictionExpression>
+      </measure>
+    </restrictedMeasures>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

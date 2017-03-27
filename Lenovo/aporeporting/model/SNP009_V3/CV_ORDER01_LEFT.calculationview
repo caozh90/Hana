@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CV_ORDER01_LEFT" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <origin/>
+  <descriptions defaultDescription="CV_ORDER01_LEFT"/>
+  <localVariables>
+    <variable id="IP_PVER02" parameter="true">
+      <descriptions defaultDescription="IP_PVER02"/>
+      <variableProperties datatype="NVARCHAR" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+        <defaultRange/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#AT_SNP_ORDER01">
+      <targetVariable name="IP_VER01" resourceUri="/aporeporting.model.SNP009_V3/attributeviews/AT_SNP_ORDER01"/>
+      <localVariable>#IP_PVER02</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="AT_SNP_ORDER01" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V3/attributeviews/AT_SNP_ORDER01</resourceUri>
+    </DataSource>
+    <DataSource id="AT_MATLOC_DATA01" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V3/attributeviews/AT_MATLOC_DATA01</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="LOCNO_SUP"/>
+        <viewAttribute id="LOCAL_DATE"/>
+        <viewAttribute id="LOCAL_TIME"/>
+        <viewAttribute id="CATEGORY"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="LOCID_FROM"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#AT_SNP_ORDER01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SUP" source="LOCNO_SUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="LOCAL_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_TIME" source="LOCAL_TIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="LOCNO_SUP"/>
+        <viewAttribute id="LOCAL_DATE"/>
+        <viewAttribute id="LOCAL_TIME"/>
+        <viewAttribute id="CATEGORY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="RAUBE"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="EXT_MATNR"/>
+        <viewAttribute id="LOCID_FROM"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SUP" source="LOCNO_SUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="LOCAL_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_TIME" source="LOCAL_TIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+      </input>
+      <input node="#AT_MATLOC_DATA01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="RAUBE" source="RAUBE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EXT_MATNR" source="EXT_MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_1">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Join_1" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="MATID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_1" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCID"/>
+      </attribute>
+      <attribute id="LOCNO_SUP" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_SUP"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCNO_SUP"/>
+      </attribute>
+      <attribute id="LOCAL_DATE" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCAL_DATE"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCAL_DATE"/>
+      </attribute>
+      <attribute id="LOCAL_TIME" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCAL_TIME"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCAL_TIME"/>
+      </attribute>
+      <attribute id="CATEGORY" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CATEGORY"/>
+        <keyMapping columnObjectName="Join_1" columnName="CATEGORY"/>
+      </attribute>
+      <attribute id="LOCNO" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MATNR" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Join_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="MAKTX" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_1" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="STAWN" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STAWN"/>
+        <keyMapping columnObjectName="Join_1" columnName="STAWN"/>
+      </attribute>
+      <attribute id="DISPO" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Join_1" columnName="DISPO"/>
+      </attribute>
+      <attribute id="RAUBE" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="RAUBE"/>
+        <keyMapping columnObjectName="Join_1" columnName="RAUBE"/>
+      </attribute>
+      <attribute id="ZZ_MFRGR" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MFRGR"/>
+        <keyMapping columnObjectName="Join_1" columnName="ZZ_MFRGR"/>
+      </attribute>
+      <attribute id="EXT_MATNR" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EXT_MATNR"/>
+        <keyMapping columnObjectName="Join_1" columnName="EXT_MATNR"/>
+      </attribute>
+      <attribute id="LOCID_FROM" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID_FROM"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCID_FROM"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="357"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

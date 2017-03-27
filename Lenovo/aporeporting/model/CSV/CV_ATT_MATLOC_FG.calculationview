@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_ATT_MATLOC_FG" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="true" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_ATT_MATLOC"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="_SAPAPO_MATLOC" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATLOC" alias="_SAPAPO_MATLOC"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="PLANNER_TRANS">
+          <filter xsi:type="AccessControl:ListValueFilter" operator="IN" including="true">
+            <operands value="FG"/>
+            <operands value="FG1"/>
+            <operands value="FG2"/>
+            <operands value="FG4"/>
+          </filter>
+        </viewAttribute>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="MSDP_SB_METHOD"/>
+        <viewAttribute id="LSZID"/>
+        <viewAttribute id="KZKRI"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#_SAPAPO_MATLOC">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLANNER_TRANS" source="PLANNER_TRANS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MSDP_SB_METHOD" source="MSDP_SB_METHOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LSZID" source="LSZID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="KZKRI" source="KZKRI"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="MANDT" key="true" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATID" key="true" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" key="true" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCID"/>
+      </attribute>
+      <attribute id="LSZID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LSZID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LSZID"/>
+      </attribute>
+      <attribute id="PLANNER_TRANS" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLANNER_TRANS"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PLANNER_TRANS"/>
+      </attribute>
+      <attribute id="MSDP_SB_METHOD" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MSDP_SB_METHOD"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MSDP_SB_METHOD"/>
+      </attribute>
+      <attribute id="ZZ_MFRGR" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MFRGR"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ZZ_MFRGR"/>
+      </attribute>
+      <attribute id="KZKRI" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="KZKRI"/>
+        <keyMapping columnObjectName="Projection_1" columnName="KZKRI"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CV_PO_QTY01" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <origin/>
+  <descriptions defaultDescription="CV_PO_QTY01"/>
+  <localVariables>
+    <variable id="IP_PVER02" parameter="true">
+      <descriptions defaultDescription="IP_PVER02"/>
+      <variableProperties datatype="NVARCHAR" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+        <defaultRange/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_ORDER01_RIGHT">
+      <targetVariable name="IP_PVER02" resourceUri="/aporeporting.model.SNP009_V3/calculationviews/CV_ORDER01_RIGHT"/>
+      <localVariable>#IP_PVER02</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_ORDER01_RIGHT" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V3/calculationviews/CV_ORDER01_RIGHT</resourceUri>
+    </DataSource>
+    <DataSource id="CV_PO_QTY_CAT" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP009_V3.PO_QTY/calculationviews/CV_PO_QTY_CAT</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="LOCNO_SUP"/>
+        <viewAttribute id="LOCAL_DATE"/>
+        <viewAttribute id="CATEGORY"/>
+        <viewAttribute id="ORDER_QTY"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="LOCID_FROM"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_ORDER01_RIGHT">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SUP" source="LOCNO_SUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="LOCAL_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDER_QTY" source="ORDER_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="REAL_QUANTITY"/>
+        <viewAttribute id="LOCNO_SUP"/>
+        <viewAttribute id="LOCAL_DATE"/>
+        <viewAttribute id="ORDER_QTY"/>
+        <viewAttribute id="CALWEEK"/>
+        <viewAttribute id="CATEGORY"/>
+        <viewAttribute id="LOCID_FROM"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="REAL_QUANTITY" source="REAL_QUANTITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_SUP" source="LOCNO_SUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCAL_DATE" source="LOCAL_DATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ORDER_QTY" source="ORDER_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CALWEEK" source="CALWEEK"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="CATEGORY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FROM" source="LOCID_FROM"/>
+      </input>
+      <input node="#CV_PO_QTY_CAT">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CATEGORY" source="ATPCAT"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="CATEGORY"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_1">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Join_1" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="MATID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_1" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MEINS" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="Join_1" columnName="MEINS"/>
+      </attribute>
+      <attribute id="LOCNO_SUP" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_SUP"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCNO_SUP"/>
+      </attribute>
+      <attribute id="LOCAL_DATE" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCAL_DATE"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCAL_DATE"/>
+      </attribute>
+      <attribute id="CALWEEK" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CALWEEK"/>
+        <keyMapping columnObjectName="Join_1" columnName="CALWEEK"/>
+      </attribute>
+      <attribute id="LOCID_FROM" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID_FROM"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCID_FROM"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="REAL_QUANTITY" order="9" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="REAL_QUANTITY"/>
+        <measureMapping columnObjectName="Join_1" columnName="REAL_QUANTITY"/>
+      </measure>
+      <measure id="ORDER_QTY" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="ORDER_QTY"/>
+        <measureMapping columnObjectName="Join_1" columnName="ORDER_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="88" width="140"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_SNP010_COMP_SBB" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" runWithInvokerPrivileges="false" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CV_SNP010_COMP_SBB"/>
+  <defaultSchema schemaName="SAP_SCM"/>
+  <localVariables>
+    <variable id="IP_ORD_VERSION" parameter="true">
+      <descriptions defaultDescription="IP_ORD_VERSION"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="999" length="22" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <informationModelLayout relativeWidthScenario="27"/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="MANDT" length="3"/>
+        <viewAttribute datatype="NVARCHAR" id="ORDERID" length="22"/>
+        <viewAttribute datatype="NVARCHAR" id="CATEGORY" length="2"/>
+        <viewAttribute datatype="NVARCHAR" id="ZCTO" length="40"/>
+        <viewAttribute datatype="NVARCHAR" id="FCST_MATNR" length="40"/>
+        <viewAttribute datatype="NVARCHAR" id="GEO_LEVEL" length="8"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <localVariable>#IP_ORD_VERSION</localVariable>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+    declare exit_flag NVARCHAR(5) := 'true';
+	declare rowscount int := 0;
+   
+    ret_tab = select null mandt, null fromordid, null category, null toordid from dummy;
+    
+    
+	
+	fromorders = select a.mandt, a.ORDERID orderid , a.category category
+	              from &quot;ZTSNP_REP_ORD&quot; a
+	              inner join &quot;/SAPAPO/APO01&quot; as b
+	              on a.VERSIOD = b.VRSIOID
+	              where exists (select 1 from &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP010/CV_SNP010_ATP&quot;
+	                            where mandt = a.mandt and
+	                                  atpcat = a.category) and
+	                    b.VRSIOEX = :IP_ORD_VERSION 
+	                    --and locid = :LOC   
+	                      
+	                                  ;
+	lt_ZTSNP_REP_PEG = select a.mandt, a.FROM_ORDERID, a.TO_ORDERID,a.TO_CATEGORY
+	                   FROM &quot;ZTSNP_REP_PEG&quot; a
+	                   inner join &quot;/SAPAPO/APO01&quot; as b
+	                   on a.VERSIOD = b.VRSIOID
+	                   where b.VRSIOEX = :IP_ORD_VERSION   
+	                      -- and locid = :LOC 
+;
+	                    
+	tab1 =	 SELECT a.mandt, a.FROM_ORDERID fromordid,a.FROM_ORDERID frm_orderid, a.TO_ORDERID orderid , a.TO_CATEGORY category
+			 FROM  :lt_ZTSNP_REP_PEG a
+			 INNER JOIN 	:FROMORDERS b
+			 ON  a.mandt = b.mandt
+			 and a.from_orderid = b.orderid			  
+			 ;
+			 
+	ret_tab =    select mandt, orderid as fromordid,category, orderid as toordid from :fromorders a
+				          where not exists (select 1 from :tab1 b where a.mandt = b.mandt
+			                                 and a.orderid = b.frm_orderid ) ;
+			                                 		 
+	while :exit_flag = 'true' do
+	
+		tab2 =	 SELECT a.mandt, b.fromordid fromordid,a.FROM_ORDERID frm_orderid, a.TO_ORDERID orderid , a.TO_CATEGORY category
+				 FROM :lt_ZTSNP_REP_PEG a
+				 INNER JOIN 	:tab1 b
+				 ON a.mandt = b.mandt
+			     and a.from_orderid = b.orderid 
+				 ;
+				
+	    ret_tab =    select mandt, fromordid,category, orderid as toordid from :tab1 a
+				          where not exists (select 1 from :tab2 b where a.mandt = b.mandt
+			                                 and a.orderid = b.frm_orderid )  
+				        union all
+				          select mandt,  fromordid,category, toordid from :ret_tab
+				              ;	
+				              
+		select count(1) into rowscount from :tab2;
+		if :rowscount &lt;= 0 then
+		    
+			exit_flag := 'false';
+			
+		else
+			             
+		    tab1 = select * from :tab2;
+		             
+		end if;	 
+	end while;		 
+ 
+ 
+ 	 var_out = select distinct a.mandt, a.FROMORDID orderid, a.CATEGORY category, b.zcto zcto, 
+ 	 						b.FCST_MATNR FCST_MATNR, b.GEO_LEVEL GEO_LEVEL
+ 	           from :ret_tab a
+ 	           inner join  &quot;ZTSNP_REP_ORD&quot; b
+ 	           on a.toordid = b.ORDERID
+ 	           where a.fromordid is not null; 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MANDT"/>
+      </attribute>
+      <attribute id="ORDERID" order="2">
+        <descriptions defaultDescription="ORDERID"/>
+        <keyMapping columnObjectName="Script_View" columnName="ORDERID"/>
+      </attribute>
+      <attribute id="CATEGORY" order="3">
+        <descriptions defaultDescription="CATEGORY"/>
+        <keyMapping columnObjectName="Script_View" columnName="CATEGORY"/>
+      </attribute>
+      <attribute id="ZCTO" order="4">
+        <descriptions defaultDescription="ZCTO"/>
+        <keyMapping columnObjectName="Script_View" columnName="ZCTO"/>
+      </attribute>
+      <attribute id="FCST_MATNR" order="5">
+        <descriptions defaultDescription="FCST_MATNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="FCST_MATNR"/>
+      </attribute>
+      <attribute id="GEO_LEVEL" order="6">
+        <descriptions defaultDescription="GEO_LEVEL"/>
+        <keyMapping columnObjectName="Script_View" columnName="GEO_LEVEL"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

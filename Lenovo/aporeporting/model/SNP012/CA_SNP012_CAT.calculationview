@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CA_SNP012_CAT" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="CA_SNP012_CAT"/>
+  <metadata changedAt="2015-03-12 14:34:56.183"/>
+  <defaultSchema schemaName="SAP_SCM"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <viewAttributes>
+        <viewAttribute datatype="VARCHAR" id="MANDT" length="3"/>
+        <viewAttribute datatype="VARCHAR" id="ATPCAT" length="2"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+ 	 var_out = 
+SELECT * FROM  
+(
+SELECT  &quot;MANDT&quot;,&quot;ATPCAT&quot; 
+FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012/AT_SNP012_PLAN_OBJECT&quot;
+)
+UNION
+(
+SELECT A.MANDT, B.ATPCAT  
+FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012/AT_SNP012_PLAN_OBJECT&quot; A 
+INNER JOIN 
+&quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNP012/AT_SNP012_APOCGC&quot; B 
+ON A.MANDT = B.MANDT AND A.CATGRP = B.CATGRP
+)
+ ;	 	 
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <attributes>
+      <attribute id="MANDT" order="1">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MANDT"/>
+      </attribute>
+      <attribute id="ATPCAT" order="2">
+        <descriptions defaultDescription="ATPCAT"/>
+        <keyMapping columnObjectName="Script_View" columnName="ATPCAT"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

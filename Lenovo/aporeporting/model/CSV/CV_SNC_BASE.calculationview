@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.2" id="CV_SNC_BASE" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="true" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_SNC_BASE"/>
+  <localVariables>
+    <variable id="IP_PLANT_NO" parameter="true">
+      <descriptions defaultDescription="IP_PLANT_NO"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="U400" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="CV_SNC_DEMAND01" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC002/calculationviews/CV_SNC_DEMAND01</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO">
+          <filter xsi:type="AccessControl:SingleValueFilter" including="true" value="$$IP_PLANT_NO$$"/>
+        </viewAttribute>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="CC_UTCDATE"/>
+        <viewAttribute id="MAT_QTY"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="DATE" id="DT1">
+          <formula>if(weekday(now())=0, date(now()-1), if(weekday(now())=1, date(now()-2), if(weekday(now())=2, date(now()-3), if(weekday(now())=3, date(now()-4), if(weekday(now())=4, date(now()-5), if(weekday(now())=5, date(now()-6), date(now()) ))))))</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY1">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > &quot;DT1&quot; and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 7), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY2">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 7) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 14), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY3">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 14) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 21), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY4">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 21) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 28), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY5">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 28) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 35), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY6">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 35) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 42), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY7">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 42) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 49), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY8">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 49) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 56), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY9">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 56) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 63), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY10">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 63) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 70), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY11">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 70) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 77), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY12">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 77) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 84), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY13">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 84) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 91), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY14">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 91) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 98), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY15">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 98) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 105), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY16">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 105) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 112), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY17">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 112) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 119), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY18">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 119) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 126), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY19">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 126) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 133), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY20">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 133) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 140), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY21">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 140) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 147), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY22">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 147) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 154), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY23">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 154) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 161), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY24">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 161) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 168), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY25">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 168) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 175), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="INTEGER" id="QTY26">
+          <formula>if(date(&quot;CC_UTCDATE&quot;) > adddays(&quot;DT1&quot;, 175) and date(&quot;CC_UTCDATE&quot;) &lt;= adddays(&quot;DT1&quot;, 182), &quot;MAT_QTY&quot;, 0)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CV_SNC_DEMAND01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_UTCDATE" source="CC_UTCDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY" source="MAT_QTY"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATNR" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="LOCNO_FROM" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_FROM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCNO_FROM"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="DT1" order="5" aggregationType="min" measureType="simple">
+        <descriptions defaultDescription="DT1"/>
+        <measureMapping columnObjectName="Projection_1" columnName="DT1"/>
+      </measure>
+      <measure id="QTY1" order="6" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY1"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY1"/>
+      </measure>
+      <measure id="QTY2" order="7" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY2"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY2"/>
+      </measure>
+      <measure id="QTY3" order="8" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY3"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY3"/>
+      </measure>
+      <measure id="QTY4" order="9" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY4"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY4"/>
+      </measure>
+      <measure id="QTY5" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY5"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY5"/>
+      </measure>
+      <measure id="QTY6" order="11" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY6"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY6"/>
+      </measure>
+      <measure id="QTY7" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY7"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY7"/>
+      </measure>
+      <measure id="QTY8" order="13" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY8"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY8"/>
+      </measure>
+      <measure id="QTY9" order="14" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY9"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY9"/>
+      </measure>
+      <measure id="QTY10" order="15" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY10"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY10"/>
+      </measure>
+      <measure id="QTY11" order="16" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY11"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY11"/>
+      </measure>
+      <measure id="QTY12" order="17" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY12"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY12"/>
+      </measure>
+      <measure id="QTY13" order="18" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY13"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY13"/>
+      </measure>
+      <measure id="QTY14" order="19" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY14"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY14"/>
+      </measure>
+      <measure id="QTY15" order="20" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY15"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY15"/>
+      </measure>
+      <measure id="QTY16" order="21" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY16"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY16"/>
+      </measure>
+      <measure id="QTY17" order="22" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY17"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY17"/>
+      </measure>
+      <measure id="QTY18" order="23" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY18"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY18"/>
+      </measure>
+      <measure id="QTY19" order="24" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY19"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY19"/>
+      </measure>
+      <measure id="QTY20" order="25" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY20"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY20"/>
+      </measure>
+      <measure id="QTY21" order="26" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY21"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY21"/>
+      </measure>
+      <measure id="QTY22" order="27" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY22"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY22"/>
+      </measure>
+      <measure id="QTY23" order="28" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY23"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY23"/>
+      </measure>
+      <measure id="QTY24" order="29" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY24"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY24"/>
+      </measure>
+      <measure id="QTY25" order="30" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY25"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY25"/>
+      </measure>
+      <measure id="QTY26" order="31" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="QTY26"/>
+        <measureMapping columnObjectName="Projection_1" columnName="QTY26"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

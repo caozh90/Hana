@@ -1,0 +1,1448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CA_SNP016_TOTAL" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CA_SNP002_STO_PROC_VEND_SPLIT_01 "/>
+  <localVariables>
+    <variable id="IV_VERSION" parameter="true">
+      <descriptions defaultDescription="IV_VERSION"/>
+      <variableProperties datatype="VARCHAR" defaultValue="000" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CA_SNP016_UNION_ALL_02">
+      <targetVariable name="IV_PLAN_VER" resourceUri="/aporeporting.model.SNP016/calculationviews/CA_SNP016_UNION_ALL_02"/>
+      <localVariable>#IV_VERSION</localVariable>
+    </mapping>
+  </variableMappings>
+  <informationModelLayout relativeWidthScenario="44"/>
+  <dataSources>
+    <DataSource id="CA_SNP002_STO_PROC_VEND_SPLIT_01" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP002/calculationviews/CA_SNP002_STO_PROC_VEND_SPLIT_01</resourceUri>
+    </DataSource>
+    <DataSource id="CA_SNP016_UNION_ALL_02" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP016/calculationviews/CA_SNP016_UNION_ALL_02</resourceUri>
+    </DataSource>
+    <DataSource id="ZTCTM_T024D" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="ZTCTM_T024D"/>
+    </DataSource>
+    <DataSource id="_SAPAPO_MATKEY" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATKEY" alias="_SAPAPO_MATKEY"/>
+    </DataSource>
+    <DataSource id="DD07V" type="DATA_BASE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="DD07V"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="OWN_STOCK_QTY"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP"/>
+        <viewAttribute id="SUP_STOCK_QTY"/>
+        <viewAttribute id="ADDLOCID"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_LOCID"/>
+        <viewAttribute id="VENDER_DESCR40"/>
+        <viewAttribute id="VENDER_LOCNO"/>
+        <viewAttribute id="VERSION_NO"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP_01"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="SUP_STOCK_QTY_01"/>
+        <viewAttribute id="OWN_STOCK_QTY_01"/>
+        <viewAttribute id="DISPO_1"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="DATUV"/>
+        <viewAttribute id="DATUB"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="NVARCHAR" id="LOCID_FRTO" length="22" expressionLanguage="COLUMN_ENGINE">
+          <formula>if(isNull(&quot;ADDLOCID&quot;) ,&quot;LOCID&quot; , &quot;ADDLOCID&quot;)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CA_SNP002_STO_PROC_VEND_SPLIT_01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY" source="OWN_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY" source="SUP_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDLOCID" source="ADDLOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="VENDER_LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_DESCR40" source="VENDER_DESCR40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCNO" source="VENDER_LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSION_NO" source="VERSION_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP_01" source="PLN_VERSION_TIMESTAMP_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY_01" source="SUP_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY_01" source="OWN_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO_1" source="DISPO_1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="OWN_STOCK_QTY"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP"/>
+        <viewAttribute id="SUP_STOCK_QTY"/>
+        <viewAttribute id="ADDLOCID"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_LOCID"/>
+        <viewAttribute id="VENDER_DESCR40"/>
+        <viewAttribute id="VENDER_LOCNO"/>
+        <viewAttribute id="VERSION_NO"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP_01"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="SUP_STOCK_QTY_01"/>
+        <viewAttribute id="OWN_STOCK_QTY_01"/>
+        <viewAttribute id="DISPO_1"/>
+        <viewAttribute id="LOCID_FRTO"/>
+        <viewAttribute id="EXT_MATNR"/>
+        <viewAttribute id="WEEK_00_QTY_01"/>
+        <viewAttribute id="WEEK_01_QTY_01"/>
+        <viewAttribute id="WEEK_02_QTY_01"/>
+        <viewAttribute id="WEEK_03_QTY_01"/>
+        <viewAttribute id="WEEK_04_QTY_01"/>
+        <viewAttribute id="WEEK_05_QTY_01"/>
+        <viewAttribute id="WEEK_06_QTY_01"/>
+        <viewAttribute id="WEEK_07_QTY_01"/>
+        <viewAttribute id="WEEK_08_QTY_01"/>
+        <viewAttribute id="WEEK_09_QTY_01"/>
+        <viewAttribute id="WEEK_10_QTY_01"/>
+        <viewAttribute id="WEEK_11_QTY_01"/>
+        <viewAttribute id="WEEK_12_QTY_01"/>
+        <viewAttribute id="WEEK_13_QTY_01"/>
+        <viewAttribute id="WEEK_14_QTY_01"/>
+        <viewAttribute id="WEEK_15_QTY_01"/>
+        <viewAttribute id="WEEK_16_QTY_01"/>
+        <viewAttribute id="WEEK_17_QTY_01"/>
+        <viewAttribute id="WEEK_18_QTY_01"/>
+        <viewAttribute id="WEEK_19_QTY_01"/>
+        <viewAttribute id="WEEK_20_QTY_01"/>
+        <viewAttribute id="WEEK_21_QTY_01"/>
+        <viewAttribute id="WEEK_22_QTY_01"/>
+        <viewAttribute id="WEEK_23_QTY_01"/>
+        <viewAttribute id="WEEK_24_QTY_01"/>
+        <viewAttribute id="WEEK_25_QTY_01"/>
+        <viewAttribute id="WEEK_26_QTY_01"/>
+        <viewAttribute id="WEEK_27_QTY_01"/>
+        <viewAttribute id="WEEK_28_QTY_01"/>
+        <viewAttribute id="WEEK_29_QTY_01"/>
+        <viewAttribute id="WEEK_30_QTY_01"/>
+        <viewAttribute id="WEEK_31_QTY_01"/>
+        <viewAttribute id="WEEK_32_QTY_01"/>
+        <viewAttribute id="WEEK_33_QTY_01"/>
+        <viewAttribute id="WEEK_34_QTY_01"/>
+        <viewAttribute id="WEEK_35_QTY_01"/>
+        <viewAttribute id="WEEK_36_QTY_01"/>
+        <viewAttribute id="WEEK_37_QTY_01"/>
+        <viewAttribute id="WEEK_38_QTY_01"/>
+        <viewAttribute id="WEEK_39_QTY_01"/>
+        <viewAttribute id="WEEK_40_QTY_01"/>
+        <viewAttribute id="WEEK_41_QTY_01"/>
+        <viewAttribute id="WEEK_42_QTY_01"/>
+        <viewAttribute id="WEEK_43_QTY_01"/>
+        <viewAttribute id="WEEK_44_QTY_01"/>
+        <viewAttribute id="WEEK_45_QTY_01"/>
+        <viewAttribute id="WEEK_46_QTY_01"/>
+        <viewAttribute id="WEEK_47_QTY_01"/>
+        <viewAttribute id="WEEK_48_QTY_01"/>
+        <viewAttribute id="WEEK_49_QTY_01"/>
+        <viewAttribute id="WEEK_50_QTY_01"/>
+        <viewAttribute id="WEEK_51_QTY_01"/>
+        <viewAttribute id="WEEK_52_QTY_01"/>
+        <viewAttribute id="SORD_ID"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="QTY_TYPE"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DATUV"/>
+        <viewAttribute id="DATUB"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY" source="OWN_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY" source="SUP_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDLOCID" source="ADDLOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="VENDER_LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_DESCR40" source="VENDER_DESCR40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCNO" source="VENDER_LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSION_NO" source="VERSION_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP_01" source="PLN_VERSION_TIMESTAMP_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY_01" source="SUP_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY_01" source="OWN_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO_1" source="DISPO_1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FRTO" source="LOCID_FRTO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+      </input>
+      <input node="#CA_SNP016_UNION_ALL_02">
+        <mapping xsi:type="Calculation:AttributeMapping" target="EXT_MATNR" source="EXT_MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_00_QTY_01" source="WEEK_00_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_01_QTY_01" source="WEEK_01_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_02_QTY_01" source="WEEK_02_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_03_QTY_01" source="WEEK_03_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_04_QTY_01" source="WEEK_04_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_05_QTY_01" source="WEEK_05_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_06_QTY_01" source="WEEK_06_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_07_QTY_01" source="WEEK_07_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_08_QTY_01" source="WEEK_08_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_09_QTY_01" source="WEEK_09_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_10_QTY_01" source="WEEK_10_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_11_QTY_01" source="WEEK_11_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_12_QTY_01" source="WEEK_12_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_13_QTY_01" source="WEEK_13_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_14_QTY_01" source="WEEK_14_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_15_QTY_01" source="WEEK_15_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_16_QTY_01" source="WEEK_16_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_17_QTY_01" source="WEEK_17_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_18_QTY_01" source="WEEK_18_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_19_QTY_01" source="WEEK_19_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_20_QTY_01" source="WEEK_20_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_21_QTY_01" source="WEEK_21_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_22_QTY_01" source="WEEK_22_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_23_QTY_01" source="WEEK_23_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_24_QTY_01" source="WEEK_24_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_25_QTY_01" source="WEEK_25_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_26_QTY_01" source="WEEK_26_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_27_QTY_01" source="WEEK_27_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_28_QTY_01" source="WEEK_28_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_29_QTY_01" source="WEEK_29_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_30_QTY_01" source="WEEK_30_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_31_QTY_01" source="WEEK_31_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_32_QTY_01" source="WEEK_32_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_33_QTY_01" source="WEEK_33_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_34_QTY_01" source="WEEK_34_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_35_QTY_01" source="WEEK_35_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_36_QTY_01" source="WEEK_36_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_37_QTY_01" source="WEEK_37_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_38_QTY_01" source="WEEK_38_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_39_QTY_01" source="WEEK_39_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_40_QTY_01" source="WEEK_40_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_41_QTY_01" source="WEEK_41_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_42_QTY_01" source="WEEK_42_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_43_QTY_01" source="WEEK_43_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_44_QTY_01" source="WEEK_44_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_45_QTY_01" source="WEEK_45_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_46_QTY_01" source="WEEK_46_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_47_QTY_01" source="WEEK_47_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_48_QTY_01" source="WEEK_48_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_49_QTY_01" source="WEEK_49_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_50_QTY_01" source="WEEK_50_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_51_QTY_01" source="WEEK_51_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_52_QTY_01" source="WEEK_52_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SORD_ID" source="SORD_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY_TYPE" source="QTY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FRTO" source="LOCID_PLANT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VERSION"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="LOCID"/>
+      <joinAttribute name="LOCID_FRTO"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="VRSIOEX"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="OWN_STOCK_QTY"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP"/>
+        <viewAttribute id="SUP_STOCK_QTY"/>
+        <viewAttribute id="ADDLOCID"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_LOCID"/>
+        <viewAttribute id="VENDER_DESCR40"/>
+        <viewAttribute id="VENDER_LOCNO"/>
+        <viewAttribute id="VERSION_NO"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP_01"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="SUP_STOCK_QTY_01"/>
+        <viewAttribute id="OWN_STOCK_QTY_01"/>
+        <viewAttribute id="DISPO_1"/>
+        <viewAttribute id="LOCID_FRTO"/>
+        <viewAttribute id="EXT_MATNR"/>
+        <viewAttribute id="WEEK_00_QTY_01"/>
+        <viewAttribute id="WEEK_01_QTY_01"/>
+        <viewAttribute id="WEEK_02_QTY_01"/>
+        <viewAttribute id="WEEK_03_QTY_01"/>
+        <viewAttribute id="WEEK_04_QTY_01"/>
+        <viewAttribute id="WEEK_05_QTY_01"/>
+        <viewAttribute id="WEEK_06_QTY_01"/>
+        <viewAttribute id="WEEK_07_QTY_01"/>
+        <viewAttribute id="WEEK_08_QTY_01"/>
+        <viewAttribute id="WEEK_09_QTY_01"/>
+        <viewAttribute id="WEEK_10_QTY_01"/>
+        <viewAttribute id="WEEK_11_QTY_01"/>
+        <viewAttribute id="WEEK_12_QTY_01"/>
+        <viewAttribute id="WEEK_13_QTY_01"/>
+        <viewAttribute id="WEEK_14_QTY_01"/>
+        <viewAttribute id="WEEK_15_QTY_01"/>
+        <viewAttribute id="WEEK_16_QTY_01"/>
+        <viewAttribute id="WEEK_17_QTY_01"/>
+        <viewAttribute id="WEEK_18_QTY_01"/>
+        <viewAttribute id="WEEK_19_QTY_01"/>
+        <viewAttribute id="WEEK_20_QTY_01"/>
+        <viewAttribute id="WEEK_21_QTY_01"/>
+        <viewAttribute id="WEEK_22_QTY_01"/>
+        <viewAttribute id="WEEK_23_QTY_01"/>
+        <viewAttribute id="WEEK_24_QTY_01"/>
+        <viewAttribute id="WEEK_25_QTY_01"/>
+        <viewAttribute id="WEEK_26_QTY_01"/>
+        <viewAttribute id="WEEK_27_QTY_01"/>
+        <viewAttribute id="WEEK_28_QTY_01"/>
+        <viewAttribute id="WEEK_29_QTY_01"/>
+        <viewAttribute id="WEEK_30_QTY_01"/>
+        <viewAttribute id="WEEK_31_QTY_01"/>
+        <viewAttribute id="WEEK_32_QTY_01"/>
+        <viewAttribute id="WEEK_33_QTY_01"/>
+        <viewAttribute id="WEEK_34_QTY_01"/>
+        <viewAttribute id="WEEK_35_QTY_01"/>
+        <viewAttribute id="WEEK_36_QTY_01"/>
+        <viewAttribute id="WEEK_37_QTY_01"/>
+        <viewAttribute id="WEEK_38_QTY_01"/>
+        <viewAttribute id="WEEK_39_QTY_01"/>
+        <viewAttribute id="WEEK_40_QTY_01"/>
+        <viewAttribute id="WEEK_41_QTY_01"/>
+        <viewAttribute id="WEEK_42_QTY_01"/>
+        <viewAttribute id="WEEK_43_QTY_01"/>
+        <viewAttribute id="WEEK_44_QTY_01"/>
+        <viewAttribute id="WEEK_45_QTY_01"/>
+        <viewAttribute id="WEEK_46_QTY_01"/>
+        <viewAttribute id="WEEK_47_QTY_01"/>
+        <viewAttribute id="WEEK_48_QTY_01"/>
+        <viewAttribute id="WEEK_49_QTY_01"/>
+        <viewAttribute id="WEEK_50_QTY_01"/>
+        <viewAttribute id="WEEK_51_QTY_01"/>
+        <viewAttribute id="WEEK_52_QTY_01"/>
+        <viewAttribute id="SORD_ID"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="DSNAM"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="QTY_TYPE"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DATUV"/>
+        <viewAttribute id="DATUB"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY" source="OWN_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY" source="SUP_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDLOCID" source="ADDLOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="VENDER_LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_DESCR40" source="VENDER_DESCR40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCNO" source="VENDER_LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSION_NO" source="VERSION_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP_01" source="PLN_VERSION_TIMESTAMP_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY_01" source="SUP_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY_01" source="OWN_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO_1" source="DISPO_1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FRTO" source="LOCID_FRTO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EXT_MATNR" source="EXT_MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_00_QTY_01" source="WEEK_00_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_01_QTY_01" source="WEEK_01_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_02_QTY_01" source="WEEK_02_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_03_QTY_01" source="WEEK_03_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_04_QTY_01" source="WEEK_04_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_05_QTY_01" source="WEEK_05_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_06_QTY_01" source="WEEK_06_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_07_QTY_01" source="WEEK_07_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_08_QTY_01" source="WEEK_08_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_09_QTY_01" source="WEEK_09_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_10_QTY_01" source="WEEK_10_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_11_QTY_01" source="WEEK_11_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_12_QTY_01" source="WEEK_12_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_13_QTY_01" source="WEEK_13_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_14_QTY_01" source="WEEK_14_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_15_QTY_01" source="WEEK_15_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_16_QTY_01" source="WEEK_16_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_17_QTY_01" source="WEEK_17_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_18_QTY_01" source="WEEK_18_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_19_QTY_01" source="WEEK_19_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_20_QTY_01" source="WEEK_20_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_21_QTY_01" source="WEEK_21_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_22_QTY_01" source="WEEK_22_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_23_QTY_01" source="WEEK_23_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_24_QTY_01" source="WEEK_24_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_25_QTY_01" source="WEEK_25_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_26_QTY_01" source="WEEK_26_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_27_QTY_01" source="WEEK_27_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_28_QTY_01" source="WEEK_28_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_29_QTY_01" source="WEEK_29_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_30_QTY_01" source="WEEK_30_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_31_QTY_01" source="WEEK_31_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_32_QTY_01" source="WEEK_32_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_33_QTY_01" source="WEEK_33_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_34_QTY_01" source="WEEK_34_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_35_QTY_01" source="WEEK_35_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_36_QTY_01" source="WEEK_36_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_37_QTY_01" source="WEEK_37_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_38_QTY_01" source="WEEK_38_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_39_QTY_01" source="WEEK_39_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_40_QTY_01" source="WEEK_40_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_41_QTY_01" source="WEEK_41_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_42_QTY_01" source="WEEK_42_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_43_QTY_01" source="WEEK_43_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_44_QTY_01" source="WEEK_44_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_45_QTY_01" source="WEEK_45_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_46_QTY_01" source="WEEK_46_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_47_QTY_01" source="WEEK_47_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_48_QTY_01" source="WEEK_48_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_49_QTY_01" source="WEEK_49_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_50_QTY_01" source="WEEK_50_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_51_QTY_01" source="WEEK_51_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_52_QTY_01" source="WEEK_52_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SORD_ID" source="SORD_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY_TYPE" source="QTY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+      </input>
+      <input node="#ZTCTM_T024D">
+        <mapping xsi:type="Calculation:AttributeMapping" target="DSNAM" source="DSNAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO_1" source="DISPO"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="LOCNO"/>
+      <joinAttribute name="DISPO_1"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_3" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="OWN_STOCK_QTY"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP"/>
+        <viewAttribute id="SUP_STOCK_QTY"/>
+        <viewAttribute id="ADDLOCID"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_LOCID"/>
+        <viewAttribute id="VENDER_DESCR40"/>
+        <viewAttribute id="VENDER_LOCNO"/>
+        <viewAttribute id="VERSION_NO"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP_01"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="SUP_STOCK_QTY_01"/>
+        <viewAttribute id="OWN_STOCK_QTY_01"/>
+        <viewAttribute id="DISPO_1"/>
+        <viewAttribute id="LOCID_FRTO"/>
+        <viewAttribute id="EXT_MATNR"/>
+        <viewAttribute id="SORD_ID"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="DSNAM"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="ZZ_MTART"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="WEEK_00_QTY_01"/>
+        <viewAttribute id="WEEK_01_QTY_01"/>
+        <viewAttribute id="WEEK_02_QTY_01"/>
+        <viewAttribute id="WEEK_03_QTY_01"/>
+        <viewAttribute id="WEEK_04_QTY_01"/>
+        <viewAttribute id="WEEK_05_QTY_01"/>
+        <viewAttribute id="WEEK_06_QTY_01"/>
+        <viewAttribute id="WEEK_07_QTY_01"/>
+        <viewAttribute id="WEEK_08_QTY_01"/>
+        <viewAttribute id="WEEK_09_QTY_01"/>
+        <viewAttribute id="WEEK_10_QTY_01"/>
+        <viewAttribute id="WEEK_11_QTY_01"/>
+        <viewAttribute id="WEEK_12_QTY_01"/>
+        <viewAttribute id="WEEK_13_QTY_01"/>
+        <viewAttribute id="WEEK_14_QTY_01"/>
+        <viewAttribute id="WEEK_15_QTY_01"/>
+        <viewAttribute id="WEEK_16_QTY_01"/>
+        <viewAttribute id="WEEK_17_QTY_01"/>
+        <viewAttribute id="WEEK_18_QTY_01"/>
+        <viewAttribute id="WEEK_19_QTY_01"/>
+        <viewAttribute id="WEEK_20_QTY_01"/>
+        <viewAttribute id="WEEK_21_QTY_01"/>
+        <viewAttribute id="WEEK_22_QTY_01"/>
+        <viewAttribute id="WEEK_23_QTY_01"/>
+        <viewAttribute id="WEEK_24_QTY_01"/>
+        <viewAttribute id="WEEK_25_QTY_01"/>
+        <viewAttribute id="WEEK_26_QTY_01"/>
+        <viewAttribute id="WEEK_27_QTY_01"/>
+        <viewAttribute id="WEEK_28_QTY_01"/>
+        <viewAttribute id="WEEK_29_QTY_01"/>
+        <viewAttribute id="WEEK_30_QTY_01"/>
+        <viewAttribute id="WEEK_31_QTY_01"/>
+        <viewAttribute id="WEEK_32_QTY_01"/>
+        <viewAttribute id="WEEK_33_QTY_01"/>
+        <viewAttribute id="WEEK_34_QTY_01"/>
+        <viewAttribute id="WEEK_35_QTY_01"/>
+        <viewAttribute id="WEEK_36_QTY_01"/>
+        <viewAttribute id="WEEK_37_QTY_01"/>
+        <viewAttribute id="WEEK_38_QTY_01"/>
+        <viewAttribute id="WEEK_39_QTY_01"/>
+        <viewAttribute id="WEEK_40_QTY_01"/>
+        <viewAttribute id="WEEK_41_QTY_01"/>
+        <viewAttribute id="WEEK_42_QTY_01"/>
+        <viewAttribute id="WEEK_43_QTY_01"/>
+        <viewAttribute id="WEEK_44_QTY_01"/>
+        <viewAttribute id="WEEK_45_QTY_01"/>
+        <viewAttribute id="WEEK_46_QTY_01"/>
+        <viewAttribute id="WEEK_47_QTY_01"/>
+        <viewAttribute id="WEEK_48_QTY_01"/>
+        <viewAttribute id="WEEK_49_QTY_01"/>
+        <viewAttribute id="WEEK_50_QTY_01"/>
+        <viewAttribute id="WEEK_51_QTY_01"/>
+        <viewAttribute id="WEEK_52_QTY_01"/>
+        <viewAttribute id="QTY_TYPE"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DATUV"/>
+        <viewAttribute id="DATUB"/>
+        <viewAttribute id="ZUCOD"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY" source="OWN_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY" source="SUP_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDLOCID" source="ADDLOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="VENDER_LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_DESCR40" source="VENDER_DESCR40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCNO" source="VENDER_LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSION_NO" source="VERSION_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP_01" source="PLN_VERSION_TIMESTAMP_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY_01" source="SUP_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY_01" source="OWN_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO_1" source="DISPO_1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FRTO" source="LOCID_FRTO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EXT_MATNR" source="EXT_MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SORD_ID" source="SORD_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DSNAM" source="DSNAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_00_QTY_01" source="WEEK_00_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_01_QTY_01" source="WEEK_01_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_02_QTY_01" source="WEEK_02_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_03_QTY_01" source="WEEK_03_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_04_QTY_01" source="WEEK_04_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_05_QTY_01" source="WEEK_05_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_06_QTY_01" source="WEEK_06_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_07_QTY_01" source="WEEK_07_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_08_QTY_01" source="WEEK_08_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_09_QTY_01" source="WEEK_09_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_10_QTY_01" source="WEEK_10_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_11_QTY_01" source="WEEK_11_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_12_QTY_01" source="WEEK_12_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_13_QTY_01" source="WEEK_13_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_14_QTY_01" source="WEEK_14_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_15_QTY_01" source="WEEK_15_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_16_QTY_01" source="WEEK_16_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_17_QTY_01" source="WEEK_17_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_18_QTY_01" source="WEEK_18_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_19_QTY_01" source="WEEK_19_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_20_QTY_01" source="WEEK_20_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_21_QTY_01" source="WEEK_21_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_22_QTY_01" source="WEEK_22_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_23_QTY_01" source="WEEK_23_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_24_QTY_01" source="WEEK_24_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_25_QTY_01" source="WEEK_25_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_26_QTY_01" source="WEEK_26_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_27_QTY_01" source="WEEK_27_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_28_QTY_01" source="WEEK_28_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_29_QTY_01" source="WEEK_29_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_30_QTY_01" source="WEEK_30_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_31_QTY_01" source="WEEK_31_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_32_QTY_01" source="WEEK_32_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_33_QTY_01" source="WEEK_33_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_34_QTY_01" source="WEEK_34_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_35_QTY_01" source="WEEK_35_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_36_QTY_01" source="WEEK_36_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_37_QTY_01" source="WEEK_37_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_38_QTY_01" source="WEEK_38_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_39_QTY_01" source="WEEK_39_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_40_QTY_01" source="WEEK_40_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_41_QTY_01" source="WEEK_41_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_42_QTY_01" source="WEEK_42_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_43_QTY_01" source="WEEK_43_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_44_QTY_01" source="WEEK_44_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_45_QTY_01" source="WEEK_45_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_46_QTY_01" source="WEEK_46_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_47_QTY_01" source="WEEK_47_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_48_QTY_01" source="WEEK_48_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_49_QTY_01" source="WEEK_49_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_50_QTY_01" source="WEEK_50_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_51_QTY_01" source="WEEK_51_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_52_QTY_01" source="WEEK_52_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY_TYPE" source="QTY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+      </input>
+      <input node="#_SAPAPO_MATKEY">
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MTART" source="ZZ_MTART"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZUCOD" source="ZUCOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2" filterExpressionLanguage="COLUMN_ENGINE">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="DDTEXT"/>
+        <viewAttribute id="DOMNAME"/>
+        <viewAttribute id="DOMVALUE_L"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#DD07V">
+        <mapping xsi:type="Calculation:AttributeMapping" target="DDTEXT" source="DDTEXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DOMNAME" source="DOMNAME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DOMVALUE_L" source="DOMVALUE_L"/>
+      </input>
+      <filter>&quot;DOMNAME&quot; = 'ZDCTM_PRRTY'</filter>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_4" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="OWN_STOCK_QTY"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP"/>
+        <viewAttribute id="SUP_STOCK_QTY"/>
+        <viewAttribute id="ADDLOCID"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_LOCID"/>
+        <viewAttribute id="VENDER_DESCR40"/>
+        <viewAttribute id="VENDER_LOCNO"/>
+        <viewAttribute id="VERSION_NO"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP_01"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="SUP_STOCK_QTY_01"/>
+        <viewAttribute id="OWN_STOCK_QTY_01"/>
+        <viewAttribute id="DISPO_1"/>
+        <viewAttribute id="LOCID_FRTO"/>
+        <viewAttribute id="EXT_MATNR"/>
+        <viewAttribute id="SORD_ID"/>
+        <viewAttribute id="ZZ_MFRGR"/>
+        <viewAttribute id="DSNAM"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="ZZ_MTART"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="WEEK_00_QTY_01"/>
+        <viewAttribute id="WEEK_01_QTY_01"/>
+        <viewAttribute id="WEEK_02_QTY_01"/>
+        <viewAttribute id="WEEK_03_QTY_01"/>
+        <viewAttribute id="WEEK_04_QTY_01"/>
+        <viewAttribute id="WEEK_05_QTY_01"/>
+        <viewAttribute id="WEEK_06_QTY_01"/>
+        <viewAttribute id="WEEK_07_QTY_01"/>
+        <viewAttribute id="WEEK_08_QTY_01"/>
+        <viewAttribute id="WEEK_09_QTY_01"/>
+        <viewAttribute id="WEEK_10_QTY_01"/>
+        <viewAttribute id="WEEK_11_QTY_01"/>
+        <viewAttribute id="WEEK_12_QTY_01"/>
+        <viewAttribute id="WEEK_13_QTY_01"/>
+        <viewAttribute id="WEEK_14_QTY_01"/>
+        <viewAttribute id="WEEK_15_QTY_01"/>
+        <viewAttribute id="WEEK_16_QTY_01"/>
+        <viewAttribute id="WEEK_17_QTY_01"/>
+        <viewAttribute id="WEEK_18_QTY_01"/>
+        <viewAttribute id="WEEK_19_QTY_01"/>
+        <viewAttribute id="WEEK_20_QTY_01"/>
+        <viewAttribute id="WEEK_21_QTY_01"/>
+        <viewAttribute id="WEEK_22_QTY_01"/>
+        <viewAttribute id="WEEK_23_QTY_01"/>
+        <viewAttribute id="WEEK_24_QTY_01"/>
+        <viewAttribute id="WEEK_25_QTY_01"/>
+        <viewAttribute id="WEEK_26_QTY_01"/>
+        <viewAttribute id="WEEK_27_QTY_01"/>
+        <viewAttribute id="WEEK_28_QTY_01"/>
+        <viewAttribute id="WEEK_29_QTY_01"/>
+        <viewAttribute id="WEEK_30_QTY_01"/>
+        <viewAttribute id="WEEK_31_QTY_01"/>
+        <viewAttribute id="WEEK_32_QTY_01"/>
+        <viewAttribute id="WEEK_33_QTY_01"/>
+        <viewAttribute id="WEEK_34_QTY_01"/>
+        <viewAttribute id="WEEK_35_QTY_01"/>
+        <viewAttribute id="WEEK_36_QTY_01"/>
+        <viewAttribute id="WEEK_37_QTY_01"/>
+        <viewAttribute id="WEEK_38_QTY_01"/>
+        <viewAttribute id="WEEK_39_QTY_01"/>
+        <viewAttribute id="WEEK_40_QTY_01"/>
+        <viewAttribute id="WEEK_41_QTY_01"/>
+        <viewAttribute id="WEEK_42_QTY_01"/>
+        <viewAttribute id="WEEK_43_QTY_01"/>
+        <viewAttribute id="WEEK_44_QTY_01"/>
+        <viewAttribute id="WEEK_45_QTY_01"/>
+        <viewAttribute id="WEEK_46_QTY_01"/>
+        <viewAttribute id="WEEK_47_QTY_01"/>
+        <viewAttribute id="WEEK_48_QTY_01"/>
+        <viewAttribute id="WEEK_49_QTY_01"/>
+        <viewAttribute id="WEEK_50_QTY_01"/>
+        <viewAttribute id="WEEK_51_QTY_01"/>
+        <viewAttribute id="WEEK_52_QTY_01"/>
+        <viewAttribute id="QTY_TYPE"/>
+        <viewAttribute id="STAWN"/>
+        <viewAttribute id="DATUV"/>
+        <viewAttribute id="DATUB"/>
+        <viewAttribute id="ZUCOD"/>
+        <viewAttribute id="DDTEXT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY" source="OWN_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY" source="SUP_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDLOCID" source="ADDLOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="VENDER_LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_DESCR40" source="VENDER_DESCR40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCNO" source="VENDER_LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSION_NO" source="VERSION_NO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP_01" source="PLN_VERSION_TIMESTAMP_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY_01" source="SUP_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY_01" source="OWN_STOCK_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO_1" source="DISPO_1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID_FRTO" source="LOCID_FRTO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EXT_MATNR" source="EXT_MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SORD_ID" source="SORD_ID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MFRGR" source="ZZ_MFRGR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DSNAM" source="DSNAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZZ_MTART" source="ZZ_MTART"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_00_QTY_01" source="WEEK_00_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_01_QTY_01" source="WEEK_01_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_02_QTY_01" source="WEEK_02_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_03_QTY_01" source="WEEK_03_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_04_QTY_01" source="WEEK_04_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_05_QTY_01" source="WEEK_05_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_06_QTY_01" source="WEEK_06_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_07_QTY_01" source="WEEK_07_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_08_QTY_01" source="WEEK_08_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_09_QTY_01" source="WEEK_09_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_10_QTY_01" source="WEEK_10_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_11_QTY_01" source="WEEK_11_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_12_QTY_01" source="WEEK_12_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_13_QTY_01" source="WEEK_13_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_14_QTY_01" source="WEEK_14_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_15_QTY_01" source="WEEK_15_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_16_QTY_01" source="WEEK_16_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_17_QTY_01" source="WEEK_17_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_18_QTY_01" source="WEEK_18_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_19_QTY_01" source="WEEK_19_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_20_QTY_01" source="WEEK_20_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_21_QTY_01" source="WEEK_21_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_22_QTY_01" source="WEEK_22_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_23_QTY_01" source="WEEK_23_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_24_QTY_01" source="WEEK_24_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_25_QTY_01" source="WEEK_25_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_26_QTY_01" source="WEEK_26_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_27_QTY_01" source="WEEK_27_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_28_QTY_01" source="WEEK_28_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_29_QTY_01" source="WEEK_29_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_30_QTY_01" source="WEEK_30_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_31_QTY_01" source="WEEK_31_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_32_QTY_01" source="WEEK_32_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_33_QTY_01" source="WEEK_33_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_34_QTY_01" source="WEEK_34_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_35_QTY_01" source="WEEK_35_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_36_QTY_01" source="WEEK_36_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_37_QTY_01" source="WEEK_37_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_38_QTY_01" source="WEEK_38_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_39_QTY_01" source="WEEK_39_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_40_QTY_01" source="WEEK_40_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_41_QTY_01" source="WEEK_41_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_42_QTY_01" source="WEEK_42_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_43_QTY_01" source="WEEK_43_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_44_QTY_01" source="WEEK_44_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_45_QTY_01" source="WEEK_45_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_46_QTY_01" source="WEEK_46_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_47_QTY_01" source="WEEK_47_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_48_QTY_01" source="WEEK_48_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_49_QTY_01" source="WEEK_49_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_50_QTY_01" source="WEEK_50_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_51_QTY_01" source="WEEK_51_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="WEEK_52_QTY_01" source="WEEK_52_QTY_01"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY_TYPE" source="QTY_TYPE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STAWN" source="STAWN"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ZUCOD" source="ZUCOD"/>
+      </input>
+      <input node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="DDTEXT" source="DDTEXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="DOMVALUE_L"/>
+      </input>
+      <joinAttribute name="PRRTY"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_4">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_4" columnName="MANDT"/>
+      </attribute>
+      <attribute id="GRPID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="GRPID"/>
+        <keyMapping columnObjectName="Join_4" columnName="GRPID"/>
+      </attribute>
+      <attribute id="GRPNM" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="GRPNM"/>
+        <keyMapping columnObjectName="Join_4" columnName="GRPNM"/>
+      </attribute>
+      <attribute id="DISPO" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Join_4" columnName="DISPO"/>
+      </attribute>
+      <attribute id="PRRTY" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRRTY"/>
+        <keyMapping columnObjectName="Join_4" columnName="PRRTY"/>
+      </attribute>
+      <attribute id="LOCNO" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="CHANGEUTC" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CHANGEUTC"/>
+        <keyMapping columnObjectName="Join_4" columnName="CHANGEUTC"/>
+      </attribute>
+      <attribute id="AENAM" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="AENAM"/>
+        <keyMapping columnObjectName="Join_4" columnName="AENAM"/>
+      </attribute>
+      <attribute id="LOCID" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MATID" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_4" columnName="MATID"/>
+      </attribute>
+      <attribute id="MATNR" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Join_4" columnName="MATNR"/>
+      </attribute>
+      <attribute id="PRIORITY" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRIORITY"/>
+        <keyMapping columnObjectName="Join_4" columnName="PRIORITY"/>
+      </attribute>
+      <attribute id="PROPORTION" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PROPORTION"/>
+        <keyMapping columnObjectName="Join_4" columnName="PROPORTION"/>
+      </attribute>
+      <attribute id="MAKTX" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_4" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="OWN_STOCK_QTY" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="OWN_STOCK_QTY"/>
+        <keyMapping columnObjectName="Join_4" columnName="OWN_STOCK_QTY"/>
+      </attribute>
+      <attribute id="VERSIOD" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Join_4" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="MEINS" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="Join_4" columnName="MEINS"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Join_4" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="PLN_VERSION_TIMESTAMP" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLN_VERSION_TIMESTAMP"/>
+        <keyMapping columnObjectName="Join_4" columnName="PLN_VERSION_TIMESTAMP"/>
+      </attribute>
+      <attribute id="SUP_STOCK_QTY" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUP_STOCK_QTY"/>
+        <keyMapping columnObjectName="Join_4" columnName="SUP_STOCK_QTY"/>
+      </attribute>
+      <attribute id="ADDLOCID" order="21" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ADDLOCID"/>
+        <keyMapping columnObjectName="Join_4" columnName="ADDLOCID"/>
+      </attribute>
+      <attribute id="LOCFR" order="22" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCFR"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCFR"/>
+      </attribute>
+      <attribute id="VENDER_LOCID" order="23" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VENDER_LOCID"/>
+        <keyMapping columnObjectName="Join_4" columnName="VENDER_LOCID"/>
+      </attribute>
+      <attribute id="VENDER_DESCR40" order="24" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VENDER_DESCR40"/>
+        <keyMapping columnObjectName="Join_4" columnName="VENDER_DESCR40"/>
+      </attribute>
+      <attribute id="VENDER_LOCNO" order="25" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VENDER_LOCNO"/>
+        <keyMapping columnObjectName="Join_4" columnName="VENDER_LOCNO"/>
+      </attribute>
+      <attribute id="VERSION_NO" order="26" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSION_NO"/>
+        <keyMapping columnObjectName="Join_4" columnName="VERSION_NO"/>
+      </attribute>
+      <attribute id="PLN_VERSION_TIMESTAMP_01" order="27" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLN_VERSION_TIMESTAMP_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="PLN_VERSION_TIMESTAMP_01"/>
+      </attribute>
+      <attribute id="VRSIOTXT" order="28" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOTXT"/>
+        <keyMapping columnObjectName="Join_4" columnName="VRSIOTXT"/>
+      </attribute>
+      <attribute id="CDATE" order="29" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CDATE"/>
+        <keyMapping columnObjectName="Join_4" columnName="CDATE"/>
+      </attribute>
+      <attribute id="CTIME" order="30" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CTIME"/>
+        <keyMapping columnObjectName="Join_4" columnName="CTIME"/>
+      </attribute>
+      <attribute id="SUP_STOCK_QTY_01" order="31" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SUP_STOCK_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="SUP_STOCK_QTY_01"/>
+      </attribute>
+      <attribute id="OWN_STOCK_QTY_01" order="32" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="OWN_STOCK_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="OWN_STOCK_QTY_01"/>
+      </attribute>
+      <attribute id="DISPO_1" order="33" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO_1"/>
+        <keyMapping columnObjectName="Join_4" columnName="DISPO_1"/>
+      </attribute>
+      <attribute id="LOCID_FRTO" order="34" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID_FRTO"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCID_FRTO"/>
+      </attribute>
+      <attribute id="EXT_MATNR" order="35" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EXT_MATNR"/>
+        <keyMapping columnObjectName="Join_4" columnName="EXT_MATNR"/>
+      </attribute>
+      <attribute id="SORD_ID" order="36" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="SORD_ID"/>
+        <keyMapping columnObjectName="Join_4" columnName="SORD_ID"/>
+      </attribute>
+      <attribute id="ZZ_MFRGR" order="37" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MFRGR"/>
+        <keyMapping columnObjectName="Join_4" columnName="ZZ_MFRGR"/>
+      </attribute>
+      <attribute id="DSNAM" order="38" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DSNAM"/>
+        <keyMapping columnObjectName="Join_4" columnName="DSNAM"/>
+      </attribute>
+      <attribute id="PG_VALID_FROM" order="39" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PG_VALID_FROM"/>
+        <keyMapping columnObjectName="Join_4" columnName="PG_VALID_FROM"/>
+      </attribute>
+      <attribute id="PG_VALID_TO" order="40" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PG_VALID_TO"/>
+        <keyMapping columnObjectName="Join_4" columnName="PG_VALID_TO"/>
+      </attribute>
+      <attribute id="ZZ_MTART" order="41" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MTART"/>
+        <keyMapping columnObjectName="Join_4" columnName="ZZ_MTART"/>
+      </attribute>
+      <attribute id="MATKL" order="42" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATKL"/>
+        <keyMapping columnObjectName="Join_4" columnName="MATKL"/>
+      </attribute>
+      <attribute id="WEEK_00_QTY_01" order="43" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_00_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_00_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_01_QTY_01" order="44" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_01_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_01_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_02_QTY_01" order="45" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_02_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_02_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_03_QTY_01" order="46" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_03_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_03_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_04_QTY_01" order="47" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_04_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_04_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_05_QTY_01" order="48" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_05_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_05_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_06_QTY_01" order="49" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_06_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_06_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_07_QTY_01" order="50" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_07_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_07_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_08_QTY_01" order="51" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_08_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_08_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_09_QTY_01" order="52" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_09_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_09_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_10_QTY_01" order="53" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_10_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_10_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_11_QTY_01" order="54" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_11_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_11_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_12_QTY_01" order="55" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_12_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_12_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_13_QTY_01" order="56" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_13_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_13_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_14_QTY_01" order="57" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_14_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_14_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_15_QTY_01" order="58" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_15_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_15_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_16_QTY_01" order="59" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_16_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_16_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_17_QTY_01" order="60" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_17_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_17_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_18_QTY_01" order="61" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_18_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_18_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_19_QTY_01" order="62" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_19_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_19_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_20_QTY_01" order="63" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_20_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_20_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_21_QTY_01" order="64" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_21_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_21_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_22_QTY_01" order="65" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_22_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_22_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_23_QTY_01" order="66" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_23_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_23_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_24_QTY_01" order="67" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_24_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_24_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_25_QTY_01" order="68" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_25_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_25_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_26_QTY_01" order="69" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_26_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_26_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_27_QTY_01" order="70" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_27_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_27_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_28_QTY_01" order="71" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_28_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_28_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_29_QTY_01" order="72" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_29_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_29_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_30_QTY_01" order="73" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_30_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_30_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_31_QTY_01" order="74" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_31_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_31_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_32_QTY_01" order="75" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_32_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_32_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_33_QTY_01" order="76" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_33_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_33_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_34_QTY_01" order="77" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_34_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_34_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_35_QTY_01" order="78" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_35_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_35_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_36_QTY_01" order="79" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_36_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_36_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_37_QTY_01" order="80" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_37_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_37_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_38_QTY_01" order="81" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_38_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_38_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_39_QTY_01" order="82" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_39_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_39_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_40_QTY_01" order="83" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_40_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_40_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_41_QTY_01" order="84" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_41_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_41_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_42_QTY_01" order="85" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_42_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_42_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_43_QTY_01" order="86" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_43_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_43_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_44_QTY_01" order="87" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_44_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_44_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_45_QTY_01" order="88" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_45_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_45_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_46_QTY_01" order="89" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_46_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_46_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_47_QTY_01" order="90" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_47_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_47_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_48_QTY_01" order="91" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_48_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_48_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_49_QTY_01" order="92" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_49_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_49_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_50_QTY_01" order="93" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_50_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_50_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_51_QTY_01" order="94" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_51_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_51_QTY_01"/>
+      </attribute>
+      <attribute id="WEEK_52_QTY_01" order="95" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="WEEK_52_QTY_01"/>
+        <keyMapping columnObjectName="Join_4" columnName="WEEK_52_QTY_01"/>
+      </attribute>
+      <attribute id="QTY_TYPE" order="96" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="QTY_TYPE"/>
+        <keyMapping columnObjectName="Join_4" columnName="QTY_TYPE"/>
+      </attribute>
+      <attribute id="STAWN" order="97" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STAWN"/>
+        <keyMapping columnObjectName="Join_4" columnName="STAWN"/>
+      </attribute>
+      <attribute id="DATUV" order="98" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DATUV"/>
+        <keyMapping columnObjectName="Join_4" columnName="DATUV"/>
+      </attribute>
+      <attribute id="DATUB" order="99" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DATUB"/>
+        <keyMapping columnObjectName="Join_4" columnName="DATUB"/>
+      </attribute>
+      <attribute id="ZUCOD" order="100" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZUCOD"/>
+        <keyMapping columnObjectName="Join_4" columnName="ZUCOD"/>
+      </attribute>
+      <attribute id="DDTEXT" order="101" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DDTEXT"/>
+        <keyMapping columnObjectName="Join_4" columnName="DDTEXT"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="99" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="549"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="453"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="357"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

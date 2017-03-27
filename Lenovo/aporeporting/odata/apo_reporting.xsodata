@@ -1,0 +1,135 @@
+service  { 
+   
+   "aporeporting.model.SNP015::HubStockInventoryQuery"                
+   as "hub_stock_1"
+   key generate local "id"
+   parameters via entity "hub_stock_params";
+   
+   "aporeporting.model.SNP015::PlanningVersionQuery"
+   as "hub_stock_planning_version"
+   key generate local "id";
+ 
+   "aporeporting.model.SNP009_V2.UNION_ALL::CA_SNP009_UNION_ALL_02"
+   //"aporeporting.model.SNP009_V3.SUMALL::CV_FORECAST_FINAL_V2_NONULL"  // If has performance issue, use this model
+   as "snc_forecast"
+   key generate local "id"
+   parameters via entity "snc_forecast_params";
+   
+   
+   "aporeporting.model.SNP009_V2::CA_SNP009_VERSION"
+   as "snc_forecast_planning_version"
+   key generate local "id";
+   
+   //"aporeporting.model.SNC002::CV_COMTSTAT02N"    // snc 002 redesign for performance            
+   "aporeporting.model.SNC002.PERSIST::CV_SNC_SUPCOMT01V2"
+   as "sup_comt02"
+   key generate local "id1";   
+   
+               
+                             
+   "aporeporting.model.SNC002::AT_PLANTINFO"
+   as "loc_f4help" 
+   key generate local "id2";      
+   
+   "aporeporting.model.SNC002::AT_MATINFO"
+   as "mat_f4help" 
+   key generate local "id3";   
+
+   "aporeporting.model.SNC002::AT_SUPLOCINFO"
+   as "locfrom_f4help" 
+   key generate local "id4";     
+   
+   
+   "aporeporting.model.SNP012.SNP012_WEEKLY::CA_SNP012_WEEKLY_UNION_01"
+   as "waterfall_weekly" 
+   key generate local "id12"
+   parameters via entity "VERSION_PARMAS";
+         
+   
+   "aporeporting.model.SNP012.SNP012_MONTHLY::CA_SNP012_MONTHLY_UNION_01"
+   as "waterfall_monthly" 
+   key generate local "id13"
+   parameters via entity "VERSION_PARMAS1";   
+   
+   "aporeporting.model.SNP012.SNP012_QUARTERLY::CA_SNP012_QUARTERLY_UNION_01"
+   as "waterfall_quarterly" 
+   key generate local "id14" 
+   parameters via entity "VERSION_PARMAS2";      
+    
+
+   "aporeporting.model.SNP010::CV_SNP010_PEGGING_REPORT"
+   as "pegging_report"
+   key generate local "id"
+   parameters via entity "pegging_params";
+   
+   "aporeporting.model.SNP010::AT_SNP010_VERSION"
+   as "pegging_report_version"
+   key generate local "id";
+   
+   "aporeporting.model::CV_CALWEEK"
+   as "calweek"
+   key generate local "id";
+   
+   "aporeporting.model.SNC001::CV_SFSTOCK_LIST"
+   as "safestk02"
+   key generate local "id15";   
+   
+   "aporeporting.model.SNC001::CV_DIST_CUSTINFO"
+   as "loc_f4help02" 
+   key generate local "id16";  
+   
+    "aporeporting.model.SNC001::CV_DIST_SUPLOC"
+   as "locfrom_f4help02" 
+   key generate local "id17";   
+   
+   "aporeporting.model.SNP002::CA_SNP002_STO_PROC_VEND_SPLIT_01"
+   as "proc_hub_stock" 
+   key generate local "id18"
+   parameters via entity "hubstock_proc_version";  
+   
+      
+   "aporeporting.model.SNC001::CV_DIST_EKGRP"
+   as "ekgrp_f4help" 
+   key generate local "id19";  
+   "aporeporting.model.SNC001::CV_DIST_DISPO"
+   as "dispo_f4help" 
+   key generate local "id20";  
+   "aporeporting.model.SNC001::CV_DIST_STAWN"
+   as "stawn_f4help" 
+   key generate local "id21";           
+  
+   "aporeporting.model.SNP003::CV_DEMD_OPENPO"
+   as "demd_open02" 
+   key generate local "id22"
+   parameters via entity "demd_open_param"
+   ;       
+      
+  
+   "aporeporting.model.SNP003::AT_PLANVER"
+   as "plan_ver" 
+   key generate local "id23";    
+   
+   "aporeporting.model::CV_CUST_PLAN_VERSION"
+   as "cust_plan_ver" 
+   key generate local "id24";    
+   
+   "aporeporting.model.SNP002::CA_SNP002_PRO_GROUP"
+   as "proc_hub_stock_group" 
+   key generate local "id25" ;   
+   
+   "aporeporting.model.SNC002.PERSIST::CV_SNC_SAVETIME"
+   as  "snc_last_sncsave"
+   key generate local "id26";      
+   //ADD BY CUIYUE 20160908 RQ-MP-04
+   "aporeporting.model.SNP016::CA_SNP016_TOTAL"
+   as "on_demand_report" 
+   key generate local "id27"
+   parameters via entity "ondemand_version";  
+   
+   "aporeporting.model.SNP016::AT_PROCGRP_H"
+   as "procgrp_h" 
+   key generate local "id28"; 
+   
+   //END    
+   
+}

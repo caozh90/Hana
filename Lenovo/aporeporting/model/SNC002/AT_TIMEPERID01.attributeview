@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Dimension:dimension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Dimension="http://www.sap.com/ndb/BiModelDimension.ecore" schemaVersion="1.2" id="AT_TIMEPERID01" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" dimensionType="Standard">
+  <descriptions defaultDescription="AT_TIMEPERID01"/>
+  <attributes>
+    <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="MANDT"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SCA/TIMEPERIOD" columnName="MANDT"/>
+    </attribute>
+    <attribute id="TIMEPRF" order="2" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="TIMEPRF"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SCA/TIMEPERIOD" columnName="TIMEPRF"/>
+    </attribute>
+    <attribute id="PERID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="PERID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SCA/TIMEPERIOD" columnName="PERID"/>
+    </attribute>
+    <attribute id="PERTSTFR" order="4" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="PERTSTFR"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SCA/TIMEPERIOD" columnName="PERTSTFR"/>
+    </attribute>
+    <attribute id="CLSTID" order="5" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CLSTID"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SCA/TIMEPERIOD" columnName="CLSTID"/>
+    </attribute>
+    <attribute id="SEQU" order="6" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="SEQU"/>
+      <keyMapping schemaName="SAP_SCM" columnObjectName="/SCA/TIMEPERIOD" columnName="SEQU"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes>
+    <calculatedAttribute id="CC_UTCDATE" hidden="false" order="7" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+      <descriptions defaultDescription="CC_UTCDATE"/>
+      <keyCalculation datatype="VARCHAR" length="8">
+        <formula>leftstr(string(&quot;PERTSTFR&quot;),8)</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+  </calculatedAttributes>
+  <privateDataFoundation>
+    <tableProxies>
+      <tableProxy>
+        <table schemaName="SAP_SCM" columnObjectName="/SCA/TIMEPERIOD"/>
+        <columnFilter columnName="TIMEPRF">
+          <valueFilter xsi:type="AccessControl:SingleValueFilter" including="true" value="VMI_DAILY"/>
+        </columnFilter>
+      </tableProxy>
+    </tableProxies>
+    <joins/>
+    <layout>
+      <shapes>
+        <shape modelObjectName="/SCA/TIMEPERIOD" modelObjectNameSpace="SAP_SCM" modelObjectType="catalog">
+          <upperLeftCorner x="70" y="30"/>
+        </shape>
+        <shape modelObjectName="DataFoundation" modelObjectNameSpace="DataFoundation" modelObjectType="repository">
+          <upperLeftCorner x="40" y="85"/>
+          <rectangleSize height="0" width="0"/>
+        </shape>
+      </shapes>
+    </layout>
+  </privateDataFoundation>
+  <hierarchies/>
+</Dimension:dimension>

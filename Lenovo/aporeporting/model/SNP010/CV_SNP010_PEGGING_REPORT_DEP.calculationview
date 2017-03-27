@@ -1,0 +1,666 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CV_SNP010_PEGGING_REPORT" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_SNP010_REPORT"/>
+  <metadata changedAt="2015-04-16 15:00:05.329"/>
+  <localVariables>
+    <variable id="IP_VERSION" parameter="true">
+      <descriptions defaultDescription="IP_VERSION"/>
+      <variableProperties datatype="NVARCHAR" length="22" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SNP010_ORD_VERSION">
+      <targetVariable name="IP_ORD_VERSION" resourceUri="/aporeporting.model.SNP010/calculationviews/CV_SNP010_ORD_VERSION"/>
+      <localVariable>#IP_VERSION</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SNP010_STO_VERSION">
+      <targetVariable name="IP_STO_VERSION" resourceUri="/aporeporting.model.SNP010/calculationviews/CV_SNP010_STO_VERSION"/>
+      <localVariable>#IP_VERSION</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_SNP010_MATLOC_ALLMASTER" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP010/calculationviews/CV_SNP010_MATLOC_ALLMASTER</resourceUri>
+    </DataSource>
+    <DataSource id="CV_SNP010_ORD_VERSION" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP010/calculationviews/CV_SNP010_ORD_VERSION</resourceUri>
+    </DataSource>
+    <DataSource id="CV_SNP010_STO_VERSION" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP010/calculationviews/CV_SNP010_STO_VERSION</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="PlanningVersion"/>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="Item"/>
+        <viewAttribute id="ItemDescription"/>
+        <viewAttribute id="CommodityCode"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="MaterialGroup"/>
+        <viewAttribute id="MaterialType"/>
+        <viewAttribute id="Plant"/>
+        <viewAttribute id="Technology"/>
+        <viewAttribute id="ToItem"/>
+        <viewAttribute id="ToItemDescription"/>
+        <viewAttribute id="GEOLevel"/>
+        <viewAttribute id="DEMAND_WEEK_0"/>
+        <viewAttribute id="DEMAND_WEEK_1"/>
+        <viewAttribute id="DEMAND_WEEK_2"/>
+        <viewAttribute id="DEMAND_WEEK_3"/>
+        <viewAttribute id="DEMAND_WEEK_4"/>
+        <viewAttribute id="DEMAND_WEEK_5"/>
+        <viewAttribute id="DEMAND_WEEK_6"/>
+        <viewAttribute id="DEMAND_WEEK_7"/>
+        <viewAttribute id="DEMAND_WEEK_8"/>
+        <viewAttribute id="DEMAND_WEEK_9"/>
+        <viewAttribute id="DEMAND_WEEK_10"/>
+        <viewAttribute id="DEMAND_WEEK_11"/>
+        <viewAttribute id="DEMAND_WEEK_12"/>
+        <viewAttribute id="DEMAND_WEEK_13"/>
+        <viewAttribute id="DEMAND_WEEK_14"/>
+        <viewAttribute id="DEMAND_WEEK_15"/>
+        <viewAttribute id="DEMAND_WEEK_16"/>
+        <viewAttribute id="DEMAND_WEEK_17"/>
+        <viewAttribute id="DEMAND_WEEK_18"/>
+        <viewAttribute id="DEMAND_WEEK_19"/>
+        <viewAttribute id="DEMAND_WEEK_20"/>
+        <viewAttribute id="DEMAND_WEEK_21"/>
+        <viewAttribute id="DEMAND_WEEK_22"/>
+        <viewAttribute id="DEMAND_WEEK_23"/>
+        <viewAttribute id="DEMAND_WEEK_24"/>
+        <viewAttribute id="DEMAND_WEEK_25"/>
+        <viewAttribute id="DEMAND_WEEK_26"/>
+        <viewAttribute id="DEMAND_WEEK_27"/>
+        <viewAttribute id="DEMAND_WEEK_28"/>
+        <viewAttribute id="DEMAND_WEEK_29"/>
+        <viewAttribute id="DEMAND_WEEK_30"/>
+        <viewAttribute id="DEMAND_WEEK_31"/>
+        <viewAttribute id="DEMAND_WEEK_32"/>
+        <viewAttribute id="DEMAND_WEEK_33"/>
+        <viewAttribute id="DEMAND_WEEK_34"/>
+        <viewAttribute id="DEMAND_WEEK_35"/>
+        <viewAttribute id="DEMAND_WEEK_36"/>
+        <viewAttribute id="DEMAND_WEEK_37"/>
+        <viewAttribute id="DEMAND_WEEK_38"/>
+        <viewAttribute id="DEMAND_WEEK_39"/>
+        <viewAttribute id="DEMAND_WEEK_40"/>
+        <viewAttribute id="DEMAND_WEEK_41"/>
+        <viewAttribute id="DEMAND_WEEK_42"/>
+        <viewAttribute id="DEMAND_WEEK_43"/>
+        <viewAttribute id="DEMAND_WEEK_44"/>
+        <viewAttribute id="DEMAND_WEEK_45"/>
+        <viewAttribute id="DEMAND_WEEK_46"/>
+        <viewAttribute id="DEMAND_WEEK_47"/>
+        <viewAttribute id="DEMAND_WEEK_48"/>
+        <viewAttribute id="DEMAND_WEEK_49"/>
+        <viewAttribute id="DEMAND_WEEK_50"/>
+        <viewAttribute id="DEMAND_WEEK_51"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_SNP010_MATLOC_ALLMASTER">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Item" source="Item"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ItemDescription" source="ItemDescription"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CommodityCode" source="CommodityCode"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialGroup" source="MaterialGroup"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialType" source="MaterialType"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Plant" source="Plant"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Technology" source="Technology"/>
+      </input>
+      <input node="#CV_SNP010_ORD_VERSION">
+        <mapping xsi:type="Calculation:AttributeMapping" target="PlanningVersion" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ToItem" source="ToItem"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ToItemDescription" source="ToItemDescription"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GEOLevel" source="GEOLevel"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_0" source="DEMAND_WEEK_0"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_1" source="DEMAND_WEEK_1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_2" source="DEMAND_WEEK_2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_3" source="DEMAND_WEEK_3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_4" source="DEMAND_WEEK_4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_5" source="DEMAND_WEEK_5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_6" source="DEMAND_WEEK_6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_7" source="DEMAND_WEEK_7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_8" source="DEMAND_WEEK_8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_9" source="DEMAND_WEEK_9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_10" source="DEMAND_WEEK_10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_11" source="DEMAND_WEEK_11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_12" source="DEMAND_WEEK_12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_13" source="DEMAND_WEEK_13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_14" source="DEMAND_WEEK_14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_15" source="DEMAND_WEEK_15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_16" source="DEMAND_WEEK_16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_17" source="DEMAND_WEEK_17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_18" source="DEMAND_WEEK_18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_19" source="DEMAND_WEEK_19"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_20" source="DEMAND_WEEK_20"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_21" source="DEMAND_WEEK_21"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_22" source="DEMAND_WEEK_22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_23" source="DEMAND_WEEK_23"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_24" source="DEMAND_WEEK_24"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_25" source="DEMAND_WEEK_25"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_26" source="DEMAND_WEEK_26"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_27" source="DEMAND_WEEK_27"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_28" source="DEMAND_WEEK_28"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_29" source="DEMAND_WEEK_29"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_30" source="DEMAND_WEEK_30"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_31" source="DEMAND_WEEK_31"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_32" source="DEMAND_WEEK_32"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_33" source="DEMAND_WEEK_33"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_34" source="DEMAND_WEEK_34"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_35" source="DEMAND_WEEK_35"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_36" source="DEMAND_WEEK_36"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_37" source="DEMAND_WEEK_37"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_38" source="DEMAND_WEEK_38"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_39" source="DEMAND_WEEK_39"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_40" source="DEMAND_WEEK_40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_41" source="DEMAND_WEEK_41"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_42" source="DEMAND_WEEK_42"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_43" source="DEMAND_WEEK_43"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_44" source="DEMAND_WEEK_44"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_45" source="DEMAND_WEEK_45"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_46" source="DEMAND_WEEK_46"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_47" source="DEMAND_WEEK_47"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_48" source="DEMAND_WEEK_48"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_49" source="DEMAND_WEEK_49"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_50" source="DEMAND_WEEK_50"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_51" source="DEMAND_WEEK_51"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="rightOuter">
+      <viewAttributes>
+        <viewAttribute id="VRSIOTXT"/>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="Item"/>
+        <viewAttribute id="ItemDescription"/>
+        <viewAttribute id="CommodityCode"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="MaterialGroup"/>
+        <viewAttribute id="MaterialType"/>
+        <viewAttribute id="Plant"/>
+        <viewAttribute id="Technology"/>
+        <viewAttribute id="ToItem"/>
+        <viewAttribute id="ToItemDescription"/>
+        <viewAttribute id="GEOLevel"/>
+        <viewAttribute id="AvailableStock"/>
+        <viewAttribute id="DEMAND_WEEK_0"/>
+        <viewAttribute id="DEMAND_WEEK_1"/>
+        <viewAttribute id="DEMAND_WEEK_2"/>
+        <viewAttribute id="DEMAND_WEEK_3"/>
+        <viewAttribute id="DEMAND_WEEK_4"/>
+        <viewAttribute id="DEMAND_WEEK_5"/>
+        <viewAttribute id="DEMAND_WEEK_6"/>
+        <viewAttribute id="DEMAND_WEEK_7"/>
+        <viewAttribute id="DEMAND_WEEK_8"/>
+        <viewAttribute id="DEMAND_WEEK_9"/>
+        <viewAttribute id="DEMAND_WEEK_10"/>
+        <viewAttribute id="DEMAND_WEEK_11"/>
+        <viewAttribute id="DEMAND_WEEK_12"/>
+        <viewAttribute id="DEMAND_WEEK_13"/>
+        <viewAttribute id="DEMAND_WEEK_14"/>
+        <viewAttribute id="DEMAND_WEEK_15"/>
+        <viewAttribute id="DEMAND_WEEK_16"/>
+        <viewAttribute id="DEMAND_WEEK_17"/>
+        <viewAttribute id="DEMAND_WEEK_18"/>
+        <viewAttribute id="DEMAND_WEEK_19"/>
+        <viewAttribute id="DEMAND_WEEK_20"/>
+        <viewAttribute id="DEMAND_WEEK_21"/>
+        <viewAttribute id="DEMAND_WEEK_22"/>
+        <viewAttribute id="DEMAND_WEEK_23"/>
+        <viewAttribute id="DEMAND_WEEK_24"/>
+        <viewAttribute id="DEMAND_WEEK_25"/>
+        <viewAttribute id="DEMAND_WEEK_26"/>
+        <viewAttribute id="DEMAND_WEEK_27"/>
+        <viewAttribute id="DEMAND_WEEK_28"/>
+        <viewAttribute id="DEMAND_WEEK_29"/>
+        <viewAttribute id="DEMAND_WEEK_30"/>
+        <viewAttribute id="DEMAND_WEEK_31"/>
+        <viewAttribute id="DEMAND_WEEK_32"/>
+        <viewAttribute id="DEMAND_WEEK_33"/>
+        <viewAttribute id="DEMAND_WEEK_34"/>
+        <viewAttribute id="DEMAND_WEEK_35"/>
+        <viewAttribute id="DEMAND_WEEK_36"/>
+        <viewAttribute id="DEMAND_WEEK_37"/>
+        <viewAttribute id="DEMAND_WEEK_38"/>
+        <viewAttribute id="DEMAND_WEEK_39"/>
+        <viewAttribute id="DEMAND_WEEK_40"/>
+        <viewAttribute id="DEMAND_WEEK_41"/>
+        <viewAttribute id="DEMAND_WEEK_42"/>
+        <viewAttribute id="DEMAND_WEEK_43"/>
+        <viewAttribute id="DEMAND_WEEK_44"/>
+        <viewAttribute id="DEMAND_WEEK_45"/>
+        <viewAttribute id="DEMAND_WEEK_46"/>
+        <viewAttribute id="DEMAND_WEEK_47"/>
+        <viewAttribute id="DEMAND_WEEK_48"/>
+        <viewAttribute id="DEMAND_WEEK_49"/>
+        <viewAttribute id="DEMAND_WEEK_50"/>
+        <viewAttribute id="DEMAND_WEEK_51"/>
+        <viewAttribute id="PlanningVersion"/>
+        <viewAttribute hidden="true" id="JOIN$MANDT$MANDT"/>
+        <viewAttribute hidden="true" id="JOIN$LOCID$LOCID"/>
+        <viewAttribute hidden="true" id="JOIN$MATID$MATID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_SNP010_STO_VERSION">
+        <mapping xsi:type="Calculation:AttributeMapping" target="AvailableStock" source="AvailableStock"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MANDT$MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MATID$MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$LOCID$LOCID" source="LOCID"/>
+      </input>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOTXT" source="VRSIOTXT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Item" source="Item"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ItemDescription" source="ItemDescription"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CommodityCode" source="CommodityCode"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialGroup" source="MaterialGroup"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialType" source="MaterialType"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Plant" source="Plant"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Technology" source="Technology"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ToItem" source="ToItem"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ToItemDescription" source="ToItemDescription"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GEOLevel" source="GEOLevel"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_0" source="DEMAND_WEEK_0"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_1" source="DEMAND_WEEK_1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_2" source="DEMAND_WEEK_2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_3" source="DEMAND_WEEK_3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_4" source="DEMAND_WEEK_4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_5" source="DEMAND_WEEK_5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_6" source="DEMAND_WEEK_6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_7" source="DEMAND_WEEK_7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_8" source="DEMAND_WEEK_8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_9" source="DEMAND_WEEK_9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_10" source="DEMAND_WEEK_10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_11" source="DEMAND_WEEK_11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_12" source="DEMAND_WEEK_12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_13" source="DEMAND_WEEK_13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_14" source="DEMAND_WEEK_14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_15" source="DEMAND_WEEK_15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_16" source="DEMAND_WEEK_16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_17" source="DEMAND_WEEK_17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_18" source="DEMAND_WEEK_18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_19" source="DEMAND_WEEK_19"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_20" source="DEMAND_WEEK_20"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_21" source="DEMAND_WEEK_21"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_22" source="DEMAND_WEEK_22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_23" source="DEMAND_WEEK_23"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_24" source="DEMAND_WEEK_24"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_25" source="DEMAND_WEEK_25"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_26" source="DEMAND_WEEK_26"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_27" source="DEMAND_WEEK_27"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_28" source="DEMAND_WEEK_28"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_29" source="DEMAND_WEEK_29"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_30" source="DEMAND_WEEK_30"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_31" source="DEMAND_WEEK_31"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_32" source="DEMAND_WEEK_32"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_33" source="DEMAND_WEEK_33"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_34" source="DEMAND_WEEK_34"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_35" source="DEMAND_WEEK_35"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_36" source="DEMAND_WEEK_36"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_37" source="DEMAND_WEEK_37"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_38" source="DEMAND_WEEK_38"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_39" source="DEMAND_WEEK_39"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_40" source="DEMAND_WEEK_40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_41" source="DEMAND_WEEK_41"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_42" source="DEMAND_WEEK_42"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_43" source="DEMAND_WEEK_43"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_44" source="DEMAND_WEEK_44"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_45" source="DEMAND_WEEK_45"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_46" source="DEMAND_WEEK_46"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_47" source="DEMAND_WEEK_47"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_48" source="DEMAND_WEEK_48"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_49" source="DEMAND_WEEK_49"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_50" source="DEMAND_WEEK_50"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DEMAND_WEEK_51" source="DEMAND_WEEK_51"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PlanningVersion" source="PlanningVersion"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MANDT$MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MATID$MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$LOCID$LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="JOIN$MANDT$MANDT"/>
+      <joinAttribute name="JOIN$MATID$MATID"/>
+      <joinAttribute name="JOIN$LOCID$LOCID"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_2">
+    <attributes>
+      <attribute id="VRSIOTXT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOTXT"/>
+        <keyMapping columnObjectName="Join_2" columnName="VRSIOTXT"/>
+      </attribute>
+      <attribute id="MANDT" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_2" columnName="MANDT"/>
+      </attribute>
+      <attribute id="Item" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Join_2" columnName="Item"/>
+      </attribute>
+      <attribute id="ItemDescription" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_2" columnName="ItemDescription"/>
+      </attribute>
+      <attribute id="CommodityCode" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="STAWN"/>
+        <keyMapping columnObjectName="Join_2" columnName="CommodityCode"/>
+      </attribute>
+      <attribute id="MRPController" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Join_2" columnName="Location"/>
+      </attribute>
+      <attribute id="MaterialGroup" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATKL"/>
+        <keyMapping columnObjectName="Join_2" columnName="MaterialGroup"/>
+      </attribute>
+      <attribute id="MaterialType" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MTART"/>
+        <keyMapping columnObjectName="Join_2" columnName="MaterialType"/>
+      </attribute>
+      <attribute id="Plant" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_2" columnName="Plant"/>
+      </attribute>
+      <attribute id="Technology" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Technology"/>
+        <keyMapping columnObjectName="Join_2" columnName="Technology"/>
+      </attribute>
+      <attribute id="ToItem" order="13" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="FCST_MATNR"/>
+        <keyMapping columnObjectName="Join_2" columnName="ToItem"/>
+      </attribute>
+      <attribute id="ToItemDescription" order="15" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_2" columnName="ToItemDescription"/>
+      </attribute>
+      <attribute id="GEOLevel" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="GEO_LEVEL"/>
+        <keyMapping columnObjectName="Join_2" columnName="GEOLevel"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="ITEM_NO_ZERO" hidden="false" order="4" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ITEM_NO_ZERO"/>
+        <keyCalculation datatype="NVARCHAR" length="40">
+          <formula>LTRIM(&quot;Item&quot;,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="TECH_NO_ZERO" hidden="false" order="12" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TECH_NO_ZERO"/>
+        <keyCalculation datatype="NVARCHAR" length="40">
+          <formula>LTRIM(&quot;Technology&quot;,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="TO_ITEM_NO_ZERO" hidden="false" order="14" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="TO_ITEM_NO_ZERO"/>
+        <keyCalculation datatype="NVARCHAR" length="40">
+          <formula>LTRIM(&quot;ToItem&quot;,'0')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="AvailableStock" order="17" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="STOCK_QTY"/>
+        <measureMapping columnObjectName="Join_2" columnName="AvailableStock"/>
+      </measure>
+      <measure id="DEMAND_WEEK_0" order="18" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_0"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_0"/>
+      </measure>
+      <measure id="DEMAND_WEEK_1" order="19" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_1"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_1"/>
+      </measure>
+      <measure id="DEMAND_WEEK_2" order="20" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_2"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_2"/>
+      </measure>
+      <measure id="DEMAND_WEEK_3" order="21" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_3"/>
+      </measure>
+      <measure id="DEMAND_WEEK_4" order="22" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_4"/>
+      </measure>
+      <measure id="DEMAND_WEEK_5" order="23" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_5"/>
+      </measure>
+      <measure id="DEMAND_WEEK_6" order="24" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_6"/>
+      </measure>
+      <measure id="DEMAND_WEEK_7" order="25" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_7"/>
+      </measure>
+      <measure id="DEMAND_WEEK_8" order="26" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_8"/>
+      </measure>
+      <measure id="DEMAND_WEEK_9" order="27" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_9"/>
+      </measure>
+      <measure id="DEMAND_WEEK_10" order="28" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_10"/>
+      </measure>
+      <measure id="DEMAND_WEEK_11" order="29" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_11"/>
+      </measure>
+      <measure id="DEMAND_WEEK_12" order="30" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_12"/>
+      </measure>
+      <measure id="DEMAND_WEEK_13" order="31" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_13"/>
+      </measure>
+      <measure id="DEMAND_WEEK_14" order="32" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_14"/>
+      </measure>
+      <measure id="DEMAND_WEEK_15" order="33" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_15"/>
+      </measure>
+      <measure id="DEMAND_WEEK_16" order="34" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_16"/>
+      </measure>
+      <measure id="DEMAND_WEEK_17" order="35" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_17"/>
+      </measure>
+      <measure id="DEMAND_WEEK_18" order="36" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_18"/>
+      </measure>
+      <measure id="DEMAND_WEEK_19" order="37" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_19"/>
+      </measure>
+      <measure id="DEMAND_WEEK_20" order="38" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_20"/>
+      </measure>
+      <measure id="DEMAND_WEEK_21" order="39" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_21"/>
+      </measure>
+      <measure id="DEMAND_WEEK_22" order="40" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_22"/>
+      </measure>
+      <measure id="DEMAND_WEEK_23" order="41" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_23"/>
+      </measure>
+      <measure id="DEMAND_WEEK_24" order="42" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_24"/>
+      </measure>
+      <measure id="DEMAND_WEEK_25" order="43" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_25"/>
+      </measure>
+      <measure id="DEMAND_WEEK_26" order="44" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_26"/>
+      </measure>
+      <measure id="DEMAND_WEEK_27" order="45" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_27"/>
+      </measure>
+      <measure id="DEMAND_WEEK_28" order="46" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_28"/>
+      </measure>
+      <measure id="DEMAND_WEEK_29" order="47" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_29"/>
+      </measure>
+      <measure id="DEMAND_WEEK_30" order="48" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_30"/>
+      </measure>
+      <measure id="DEMAND_WEEK_31" order="49" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_31"/>
+      </measure>
+      <measure id="DEMAND_WEEK_32" order="50" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_32"/>
+      </measure>
+      <measure id="DEMAND_WEEK_33" order="51" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_33"/>
+      </measure>
+      <measure id="DEMAND_WEEK_34" order="52" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_34"/>
+      </measure>
+      <measure id="DEMAND_WEEK_35" order="53" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_35"/>
+      </measure>
+      <measure id="DEMAND_WEEK_36" order="54" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_36"/>
+      </measure>
+      <measure id="DEMAND_WEEK_37" order="55" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_37"/>
+      </measure>
+      <measure id="DEMAND_WEEK_38" order="56" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_38"/>
+      </measure>
+      <measure id="DEMAND_WEEK_39" order="57" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_39"/>
+      </measure>
+      <measure id="DEMAND_WEEK_40" order="58" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_40"/>
+      </measure>
+      <measure id="DEMAND_WEEK_41" order="59" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_41"/>
+      </measure>
+      <measure id="DEMAND_WEEK_42" order="60" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_42"/>
+      </measure>
+      <measure id="DEMAND_WEEK_43" order="61" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_43"/>
+      </measure>
+      <measure id="DEMAND_WEEK_44" order="62" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_44"/>
+      </measure>
+      <measure id="DEMAND_WEEK_45" order="63" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_45"/>
+      </measure>
+      <measure id="DEMAND_WEEK_46" order="64" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_46"/>
+      </measure>
+      <measure id="DEMAND_WEEK_47" order="65" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_47"/>
+      </measure>
+      <measure id="DEMAND_WEEK_48" order="66" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_48"/>
+      </measure>
+      <measure id="DEMAND_WEEK_49" order="67" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_49"/>
+      </measure>
+      <measure id="DEMAND_WEEK_50" order="68" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_50"/>
+      </measure>
+      <measure id="DEMAND_WEEK_51" order="69" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DEMAND_WEEK_3"/>
+        <measureMapping columnObjectName="Join_2" columnName="DEMAND_WEEK_51"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

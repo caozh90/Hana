@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CA_SNP002_STO_PROC_VEND_SPLIT" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CA_SNP002_STO_PROC_VEND_SPLIT "/>
+  <localVariables>
+    <variable id="IV_VERSION" parameter="true">
+      <descriptions defaultDescription="IV_VERSION"/>
+      <variableProperties datatype="VARCHAR" defaultValue="000" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CA_SNP002_STO_OWN">
+      <targetVariable name="IV_VERSION" resourceUri="/aporeporting.model.SNP002/calculationviews/CA_SNP002_STO_OWN"/>
+      <localVariable>#IV_VERSION</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CA_SNP002_STO_SUP">
+      <targetVariable name="IV_VERSION" resourceUri="/aporeporting.model.SNP002/calculationviews/CA_SNP002_STO_SUP"/>
+      <localVariable>#IV_VERSION</localVariable>
+    </mapping>
+  </variableMappings>
+  <informationModelLayout relativeWidthScenario="40"/>
+  <dataSources>
+    <DataSource id="CA_SNP002_STO_PROC_OWN" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP002/calculationviews/CA_SNP002_STO_PROC_OWN</resourceUri>
+    </DataSource>
+    <DataSource id="CA_SNP002_STO_OWN" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP002/calculationviews/CA_SNP002_STO_OWN</resourceUri>
+    </DataSource>
+    <DataSource id="CA_SNP002_STO_PROC_01" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP002/calculationviews/CA_SNP002_STO_PROC_01</resourceUri>
+    </DataSource>
+    <DataSource id="CA_SNP002_STO_SUP" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP002/calculationviews/CA_SNP002_STO_SUP</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="OWN_STOCK_QTY"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="DATUV"/>
+        <viewAttribute id="DATUB"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CA_SNP002_STO_PROC_OWN">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+      </input>
+      <input node="#CA_SNP002_STO_OWN">
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY" source="OWN_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_LOCID"/>
+        <viewAttribute id="VENDER_DESCR40"/>
+        <viewAttribute id="VENDER_LOCNO"/>
+        <viewAttribute id="SUP_STOCK_QTY"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="ADDLOCID"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="DATUV"/>
+        <viewAttribute id="DATUB"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CA_SNP002_STO_PROC_01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="VENDER_LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_DESCR40" source="VENDER_DESCR40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCNO" source="VENDER_LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+      </input>
+      <input node="#CA_SNP002_STO_SUP">
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY" source="SUP_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDLOCID" source="ADDLOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="ADDLOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+      <joinAttribute name="VENDER_LOCID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="OWN_STOCK_QTY"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP"/>
+        <viewAttribute id="SUP_STOCK_QTY"/>
+        <viewAttribute id="ADDLOCID"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_LOCID"/>
+        <viewAttribute id="VENDER_DESCR40"/>
+        <viewAttribute id="VENDER_LOCNO"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="DATUV"/>
+        <viewAttribute id="DATUB"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY" source="OWN_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="SUP_STOCK_QTY" null="true" value=""/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="ADDLOCID" null="true" value=""/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="LOCFR" null="true" value=""/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="VENDER_LOCID" null="true" value=""/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="VENDER_DESCR40" null="true" value=""/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="VENDER_LOCNO" null="true" value=""/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:ConstantAttributeMapping" target="OWN_STOCK_QTY" null="true" value=""/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY" source="SUP_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDLOCID" source="ADDLOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="VENDER_LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_DESCR40" source="VENDER_DESCR40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCNO" source="VENDER_LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="OWN_STOCK_QTY"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="CDATE"/>
+        <viewAttribute id="CTIME"/>
+        <viewAttribute id="PLN_VERSION_TIMESTAMP"/>
+        <viewAttribute id="SUP_STOCK_QTY"/>
+        <viewAttribute id="ADDLOCID"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_LOCID"/>
+        <viewAttribute id="VENDER_DESCR40"/>
+        <viewAttribute id="VENDER_LOCNO"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="DATUV"/>
+        <viewAttribute id="DATUB"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Union_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="OWN_STOCK_QTY" source="OWN_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CDATE" source="CDATE"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CTIME" source="CTIME"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLN_VERSION_TIMESTAMP" source="PLN_VERSION_TIMESTAMP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="SUP_STOCK_QTY" source="SUP_STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ADDLOCID" source="ADDLOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="VENDER_LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_DESCR40" source="VENDER_DESCR40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCNO" source="VENDER_LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUV" source="DATUV"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DATUB" source="DATUB"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Projection_1">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="GRPID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="GRPID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="GRPID"/>
+      </attribute>
+      <attribute id="GRPNM" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="GRPNM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="GRPNM"/>
+      </attribute>
+      <attribute id="DISPO" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="DISPO"/>
+      </attribute>
+      <attribute id="PRRTY" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRRTY"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PRRTY"/>
+      </attribute>
+      <attribute id="LOCNO" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="AENAM" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="AENAM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="AENAM"/>
+      </attribute>
+      <attribute id="LOCID" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MATID" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATID"/>
+      </attribute>
+      <attribute id="MATNR" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MATNR"/>
+      </attribute>
+      <attribute id="MAKTX" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="VERSIOD" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="MEINS" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="Projection_1" columnName="MEINS"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="18" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="CDATE" order="19" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CDATE"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CDATE"/>
+      </attribute>
+      <attribute id="CTIME" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CTIME"/>
+        <keyMapping columnObjectName="Projection_1" columnName="CTIME"/>
+      </attribute>
+      <attribute id="PLN_VERSION_TIMESTAMP" order="21" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLN_VERSION_TIMESTAMP"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PLN_VERSION_TIMESTAMP"/>
+      </attribute>
+      <attribute id="ADDLOCID" order="23" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ADDLOCID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="ADDLOCID"/>
+      </attribute>
+      <attribute id="LOCFR" order="24" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCFR"/>
+        <keyMapping columnObjectName="Projection_1" columnName="LOCFR"/>
+      </attribute>
+      <attribute id="VENDER_LOCID" order="25" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VENDER_LOCID"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VENDER_LOCID"/>
+      </attribute>
+      <attribute id="VENDER_DESCR40" order="26" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VENDER_DESCR40"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VENDER_DESCR40"/>
+      </attribute>
+      <attribute id="VENDER_LOCNO" order="27" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VENDER_LOCNO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="VENDER_LOCNO"/>
+      </attribute>
+      <attribute id="PG_VALID_FROM" order="28" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PG_VALID_FROM"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PG_VALID_FROM"/>
+      </attribute>
+      <attribute id="PG_VALID_TO" order="29" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PG_VALID_TO"/>
+        <keyMapping columnObjectName="Projection_1" columnName="PG_VALID_TO"/>
+      </attribute>
+      <attribute id="DATUV" order="30" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DATUV"/>
+        <keyMapping columnObjectName="Projection_1" columnName="DATUV"/>
+      </attribute>
+      <attribute id="DATUB" order="31" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DATUB"/>
+        <keyMapping columnObjectName="Projection_1" columnName="DATUB"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="CHANGEUTC" order="7" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="CHANGEUTC"/>
+        <measureMapping columnObjectName="Projection_1" columnName="CHANGEUTC"/>
+      </measure>
+      <measure id="PRIORITY" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="PRIORITY"/>
+        <measureMapping columnObjectName="Projection_1" columnName="PRIORITY"/>
+      </measure>
+      <measure id="PROPORTION" order="13" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="PROPORTION"/>
+        <measureMapping columnObjectName="Projection_1" columnName="PROPORTION"/>
+      </measure>
+      <measure id="OWN_STOCK_QTY" order="15" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="OWN_STOCK_QTY"/>
+        <measureMapping columnObjectName="Projection_1" columnName="OWN_STOCK_QTY"/>
+      </measure>
+      <measure id="SUP_STOCK_QTY" order="22" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="SUP_STOCK_QTY"/>
+        <measureMapping columnObjectName="Projection_1" columnName="SUP_STOCK_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="0" y="370"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="200" y="370"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="90" y="250"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="170" y="156"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

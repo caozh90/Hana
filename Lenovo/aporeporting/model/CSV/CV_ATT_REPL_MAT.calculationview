@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AccessControl="http://www.sap.com/ndb/SQLCoreModelAccessControl.ecore" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.2" id="CV_ATT_REPL_MAT" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="true" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_ATT_REPL_MAT"/>
+  <localVariables>
+    <variable id="IP_PLANT_NO" parameter="true">
+      <descriptions defaultDescription="IP_PLANT_NO"/>
+      <variableProperties datatype="NVARCHAR" defaultValue="U400" length="10" mandatory="true">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SNP_011">
+      <targetVariable name="IP_LOCNO" resourceUri="/aporeporting.model.CSV/calculationviews/CV_SNP_011"/>
+      <localVariable>#IP_PLANT_NO</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SUPPLIER_STO_COM">
+      <targetVariable name="IP_LOCNO" resourceUri="/aporeporting.model.CSV/calculationviews/CV_SUPPLIER_STO_COM"/>
+      <localVariable>#IP_PLANT_NO</localVariable>
+    </mapping>
+    <mapping xsi:type="Variable:ConstantVariableMapping" dataSource="#CV_SUPPLIER_STO_COM" value="010">
+      <targetVariable name="IP_VERSION" resourceUri="/aporeporting.model.CSV/calculationviews/CV_SUPPLIER_STO_COM"/>
+    </mapping>
+    <mapping xsi:type="Variable:ConstantVariableMapping" dataSource="#CV_OWN_STO_COM" value="010">
+      <targetVariable name="IP_VERSION" resourceUri="/aporeporting.model.CSV/calculationviews/CV_OWN_STO_COM"/>
+    </mapping>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_OWN_STO_COM">
+      <targetVariable name="IP_LOCNO" resourceUri="/aporeporting.model.CSV/calculationviews/CV_OWN_STO_COM"/>
+      <localVariable>#IP_PLANT_NO</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_SNP_011" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_SNP_011</resourceUri>
+    </DataSource>
+    <DataSource id="CV_SUPPLIER_STO_COM" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_SUPPLIER_STO_COM</resourceUri>
+    </DataSource>
+    <DataSource id="CV_OWN_STO_COM" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_OWN_STO_COM</resourceUri>
+    </DataSource>
+    <DataSource id="CV_ATT_MAT" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.CSV/calculationviews/CV_ATT_MAT</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="QTY1"/>
+        <viewAttribute id="QTY2"/>
+        <viewAttribute id="QTY3"/>
+        <viewAttribute id="QTY4"/>
+        <viewAttribute id="QTY5"/>
+        <viewAttribute id="QTY6"/>
+        <viewAttribute id="QTY7"/>
+        <viewAttribute id="QTY8"/>
+        <viewAttribute id="QTY9"/>
+        <viewAttribute id="QTY10"/>
+        <viewAttribute id="QTY11"/>
+        <viewAttribute id="QTY12"/>
+        <viewAttribute id="QTY13"/>
+        <viewAttribute id="QTY14"/>
+        <viewAttribute id="QTY15"/>
+        <viewAttribute id="QTY16"/>
+        <viewAttribute id="QTY17"/>
+        <viewAttribute id="QTY18"/>
+        <viewAttribute id="QTY19"/>
+        <viewAttribute id="QTY20"/>
+        <viewAttribute id="QTY21"/>
+        <viewAttribute id="QTY22"/>
+        <viewAttribute id="QTY23"/>
+        <viewAttribute id="QTY24"/>
+        <viewAttribute id="QTY25"/>
+        <viewAttribute id="QTY26"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="INTEGER" id="IS_VALID">
+          <filter xsi:type="AccessControl:SingleValueFilter" operator="GT" including="true" value="0"/>
+          <formula>&quot;QTY1&quot;+&quot;QTY2&quot;+&quot;QTY3&quot;+&quot;QTY4&quot;+&quot;QTY5&quot;+&quot;QTY6&quot;+&quot;QTY7&quot;+&quot;QTY8&quot;+&quot;QTY9&quot;+&quot;QTY10&quot;+&quot;QTY11&quot;+&quot;QTY12&quot;+&quot;QTY13&quot;+&quot;QTY14&quot;+ &quot;QTY15&quot;+&quot;QTY16&quot;+&quot;QTY17&quot;+&quot;QTY18&quot;+&quot;QTY19&quot;+&quot;QTY20&quot;+&quot;QTY21&quot;+&quot;QTY22&quot;+&quot;QTY23&quot;+&quot;QTY24&quot;+&quot;QTY25&quot;+&quot;QTY26&quot;</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="NVARCHAR" id="LOCNO" length="10">
+          <formula>'$$IP_PLANT_NO$$'</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CV_SNP_011">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="NODE_PARTNUM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATL_GROUP"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="PART_DESC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY1" source="QTY1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY2" source="QTY2"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY3" source="QTY3"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY4" source="QTY4"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY5" source="QTY5"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY6" source="QTY6"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY7" source="QTY7"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY8" source="QTY8"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY9" source="QTY9"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY10" source="QTY10"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY11" source="QTY11"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY12" source="QTY12"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY13" source="QTY13"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY14" source="QTY14"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY15" source="QTY15"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY16" source="QTY16"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY17" source="QTY17"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY18" source="QTY18"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY19" source="QTY19"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY20" source="QTY20"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY21" source="QTY21"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY22" source="QTY22"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY23" source="QTY23"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY24" source="QTY24"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY25" source="QTY25"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="QTY26" source="QTY26"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="STOCK_QTY">
+          <filter xsi:type="AccessControl:SingleValueFilter" operator="GT" including="true" value="0"/>
+        </viewAttribute>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_SUPPLIER_STO_COM">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_3">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="STOCK_QTY">
+          <filter xsi:type="AccessControl:SingleValueFilter" operator="GT" including="true" value="0"/>
+        </viewAttribute>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_OWN_STO_COM">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCNO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute hidden="true" id="JOIN$MATID$MATID"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="VARCHAR" id="MATNR1" length="20">
+          <formula>rightstr(&quot;MATNR&quot;, 12)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MATKL1" length="20">
+          <formula>leftstr(&quot;MATKL&quot;, 20)</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="VARCHAR" id="MAKTX1" length="40">
+          <formula>leftstr(&quot;MAKTX&quot;,40)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Union_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MATID$MATID" source="MATID"/>
+      </input>
+      <input node="#CV_ATT_MAT">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MATID$MATID" source="MATID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="JOIN$MATID$MATID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_4">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="LOCNO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:UnionView" id="Union_2">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="MATKL"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="LOCNO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input emptyUnionBehavior="NO_ROW" node="#Projection_4">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+      </input>
+      <input emptyUnionBehavior="NO_ROW" node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATKL" source="MATKL1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX1"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Union_2">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Union_2" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATNR" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Union_2" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Union_2" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MATKL" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATKL"/>
+        <keyMapping columnObjectName="Union_2" columnName="MATKL"/>
+      </attribute>
+      <attribute id="MAKTX" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Union_2" columnName="MAKTX"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="99" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="377"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="493"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="253" y="493"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="377"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="281"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="281"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Union_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

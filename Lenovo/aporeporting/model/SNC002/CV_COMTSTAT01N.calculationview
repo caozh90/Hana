@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_COMTSTAT01N" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="reportingEnabled" calculationScenarioType="SCRIPT_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <descriptions defaultDescription="Supplier commitment statistics"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="MANDT" length="3"/>
+        <viewAttribute datatype="NVARCHAR" id="LOCNO_FROM" length="40"/>
+        <viewAttribute datatype="NVARCHAR" id="DESCR40_FROM" length="40"/>
+        <viewAttribute datatype="NVARCHAR" id="MATNR" length="40"/>
+        <viewAttribute datatype="NVARCHAR" id="LOCNO" length="20"/>
+        <viewAttribute datatype="DECIMAL" id="STOCK_QTY" length="15" scale="3"/>
+        <viewAttribute datatype="DECIMAL" id="MAT_QTY_MD" length="31" scale="14"/>
+        <viewAttribute datatype="DECIMAL" id="MAT_QTY_QD" length="31" scale="14"/>
+        <viewAttribute datatype="DECIMAL" id="MAT_QTY_YD" length="31" scale="14"/>
+        <viewAttribute datatype="DECIMAL" id="MAT_QTY_MC" length="31" scale="14"/>
+        <viewAttribute datatype="DECIMAL" id="MAT_QTY_QC" length="31" scale="14"/>
+        <viewAttribute datatype="DECIMAL" id="MAT_QTY_YC" length="31" scale="14"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition>
+BEGIN 
+ 
+
+
+LT_SDT1 = 
+
+SELECT  &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,  TO_CHAR(MAX(CC_UTCDATE),'YYYYMMDD') AS CC_UTCDATE,
+TO_CHAR(max(&quot;CC_LOCDT&quot;),'YYYYMMDD') AS &quot;CC_LOCDT&quot; 
+FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_SNC_INVCOMT01A&quot; 
+where CC_LOCDT &lt; add_days(current_date ,2) 
+GROUP BY &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot; ;
+
+LT_SDT2 = 
+
+SELECT 
+*
+, LEFT(CC_LOCDT,6) AS CALMONTH, 
+case 
+when RIGHT(CC_LOCDT, 2) &lt; '27' 
+then '0'
+else
+'1'
+end as cut_flag 
+FROM :LT_SDT1;
+
+LT_SDT = 
+
+SELECT &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,CC_UTCDATE,CC_LOCDT ,CUT_FLAG, 
+B.CEND_M AS EM,B.CEND_Q AS EQ ,B.CEND_Y AS EY
+FROM :LT_SDT2 A INNER JOIN 
+&quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/AT_SNC_ENDDATE01&quot; B 
+ON A.CALMONTH = B.RPT_MONTH 
+WHERE CUT_FLAG = '0'
+UNION ALL 
+SELECT &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,CC_UTCDATE,CC_LOCDT ,CUT_FLAG, 
+B.NEND_M AS EM,B.NEND_Q AS EQ ,B.NEND_Y AS EY
+FROM :LT_SDT2 A INNER JOIN 
+&quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/AT_SNC_ENDDATE01&quot; B 
+ON A.CALMONTH = B.RPT_MONTH 
+WHERE CUT_FLAG = '1'
+;
+
+
+
+LT_DEMD = 
+
+SELECT A.*,B.EM,B.EQ,B.EY FROM 
+&quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_SNC_DEMAND01&quot; A 
+INNER JOIN :LT_SDT B 
+ON A.MANDT = B.MANDT AND A.LOCNO_FROM = B.LOCNO_FROM AND A.LOCNO = B.LOCNO 
+AND A.MATNR = B.MATNR 
+WHERE 
+A.CC_LOCDT >= B.CC_LOCDT AND A.CC_LOCDT &lt; B.EY;
+
+LT_COMT = 
+
+SELECT A.*,B.EM,B.EQ,B.EY FROM 
+&quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_SNC_COMMIT01&quot; A 
+INNER JOIN :LT_SDT B 
+ON A.MANDT = B.MANDT AND A.LOCNO_FROM = B.LOCNO_FROM AND A.LOCNO = B.LOCNO 
+AND A.MATNR = B.MATNR 
+WHERE 
+A.CC_LOCDT >= B.CC_LOCDT AND A.CC_LOCDT &lt; B.EY;
+
+LT_STOCK = 
+
+SELECT &quot;MANDT&quot;,&quot;LOCNO_FROM&quot;,&quot;DESCR40_FROM&quot;,&quot;MATNR&quot;,LOCNO,&quot;STOCK_QTY&quot; 
+,0 AS &quot;MAT_QTY_MD&quot; , 0 AS &quot;MAT_QTY_QD&quot;,0 AS &quot;MAT_QTY_YD&quot;,
+0 AS &quot;MAT_QTY_MC&quot;, 0 AS &quot;MAT_QTY_QC&quot;,0 AS &quot;MAT_QTY_YC&quot;
+FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/AT_SNC_SUPINV01&quot;
+;
+LT_DEMD_M = 
+
+SELECT &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,    
+--sum(&quot;MAT_QTY&quot;) AS &quot;MAT_QTY_MD&quot; 
+0 AS &quot;STOCK_QTY&quot; , &quot;MAT_QTY&quot; AS &quot;MAT_QTY_MD&quot; , 0 AS &quot;MAT_QTY_QD&quot;,0 AS &quot;MAT_QTY_YD&quot;,
+0 AS &quot;MAT_QTY_MC&quot;, 0 AS &quot;MAT_QTY_QC&quot;,0 AS &quot;MAT_QTY_YC&quot;
+FROM :LT_DEMD
+WHERE  CC_LOCDT &lt; EM 
+--GROUP BY &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,  
+;
+
+LT_COMT_M = 
+
+SELECT &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,    
+--sum(&quot;MAT_QTY&quot;) AS &quot;MAT_QTY_MC&quot; ,
+0 AS &quot;STOCK_QTY&quot; , 0 AS &quot;MAT_QTY_MD&quot; , 0 AS &quot;MAT_QTY_QD&quot;,0 AS &quot;MAT_QTY_YD&quot;,
+&quot;MAT_QTY&quot; AS &quot;MAT_QTY_MC&quot;, 0 AS &quot;MAT_QTY_QC&quot;,0 AS &quot;MAT_QTY_YC&quot;
+FROM :LT_COMT 
+WHERE  CC_LOCDT &lt; EM 
+--GROUP BY &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,  
+;
+
+LT_DEMD_Q = 
+
+SELECT &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,    
+--sum(&quot;MAT_QTY&quot;) AS &quot;MAT_QTY_QD&quot; 
+0 AS &quot;STOCK_QTY&quot; , 0 AS &quot;MAT_QTY_MD&quot; , &quot;MAT_QTY&quot; AS &quot;MAT_QTY_QD&quot;,0 AS &quot;MAT_QTY_YD&quot;,
+0 AS &quot;MAT_QTY_MC&quot;, 0 AS &quot;MAT_QTY_QC&quot;,0 AS &quot;MAT_QTY_YC&quot;
+FROM :LT_DEMD 
+WHERE  CC_LOCDT &lt; EQ
+--GROUP BY &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,  
+;
+
+LT_COMT_Q = 
+
+SELECT &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,   
+--sum(&quot;MAT_QTY&quot;) AS &quot;MAT_QTY_QC&quot; 
+0 AS &quot;STOCK_QTY&quot; , 0 AS &quot;MAT_QTY_MD&quot; , 0 AS &quot;MAT_QTY_QD&quot;,0 AS &quot;MAT_QTY_YD&quot;,
+0 AS &quot;MAT_QTY_MC&quot;, &quot;MAT_QTY&quot; AS &quot;MAT_QTY_QC&quot;,0 AS &quot;MAT_QTY_YC&quot;
+FROM :LT_COMT 
+WHERE  CC_LOCDT &lt; EQ 
+--GROUP BY &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,  
+;
+
+LT_DEMD_Y = 
+
+SELECT &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,   
+--sum(&quot;MAT_QTY&quot;) AS &quot;MAT_QTY_YD&quot; 
+0 AS &quot;STOCK_QTY&quot; , 0 AS &quot;MAT_QTY_MD&quot; , 0 AS &quot;MAT_QTY_QD&quot;,&quot;MAT_QTY&quot; AS &quot;MAT_QTY_YD&quot;,
+0 AS &quot;MAT_QTY_MC&quot;, 0 AS &quot;MAT_QTY_QC&quot;,0 AS &quot;MAT_QTY_YC&quot;
+FROM :LT_DEMD 
+WHERE  CC_LOCDT &lt; EY 
+--GROUP BY &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,  
+;
+
+LT_COMT_Y = 
+
+SELECT &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,    
+--sum(&quot;MAT_QTY&quot;) AS &quot;MAT_QTY_YC&quot; 
+0 AS &quot;STOCK_QTY&quot; , 0 AS &quot;MAT_QTY_MD&quot; , 0 AS &quot;MAT_QTY_QD&quot;,0 AS &quot;MAT_QTY_YD&quot;,
+0 AS &quot;MAT_QTY_MC&quot;, 0 AS &quot;MAT_QTY_QC&quot;,&quot;MAT_QTY&quot; AS &quot;MAT_QTY_YC&quot;
+FROM :LT_COMT
+WHERE  CC_LOCDT &lt; EY 
+--GROUP BY &quot;MANDT&quot;, &quot;LOCNO_FROM&quot;, &quot;DESCR40_FROM&quot;, &quot;MATNR&quot;, &quot;LOCNO&quot;,  
+;
+
+
+V1 = 
+CE_UNION_ALL(
+ :LT_STOCK
+,
+ :LT_DEMD_M
+ );
+ V2 = 
+ CE_UNION_ALL(
+ :V1
+,
+ :LT_DEMD_Q
+ );
+ 
+ V3 = 
+ CE_UNION_ALL(
+ :V2
+,
+  :LT_DEMD_Y
+  );
+  V4 = 
+  CE_UNION_ALL(
+ :V3
+,
+ :LT_COMT_M
+ );
+ V5 = 
+ CE_UNION_ALL(
+ :V4
+,
+ :LT_COMT_Q
+ );
+ VAR_OUT = 
+ CE_UNION_ALL(
+ :V5
+,
+ :LT_COMT_Y
+)
+;
+
+
+
+/*
+VAR_OUT = 
+SELECT 
+A.&quot;MANDT&quot;, A.&quot;LOCNO_FROM&quot;, A.&quot;DESCR40_FROM&quot;, A.&quot;MATNR&quot;, A.&quot;LOCNO&quot;,A.,
+B.STOCK_QTY, 
+A.&quot;MAT_QTY_MD&quot; , A.&quot;MAT_QTY_QD&quot;,A.&quot;MAT_QTY_YD&quot;,
+A.&quot;MAT_QTY_MC&quot;, A.&quot;MAT_QTY_QC&quot;,A.&quot;MAT_QTY_YC&quot;
+FROM :LT_O1 A INNER JOIN :LT_STOCK B ON 
+A.MANDT = B.MANDT AND A.LOCNO_FROM = B.LOCNO_FROM AND A.MATNR = B.MATNR ;
+*/
+
+
+
+
+
+
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MANDT"/>
+      </attribute>
+      <attribute id="LOCNO_FROM" order="2">
+        <descriptions defaultDescription="LOCNO_BP"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCNO_FROM"/>
+      </attribute>
+      <attribute id="DESCR40_FROM" order="3">
+        <descriptions defaultDescription="DESCR40_FROM"/>
+        <keyMapping columnObjectName="Script_View" columnName="DESCR40_FROM"/>
+      </attribute>
+      <attribute id="MATNR" order="4">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="5">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCNO"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="STOCK_QTY" order="6" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="STOCK_QTY"/>
+        <measureMapping columnObjectName="Script_View" columnName="STOCK_QTY"/>
+      </measure>
+      <measure id="MAT_QTY_MD" order="7" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_MD"/>
+        <measureMapping columnObjectName="Script_View" columnName="MAT_QTY_MD"/>
+      </measure>
+      <measure id="MAT_QTY_QD" order="8" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_QD"/>
+        <measureMapping columnObjectName="Script_View" columnName="MAT_QTY_QD"/>
+      </measure>
+      <measure id="MAT_QTY_YD" order="9" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_YD"/>
+        <measureMapping columnObjectName="Script_View" columnName="MAT_QTY_YD"/>
+      </measure>
+      <measure id="MAT_QTY_MC" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_MC"/>
+        <measureMapping columnObjectName="Script_View" columnName="MAT_QTY_MC"/>
+      </measure>
+      <measure id="MAT_QTY_QC" order="11" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_QC"/>
+        <measureMapping columnObjectName="Script_View" columnName="MAT_QTY_QC"/>
+      </measure>
+      <measure id="MAT_QTY_YC" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_YC"/>
+        <measureMapping columnObjectName="Script_View" columnName="MAT_QTY_YC"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

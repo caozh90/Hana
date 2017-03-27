@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_SNC_VERTICAL01_FCST_NOZERO" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="SCRIPT_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" scriptParametersCaseSensitive="true">
+  <origin/>
+  <descriptions defaultDescription="CV_SNC_VERTICAL01"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources/>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:SqlScriptView" id="Script_View">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute datatype="NVARCHAR" id="MANDT" length="3"/>
+        <viewAttribute datatype="VARBINARY" id="CHOBJ16" length="16"/>
+        <viewAttribute datatype="NVARCHAR" id="LOCID_FROM" length="22"/>
+        <viewAttribute datatype="NVARCHAR" id="LOCID" length="22"/>
+        <viewAttribute datatype="NVARCHAR" id="MATID" length="22"/>
+        <viewAttribute datatype="NVARCHAR" id="LOCNO_FROM" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="DESCR40_FROM" length="40"/>
+        <viewAttribute datatype="NVARCHAR" id="LOCNO" length="20"/>
+        <viewAttribute datatype="NVARCHAR" id="MATNR" length="40"/>
+        <viewAttribute datatype="NVARCHAR" id="BP_LOC" length="32"/>
+        <viewAttribute datatype="NVARCHAR" id="TZONE" length="6"/>
+        <viewAttribute datatype="NVARCHAR" id="BP_FROM" length="32"/>
+        <viewAttribute datatype="NVARCHAR" id="BP_SOURCE" length="32"/>
+        <viewAttribute datatype="VARBINARY" id="VRSIOID" length="16"/>
+        <viewAttribute datatype="NVARCHAR" id="KPRM" length="16"/>
+        <viewAttribute datatype="VARBINARY" id="CHOBJ" length="16"/>
+        <viewAttribute datatype="INTEGER" id="CLSTID"/>
+        <viewAttribute datatype="NVARCHAR" id="UNIT" length="3"/>
+        <viewAttribute datatype="VARCHAR" id="CLST_SEQ" length="4"/>
+        <viewAttribute datatype="VARBINARY" id="ZERO" length="7"/>
+        <viewAttribute datatype="DECIMAL" id="MAT_QTY" length="31" scale="14"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <definition> 
+ /********* Begin Procedure Script ************/ 
+ BEGIN 
+	 
+LT_FACT1   = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0001' AS CLST_SEQ, ZERO, V1  AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V1  != 0 );
+LT_FACT2   = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0002' AS CLST_SEQ, ZERO, V2  AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V2  != 0 );
+LT_FACT3   = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0003' AS CLST_SEQ, ZERO, V3  AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V3  != 0 );
+LT_FACT4   = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0004' AS CLST_SEQ, ZERO, V4  AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V4  != 0 );
+LT_FACT5   = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0005' AS CLST_SEQ, ZERO, V5  AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V5  != 0 );
+LT_FACT6   = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0006' AS CLST_SEQ, ZERO, V6  AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V6  != 0 );
+LT_FACT7   = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0007' AS CLST_SEQ, ZERO, V7  AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V7  != 0 );
+LT_FACT8   = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0008' AS CLST_SEQ, ZERO, V8  AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V8  != 0 );
+LT_FACT9   = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0009' AS CLST_SEQ, ZERO, V9  AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V9  != 0 );
+LT_FACT10  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0010' AS CLST_SEQ, ZERO, V10 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V10 != 0 );
+LT_FACT11  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0011' AS CLST_SEQ, ZERO, V11 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V11 != 0 );
+LT_FACT12  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0012' AS CLST_SEQ, ZERO, V12 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V12 != 0 );
+LT_FACT13  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0013' AS CLST_SEQ, ZERO, V13 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V13 != 0 );
+LT_FACT14  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0014' AS CLST_SEQ, ZERO, V14 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V14 != 0 );
+LT_FACT15  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0015' AS CLST_SEQ, ZERO, V15 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V15 != 0 );
+LT_FACT16  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0016' AS CLST_SEQ, ZERO, V16 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V16 != 0 );
+LT_FACT17  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0017' AS CLST_SEQ, ZERO, V17 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V17 != 0 );
+LT_FACT18  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0018' AS CLST_SEQ, ZERO, V18 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V18 != 0 );
+LT_FACT19  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0019' AS CLST_SEQ, ZERO, V19 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V19 != 0 );
+LT_FACT20  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0020' AS CLST_SEQ, ZERO, V20 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V20 != 0 );
+LT_FACT21  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0021' AS CLST_SEQ, ZERO, V21 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V21 != 0 );
+LT_FACT22  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0022' AS CLST_SEQ, ZERO, V22 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V22 != 0 );
+LT_FACT23  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0023' AS CLST_SEQ, ZERO, V23 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V23 != 0 );
+LT_FACT24  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0024' AS CLST_SEQ, ZERO, V24 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V24 != 0 );
+LT_FACT25  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0025' AS CLST_SEQ, ZERO, V25 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V25 != 0 );
+LT_FACT26  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0026' AS CLST_SEQ, ZERO, V26 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V26 != 0 );
+LT_FACT27  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0027' AS CLST_SEQ, ZERO, V27 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V27 != 0 );
+LT_FACT28  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0028' AS CLST_SEQ, ZERO, V28 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V28 != 0 );
+LT_FACT29  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0029' AS CLST_SEQ, ZERO, V29 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V29 != 0 );
+LT_FACT30  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0030' AS CLST_SEQ, ZERO, V30 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V30 != 0 );
+LT_FACT31  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0031' AS CLST_SEQ, ZERO, V31 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V31 != 0 );
+LT_FACT32  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0032' AS CLST_SEQ, ZERO, V32 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V32 != 0 );
+LT_FACT33  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0033' AS CLST_SEQ, ZERO, V33 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V33 != 0 );
+LT_FACT34  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0034' AS CLST_SEQ, ZERO, V34 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V34 != 0 );
+LT_FACT35  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0035' AS CLST_SEQ, ZERO, V35 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V35 != 0 );
+LT_FACT36  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0036' AS CLST_SEQ, ZERO, V36 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V36 != 0 );
+LT_FACT37  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0037' AS CLST_SEQ, ZERO, V37 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V37 != 0 );
+LT_FACT38  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0038' AS CLST_SEQ, ZERO, V38 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V38 != 0 );
+LT_FACT39  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0039' AS CLST_SEQ, ZERO, V39 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V39 != 0 );
+LT_FACT40  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0040' AS CLST_SEQ, ZERO, V40 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V40 != 0 );
+LT_FACT41  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0041' AS CLST_SEQ, ZERO, V41 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V41 != 0 );
+LT_FACT42  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0042' AS CLST_SEQ, ZERO, V42 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V42 != 0 );
+LT_FACT43  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0043' AS CLST_SEQ, ZERO, V43 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V43 != 0 );
+LT_FACT44  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0044' AS CLST_SEQ, ZERO, V44 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V44 != 0 );
+LT_FACT45  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0045' AS CLST_SEQ, ZERO, V45 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V45 != 0 );
+LT_FACT46  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0046' AS CLST_SEQ, ZERO, V46 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V46 != 0 );
+LT_FACT47  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0047' AS CLST_SEQ, ZERO, V47 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V47 != 0 );
+LT_FACT48  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0048' AS CLST_SEQ, ZERO, V48 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V48 != 0 );
+LT_FACT49  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0049' AS CLST_SEQ, ZERO, V49 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V49 != 0 );
+LT_FACT50  = SELECT &quot;MANDT&quot;,CHOBJ16,LOCID_FROM,LOCID,MATID,LOCNO_FROM,DESCR40_FROM,LOCNO,MATNR,BP_LOC,TZONE,BP_FROM,BP_SOURCE,&quot;VRSIOID&quot;,&quot;KPRM&quot;,&quot;CHOBJ&quot;,&quot;CLSTID&quot;,&quot;UNIT&quot; , '0050' AS CLST_SEQ, ZERO, V50 AS MAT_QTY FROM &quot;_SYS_BIC&quot;.&quot;aporeporting.model.SNC002/CV_DFC01RAW01&quot; WHERE  ( KPRM = 'ORDERFCST' AND  V50 != 0 );
+
+LT_PART1 = 
+SELECT * FROM :LT_FACT1 
+UNION ALL 
+SELECT * FROM :LT_FACT2 	 
+UNION ALL 
+SELECT * FROM :LT_FACT3
+UNION ALL 
+SELECT * FROM :LT_FACT4
+UNION ALL 
+SELECT * FROM :LT_FACT5;
+
+LT_PART2 = 
+SELECT * FROM :LT_PART1 	 	
+UNION ALL 
+SELECT * FROM :LT_FACT6 	 
+UNION ALL 
+SELECT * FROM :LT_FACT7
+UNION ALL 
+SELECT * FROM :LT_FACT8
+UNION ALL 
+SELECT * FROM :LT_FACT9;
+
+LT_PART3 = 
+
+SELECT * FROM :LT_PART2
+UNION ALL 
+SELECT * FROM :LT_FACT10 	 
+UNION ALL 
+SELECT * FROM :LT_FACT11
+UNION ALL 
+SELECT * FROM :LT_FACT12
+UNION ALL 
+SELECT * FROM :LT_FACT13
+UNION ALL 
+SELECT * FROM :LT_FACT14;
+
+
+LT_PART4 = 
+
+SELECT * FROM :LT_PART3
+UNION ALL 
+SELECT * FROM :LT_FACT15 	 
+UNION ALL 
+SELECT * FROM :LT_FACT16
+UNION ALL 
+SELECT * FROM :LT_FACT17
+UNION ALL 
+SELECT * FROM :LT_FACT18
+UNION ALL 
+SELECT * FROM :LT_FACT19;
+
+LT_PART5 = 
+
+SELECT * FROM :LT_PART4
+UNION ALL 
+SELECT * FROM :LT_FACT20 	 
+UNION ALL 
+SELECT * FROM :LT_FACT21
+UNION ALL 
+SELECT * FROM :LT_FACT22
+UNION ALL 
+SELECT * FROM :LT_FACT23
+UNION ALL 
+SELECT * FROM :LT_FACT24;
+
+LT_PART6 = 
+SELECT * FROM :LT_PART5
+UNION ALL 
+SELECT * FROM :LT_FACT25 	 
+UNION ALL 
+SELECT * FROM :LT_FACT26
+UNION ALL 
+SELECT * FROM :LT_FACT27
+UNION ALL 
+SELECT * FROM :LT_FACT28
+UNION ALL 
+SELECT * FROM :LT_FACT29;
+
+
+LT_PART7 = 
+
+SELECT * FROM :LT_PART6
+UNION ALL 
+SELECT * FROM :LT_FACT30 	 
+UNION ALL 
+SELECT * FROM :LT_FACT31
+UNION ALL 
+SELECT * FROM :LT_FACT32
+UNION ALL 
+SELECT * FROM :LT_FACT33
+UNION ALL 
+SELECT * FROM :LT_FACT34;
+
+LT_PART8 = 
+SELECT * FROM :LT_PART7
+UNION ALL 
+SELECT * FROM :LT_FACT35 	 
+UNION ALL 
+SELECT * FROM :LT_FACT36
+UNION ALL 
+SELECT * FROM :LT_FACT37
+UNION ALL 
+SELECT * FROM :LT_FACT38
+UNION ALL 
+SELECT * FROM :LT_FACT39;
+
+
+
+LT_PART9 = 
+
+SELECT * FROM :LT_PART8
+UNION ALL 
+SELECT * FROM :LT_FACT40 	 
+UNION ALL 
+SELECT * FROM :LT_FACT41
+UNION ALL 
+SELECT * FROM :LT_FACT42
+UNION ALL 
+SELECT * FROM :LT_FACT43
+UNION ALL 
+SELECT * FROM :LT_FACT44;
+
+VAR_OUT = 
+SELECT * FROM :LT_PART9
+UNION ALL 
+SELECT * FROM :LT_FACT45 	 
+UNION ALL 
+SELECT * FROM :LT_FACT46
+UNION ALL 
+SELECT * FROM :LT_FACT47
+UNION ALL 
+SELECT * FROM :LT_FACT48
+UNION ALL 
+SELECT * FROM :LT_FACT49
+UNION ALL 
+SELECT * FROM :LT_FACT50;	
+
+--VAR_OUT = SELECT * FROM :VAR_OUT1  ;
+
+END /********* End Procedure Script ************/</definition>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Script_View">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Script_View" columnName="MANDT"/>
+      </attribute>
+      <attribute id="CHOBJ16" order="2">
+        <descriptions defaultDescription="CHOBJ16"/>
+        <keyMapping columnObjectName="Script_View" columnName="CHOBJ16"/>
+      </attribute>
+      <attribute id="LOCID_FROM" order="3">
+        <descriptions defaultDescription="LOCID_FROM"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCID_FROM"/>
+      </attribute>
+      <attribute id="LOCID" order="4">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MATID" order="5">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCNO_FROM" order="6">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCNO_FROM"/>
+      </attribute>
+      <attribute id="DESCR40_FROM" order="7">
+        <descriptions defaultDescription="DESCR40_FROM"/>
+        <keyMapping columnObjectName="Script_View" columnName="DESCR40_FROM"/>
+      </attribute>
+      <attribute id="LOCNO" order="8">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Script_View" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="MATNR" order="9">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Script_View" columnName="MATNR"/>
+      </attribute>
+      <attribute id="BP_LOC" order="10">
+        <descriptions defaultDescription="BP_LOC"/>
+        <keyMapping columnObjectName="Script_View" columnName="BP_LOC"/>
+      </attribute>
+      <attribute id="TZONE" order="11">
+        <descriptions defaultDescription="TZONE"/>
+        <keyMapping columnObjectName="Script_View" columnName="TZONE"/>
+      </attribute>
+      <attribute id="BP_FROM" order="12">
+        <descriptions defaultDescription="BP_FROM"/>
+        <keyMapping columnObjectName="Script_View" columnName="BP_FROM"/>
+      </attribute>
+      <attribute id="BP_SOURCE" order="13">
+        <descriptions defaultDescription="BP_SOURCE"/>
+        <keyMapping columnObjectName="Script_View" columnName="BP_SOURCE"/>
+      </attribute>
+      <attribute id="VRSIOID" order="14">
+        <descriptions defaultDescription="VRSIOID"/>
+        <keyMapping columnObjectName="Script_View" columnName="VRSIOID"/>
+      </attribute>
+      <attribute id="KPRM" order="15">
+        <descriptions defaultDescription="KPRM"/>
+        <keyMapping columnObjectName="Script_View" columnName="KPRM"/>
+      </attribute>
+      <attribute id="CHOBJ" order="16">
+        <descriptions defaultDescription="CHOBJ"/>
+        <keyMapping columnObjectName="Script_View" columnName="CHOBJ"/>
+      </attribute>
+      <attribute id="UNIT" order="18">
+        <descriptions defaultDescription="UNIT"/>
+        <keyMapping columnObjectName="Script_View" columnName="UNIT"/>
+      </attribute>
+      <attribute id="CLST_SEQ" order="19">
+        <descriptions defaultDescription="CLST_SEQ"/>
+        <keyMapping columnObjectName="Script_View" columnName="CLST_SEQ"/>
+      </attribute>
+      <attribute id="ZERO" order="20">
+        <descriptions defaultDescription="ZERO"/>
+        <keyMapping columnObjectName="Script_View" columnName="ZERO"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="CLSTID" order="17" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="CLSTID"/>
+        <measureMapping columnObjectName="Script_View" columnName="CLSTID"/>
+      </measure>
+      <measure id="MAT_QTY" order="21" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY"/>
+        <measureMapping columnObjectName="Script_View" columnName="MAT_QTY"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="40" y="85"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

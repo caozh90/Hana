@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_COMTSTAT02N" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="reportingEnabled" calculationScenarioType="TREE_BASED" dataCategory="CUBE" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Aggregation">
+  <descriptions defaultDescription="CV_COMTSTAT02"/>
+  <metadata changedAt="2015-05-27 15:47:48.923"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="CV_COMTSTAT01N" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNC002/calculationviews/CV_COMTSTAT01N</resourceUri>
+    </DataSource>
+    <DataSource id="_SAPAPO_MATMAP" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="/SAPAPO/MATMAP" alias="_SAPAPO_MATMAP"/>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_1">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="DESCR40_FROM"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="MAT_QTY_MD"/>
+        <viewAttribute id="MAT_QTY_QD"/>
+        <viewAttribute id="MAT_QTY_YD"/>
+        <viewAttribute id="MAT_QTY_MC"/>
+        <viewAttribute id="MAT_QTY_QC"/>
+        <viewAttribute id="MAT_QTY_YC"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="DECIMAL" id="DELTA_M" length="31" scale="14">
+          <formula>&quot;STOCK_QTY&quot; +&quot;MAT_QTY_MC&quot; -&quot;MAT_QTY_MD&quot;</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="DECIMAL" id="DELTA_Q" length="31" scale="14">
+          <formula>&quot;STOCK_QTY&quot; +&quot;MAT_QTY_QC&quot; -&quot;MAT_QTY_QD&quot;</formula>
+        </calculatedViewAttribute>
+        <calculatedViewAttribute datatype="DECIMAL" id="DELTA_Y" length="31" scale="14">
+          <formula>&quot;STOCK_QTY&quot; +&quot;MAT_QTY_YC&quot; -&quot;MAT_QTY_YD&quot;</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CV_COMTSTAT01N">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_FROM" source="DESCR40_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_MD" source="MAT_QTY_MD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_QD" source="MAT_QTY_QD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_YD" source="MAT_QTY_YD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_MC" source="MAT_QTY_MC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_QC" source="MAT_QTY_QC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_YC" source="MAT_QTY_YC"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_2">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="EXT_MATNR"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#_SAPAPO_MATMAP">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="EXT_MATNR" source="EXT_MATNR"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="LOCNO_FROM"/>
+        <viewAttribute id="DESCR40_FROM"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="EXT_MATNR"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="MAT_QTY_MD"/>
+        <viewAttribute id="MAT_QTY_QD"/>
+        <viewAttribute id="MAT_QTY_YD"/>
+        <viewAttribute id="MAT_QTY_MC"/>
+        <viewAttribute id="MAT_QTY_QC"/>
+        <viewAttribute id="MAT_QTY_YC"/>
+        <viewAttribute id="DELTA_M"/>
+        <viewAttribute id="DELTA_Q"/>
+        <viewAttribute id="DELTA_Y"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Projection_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_FROM" source="LOCNO_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DESCR40_FROM" source="DESCR40_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_MD" source="MAT_QTY_MD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_QD" source="MAT_QTY_QD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_YD" source="MAT_QTY_YD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_MC" source="MAT_QTY_MC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_QC" source="MAT_QTY_QC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAT_QTY_YC" source="MAT_QTY_YC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELTA_M" source="DELTA_M"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELTA_Q" source="DELTA_Q"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DELTA_Y" source="DELTA_Y"/>
+      </input>
+      <input node="#Projection_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="EXT_MATNR" source="EXT_MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATNR"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_1">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_1" columnName="MANDT"/>
+      </attribute>
+      <attribute id="LOCNO_FROM" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_BP"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCNO_FROM"/>
+      </attribute>
+      <attribute id="DESCR40_FROM" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DESCR40_FROM"/>
+        <keyMapping columnObjectName="Join_1" columnName="DESCR40_FROM"/>
+      </attribute>
+      <attribute id="MATNR" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EXT_MATNR"/>
+        <keyMapping columnObjectName="Join_1" columnName="EXT_MATNR"/>
+      </attribute>
+      <attribute id="LOCNO" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_1" columnName="LOCNO"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="STOCK_QTY" order="6" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="STOCK_QTY"/>
+        <measureMapping columnObjectName="Join_1" columnName="STOCK_QTY"/>
+      </measure>
+      <measure id="MAT_QTY_MD" order="7" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_MD"/>
+        <measureMapping columnObjectName="Join_1" columnName="MAT_QTY_MD"/>
+      </measure>
+      <measure id="MAT_QTY_MC" order="8" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_MC"/>
+        <measureMapping columnObjectName="Join_1" columnName="MAT_QTY_MC"/>
+      </measure>
+      <measure id="DELTA_M" order="9" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DELTA_M"/>
+        <measureMapping columnObjectName="Join_1" columnName="DELTA_M"/>
+      </measure>
+      <measure id="MAT_QTY_QD" order="10" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_QD"/>
+        <measureMapping columnObjectName="Join_1" columnName="MAT_QTY_QD"/>
+      </measure>
+      <measure id="MAT_QTY_QC" order="11" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_QC"/>
+        <measureMapping columnObjectName="Join_1" columnName="MAT_QTY_QC"/>
+      </measure>
+      <measure id="DELTA_Q" order="12" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DELTA_Q"/>
+        <measureMapping columnObjectName="Join_1" columnName="DELTA_Q"/>
+      </measure>
+      <measure id="MAT_QTY_YD" order="13" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_YD"/>
+        <measureMapping columnObjectName="Join_1" columnName="MAT_QTY_YD"/>
+      </measure>
+      <measure id="MAT_QTY_YC" order="14" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="MAT_QTY_YC"/>
+        <measureMapping columnObjectName="Join_1" columnName="MAT_QTY_YC"/>
+      </measure>
+      <measure id="DELTA_Y" order="15" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="DELTA_Y"/>
+        <measureMapping columnObjectName="Join_1" columnName="DELTA_Y"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="99" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="176" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="99" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

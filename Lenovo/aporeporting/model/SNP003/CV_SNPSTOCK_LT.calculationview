@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" schemaVersion="2.3" id="CV_SNPSTOCK_LT" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_SNPSTOCK_LIST "/>
+  <localVariables>
+    <variable id="IP_VER" parameter="true">
+      <descriptions defaultDescription="IP_VER"/>
+      <variableProperties datatype="NVARCHAR" length="10" mandatory="false">
+        <valueDomain type="empty"/>
+        <selection multiLine="false" type="SingleValue"/>
+        <defaultRange/>
+      </variableProperties>
+    </variable>
+  </localVariables>
+  <variableMappings>
+    <mapping xsi:type="Variable:VariableMapping" dataSource="#CV_SNPSTOCK_LIST">
+      <targetVariable name="IP_VER" resourceUri="/aporeporting.model.SNP003/calculationviews/CV_SNPSTOCK_LIST"/>
+      <localVariable>#IP_VER</localVariable>
+    </mapping>
+  </variableMappings>
+  <dataSources>
+    <DataSource id="CV_SNPSTOCK_LIST" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP003/calculationviews/CV_SNPSTOCK_LIST</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:ProjectionView" id="Projection_4">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="LOCNO_PLT"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute id="STOCK_QTY"/>
+        <viewAttribute id="PLIFZ"/>
+        <viewAttribute id="CC_CNT"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#CV_SNPSTOCK_LIST">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="LOCNO_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_CNT" source="CC_CNT"/>
+      </input>
+    </calculationView>
+    <calculationView xsi:type="Calculation:AggregationView" id="AGG_QTY">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="VERSIOD"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MEINS"/>
+        <viewAttribute aggregationType="max" id="PLIFZ"/>
+        <viewAttribute id="VRSIOEX"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="LOCNO_PLT"/>
+        <viewAttribute aggregationType="sum" id="STOCK_QTY"/>
+        <viewAttribute aggregationType="sum" id="CC_CNT"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="DECIMAL" id="CC_QTY" length="15" scale="3" expressionLanguage="COLUMN_ENGINE">
+          <formula>&quot;STOCK_QTY&quot;/&quot;CC_CNT&quot;</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#Projection_4">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VERSIOD" source="VERSIOD"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MEINS" source="MEINS"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PLIFZ" source="PLIFZ"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VRSIOEX" source="VRSIOEX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO_PLT" source="LOCNO_PLT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="STOCK_QTY" source="STOCK_QTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CC_CNT" source="CC_CNT"/>
+      </input>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="AGG_QTY">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="MANDT"/>
+      </attribute>
+      <attribute id="VERSIOD" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VERSIOD"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="VERSIOD"/>
+      </attribute>
+      <attribute id="VRSIOEX" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VRSIOEX"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="VRSIOEX"/>
+      </attribute>
+      <attribute id="MATID" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="MATID"/>
+      </attribute>
+      <attribute id="MATNR" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="MATNR"/>
+      </attribute>
+      <attribute id="LOCID" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="LOCID"/>
+      </attribute>
+      <attribute id="LOCNO_PLT" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO_PLT"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="LOCNO_PLT"/>
+      </attribute>
+      <attribute id="MEINS" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MEINS"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="MEINS"/>
+      </attribute>
+      <attribute id="PLIFZ" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PLIFZ"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="PLIFZ"/>
+      </attribute>
+      <attribute id="STOCK_QTY" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="CC_QTY"/>
+        <keyMapping columnObjectName="AGG_QTY" columnName="CC_QTY"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes>
+      <calculatedAttribute id="LT_WEEK" hidden="false" order="10" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LT_WEEK">
+          <comment text="The reason when 0 I change it to 1 is it will add deduct one when add weeks. but 0 deduct one is negative, which is not desired"/>
+        </descriptions>
+        <keyCalculation datatype="INTEGER" expressionLanguage="COLUMN_ENGINE">
+          <formula>if(CEIL( &quot;PLIFZ&quot;/7 ) = 0 , 1,  CEIL( &quot;PLIFZ&quot;/7 ))</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+      <calculatedAttribute id="LT_CALWEEK" hidden="false" order="11" semanticType="empty" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LT_CALWEEK"/>
+        <keyCalculation datatype="NVARCHAR" expressionLanguage="COLUMN_ENGINE" length="6">
+          <formula>replace(isoweek(adddays(NOW(),(&quot;LT_WEEK&quot;-1)*7)),'-W','')</formula>
+        </keyCalculation>
+      </calculatedAttribute>
+    </calculatedAttributes>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Projection_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="390"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="AGG_QTY" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

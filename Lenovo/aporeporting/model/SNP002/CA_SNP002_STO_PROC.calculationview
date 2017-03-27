@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CA_SNP002_STO_PROC" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="crossClient" defaultLanguage="$$language$$" hierarchiesSQLEnabled="false" translationRelevant="true" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DEFAULT" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <origin/>
+  <descriptions defaultDescription="CA_SNP002_STO_PROC "/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="ZTCTM_PROCGRP_H" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="ZTCTM_PROCGRP_H"/>
+    </DataSource>
+    <DataSource id="ZTCTM_PROCGRP_I" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="ZTCTM_PROCGRP_I"/>
+    </DataSource>
+    <DataSource id="AT_MATTXT01" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP002/attributeviews/AT_MATTXT01</resourceUri>
+    </DataSource>
+    <DataSource id="_SAPAPO_TPSRC" type="DATA_BASE_TABLE">
+      <viewAttributes allViewAttributes="true"/>
+      <columnObject schemaName="SAP_SCM" columnObjectName="/SAPAPO/TPSRC" alias="_SAPAPO_TPSRC"/>
+    </DataSource>
+    <DataSource id="CA_SNP002_STO_MATLOC" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP002/calculationviews/CA_SNP002_STO_MATLOC</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="BEGDA"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="ENDDA"/>
+        <viewAttribute id="PROPORTION"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#ZTCTM_PROCGRP_H">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <input node="#ZTCTM_PROCGRP_I">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="BEGDA" source="BEGDA"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ENDDA" source="ENDDA"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="GRPID"/>
+      <joinAttribute name="LOCID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" cardinality="C1_1" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="BEGDA"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="ENDDA"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+      </input>
+      <input node="#AT_MATTXT01">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_3" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_VALFR"/>
+        <viewAttribute id="VENDER_VALTO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+      </input>
+      <input node="#_SAPAPO_TPSRC">
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_VALFR" source="VALFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_VALTO" source="VALTO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCTO"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+      <joinAttribute name="LOCID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_4" joinType="leftOuter">
+      <descriptions/>
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="GRPNM"/>
+        <viewAttribute id="DISPO"/>
+        <viewAttribute id="PRRTY"/>
+        <viewAttribute id="LOCNO"/>
+        <viewAttribute id="CHANGEUTC"/>
+        <viewAttribute id="AENAM"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="PG_VALID_FROM"/>
+        <viewAttribute id="MATNR"/>
+        <viewAttribute id="PRIORITY"/>
+        <viewAttribute id="PG_VALID_TO"/>
+        <viewAttribute id="PROPORTION"/>
+        <viewAttribute id="MAKTX"/>
+        <viewAttribute id="LOCFR"/>
+        <viewAttribute id="VENDER_VALFR"/>
+        <viewAttribute id="VENDER_VALTO"/>
+        <viewAttribute id="VENDER_LOCID"/>
+        <viewAttribute id="VENDER_DESCR40"/>
+        <viewAttribute id="VENDER_LOCNO"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#Join_3">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPNM" source="GRPNM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="DISPO" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRRTY" source="PRRTY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCNO" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CHANGEUTC" source="CHANGEUTC"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="AENAM" source="AENAM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_FROM" source="PG_VALID_FROM"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATNR" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PRIORITY" source="PRIORITY"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PG_VALID_TO" source="PG_VALID_TO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="PROPORTION" source="PROPORTION"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MAKTX" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="LOCFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_VALFR" source="VENDER_VALFR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_VALTO" source="VENDER_VALTO"/>
+      </input>
+      <input node="#CA_SNP002_STO_MATLOC">
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCID" source="VENDER_LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_DESCR40" source="VENDER_DESCR40"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="VENDER_LOCNO" source="VENDER_LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCFR" source="VENDER_LOCID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="LOCFR"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_4">
+    <descriptions/>
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_4" columnName="MANDT"/>
+      </attribute>
+      <attribute id="GRPID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="GRPID"/>
+        <keyMapping columnObjectName="Join_4" columnName="GRPID"/>
+      </attribute>
+      <attribute id="GRPNM" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="GRPNM"/>
+        <keyMapping columnObjectName="Join_4" columnName="GRPNM"/>
+      </attribute>
+      <attribute id="DISPO" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Join_4" columnName="DISPO"/>
+      </attribute>
+      <attribute id="PRRTY" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PRRTY"/>
+        <keyMapping columnObjectName="Join_4" columnName="PRRTY"/>
+      </attribute>
+      <attribute id="LOCNO" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCNO"/>
+      </attribute>
+      <attribute id="AENAM" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="AENAM"/>
+        <keyMapping columnObjectName="Join_4" columnName="AENAM"/>
+      </attribute>
+      <attribute id="LOCID" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCID"/>
+      </attribute>
+      <attribute id="MATID" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_4" columnName="MATID"/>
+      </attribute>
+      <attribute id="PG_VALID_FROM" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PG_VALID_FROM"/>
+        <keyMapping columnObjectName="Join_4" columnName="PG_VALID_FROM"/>
+      </attribute>
+      <attribute id="MATNR" order="12" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATNR"/>
+        <keyMapping columnObjectName="Join_4" columnName="MATNR"/>
+      </attribute>
+      <attribute id="PG_VALID_TO" order="14" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="PG_VALID_TO"/>
+        <keyMapping columnObjectName="Join_4" columnName="PG_VALID_TO"/>
+      </attribute>
+      <attribute id="MAKTX" order="16" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_4" columnName="MAKTX"/>
+      </attribute>
+      <attribute id="LOCFR" order="17" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCFR"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCFR"/>
+      </attribute>
+      <attribute id="VENDER_LOCID" order="20" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_4" columnName="VENDER_LOCID"/>
+      </attribute>
+      <attribute id="VENDER_DESCR40" order="21" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DESCR40"/>
+        <keyMapping columnObjectName="Join_4" columnName="VENDER_DESCR40"/>
+      </attribute>
+      <attribute id="VENDER_LOCNO" order="22" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="VENDER_LOCNO"/>
+        <keyMapping columnObjectName="Join_4" columnName="VENDER_LOCNO"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures>
+      <measure id="CHANGEUTC" order="7" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="CHANGEUTC"/>
+        <measureMapping columnObjectName="Join_4" columnName="CHANGEUTC"/>
+      </measure>
+      <measure id="PRIORITY" order="13" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="PRIORITY"/>
+        <measureMapping columnObjectName="Join_4" columnName="PRIORITY"/>
+      </measure>
+      <measure id="PROPORTION" order="15" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="PROPORTION"/>
+        <measureMapping columnObjectName="Join_4" columnName="PROPORTION"/>
+      </measure>
+      <measure id="VENDER_VALFR" order="18" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="VENDER_VALFR"/>
+        <measureMapping columnObjectName="Join_4" columnName="VENDER_VALFR"/>
+      </measure>
+      <measure id="VENDER_VALTO" order="19" aggregationType="sum" measureType="simple">
+        <descriptions defaultDescription="VENDER_VALTO"/>
+        <measureMapping columnObjectName="Join_4" columnName="VENDER_VALTO"/>
+      </measure>
+    </baseMeasures>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="0" y="20"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="0" y="390"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="10" y="290"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_3" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="10" y="190"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="0" y="100"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>

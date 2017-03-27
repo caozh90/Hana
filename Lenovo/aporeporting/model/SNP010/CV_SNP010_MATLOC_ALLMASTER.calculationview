@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" schemaVersion="2.3" id="CV_SNP010_MATLOC_ALLMASTER" applyPrivilegeType="NONE" checkAnalyticPrivileges="false" defaultClient="$$client$$" defaultLanguage="$$language$$" visibility="internal" calculationScenarioType="TREE_BASED" dataCategory="DIMENSION" enforceSqlExecution="false" executionSemantic="UNDEFINED" outputViewType="Projection">
+  <descriptions defaultDescription="CV_SNP010_MATLOC_ALLMASTER"/>
+  <metadata changedAt="2015-06-08 12:10:24.497"/>
+  <localVariables/>
+  <variableMappings/>
+  <dataSources>
+    <DataSource id="AT_SNP010_MATLOC" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP010/attributeviews/AT_SNP010_MATLOC</resourceUri>
+    </DataSource>
+    <DataSource id="AT_SNP010_MAT" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP010/attributeviews/AT_SNP010_MAT</resourceUri>
+    </DataSource>
+    <DataSource id="AT_SNP010_LOC" type="ATTRIBUTE_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP010/attributeviews/AT_SNP010_LOC</resourceUri>
+    </DataSource>
+    <DataSource id="CV_SNP010_TECH" type="CALCULATION_VIEW">
+      <viewAttributes allViewAttributes="true"/>
+      <resourceUri>/aporeporting.model.SNP010/calculationviews/CV_SNP010_TECH</resourceUri>
+    </DataSource>
+  </dataSources>
+  <calculationViews>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="leftOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="Item"/>
+        <viewAttribute id="ItemDescription"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="MaterialGroup"/>
+        <viewAttribute id="MaterialType"/>
+        <viewAttribute id="Item_INTERNAL"/>
+        <viewAttribute id="CommodityCode"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#AT_SNP010_MATLOC">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="DISPO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CommodityCode" source="ZZ_MFRGR"/>
+      </input>
+      <input node="#AT_SNP010_MAT">
+        <mapping xsi:type="Calculation:AttributeMapping" target="Item" source="EXT_MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ItemDescription" source="MAKTX"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialGroup" source="MATKL"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialType" source="ZZ_MTART"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Item_INTERNAL" source="MATNR"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+      </input>
+      <joinAttribute name="MANDT"/>
+      <joinAttribute name="MATID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_2" joinType="rightOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="ItemDescription"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="MaterialGroup"/>
+        <viewAttribute id="MaterialType"/>
+        <viewAttribute id="Plant"/>
+        <viewAttribute id="Item"/>
+        <viewAttribute id="CommodityCode"/>
+        <viewAttribute hidden="true" id="JOIN$MANDT$MANDT"/>
+        <viewAttribute hidden="true" id="JOIN$LOCID$LOCID"/>
+      </viewAttributes>
+      <calculatedViewAttributes/>
+      <input node="#AT_SNP010_LOC">
+        <mapping xsi:type="Calculation:AttributeMapping" target="Plant" source="LOCNO"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MANDT$MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$LOCID$LOCID" source="LOCID"/>
+      </input>
+      <input node="#Join_1">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ItemDescription" source="ItemDescription"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialGroup" source="MaterialGroup"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialType" source="MaterialType"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Item" source="Item"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CommodityCode" source="CommodityCode"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MANDT$MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$LOCID$LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="JOIN$MANDT$MANDT"/>
+      <joinAttribute name="JOIN$LOCID$LOCID"/>
+    </calculationView>
+    <calculationView xsi:type="Calculation:JoinView" id="Join_4" joinType="rightOuter">
+      <viewAttributes>
+        <viewAttribute id="MANDT"/>
+        <viewAttribute id="MATID"/>
+        <viewAttribute id="LOCID"/>
+        <viewAttribute id="ItemDescription"/>
+        <viewAttribute id="Location"/>
+        <viewAttribute id="MaterialGroup"/>
+        <viewAttribute id="MaterialType"/>
+        <viewAttribute id="Plant"/>
+        <viewAttribute id="GRPID"/>
+        <viewAttribute id="Item"/>
+        <viewAttribute id="CommodityCode"/>
+        <viewAttribute hidden="true" id="JOIN$MANDT$MANDT"/>
+        <viewAttribute hidden="true" id="JOIN$LOCID$LOCID"/>
+        <viewAttribute hidden="true" id="JOIN$MATID$MATID"/>
+      </viewAttributes>
+      <calculatedViewAttributes>
+        <calculatedViewAttribute datatype="NVARCHAR" id="Technology" length="22">
+          <formula>if(isnull(&quot;GRPID&quot;),&quot;Item&quot;,&quot;GRPID&quot;)</formula>
+        </calculatedViewAttribute>
+      </calculatedViewAttributes>
+      <input node="#CV_SNP010_TECH">
+        <mapping xsi:type="Calculation:AttributeMapping" target="GRPID" source="GRPID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MANDT$MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MATID$MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$LOCID$LOCID" source="LOCID"/>
+      </input>
+      <input node="#Join_2">
+        <mapping xsi:type="Calculation:AttributeMapping" target="MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="LOCID" source="LOCID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="ItemDescription" source="ItemDescription"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Location" source="Location"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialGroup" source="MaterialGroup"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="MaterialType" source="MaterialType"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Plant" source="Plant"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="Item" source="Item"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="CommodityCode" source="CommodityCode"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MANDT$MANDT" source="MANDT"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$MATID$MATID" source="MATID"/>
+        <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$LOCID$LOCID" source="LOCID"/>
+      </input>
+      <joinAttribute name="JOIN$MANDT$MANDT"/>
+      <joinAttribute name="JOIN$MATID$MATID"/>
+      <joinAttribute name="JOIN$LOCID$LOCID"/>
+    </calculationView>
+  </calculationViews>
+  <logicalModel id="Join_4">
+    <attributes>
+      <attribute id="MANDT" order="1" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MANDT"/>
+        <keyMapping columnObjectName="Join_4" columnName="MANDT"/>
+      </attribute>
+      <attribute id="MATID" order="2" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATID"/>
+        <keyMapping columnObjectName="Join_4" columnName="MATID"/>
+      </attribute>
+      <attribute id="LOCID" order="3" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCID"/>
+        <keyMapping columnObjectName="Join_4" columnName="LOCID"/>
+      </attribute>
+      <attribute id="Item" order="4" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="EXT_MATNR"/>
+        <keyMapping columnObjectName="Join_4" columnName="Item"/>
+      </attribute>
+      <attribute id="ItemDescription" order="5" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MAKTX"/>
+        <keyMapping columnObjectName="Join_4" columnName="ItemDescription"/>
+      </attribute>
+      <attribute id="Location" order="6" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="DISPO"/>
+        <keyMapping columnObjectName="Join_4" columnName="Location"/>
+      </attribute>
+      <attribute id="MaterialGroup" order="7" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="MATKL"/>
+        <keyMapping columnObjectName="Join_4" columnName="MaterialGroup"/>
+      </attribute>
+      <attribute id="MaterialType" order="8" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MTART"/>
+        <keyMapping columnObjectName="Join_4" columnName="MaterialType"/>
+      </attribute>
+      <attribute id="Plant" order="9" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="LOCNO"/>
+        <keyMapping columnObjectName="Join_4" columnName="Plant"/>
+      </attribute>
+      <attribute id="Technology" order="10" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="Technology"/>
+        <keyMapping columnObjectName="Join_4" columnName="Technology"/>
+      </attribute>
+      <attribute id="CommodityCode" order="11" attributeHierarchyActive="false" displayAttribute="false">
+        <descriptions defaultDescription="ZZ_MFRGR"/>
+        <keyMapping columnObjectName="Join_4" columnName="CommodityCode"/>
+      </attribute>
+    </attributes>
+    <calculatedAttributes/>
+    <privateDataFoundation>
+      <tableProxies/>
+      <joins/>
+      <layout>
+        <shapes/>
+      </layout>
+    </privateDataFoundation>
+    <baseMeasures/>
+    <calculatedMeasures/>
+    <restrictedMeasures/>
+    <localDimensions/>
+  </logicalModel>
+  <layout>
+    <shapes>
+      <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+        <upperLeftCorner x="22" y="87"/>
+        <rectangleSize height="0" width="0"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="357"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="261"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+      <shape expanded="true" modelObjectName="Join_4" modelObjectNameSpace="CalculationView">
+        <upperLeftCorner x="22" y="165"/>
+        <rectangleSize height="-1" width="-1"/>
+      </shape>
+    </shapes>
+  </layout>
+</Calculation:scenario>
