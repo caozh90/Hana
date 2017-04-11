@@ -1,0 +1,57 @@
+  METHOD zvbakset_get_entityset.
+**TRY.
+*CALL METHOD SUPER->ZVBAKSET_GET_ENTITYSET
+*  EXPORTING
+*    IV_ENTITY_NAME           =
+*    IV_ENTITY_SET_NAME       =
+*    IV_SOURCE_NAME           =
+*    IT_FILTER_SELECT_OPTIONS =
+*    IS_PAGING                =
+*    IT_KEY_TAB               =
+*    IT_NAVIGATION_PATH       =
+*    IT_ORDER                 =
+*    IV_FILTER_STRING         =
+*    IV_SEARCH_STRING         =
+**    io_tech_request_context  =
+**  IMPORTING
+**    et_entityset             =
+**    es_response_context      =
+*    .
+** CATCH /iwbep/cx_mgw_busi_exception .
+** CATCH /iwbep/cx_mgw_tech_exception .
+**ENDTRY.
+
+
+    DATA: lt_vbak TYPE STANDARD TABLE OF vbak.
+    DATA: ls_entityset LIKE LINE OF et_entityset.
+    DATA: so_vbeln TYPE /iwbep/t_cod_select_options.
+
+*获取filter数据
+    LOOP AT it_filter_select_options INTO DATA(ls_filter_select_options).
+      CASE ls_filter_select_options-property.
+        WHEN 'Vbeln'.
+          so_vbeln = ls_filter_select_options-select_options.
+        WHEN OTHERS.
+      ENDCASE.
+    ENDLOOP.
+
+
+*筛选数据
+    SELECT *
+      INTO CORRESPONDING FIELDS OF TABLE lt_vbak
+      FROM vbak
+      WHERE vbeln in so_vbeln.
+
+
+    LOOP AT lt_vbak INTO DATA(ls_vbak).
+      CLEAR: ls_entityset.
+      ls_entityset-vbeln = ls_vbak-vbeln.
+      ls_entityset-erdat = ls_vbak-erdat.
+      ls_entityset-erzet = ls_vbak-erzet.
+      ls_entityset-ernam = ls_vbak-ernam.
+      ls_entityset-angdt = ls_vbak-angdt.
+      ls_entityset-bnddt = ls_vbak-bnddt.
+
+      APPEND ls_entityset TO et_entityset.
+    ENDLOOP.
+  ENDMETHOD.
