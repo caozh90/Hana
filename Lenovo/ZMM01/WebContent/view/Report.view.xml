@@ -1,0 +1,287 @@
+<mvc:View controllerName="lenovo.mtm.controller.Report" 
+    xmlns:l="sap.ui.layout"
+	xmlns:core="sap.ui.core" 
+	xmlns:mvc="sap.ui.core.mvc" 
+	xmlns:fb="sap.ui.comp.filterbar"
+	xmlns:t="sap.ui.table"
+	xmlns="sap.m">
+	<Page id="Reportpage" 
+	      navButtonPress="onNavBack" 
+	      showNavButton="true"
+		  title="{i18n>Report}"
+		  class="MTM-title" >
+		<Panel id="Panel1" expandable="true" expanded="false" headerText="Panel with Search Field">
+			<content>
+				<fb:FilterBar showRestoreButton="false"
+				              showGoButton="true" 
+				              search="onSearch">
+					<fb:filterItems>
+						<fb:FilterItem name="Vendor" label="{i18n>Zvendor}"
+								labelTooltip="{i18n>Zvendor}" class="sapThemeBaseBG-asBorderColor">
+								<fb:control>
+									<ComboBox id="VendorC"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'01'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+						</fb:FilterItem>
+						<fb:FilterItem name="CustomModelFLag" label="{i18n>Zcmf}"
+								labelTooltip="{i18n>Zcmf}" class="fontset">
+								<fb:control>
+									<Input id="Zcmf" type="Text" />
+								</fb:control>
+						</fb:FilterItem>
+						<fb:FilterItem name="Brand" label="{i18n>Zbrand}"
+								labelTooltip="{i18n>Zbrand}" class="fontset">
+								<fb:control>
+									<ComboBox id="BrandC"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'02'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+						</fb:FilterItem>
+						<fb:FilterItem name="Group" label="{i18n>Zgroup}"
+								labelTooltip="{i18n>Zgroup}" class="fontset">
+								<fb:control>
+									<ComboBox id="GroupC"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'03'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+						</fb:FilterItem>
+						<fb:FilterItem name="MfgDatef" label="{i18n>MfgDatef}"
+								labelTooltip="{i18n>MfgDatef}" class="fontset">
+								<fb:control>
+                                   <DatePicker id="Zdatemfgf" valueFormat="yyyy-MM-dd"
+                                               displayFormat="yyyy.MM.dd" change="handleChange" 
+                                               class="sapUiSmallMarginBottom"/>
+                                </fb:control>
+						</fb:FilterItem>
+							
+						<fb:FilterItem name="MfgDatet" label="{i18n>MfgDatet}"
+								labelTooltip="{i18n>MfgDatet}" class="fontset">
+								<fb:control>
+                                   <DatePicker id="Zdatemfgt" valueFormat="yyyy-MM-dd"
+                                               displayFormat="yyyy.MM.dd" change="handleChange" 
+                                               class="sapUiSmallMarginBottom"/>
+                                </fb:control>
+						</fb:FilterItem>
+						<fb:FilterItem name="Zumf" label="{i18n>Zumf}"
+								       labelTooltip="{i18n>Zumf}" visibleInFilterBar="true" class="fontset">
+								<fb:control>
+									<ComboBox id="Zumf_fb">
+									    <core:Item key="UrgentFlag1" text="Y" />
+										<core:Item key="UrgentFlag2" text="" />
+									</ComboBox>
+								</fb:control>
+						</fb:FilterItem>
+						<fb:FilterItem name="Zproduct" label="{i18n>Zproduct}"
+								labelTooltip="{i18n>Zproduct}" class="fontset">
+								<fb:control>
+									<Input id="Zproduct" type="Text" />
+								</fb:control>
+						</fb:FilterItem>
+					</fb:filterItems>
+				</fb:FilterBar>
+			</content>
+		</Panel>
+		<Panel expandable="true" expanded="true" headerText="Panel with Data Display">
+			<headerToolbar>
+				<Toolbar height="3rem">
+					<content>
+						<Text text="Panel with Data Display" />
+						<Button id="Download" icon="sap-icon://download" text="Download"
+							tooltip="{i18n>downloadTemplateText}" press="onDownloadExcel" />
+					</content>
+				</Toolbar>
+			</headerToolbar>
+			<content>
+			  <t:Table id="ReportTable" 
+					   rows="{path: 'ItemData>/data',
+			                 sorter: { path: 'Lifnr' }}"> 
+                   <t:columns>
+					  <t:Column id="Vendor" width="12em">
+						<Label text="{i18n>Zvendor}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Lifnr}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Brand" width="12em">
+						<Label text="{i18n>Zbrand}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zbrand}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="BusGroup" width="12em">
+						<Label text="{i18n>Zgroup}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zbugr}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Wk" width="12em">
+						<Label text="{i18n>Wk}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zwk}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Total" width="12em">
+						<Label text="{i18n>Total}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Ztotal}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Closed" width="12em">
+						<Label text="{i18n>Closed}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zclosed}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Open" width="12em">
+						<Label text="{i18n>Open}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zopen}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="E2ein" width="12em">
+						<Label text="{i18n>E2ein}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Ze2ein}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="E2ekpi" width="12em">
+						<Label text="{i18n>E2ekpi}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Ze2ekpi}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Bomin" width="12em">
+						<Label text="{i18n>Bomin}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zbomin}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Bomkpi" width="12em">
+						<Label text="{i18n>Bomkpi}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zbomkpi}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Quoin" width="12em">
+						<Label text="{i18n>Quoin}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zquoin}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Quokpi" width="12em">
+						<Label text="{i18n>Quokpi}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zquokpi}"/>
+						</t:template>
+					  </t:Column>	
+					  <t:Column id="Contin" width="12em">
+						<Label text="{i18n>Contin}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zcontin}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Contkpi" width="12em">
+						<Label text="{i18n>Contkpi}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zcontkpi}"/>
+						</t:template>
+					  </t:Column>		
+				   </t:columns>
+				</t:Table>
+				<Table id="ReportTable_m"
+		               inset="false"
+		               items="{
+			                    path: 'ItemData>/data',
+			                    sorter: {
+				                           path: 'Lifnr'
+			                            }
+		                       }">
+		            <columns>
+		            	<Column width="8em" hAlign="Left" > 
+							<Text text="{i18n>Zvendor}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Zbrand}"/>
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Zgroup}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Wk}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Closed}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Open}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>E2ein}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>E2ekpi}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Bomin}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Bomkpi}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Quoin}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Quokpi}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Contin}" />
+						</Column>
+						<Column width="6em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Contkpi}" />
+						</Column>
+						<Column width="6em" hAlign="Right" >
+							<Text text="{i18n>Total}" />
+						</Column>
+		            </columns>
+		            <items>
+		            	<ColumnListItem>
+		            		<cells>
+		            			<Text text="{ItemData>Lifnr}" />
+		            			<Text text="{ItemData>Zbrand}" />
+		            			<Text text="{ItemData>Zbugr}" />
+		            			<Text text="{ItemData>Zwk}" />
+		            			<Text text="{ItemData>Ztotal}" />
+		            			<Text text="{ItemData>Zclosed}" />
+		            			<Text text="{ItemData>Zopen}" />
+		            			<Text text="{ItemData>Ze2ein}" />
+		            			<Text text="{ItemData>Ze2ekpi}" />
+		            			<Text text="{ItemData>Zbomin}" />
+		            			<Text text="{ItemData>Zbomkpi}" />
+		            			<Text text="{ItemData>Zquoin}" />
+		            			<Text text="{ItemData>Zquokpi}" />
+		            			<Text text="{ItemData>Zcontin}" />
+		            			<Text text="{ItemData>Zcontkpi}" class="fontset" />
+		            		</cells>
+		            	</ColumnListItem>
+		            </items>
+		        </Table>
+			</content>
+		</Panel>
+	</Page>
+</mvc:View>

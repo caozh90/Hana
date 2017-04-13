@@ -1,0 +1,382 @@
+<mvc:View controllerName="lenovo.mtm.controller.Master" 
+    xmlns:core="sap.ui.core"
+	xmlns:mvc="sap.ui.core.mvc" 
+	xmlns="sap.m" 
+	xmlns:l="sap.ui.layout"
+	xmlns:f="sap.ui.layout.form" 
+	xmlns:u="sap.ui.unified" 
+	xmlns:fb="sap.ui.comp.filterbar"
+	xmlns:t="sap.ui.table">     
+	<u:Shell id="myShell" icon="{/logo}">
+		<u:headItems>
+			<u:ShellHeadItem tooltip="Navigator" icon="sap-icon://menu2"
+				press="handlePressConfiguration" />
+		</u:headItems>
+		<u:search>
+			<Text id="Search" text="Order And MTM Alignment Visibility" width="auto"
+				class="MTM-title" />
+		</u:search>
+		<u:paneContent width="auto">
+			<List>
+				<items>
+					<ObjectListItem id="Object1" type="Active" visible="{userData>/Field4}"
+						number="{i18n>Navigator1}" icon="sap-icon://upload" press="handlePress1" />
+					<ObjectListItem id="Object2" type="Active" visible="{userData>/Field5}"
+						number="{i18n>Navigator2}" icon="sap-icon://upload" press="handlePress2" />
+					<ObjectListItem id="Object3" type="Active" visible="{userData>/Field6}"
+						number="{i18n>Navigator3}" icon="sap-icon://upload" press="handlePress3" class="sapThemeText-asBackgroundColor"/>
+					<ObjectListItem id="Object4" type="Active" visible="{userData>/Field7}"
+						number="{i18n>Navigator4}" icon="sap-icon://upload" press="handlePress4" class="sapThemeHighlight-asBackgroundColor"/>
+					<ObjectListItem type="Active" visible="{userData>/Field3}"
+						number="{i18n>Navigator5}" icon="sap-icon://table-chart" press="onDisplay" />
+					<ObjectListItem type="Active" visible="{userData>/Field8}"
+						number="{i18n>Navigator6}" icon="sap-icon://table-chart" press="onDisplay1" />
+				</items>
+			</List>
+		</u:paneContent>
+		<u:content>
+			<Panel id="Panel1" visible="{userData>/Field1}" expandable="true" expanded="false"
+				   headerText="Panel with Search Field" class="headertext" >
+				<content>
+					<fb:FilterBar showRestoreButton="false" search="onSearch">
+						<fb:filterItems>
+                            <!--for device PC or tablet-->
+							<fb:FilterItem id="filter1" name="Matnr" label="{i18n>Zmatnr}"
+								           labelTooltip="{i18n>Zmatnr}" mandatory="true" class="fontset">
+								<fb:control >
+									<MultiInput id="Matnr" valueHelpRequest="onValueHelp" />
+								</fb:control>
+							</fb:FilterItem>
+                            <!--for device PC or tablet-->
+                            <!--for device Phone-->
+                            <fb:FilterItem id="filter2" name="Matnr_m" label="{i18n>Zmatnr}"
+								           labelTooltip="{i18n>Zmatnr}" mandatory="true" class="fontset">
+								<fb:control >
+									<MultiInput id="Matnr_m" />
+								</fb:control>
+							</fb:FilterItem>
+							<!--for device Phone-->
+                            <fb:FilterItem name="Zdatef" label="{i18n>Zdatef}"
+								labelTooltip="{i18n>Zdatef}" class="fontset">
+								<fb:control>
+                                   <DatePicker id="Zdatef_fb" valueFormat="yyyy-MM-dd"
+                                               displayFormat="yyyy.MM.dd" change="handleChange" 
+                                               class="sapUiSmallMarginBottom"/>
+                                </fb:control>
+							</fb:FilterItem>
+							
+							<fb:FilterItem name="Zdatet" label="{i18n>Zdatet}"
+								labelTooltip="{i18n>Zdatet}" class="fontset">
+								<fb:control>
+                                   <DatePicker id="Zdatet_fb" valueFormat="yyyy-MM-dd"
+                                               displayFormat="yyyy.MM.dd" change="handleChange" 
+                                               class="sapUiSmallMarginBottom"/>
+                                </fb:control>
+							</fb:FilterItem>
+							
+							<fb:FilterItem name="Zbrand" label="{i18n>Zbrand}"
+								labelTooltip="{i18n>Zbrand}" class="fontset">
+								<fb:control>
+									<ComboBox id="Zbrand_fb"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'02'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+							</fb:FilterItem>
+
+							<fb:FilterItem name="Zgroup" label="{i18n>Zgroup}"
+								labelTooltip="{i18n>Zgroup}" class="fontset">
+								<fb:control>
+									<ComboBox id="Zgroup_fb"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'03'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+							</fb:FilterItem>
+							<fb:FilterItem name="Zreid" label="{i18n>Zreid}"
+								labelTooltip="{i18n>Zreid}" mandatory="false" class="fontset">
+								<fb:control>
+									<Input id="Zreid_fb" type="Text" />
+								</fb:control>
+							</fb:FilterItem>
+							<fb:FilterItem name="Zgeo" label="{i18n>Zgeo}"
+								labelTooltip="{i18n>Zgeo}" class="fontset">
+								<fb:control>
+									<ComboBox id="Zgeo_fb"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'04'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+							</fb:FilterItem>
+							<fb:FilterItem name="Zvendor" label="{i18n>Zvendor}"
+								labelTooltip="{i18n>Zvendor}" class="fontset">
+								<fb:control>
+									<ComboBox id="Zvendor_fb"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'01'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+							</fb:FilterItem>
+							<fb:FilterItem name="Zmfgrs" label="{i18n>Zmfgrs}"
+								labelTooltip="{i18n>Zmfgrs}" visibleInFilterBar="false"
+								class="fontset">
+								<fb:control>
+									<ComboBox id="Zmfgrs_fb"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'05'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+							</fb:FilterItem>
+							<fb:FilterItem name="Zepo" label="{i18n>Zepo}"
+								labelTooltip="{i18n>Zepo}" visibleInFilterBar="false" class="fontset">
+								<fb:control>
+									<ComboBox id="Zepo_fb"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'06'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+							</fb:FilterItem>
+							<fb:FilterItem name="Zpenday" label="{i18n>Zpenday}"
+								labelTooltip="{i18n>Zpenday}" mandatory="false"
+								visibleInFilterBar="false" class="fontset">
+								<fb:control>
+									<Input id="Zpenday_fb" type="Text" />
+								</fb:control>
+							</fb:FilterItem>
+							<fb:FilterItem name="Zextwg" label="{i18n>Zextwg}"
+								labelTooltip="{i18n>Zextwg}" mandatory="false"
+								visibleInFilterBar="false" class="fontset">
+								<fb:control>
+									<Input id="Zextwg_fb" type="Text" />
+								</fb:control>
+							</fb:FilterItem>
+							<fb:FilterItem name="Zumf" label="{i18n>Zumf}"
+								labelTooltip="{i18n>Zumf}" visibleInFilterBar="false" class="fontset">
+								<fb:control>
+									<ComboBox id="Zumf_fb">
+									    <core:Item key="UrgentFlag1" text="Y" />
+										<core:Item key="UrgentFlag2" text="N" />
+									</ComboBox>
+								</fb:control>
+							</fb:FilterItem>
+						</fb:filterItems>
+					</fb:FilterBar>
+				</content>
+			</Panel>
+			<Panel id="Panel2" expandable="true" expanded="true" headerText="Panel with Data Display"
+				class="headertext">
+				<headerToolbar>
+					<Toolbar height="3rem">
+						<content>
+							<Text text="Panel with Data Display" class="headertext" />
+							<Button id="Query" icon="sap-icon://world" text="{i18n>Query}"
+								    tooltip="{i18n>Query}"
+								press="onQuery" class="headertext" />
+							<Button id="Download" icon="sap-icon://download"
+							    text="{i18n>DownloadData}" visible="{userData>/Field2}" tooltip="{i18n>DownloadData}"
+								press="onDownload" class="headertext" />
+							<Button id="Setting" icon="sap-icon://action-settings"
+							    text="{i18n>SetiingFields}" tooltip="{i18n>SetiingFields}" press="onOpenedDialog"
+								class="headertext" />
+						</content>
+					</Toolbar>
+				</headerToolbar>
+				<content>
+				    <t:Table id="ItemTable"
+				             rows="{path: 'oData>/',
+			                        sorter: { path: 'Matnr' }}"
+				             selectionMode="MultiToggle"
+				             fixedColumnCount="1">
+				         <t:columns>  
+				            <t:Column id="Zmatnr" width="12rem">
+						       <Label text="{i18n>Zmatnr}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zmatnr}" class="fontset"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zmfgrs" width="12rem">
+						       <Label text="{i18n>Zmfgrs}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zmfgrs}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zors" width="12rem">
+						       <Label text="{i18n>Zors}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zors}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zepo" width="12rem">
+						       <Label text="{i18n>Zepo}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zepo}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zumf" width="12rem">
+						       <Label text="{i18n>Zumf}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zumf}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zorderno" width="12rem">
+						       <Label text="{i18n>Zorderno}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zorderno}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zorderq" width="12rem">
+						       <Label text="{i18n>Zorderq}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zorderq}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zmfgd" width="12rem">
+						       <Label text="{i18n>Zmfgd}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zmfgd}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zmfgtg" width="12rem">
+						       <Label text="{i18n>Zmfgtg}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zmfgtg}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zlwc" width="12rem">
+						       <Label text="{i18n>Zlwc}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zlwc}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zio" width="12rem">
+						       <Label text="{i18n>Zio}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zio}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zvendor" width="12rem">
+						       <Label text="{i18n>Zvendor}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zvendor}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zextwg" width="12rem">
+						       <Label text="{i18n>Zextwg}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zextwg}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zmfgps" width="12rem">
+						       <Label text="{i18n>Zmfgps}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zmfgps}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zdchains" width="12rem">
+						       <Label text="{i18n>Zdchains}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zdchains}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zaccountry" width="12rem">
+						       <Label text="{i18n>Zaccountry}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zaccountry}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zqd" width="12rem">
+						       <Label text="{i18n>Zqd}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zqd}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zeowdate" width="12rem">
+						       <Label text="{i18n>Zeowdate}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zeowdate}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zad" width="12rem">
+						       <Label text="{i18n>Zad}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zad}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zmfgbc" width="12rem">
+						       <Label text="{i18n>Zmfgbc}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zmfgbc}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zmfgpc" width="12rem">
+						       <Label text="{i18n>Zmfgpc}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zmfgpc}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zrtmd" width="12rem">
+						       <Label text="{i18n>Zrtmd}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zrtmd}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zmfgbom" width="12rem">
+						       <Label text="{i18n>Zmfgbom}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zmfgbom}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zmfgpcd" width="12rem">
+						       <Label text="{i18n>Zmfgpcd}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zmfgpcd}"/>
+						       </t:template>
+					        </t:Column>
+					        <t:Column id="Zpenday" width="12rem">
+						       <Label text="{i18n>Zpenday}" class="fontset"/>
+						       <t:template>
+							      <Text text="{oData>Zpenday}"/>
+						       </t:template>
+					        </t:Column>
+				         </t:columns>  
+				    </t:Table>  
+				    <Table id="ItemTable_m"
+					       growing="true"
+					       growingThreshold="50"
+					       growingScrollToLoad="false"
+					       >
+						<columns>
+							<Column id="Zmatnr_m" width="12em">
+								<Text text="{i18n>Zmatnr}" />
+							</Column>
+						</columns>
+					</Table>   
+				</content>
+			</Panel>
+		</u:content>
+	</u:Shell>
+</mvc:View>

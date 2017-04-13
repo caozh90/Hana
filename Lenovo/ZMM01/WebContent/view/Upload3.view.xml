@@ -1,0 +1,123 @@
+<mvc:View height="100%" width="100%" 
+    controllerName="lenovo.mtm.controller.Upload3" xmlns:mvc="sap.ui.core.mvc"
+	xmlns:u="sap.ui.unified" xmlns:c="sap.ui.core" xmlns="sap.m">
+	<Page id="MTMpage" 
+	      navButtonPress="onNavBack1" 
+	      showNavButton="true"
+	      title="{i18n>Upload3}"
+	      class="MTM-title" >
+		<content>
+		  <ScrollContainer height="100%" width="100%"
+		                   horizontal="true" vertical="true" focusable="true">
+			<u:FileUploader id="fileUploader" name="myFileUpload"
+				uploadUrl="upload/" width="400px" change="onChange" tooltip="{i18n>tooltip}"
+				placeholder="{i18n>choose}" uploadComplete="handleUploadComplete" />
+			<Button text="{i18n>upload}" type="Emphasized" press="onUpload" />
+			<Button width="auto" icon="sap-icon://download" type="Emphasized"
+				text="{i18n>template}" tooltip="{i18n>downloadTemplateText}" press="onDownloadTemplate" />
+
+			<Table id="table1" 
+			       items="{uploadData>/data}">
+				<headerToolbar>
+					<Toolbar>
+						<Title text="Upload data display" level="H2" />
+						<CheckBox id="selectall" selected="false" textAlign="Left"
+							select="onChangedataall" editable="{'uploadData>edit',type:'sap.ui.model.type.String'}"
+							tooltip="{i18n>SelectAll}" />
+						<Button icon="sap-icon://download" text="{i18n>DownloadData}"
+							tooltip="{i18n>DownloadData}" press="onDownload" />
+						<ToolbarSpacer />
+						<Button text="{i18n>ShowAll}" press="onAll" />
+						<Button text="{i18n>Showcorrect}" press="onShowcorrect" />
+						<Button text="{i18n>Showerror}" press="onShowerror" />
+						<Button text="{i18n>Submit}" press="onSubmit" />
+					</Toolbar>
+				</headerToolbar>
+				<columns>
+					<Column vAlign="Middle" hAlign="Center" width="5em">
+						<Text text="{i18n>Box}" tooltip="{i18n>Box}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" width="12rem" visible="true">
+						<Text text="{i18n>Msg}" tooltip="{i18n>Msg}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zmatnr}" tooltip="{i18n>Zmatnr}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Quodate}" tooltip="{i18n>Quodate}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zeowdate}" tooltip="{i18n>Zeowdate}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zad}" tooltip="{i18n>Zad}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zvendor}" tooltip="{i18n>Zvendor}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Lifnr}" tooltip="{i18n>Lifnr}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zohf}" tooltip="{i18n>Zohf}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zlwc}" tooltip="{i18n>Zlwc}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zio}" tooltip="{i18n>Zio}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zbomlt}" tooltip="{i18n>Zbomlt}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zqutolt}" tooltip="{i18n>Zqutolt}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zcontlt}" tooltip="{i18n>Zcontlt}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12rem">
+						<Text text="{i18n>Zoverlt}" tooltip="{i18n>Zoverlt}" />
+					</Column>
+				</columns>
+				<items>
+					<ColumnListItem>
+						<cells width="auto">
+							<CheckBox selected="{'uploadData>Flag',type:'sap.ui.model.type.String'}"
+								      editable="{'uploadData>edit',type:'sap.ui.model.type.String'}"
+								      select="onChangedata" />
+							<Text text="{uploadData>Msg}" textAlign="Left" />
+							<Text text="{uploadData>Mno}" textAlign="Left" />
+							<Text text="{uploadData>Quodate}" textAlign="Left" />
+							<Text text="{uploadData>Zeowdate}" textAlign="Left" />
+							<Text text="{uploadData>Zad}" textAlign="Left" />
+							<Text text="{uploadData>Zvendor}" textAlign="Left" />
+							<Text text="{uploadData>Lifnr}" textAlign="Left" />
+							<Text text="{uploadData>Zohf}" textAlign="Left" />
+							<Text text="{uploadData>Zlwc}" textAlign="Left" />
+							<Text text="{uploadData>Zio}" textAlign="Left" />
+							<Text text="{uploadData>Zbomlt}" textAlign="Left" />
+							<Text text="{uploadData>Zqutolt}" textAlign="Left" />
+							<Text text="{uploadData>Zcontlt}" textAlign="Left" />
+							<Text text="{uploadData>Zoverlt}" textAlign="Left" />
+						</cells>
+					</ColumnListItem>
+				</items>
+			</Table>
+          </ScrollContainer>
+		</content>
+	</Page>
+</mvc:View>

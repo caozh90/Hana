@@ -1,0 +1,71 @@
+<mvc:View controllerName="lenovo.mtm.controller.Upload" xmlns:mvc="sap.ui.core.mvc"
+	xmlns:u="sap.ui.unified" xmlns:c="sap.ui.core" xmlns="sap.m">
+	<Page id="MTMpage" 
+	      navButtonPress="onNavBack1" 
+	      showNavButton="true"
+	      title="{i18n>Upload}"
+	      class="MTM-title">
+		<content>
+			<u:FileUploader id="fileUploader" name="myFileUpload"
+				uploadUrl="upload/" width="400px" change="onChange" tooltip="{i18n>tooltip}"
+				placeholder="{i18n>choose}" uploadComplete="handleUploadComplete" />
+			<Button text="{i18n>upload}" type="Emphasized" press="handleUploadPress" />
+			<Button width="auto" icon="sap-icon://download" type="Emphasized"
+				text="{i18n>template}" tooltip="{i18n>downloadTemplateText}" press="onDownloadTemplate" />
+
+			<Table id="table1"
+				items="{path: 'uploadData>/data',
+			                           sorter: { path: 'Mno' }}">
+				<headerToolbar>
+					<Toolbar>
+						<Title text="Upload data display" level="H2" />
+						<CheckBox id="selectall" selected="false" textAlign="Left"
+							select="onChangedataall" editable="{'uploadData>edit',type:'sap.ui.model.type.String'}"
+							tooltip="{i18n>SelectAll}" />
+						<Button icon="sap-icon://download" text="{i18n>DownloadData}"
+							tooltip="{i18n>DownloadData}" press="onDownload" />
+						<ToolbarSpacer />
+						<Button text="{i18n>ShowAll}" press="onAll" />
+						<Button text="{i18n>Showcorrect}" press="onShowcorrect" />
+						<Button text="{i18n>Showerror}" press="onShowerror" />
+						<Button text="{i18n>Submit}" press="onSubmit" />
+					</Toolbar>
+				</headerToolbar>
+				<columns>
+					<Column vAlign="Middle" hAlign="Center" width="2.2em">
+						<Text text="{i18n>Box}" tooltip="{i18n>Box}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" width="5rem" visible="true">
+						<Text text="{i18n>Msg}" tooltip="{i18n>Msg}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12em">
+						<Text text="{i18n>Zmatnr}" tooltip="{i18n>Zmatnr}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12em">
+						<Text text="{i18n>Orderno}" tooltip="{i18n>Orderno}" />
+					</Column>
+					<Column vAlign="Middle" hAlign="Left" minScreenWidth="Tablet"
+						demandPopin="true" width="12em">
+						<Text text="{i18n>Orderquantity}" tooltip="{i18n>Orderquantity}" />
+					</Column>
+				</columns>
+				<items>
+					<ColumnListItem vAlign="Middle">
+						<cells>
+							<CheckBox selected="{'uploadData>Flag',type:'sap.ui.model.type.String'}"
+								      editable="{'uploadData>edit',type:'sap.ui.model.type.String'}"
+								      select="onChangedata" />
+							<Text text="{uploadData>Msg}" textAlign="Left" />
+							<Text text="{uploadData>Mno}" textAlign="Left" />
+							<Text text="{uploadData>Order}" textAlign="Left" />
+							<Text text="{uploadData>Quantity}" textAlign="Left" />
+						</cells>
+					</ColumnListItem>
+				</items>
+			</Table>
+
+		</content>
+	</Page>
+</mvc:View>

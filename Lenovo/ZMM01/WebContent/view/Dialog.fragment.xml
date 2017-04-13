@@ -1,0 +1,43 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+	xmlns:core="sap.ui.core">
+   <Dialog
+      id="Dialog"
+      title="Setting Fields" type="Message" state="Error">
+      <content>
+         <Table id="DialogTable"
+			    items="{path: 'fieldData>/FieldData'}">
+			    <headerToolbar>
+					<Toolbar>
+						<CheckBox id="selectall" text="{i18n>SelectAll}" selected="false" textAlign="Left"
+							      select="onChangedataall" editable="{'fieldData>edit',type:'sap.ui.model.type.String'}"
+							      tooltip="{i18n>SelectAll}" />
+					</Toolbar>
+				</headerToolbar>
+                <columns>
+					<Column vAlign="Middle" hAlign="Center" width="2.2em">
+						<Text text="" tooltip="" />
+					</Column>
+					<Column id="Field">
+						<Text id="FieldTitle" text="" />
+					</Column>
+				</columns>
+				<items>
+					<ColumnListItem vAlign="Middle" >
+						<cells>
+							<CheckBox selected="{'fieldData>Flag',type:'sap.ui.model.type.String'}"
+								      editable="{'fieldData>edit',type:'sap.ui.model.type.String'}"
+								      select="onChangedata" />
+							<Text text="{fieldData>field}" hAlign="left" />
+						</cells>
+					</ColumnListItem>
+				</items>
+	     </Table>
+      </content>
+      <buttons>
+            <Button text="Cancel" press="onCancelDialog" />
+            <Button text="Reset" press="onResetDialog" />
+			<Button text="Save" press="onSaveDialog" />
+	  </buttons>
+   </Dialog>
+</core:FragmentDefinition>

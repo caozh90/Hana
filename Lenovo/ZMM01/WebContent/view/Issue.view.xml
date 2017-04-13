@@ -1,0 +1,170 @@
+<mvc:View controllerName="lenovo.mtm.controller.Issue" 
+    xmlns:l="sap.ui.layout"
+	xmlns:core="sap.ui.core" 
+	xmlns:mvc="sap.ui.core.mvc" 
+	xmlns:fb="sap.ui.comp.filterbar"
+	xmlns:t="sap.ui.table"
+	xmlns="sap.m">
+	<Page id="Issuepage" 
+	      navButtonPress="onNavBack" 
+	      showNavButton="true"
+		  title="{i18n>Issue}"
+		  class="MTM-title">
+		<Panel id="Panel1" expandable="true" expanded="false" headerText="Panel with Search Field">
+			<content>
+				<fb:FilterBar showRestoreButton="false"
+				              showGoButton="true" 
+				              search="onSearch">
+					<fb:filterItems>
+						<fb:FilterItem name="Vendor" label="{i18n>Zvendor}"
+								labelTooltip="{i18n>Zvendor}" class="fontset">
+								<fb:control>
+									<ComboBox id="VendorC"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'01'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+						</fb:FilterItem>
+						<fb:FilterItem name="MfgDatef" label="{i18n>MfgDatef}"
+								labelTooltip="{i18n>MfgDatef}" class="fontset">
+								<fb:control>
+                                   <DatePicker id="Zdatemfgf" valueFormat="yyyy-MM-dd"
+                                               displayFormat="yyyy.MM.dd" change="handleChange1" 
+                                               class="sapUiSmallMarginBottom"/>
+                                </fb:control>
+						</fb:FilterItem>
+							
+						<fb:FilterItem name="MfgDatet" label="{i18n>MfgDatet}"
+								labelTooltip="{i18n>MfgDatet}" class="fontset">
+								<fb:control>
+                                   <DatePicker id="Zdatemfgt" valueFormat="yyyy-MM-dd"
+                                               displayFormat="yyyy.MM.dd" change="handleChange1" 
+                                               class="sapUiSmallMarginBottom"/>
+                                </fb:control>
+						</fb:FilterItem>
+						<fb:FilterItem name="E2Eowner" label="{i18n>Zepo}"
+								labelTooltip="{i18n>Zepo}" class="fontset">
+								<fb:control>
+									<ComboBox id="E2Eowner"
+										items="{
+                                              path: 'SearchData>/data',
+                                              filters : [{path : 'Zseries',operator : 'EQ',value1:'06'}],
+                                              sorter: { path: 'Zvalue' }
+                                             }">
+										<core:Item key="{SearchData>Zvalue}" text="{SearchData>Zvalue}" />
+									</ComboBox>
+								</fb:control>
+						</fb:FilterItem>
+						<fb:FilterItem name="Zdatef" label="{i18n>Zdatef}"
+								labelTooltip="{i18n>Zdatef}" class="fontset">
+								<fb:control>
+                                   <DatePicker id="Zdatef" valueFormat="yyyy-MM-dd"
+                                               displayFormat="yyyy.MM.dd" change="handleChange" 
+                                               class="sapUiSmallMarginBottom"/>
+                                </fb:control>
+							</fb:FilterItem>
+							
+							<fb:FilterItem name="Zdatet" label="{i18n>Zdatet}"
+								labelTooltip="{i18n>Zdatet}" class="fontset">
+								<fb:control>
+                                   <DatePicker id="Zdatet" valueFormat="yyyy-MM-dd"
+                                               displayFormat="yyyy.MM.dd" change="handleChange" 
+                                               class="sapUiSmallMarginBottom"/>
+                                </fb:control>
+						</fb:FilterItem>
+					</fb:filterItems>
+				</fb:FilterBar>
+			</content>
+		</Panel>
+		<Panel expandable="true" expanded="true" headerText="Panel with Data Display">
+			<headerToolbar>
+				<Toolbar height="3rem">
+					<content>
+						<Text text="Panel with Data Display" />
+						<Button id="Download" icon="sap-icon://download" text="Download"
+							tooltip="{i18n>downloadTemplateText}" press="onDownloadExcel" />
+					</content>
+				</Toolbar>
+			</headerToolbar>
+			<content>
+			  <t:Table id="LogTable" 
+					   rows="{path: 'ItemData>/data',
+			                  sorter: { path: 'Lifnr' }}"> 
+                   <t:columns>
+					  <t:Column id="Vendor" width="12em">
+						<Label text="{i18n>Zvendor}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Lifnr}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Mfgdate" width="12em">
+						<Label text="{i18n>Zmfgd}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zmfgd}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="E2eOwner" width="12em">
+						<Label text="{i18n>Zepo}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Zepo}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="MtmNo" width="12em">
+						<Label text="{i18n>Zmatnr}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Matnr}"/>
+						</t:template>
+					  </t:Column>
+					  <t:Column id="Ersda" width="12em">
+						<Label text="{i18n>Zersda}" class="fontset"/>
+						<t:template>
+					       <Text text="{ItemData>Ersda}"/>
+						</t:template>
+					  </t:Column>	
+				   </t:columns>
+				</t:Table>
+				<Table id="LogTable_m"
+		               inset="false"
+		               items="{
+			                    path: 'ItemData>/data',
+			                    sorter: {
+				                           path: 'Lifnr'
+			                            }
+		                       }">
+		            <columns>
+		            	<Column width="8em" hAlign="Left" > 
+							<Text text="{i18n>Zvendor}" />
+						</Column>
+						<Column width="8em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Zmfgd}"/>
+						</Column>
+						<Column width="8em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Zepo}" />
+						</Column>
+						<Column width="12em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Zmatnr}" />
+						</Column>
+						<Column width="8em" minScreenWidth="Tablet" demandPopin="true" >
+							<Text text="{i18n>Zersda}" />
+						</Column>						
+		            </columns>
+		            <items>
+		            	<ColumnListItem>
+		            		<cells>
+		            			<Text text="{ItemData>Lifnr}" />
+		            			<Text text="{ItemData>Zmfgd}" />
+		            			<Text text="{ItemData>Zepo}" />
+		            			<Text text="{ItemData>Matnr}" />
+		            			<Text text="{ItemData>Ersda}" />
+		            		</cells>
+		            	</ColumnListItem>
+		            </items>
+		        </Table>
+			</content>
+		</Panel>
+	</Page>
+</mvc:View>
