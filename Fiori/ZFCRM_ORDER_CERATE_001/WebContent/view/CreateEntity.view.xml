@@ -1,0 +1,188 @@
+<mvc:View controllerName="Demo.controller.CreateEntity"  xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:f="sap.ui.layout.form" xmlns:t="sap.ui.table" xmlns:core="sap.ui.core" xmlns:com="sap.ui.commons">
+	<Page busy="{detailView>/busy}" busyIndicatorDelay="{detailView>/delay}" id="page-c" navButtonPress="onNavBack"
+		showNavButton="true" title="{i18n>createTitle}">
+		<content>
+			<f:SimpleForm class="editableForm" columnsL="1" columnsM="1" editable="true" emptySpanL="4" emptySpanM="4" id="newEntitySimpleForm"
+				labelSpanL="3" labelSpanM="3" layout="ResponsiveGridLayout" maxContainerCols="3" minWidth="1024">
+				<f:content>
+					<Label required="false" text="OrderID"/>
+					<Input enabled="false" id="OrderID_id"  name="OrderID" visible="{viewModel>/IconTabFilterE}"
+						value="{ path: 'Orderid', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }" valueLiveUpdate="true"/>
+					<Label required="true" text="CustomerPo"/>
+					<Input enabled="true" id="CustomerPo_id" liveChange="_validateSaveEnablement"  name="CustomerPo"
+						value="{ path: 'Customerpo', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }" valueLiveUpdate="true"/>
+					<Label required="true" text="Sold-To"/>
+					<Input enabled="true" id="Sold-To_id"  liveChange="_validateSaveEnablement"  name="Sold-To"
+						value="{ path: 'Soldto', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }" valueLiveUpdate="true"/>
+					<Button icon="sap-icon://activities" press="SoldToValidation" text="Validation" tooltip="Validation and Get ShipTo" visible="{viewModel>/IconTabFilterC}"/>
+					<Label required="false" text="Ship-To"/>
+					<Input enabled="true" id="Ship-To_id" liveChange="_validateSaveEnablement"  name="Ship-To" visible="{viewModel>/IconTabFilterE}"
+						value="{ path: 'Shipto', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }" valueLiveUpdate="true"/>
+					<com:ComboBox id="Combo-shipto" displaySecondaryValues="true" visible="{viewModel>/IconTabFilterC}">
+					    <core:ListItem id="Combo-item"/>
+					</com:ComboBox>	
+					<Label required="false" text="Status"/>
+					<Input enabled="true" id="Status_id"  name="Status" liveChange="_validateSaveEnablement"
+						value="{ path: 'Status', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:5 } }" valueLiveUpdate="true"/>
+					<Label required="true" text="SaleOrg"/>
+					<Input enabled="true" id="SaleOrg_id" liveChange="_validateSaveEnablement"  name="SaleOrg"
+						value="{ path: 'Saleorg', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }" valueLiveUpdate="true"/>
+					<Label required="false" text="Request Delivery Date"/>
+					<DatePicker id="Reqdlvdate_id" change="_validateSaveEnablement" dateValue="{path: 'Reqdlvdate', formatter: '.formatter.fnDateTimeFormatter' }"/>
+					<Label required="false" text="GrossValue"/>
+					<Input enabled="true" id="GrossValue_id"  name="GrossValue"
+						value="{ path: 'Grossvalue', type: 'sap.ui.model.odata.type.Decimal' }" valueLiveUpdate="true"/>
+					<Label required="false" text="NetPrice"/>
+					<Input enabled="true" id="NetPrice_id"  name="NetPrice"
+						value="{ path: 'Netprice', type: 'sap.ui.model.odata.type.Decimal' }" valueLiveUpdate="true"/>
+					<Label required="false" text="TaxAmount"/>
+					<Input enabled="true" id="TaxAmount_id" name="TaxAmount"
+						value="{ path: 'Taxamount', type: 'sap.ui.model.odata.type.Decimal' }" valueLiveUpdate="true"/>
+					<Input enabled="false" id="Dischannel_id" name="Dischannel" visible="false"/>
+					<Input enabled="false" id="HeaderGuid_id" name="Guid" value="{ path: 'Guid', type: 'sap.ui.model.odata.type.Guid' }" visible="false"/>
+				</f:content>
+			</f:SimpleForm>
+			<IconTabBar id="__bar0" selectedKey="__xmlview0--__filter1">
+				<items>
+					<IconTabFilter icon="sap-icon://task" iconColor="Critical" id="__filter6" text="Add New Item" visible="true" count="{viewModel&gt;/count}">
+						<content>
+							<f:SimpleForm class="editableForm" columnsL="1" columnsM="1" editable="true" emptySpanL="4" emptySpanM="4" id="newItemSimpleForm"
+								labelSpanL="3" labelSpanM="3" layout="ResponsiveGridLayout" maxContainerCols="2" minWidth="1024">
+								<f:content>
+									<toolbar>
+										<content>
+											<Title text="Item Details"></Title>
+											<ToolbarSpacer/>
+											<Button enabled="{viewModel>/enableAdd}" icon="sap-icon://add" press="AddTableRow" text="Add Item" tooltip="Add one item"/>
+										</content>
+									</toolbar>
+									<Label required="true" text="Item No"/>
+									<Input enabled="false" id="ItemPos_id"  liveChange="_validateAddEnablement"
+										value="10"/>
+									<Label required="true" text="Product"/>
+									<Input enabled="true" id="Product_id"  liveChange="_validateAddEnablement" 
+										value="{ path: 'Product', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }"/>
+									<Button icon="sap-icon://activities" press="GetProduct" text="Get Product" tooltip="Get Product Detail" enabled="{viewModel>/enableProduct}"/>	
+									<Label required="true" text="Description"/>
+									<Input enabled="true" id="Description_id"  liveChange="_validateAddEnablement"
+										value="{ path: 'Description', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }"/>
+									<Label required="true" text="Quantity"/>
+									<Input enabled="true" id="Quantity_id"   liveChange="_validateAddEnablement"
+										value="{ path: 'Quantity', type: 'sap.ui.model.odata.type.Decimal' , constraints:{ maxLength:10, nullable:false } }"/>
+								</f:content>
+							</f:SimpleForm>
+							<Table id="tableitem0" updateFinished="tabelupdatefinish" mode="Delete" delete="onDeletePressed" items="{CreateItem>/entries}">
+								<customData>
+									<sap.ui.core:CustomData xmlns:sap.ui.core="sap.ui.core" id="__data9" key="sap-ui-fastnavgroup" value="true" writeToDom="true"/>
+								</customData>
+								<items>
+									<ColumnListItem counter="0" id="__item2" type="Navigation">
+										<cells>
+											<Text id="__text11" maxLines="0" text="{CreateItem>ItemPos}"/>
+											<Text id="__text12" maxLines="0" text="{CreateItem>Product}"/>
+											<Text id="__text13" maxLines="0" text="{CreateItem>Description}"/>
+											<Text id="__text14" maxLines="0" text="{CreateItem>Quantity}"/>
+										</cells>
+									</ColumnListItem>
+								</items>
+								<columns>
+									<Column>
+										<header>
+											<Label id="__label17" text="ItemNo"/>
+										</header>
+									</Column>
+									<Column>
+										<header>
+											<Label id="__label18" text="Product"/>
+										</header>
+									</Column>
+									<Column>
+										<header>
+											<Label id="__label19" text="Description"/>
+										</header>
+									</Column>
+									<Column>
+										<header>
+											<Label id="__label20" text="Quantity"/>
+										</header>
+									</Column>
+								</columns>
+							</Table>
+						</content>
+					</IconTabFilter>
+					<IconTabFilter icon="sap-icon://sales-order-item" iconColor="Positive" id="__filter4" text="Exist Item" visible="{viewModel>/IconTabFilterE}">
+						<content>
+							<t:Table id="ItemTable" rows="{SalesOrderToItem}" selectionMode="MultiToggle" visibleRowCount="10">
+								<t:toolbar>
+									<toolbar>
+										<content>
+											<Title text="Item Details"></Title>
+										</content>
+									</toolbar>
+								</t:toolbar>
+								<t:columns>
+								    <t:Column width="8rem" visible="false">
+										<Label text="Item Guid"/>
+										<t:template>
+											<text text="{Guid}"/>
+										</t:template>
+									</t:Column>
+									<t:Column width="8rem">
+										<Label text="Item No"/>
+										<t:template>
+											<text id="EItempos_id" text="{Itempos}"/>
+										</t:template>
+									</t:Column>
+									<t:Column width="8rem">
+										<Label text="Product"/>
+										<t:template>
+											<Input id="EProduct_id" value="{Product}" liveChange="_validateItemChange"/>
+										</t:template>
+									</t:Column>
+									<t:Column width="11rem">
+										<Label text="Description"/>
+										<t:template>
+											<Input value="{Description}" liveChange="_validateItemChange"/>
+										</t:template>
+									</t:Column>
+									<t:Column width="6rem">
+										<Label text="Quantity"/>
+										<t:template>
+											<Input value="{Quantity}" liveChange="_validateItemChange"/>
+										</t:template>
+									</t:Column>
+									<t:Column width="6rem">
+										<Label text="Price"/>
+										<t:template>
+											<Input value="{Price}" liveChange="_validateItemChange"/>
+										</t:template>
+									</t:Column>
+									<t:Column width="6rem">
+										<Label text="Tax"/>
+										<t:template>
+											<Input value="{Tax}" liveChange="_validateItemChange"/>
+										</t:template>
+									</t:Column>
+									<t:Column hAlign="Center" width="6rem">
+										<Label text="Status"/>
+										<t:template>
+											<Input value="{Status}" liveChange="_validateItemChange"/>
+										</t:template>
+									</t:Column>
+								</t:columns>
+							</t:Table>
+						</content>
+					</IconTabFilter>
+				</items>
+			</IconTabBar>
+		</content>
+		<footer id="fotter-C">
+			<OverflowToolbar id="footerToolbar-c">
+				<ToolbarSpacer/>
+				<Button icon="sap-icon://check-availability" id="checkButton" text="Check Out" press="onCheck" tooltip="{i18n>checkTooltip}" enabled="{viewModel>/enableCheck}"></Button>
+				<Button icon="sap-icon://save" id="saveButton" text="Save" press="onSave" tooltip="{i18n>saveTooltip}" enabled="{viewModel>/enableCreate}"></Button>
+				<Button icon="sap-icon://sys-cancel" id="cancelButton" text="Cancel" press="onCancel" tooltip="{i18n>cancelTooltip}"></Button>
+			</OverflowToolbar>
+		</footer>
+	</Page>
+</mvc:View>

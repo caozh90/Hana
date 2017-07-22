@@ -1,0 +1,113 @@
+<mvc:View controllerName="Demo.controller.Detail" xmlns:footerbar="sap.ushell.ui.footerbar" xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:f="sap.ui.layout.form">
+	<Page busy="{detailView>/busy}" busyIndicatorDelay="{detailView>/delay}" id="page" navButtonPress="onNavBack"
+		showNavButton="{device>/system/phone}" title="{i18n>detailTitle}">
+		<content>
+			<f:SimpleForm class="editableForm" columnsL="1" columnsM="1" editable="false" emptySpanL="4" emptySpanM="4" id="displaySimpleForm" labelSpanL="3" labelSpanM="3" layout="ResponsiveGridLayout" maxContainerCols="2" minWidth="1024" title="{= ${viewModel&gt;/mode} === 'edit'? 'Edit EPMDemo.ZOrder': 'New EPMDemo.ZOrder'}">
+				<f:content>
+					<Label required="true" text="OrderID"/>
+					<Input enabled="false" id="OrderID_id1" name="OrderID" value="{ path: 'Orderid', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }"/>
+					<Label required="true" text="CustomerPo"/>
+					<Input enabled="false" id="CustomerPo_id1" name="CustomerPo" value="{ path: 'Customerpo', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }"/>
+					<Label required="true" text="Sold-To"/>
+					<Input enabled="false" id="Sold-To_id1" name="Sold-To" value="{ path: 'Soldto', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }"/>
+					<Label required="true" text="Ship-To"/>
+					<Input enabled="false" id="Ship-To_id1" name="Ship-To" value="{ path: 'Shipto', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }"/>
+					<Label required="false" text="Status"/>
+					<Input enabled="false" id="Status_id1" name="Status" value="{ path: 'Status', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:5 } }"/>
+					<Label required="true" text="SaleOrg"/>
+					<Input enabled="false" id="SaleOrg_id1" name="SaleOrg" value="{ path: 'Saleorg', type: 'sap.ui.model.odata.type.String' , constraints:{ maxLength:10, nullable:false } }"/>
+					<Label required="false" text="Request Delivery Date"/>
+					<Input enabled="false" id="CRAD_id1" name="CRAD" value="{ path: 'Reqdlvdate', type: 'sap.ui.model.odata.type.DateTime' , constraints:{ maxLength:10 } }"/>
+					<Label required="false" text="GrossValue"/>
+					<Input enabled="false" id="GrossValue_id1" name="GrossValue" value="{ path: 'Grossvalue', type: 'sap.ui.model.odata.type.Decimal' }"/>
+					<Label required="false" text="NetPrice"/>
+					<Input enabled="false" id="NetPrice_id1" name="NetPrice" value="{ path: 'Netprice', type: 'sap.ui.model.odata.type.Decimal' }"/>
+					<Label required="false" text="TaxAmount"/>
+					<Input enabled="false" id="TaxAmount_id1" name="TaxAmount" value="{ path: 'Taxamount', type: 'sap.ui.model.odata.type.Decimal' }"/>
+				</f:content>
+			</f:SimpleForm>
+			<IconTabBar id="__bar1" selectedKey="__xmlview0--__filter1">
+				<items>
+					<IconTabFilter icon="sap-icon://sales-order-item" iconColor="Positive" id="__filter4" text="Item" count="{detailView&gt;/count}">
+						<content>
+							<Table id="__table0" itemPress="onItemDetailPressed" items="{SalesOrderToItem}"
+							noDataText="Drop column list items here and columns in the area above" updateFinished="tabelupdatefinish">
+								<customData>
+									<sap.ui.core:CustomData xmlns:sap.ui.core="sap.ui.core" id="__data9" key="sap-ui-fastnavgroup" value="true" writeToDom="true"/>
+								</customData>
+								<items>
+									<ColumnListItem counter="0" id="__item1" type="Navigation">
+										<cells>
+											<Text id="__text1" maxLines="0" text="{Itempos}"/>
+											<Text id="__text2" maxLines="0" text="{Product}"/>
+											<Text id="__text3" maxLines="0" text="{Description}"/>
+											<Text id="__text4" maxLines="0" text="{Quantity}"/>
+											<Text id="__text5" maxLines="0" text="{Price}"/>
+											<Text id="__text6" maxLines="0" text="{Tax}"/>
+											<Text id="__text7" maxLines="0" text="{Status}"/>
+										</cells>
+									</ColumnListItem>
+								</items>
+								<columns>
+									<Column id="__column2">
+										<header>
+											<Label id="__label0" text="ItemNo"/>
+										</header>
+									</Column>
+									<Column id="__column3">
+										<header>
+											<Label id="__label1" text="Product"/>
+										</header>
+									</Column>
+									<Column id="__column4">
+										<header>
+											<Label id="__label2" text="Description"/>
+										</header>
+									</Column>
+									<Column id="__column5">
+										<header>
+											<Label id="__label3" text="Quantity"/>
+										</header>
+									</Column>
+									<Column id="__column6">
+										<header>
+											<Label id="__label4" text="Price"/>
+										</header>
+									</Column>
+									<Column id="__column7">
+										<header>
+											<Label id="__label5" text="Tax"/>
+										</header>
+									</Column>
+									<Column id="__column8">
+										<header>
+											<Label id="__label6" text="Status"/>
+										</header>
+									</Column>
+								</columns>
+							</Table>
+						</content>
+					</IconTabFilter>
+				</items>
+			</IconTabBar>
+		</content>
+		<footer>
+			<OverflowToolbar id="footerToolbar">
+				<ToolbarSpacer/>
+				<Button icon="sap-icon://edit" id="editButton" text="Edit" press="onEditPress" tooltip="{i18n>editTooltip}"></Button>
+				<Button icon="sap-icon://delete" id="deleteButton" text="Delete" press="onDeletePress" tooltip="{i18n>deleteTooltip}"></Button>
+				<Button icon="sap-icon://action" id="shareButton" press="onSharePress" tooltip="{i18n>shareTooltip}">
+					<dependents>
+						<ActionSheet id="shareSheet" placement="Top" showCancelButton="true">
+							<buttons>
+								<Button icon="sap-icon://email" id="shareEmail" press="onShareEmailPress" text="{i18n>shareSendEmail}"/>
+								<Button icon="sap-icon://jam" id="shareInJam" press="onShareInJamPress" text="{i18n>shareOnJamTitle}" visible="{FLP>/isShareInJamActive}"/>
+								<footerbar:AddBookmarkButton appData="{ path: 'detailView>/saveAsTileTitle', formatter: '.formatter.shareTileData' }" id="shareTile"/>
+							</buttons>
+						</ActionSheet>
+					</dependents>
+				</Button>
+			</OverflowToolbar>
+		</footer>
+	</Page>
+</mvc:View>
